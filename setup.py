@@ -12,7 +12,7 @@ if platform.system() == 'Linux':
     f_args = ["-O3"]
     f_macros = [('F2PY_REPORT_ON_ARRAY_COPY', '1')]
     f_include = ['/usr/include', '/usr/include/hdf5/serial']
-    f_lib = ['/usr/lib/x86_64-linux-gnu/, /usr/lib/x86_64-linux-gnu/hdf5/serial','/opt/threedicore/lib']
+    f_lib = ['/usr/lib/x86_64-linux-gnu/, /usr/lib/x86_64-linux-gnu/hdf5/serial','/threedicore/lib']
     f_libs = ['flow']
 else:
     f_args = ["/Od", "/debug:full", "/assume:nounderscore"]
@@ -23,7 +23,8 @@ else:
 
 api_module = Extension(
     name= 'threedicore',
-    sources = ['api.f90', 'api_sim_state.f90'],
+    sources = ['src/model.f90', 
+               'src/simulation_state.f90'],
     define_macros = f_macros,
     include_dirs=f_include,
     library_dirs=f_lib,
