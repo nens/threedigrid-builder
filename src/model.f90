@@ -1,17 +1,16 @@
 module model
     
-    use iso_binding
+    use iso_c_binding
     
     implicit none
 
     contains
 
-        subroutine inialize(config_file, status)
+        subroutine initialize(config_file, status)
 
             use m_config, only : read_config
-            use parameters, only : STRINGLEN
 
-            character(LEN=STRINGLEN), intent(in) :: config_file
+            character(LEN=*), intent(in) :: config_file
             logical :: default_paths
             integer, intent(out) :: status
 
@@ -19,26 +18,28 @@ module model
 
             status = 1
             default_paths = .TRUE. ! FOR NOW THIS TRUE UNTIL WE CAN SET THIS MORE EASILY FROM THE OUTSIDE.
-            call read_config(filepath, default_paths)
+            call read_config(trim(config_file), default_paths)
             status = 0
 
-        end subroutine inialize
+        end subroutine initialize
 
-        subroutine set_paths(base_dir, result_dir, log_dir, input_generated_dir, preprocessed_dir, boundary_dir, &
+        subroutine set_paths(base_dir, project_dir, result_dir, log_dir, input_generated_dir, preprocessed_dir, boundary_dir, &
                rain_dir, external_input_dir, state_dir, status)
+			   
+            use m_config, only : set_folder_structure
         
             implicit none
             
-            character(LEN=STRINLEN), intent(in) :: base_dir
-            character(LEN=STRINLEN), intent(in) :: project_dir
-            character(LEN=STRINLEN), intent(in) :: result_dir
-            character(LEN=STRINLEN), intent(in) :: log_dir
-            character(LEN=STRINLEN), intent(in) :: input_generated_dir
-            character(LEN=STRINLEN), intent(in) :: preprocessed_dir
-            character(LEN=STRINLEN), intent(in) :: boundary_dir
-            character(LEN=STRINLEN), intent(in) :: rain_dir
-            character(LEN=STRINLEN), intent(in) :: external_input_dir
-            character(LEN=STRINLEN), intent(in) :: state_dir
+            character(LEN=*), intent(in) :: base_dir
+            character(LEN=*), intent(in) :: project_dir
+            character(LEN=*), intent(in) :: result_dir
+            character(LEN=*), intent(in) :: log_dir
+            character(LEN=*), intent(in) :: input_generated_dir
+            character(LEN=*), intent(in) :: preprocessed_dir
+            character(LEN=*), intent(in) :: boundary_dir
+            character(LEN=*), intent(in) :: rain_dir
+            character(LEN=*), intent(in) :: external_input_dir
+            character(LEN=*), intent(in) :: state_dir
             integer, intent(out) :: status
             
             status = 1
@@ -47,15 +48,14 @@ module model
             
         end subroutine set_paths
 
-        subroutine load_model(gridadmin_file, griddata_file, status)
+        subroutine py_load_model(gridadmin_file, griddata_file, status)
             
             use timeloop, only : init_sim
-            use parameters, only : STRINGLEN
 
             implicit none
 
-            character(LEN=STRINGLEN), intent(in) :: gridadmin_file
-            character(LEN=STRINGLEN), intent(in) :: griddata_file
+            character(LEN=*), intent(in) :: gridadmin_file
+            character(LEN=*), intent(in) :: griddata_file
             integer, intent(out) :: status
             
             status = 1
@@ -63,7 +63,7 @@ module model
             call init_sim() !TODO THIS ROUTINE NEEDS TO BE REWRITTEN WITH SIM_STAT STUFF
             status = 0
 
-        end subroutine load_model
+        end subroutine py_load_model
 
         subroutine update(dtc, time)
         

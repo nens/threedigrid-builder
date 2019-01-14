@@ -1,4 +1,4 @@
-module py_sim_state
+module pysimstate
 
     use sim_state
     !use data_definitions, only : nodall
@@ -10,8 +10,6 @@ module py_sim_state
     contains
     
     subroutine init_state_vars(ierr)
-    
-        use sim_state 
         
         integer, intent(out) :: ierr
     
@@ -39,5 +37,5 @@ module py_sim_state
     end subroutine set_state_var_duration
     
     
-end module py_sim_state
+end module pysimstate
     
