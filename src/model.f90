@@ -48,9 +48,10 @@ module model
             
         end subroutine set_paths
 
-        subroutine py_load_model(gridadmin_file, griddata_file, status)
+        subroutine load_model(gridadmin_file, griddata_file, status)
             
             use timeloop, only : init_sim
+            use m_config, only : create_log_files
 
             implicit none
 
@@ -59,11 +60,14 @@ module model
             integer, intent(out) :: status
             
             status = 1
-            call load_model(gridadmin_file, griddata_file)
+            call create_log_files()
+            call read_grid_admin(gridadmin_file)
+            call read_grid_data(griddata_file)
+            call read_1dfiles()
             call init_sim() !TODO THIS ROUTINE NEEDS TO BE REWRITTEN WITH SIM_STAT STUFF
             status = 0
 
-        end subroutine py_load_model
+        end subroutine load_model
 
         subroutine update(dtc, time)
         

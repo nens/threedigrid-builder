@@ -9,7 +9,7 @@ import platform
 #comp.compiler_f90 = [flag for flag in comp.compiler_f90 if flag not in ignore_flags]
 
 if platform.system() == 'Linux':
-    f_args = ["-O3", "-ffree-line-length-none"]
+    f_args = ["-O3", "-ffree-line-length-none", "-ffree-form", "-fimplicit-none"]
     f_macros = [('F2PY_REPORT_ON_ARRAY_COPY', '1'), 
 				('NPY_NO_DEPRECATED_API', '1')]
     f_include = ['/usr/include', '/usr/include/hdf5/serial', '/opt/threedicore/include']
