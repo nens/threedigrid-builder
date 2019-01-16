@@ -1,41 +1,48 @@
-module pysimstate
+module simulation
 
-    use sim_state
-    !use data_definitions, only : nodall
-    
     implicit none
-    
-    double precision, pointer :: input_rain(:)
     
     contains
     
-    subroutine init_state_vars(ierr)
+    subroutine set_state(name, duration, values, interpolation, status)
+
+        use sim_state
+
+        character(LEN=*), intent(in) :: name
+        integer, intent(in) :: duration
+        double precision, intent(in) :: values(:)
+        integer, intent(in), optional :: interpolation
+        integer, intent(out) :: status
+    
+        status = 1
+        call init_state_var(name, duration, values)
+        status = 0
+
+    end subroutine set_state
+
+    subroutine update(dtc, time)
         
-        integer, intent(out) :: ierr
+        use timeloop, only : run_sim
+        
+        implicit none
+        
+        double precision, intent(in) :: dtc !< Custom timestep size, use -1 to use model default.
+        double precision, intent(out) :: time !< Custom timestep size, use -1 to use model default.
+
+        call run_sim(dtc, time)
+        
+    end subroutine update
     
-        ierr = 0
-        input_rain => rain_in
-        if(.not.associated(input_rain)) then
-            ierr = 1
-        endif
-        write(*,*) input_rain
-            
+    subroutine stop_sim(time)
     
+        use sim_state, only : do_run, t1
+        
+        double precision, intent(out) :: time
     
-    end subroutine init_state_vars
+        do_run = 0
+        time = t1
     
-    subroutine set_state_var_duration(var_name, duration)
+    end subroutine stop_sim
     
-    character(LEN=*), intent(in) :: var_name
-    integer, intent(in) :: duration
-    
-    select case(trim(var_name))
-    case('rain')
-        call apply_state_var(trim(var_name), duration)
-    end select
-    
-    end subroutine set_state_var_duration
-    
-    
-end module pysimstate
+end module simulation
     

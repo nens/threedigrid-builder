@@ -68,31 +68,6 @@ module model
             status = 0
 
         end subroutine load_model
-
-        subroutine update(dtc, time)
-        
-            use timeloop, only : run_sim
-            
-            implicit none
-            
-            double precision, intent(in) :: dtc !< Custom timestep size, use -1 to use model default.
-            double precision, intent(out) :: time !< Custom timestep size, use -1 to use model default.
-
-            call run_sim(dtc, time)
-            
-        end subroutine update
-        
-        subroutine stop_sim(time)
-        
-            use sim_state, only : do_run, t1
-            
-            double precision, intent(out) :: time
-        
-            do_run = 0
-            time = t1
-        
-        end subroutine stop_sim
-        
         
 end module model
 
