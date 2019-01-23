@@ -8,6 +8,6 @@ services:
   threedicore:
     volumes:
       #- D:\3di\git\3di\threedi-calculationcore:/threedicore
-      - D:\3di\git\models:/models
-      - D:\3di\git\notebooks:/notebooks
+      - ..\..\models:/models
+      - ..\..\notebooks:/notebooks
       #- D:\3di\git\3di\py3di:/threedicore/py3di

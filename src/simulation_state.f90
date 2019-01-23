@@ -6,7 +6,7 @@ module simulation
     
     subroutine set_state(name, duration, values, interpolation, status)
 
-        use sim_state
+        use sim_state, only : rain_instance, assign_state_var
 
         character(LEN=*), intent(in) :: name
         integer, intent(in) :: duration
@@ -15,10 +15,45 @@ module simulation
         integer, intent(out) :: status
     
         status = 1
-        call init_state_var(name, duration, values)
+        
+        select case(trim(name))
+        case('rain')
+            allocate(rain_instance)
+            if (present(interpolation)) then
+                call rain_instance%init(name, duration, interpolation)
+            else
+                call rain_instance%init(name, duration)
+            endif
+            call rain_instance%set_data(values)
+            call assign_state_var(trim(name), rain_instance)
+        case default
+            write(*,*) '**ERROR Unknown State variable: ', trim(name)
+        end select
         status = 0
 
     end subroutine set_state
+
+
+    subroutine update_state_duration(name, duration, status)
+
+        use sim_state, only : rain_instance
+
+        character(LEN=*), intent(in) :: name
+        integer, intent(in) :: duration
+        integer, intent(out) :: status
+    
+        status = 1
+        
+        select case(trim(name))
+        case('rain')
+            call rain_instance%update_duration(duration)
+        case default
+            write(*,*) '**ERROR Unknown State variable: ', trim(name)
+        end select
+        status = 0
+
+    end subroutine update_state_duration
+
 
     subroutine update(dtc, time)
         
