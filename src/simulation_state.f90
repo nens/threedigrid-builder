@@ -8,15 +8,26 @@ module simulation
     subroutine update(dtc, time)
         
         use timeloop, only : run_sim
-        
-        implicit none
-        
-        double precision, intent(in) :: dtc !< Custom timestep size, use -1 to use model default.
-        double precision, intent(out) :: time !< Custom timestep size, use -1 to use model default.
 
-        call run_sim(dtc, time)
-        
+        implicit none
+
+        double precision, intent(in) :: dtc !< Custom timestep size, use -1 to use model default.
+        double precision, intent(out) :: time 
+        integer :: python_iets
+
+        time = run_sim(dtc, func_for)
+
     end subroutine update
+
+    subroutine func_for(python_iets)
+        
+        !f2py intent(callback, hide) py_func
+        external :: py_func    
+        integer, intent(out) :: python_iets
+
+        call py_func(python_iets)
+
+    end subroutine func_for
     
 
     subroutine stop_sim(time)
@@ -42,9 +53,11 @@ module simulation
         integer, intent(in), optional :: interpolation
         integer, intent(out) :: status
         class(forcing), pointer :: rain_instance
-    
+        logical :: assigned
+
         status = 1
-        if (forcing_assigned(trim(name))==.TRUE.) then
+        assigned = forcing_assigned(trim(name))
+        if (assigned) then
             write(*,*) '**INFO State already assigned: ', trim(name)
             return
         else
@@ -110,29 +123,30 @@ module simulation
     end subroutine num_active_furcings
 
     
-    subroutine get_active_forcings(size, active_forcings)
+    subroutine get_active_forcings(size, str_size, active_forcings)
 
         use sim_state, only : forcings
         use m_forcing
 
         class(*), pointer :: p
         class(forcing), pointer :: temp
+        integer, intent(in) :: str_size
         integer, intent(in) :: size
-        character, intent(out) :: active_forcings(size, 128)
+        character, intent(out) :: active_forcings(size, str_size)
         integer :: n
 
 
         if (associated(forcings)) then
             call forcings%iter_restart()
             do n=1,forcings%len()
-                call forcings%iter_next(p)
+                p => forcings%iter_next()
                 if (associated(p)) then
                     select type (p)
                         type is (forcing)
                         temp => p
                     end select
                 endif
-                active_forcings(n,:) = string_to_array(trim(temp%type()))
+                active_forcings(n,:) = string_to_array(trim(temp%type()), str_size)
             enddo
         else
             active_forcings = ''
@@ -140,10 +154,11 @@ module simulation
 
     end subroutine get_active_forcings
 
-    pure function string_to_array(string) result(array)
+    pure function string_to_array(string, string_size) result(array)
 
     character(LEN=*), intent(in) :: string
-    character(LEN=1) :: array(128)
+    integer, intent(in) :: string_size
+    character(LEN=1) :: array(string_size)
     integer :: i 
 
     array = ''

@@ -8,8 +8,8 @@ RUN pip3 install numpy ipython jupyter
 
 RUN git clone --branch v2.6 --depth 1 https://github.com/dcesari/fortrangis.git \
     && cd /fortrangis && autoreconf -vi \
-	&& ./configure --disable-doxydoc \
-	&& make install
+    && ./configure --disable-doxydoc \
+    && make install
 
 COPY ./threedi-calculationcore /threedicore
 RUN cd /threedicore && ./full_build.sh
@@ -50,4 +50,4 @@ COPY --from=deps /usr/lib/libarpack*.so* /usr/lib/
 
 
 ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib:/opt/threedicore/lib
-ENTRYPOINT ["jupyter", "notebook", "--ip=0.0.0.0", "--allow-root"]
+#ENTRYPOINT ["jupyter", "notebook", "--ip=0.0.0.0", "--allow-root"]

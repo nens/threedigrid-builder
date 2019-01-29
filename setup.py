@@ -11,7 +11,8 @@ import platform
 if platform.system() == 'Linux':
     f_args = ["-O3", "-ffree-line-length-none", "-ffree-form", "-fimplicit-none"]
     f_macros = [('F2PY_REPORT_ON_ARRAY_COPY', '1'), 
-				('NPY_NO_DEPRECATED_API', '1')]
+				('NPY_NO_DEPRECATED_API', '1'),
+                ('NPY_1_7_API_VERSION', '1')]
     f_include = ['/usr/include', '/usr/include/hdf5/serial', '/opt/threedicore/include']
     f_lib = ['/opt/threedicore/lib']
     f_libs = ['flow']
