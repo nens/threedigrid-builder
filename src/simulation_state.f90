@@ -48,7 +48,7 @@ module simulation
     
     subroutine set_state(name, duration, values, interpolation, status)
 
-        use sim_state, only : assign_state_var, forcing_assigned
+        use sim_state, only : assign_state_var, select_forcing, forcings
         use m_forcing
 
         character(LEN=*), intent(in) :: name
@@ -57,27 +57,52 @@ module simulation
         integer, intent(in), optional :: interpolation
         integer, intent(out) :: status
         class(forcing), pointer :: forcing_instance
-        logical :: assigned
+        integer :: list_idx
 
         status = 1
-        assigned = forcing_assigned(trim(name))
-        if (assigned) then
-            write(*,*) '**INFO State already assigned: ', trim(name)
-            return
-        else
-            allocate(forcing_instance)
-            if (present(interpolation)) then
-                call forcing_instance%init(name, duration, interpolation)
-            else
-                call forcing_instance%init(name, duration)
+        if (associated(forcings)) then
+            call select_forcing(forcings, trim(name), forcing_instance, list_idx)
+            if (associated(forcing_instance)) then
+                write(*,*) '**INFO : State already assigned: ', trim(forcing_instance%type())
+                return
             endif
-            call forcing_instance%set_data(values)
-            call assign_state_var(trim(name), forcing_instance)
         endif
+        
+        allocate(forcing_instance)
+        if (present(interpolation)) then
+            call forcing_instance%init(name, duration, interpolation)
+        else
+            call forcing_instance%init(name, duration)
+        endif
+        call forcing_instance%set_data(values)
+        call assign_state_var(trim(name), forcing_instance)
         status = 0
 
     end subroutine set_state
 
+
+    subroutine remove_forcing(name, status) 
+
+        use sim_state, only : select_forcing, forcings
+        use m_forcing
+
+        character(LEN=*), intent(in) :: name
+        integer, intent(out) :: status
+        class(*), pointer :: p
+        class(forcing), pointer :: forcing_instance
+        integer :: list_idx
+        
+        status = 1
+        if (associated(forcings)) then
+            call select_forcing(forcings, trim(name), forcing_instance, list_idx)
+            if (associated(forcing_instance)) then
+                call forcings%pop(list_idx)
+                status = 0
+            endif
+        endif
+
+        
+    end subroutine
 
     subroutine update_state_duration(name, duration, status)
 
@@ -138,7 +163,7 @@ module simulation
         if (associated(forcings)) then
             call forcings%iter_restart()
             do n=1,forcings%len()
-                p => forcings%iter_next()
+                p => forcings%next()
                 if (associated(p)) then
                     select type (p)
                         type is (forcing)
