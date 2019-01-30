@@ -5,7 +5,7 @@ module simulation
     contains
 
     
-    subroutine update(dtc, time)
+    subroutine update(dtc, has_interaction, time)
         
         use timeloop, only : run_sim
 
@@ -13,21 +13,25 @@ module simulation
 
         double precision, intent(in) :: dtc !< Custom timestep size, use -1 to use model default.
         double precision, intent(out) :: time 
-        integer :: python_iets
+        integer :: has_interaction
 
-        time = run_sim(dtc, func_for)
+        if (has_interaction == 1) then
+            time = run_sim(dtc, check_interaction)
+        else
+            time = run_sim(dtc)
+        endif
 
     end subroutine update
 
-    subroutine func_for(python_iets)
+    subroutine check_interaction(status)
         
-        !f2py intent(callback, hide) py_func
-        external :: py_func    
-        integer, intent(out) :: python_iets
+        external :: py_check_interaction
+        !f2py intent(callback, hide) py_check_interaction
+        integer, intent(out) :: status
 
-        call py_func(python_iets)
+        call py_check_interaction(status)
 
-    end subroutine func_for
+    end subroutine check_interaction
     
 
     subroutine stop_sim(time)
@@ -52,7 +56,7 @@ module simulation
         double precision, intent(in) :: values(:)
         integer, intent(in), optional :: interpolation
         integer, intent(out) :: status
-        class(forcing), pointer :: rain_instance
+        class(forcing), pointer :: forcing_instance
         logical :: assigned
 
         status = 1
@@ -61,19 +65,14 @@ module simulation
             write(*,*) '**INFO State already assigned: ', trim(name)
             return
         else
-            select case(trim(name))
-            case('rain')
-                allocate(rain_instance)
-                if (present(interpolation)) then
-                    call rain_instance%init(name, duration, interpolation)
-                else
-                    call rain_instance%init(name, duration)
-                endif
-                call rain_instance%set_data(values)
-                call assign_state_var(trim(name), rain_instance)
-            case default
-                write(*,*) '**ERROR Unknown State variable: ', trim(name)
-            end select
+            allocate(forcing_instance)
+            if (present(interpolation)) then
+                call forcing_instance%init(name, duration, interpolation)
+            else
+                call forcing_instance%init(name, duration)
+            endif
+            call forcing_instance%set_data(values)
+            call assign_state_var(trim(name), forcing_instance)
         endif
         status = 0
 
