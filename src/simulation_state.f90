@@ -46,53 +46,59 @@ module simulation
     end subroutine stop_sim
 
     
-    subroutine set_state(name, duration, values, interpolation, status)
+    subroutine set_state_forcing(name, t_start, t_end, values, interpolation, status)
 
-        use sim_state, only : assign_state_var, select_forcing, forcings
+        use sim_state, only : assign_forcing_var, select_forcing, get_forcings
+        use m_lists
         use m_forcing
 
         character(LEN=*), intent(in) :: name
-        integer, intent(in) :: duration
+        double precision, intent(in) :: t_start
+        double precision, intent(in) :: t_end
         double precision, intent(in) :: values(:)
         integer, intent(in), optional :: interpolation
         integer, intent(out) :: status
         class(forcing), pointer :: forcing_instance
+        class(list), pointer :: forcings
         integer :: list_idx
 
         status = 1
+        forcings => get_forcings()
         if (associated(forcings)) then
             call select_forcing(forcings, trim(name), forcing_instance, list_idx)
             if (associated(forcing_instance)) then
-                write(*,*) '**INFO : State already assigned: ', trim(forcing_instance%type())
+                write(*,*) '**INFO : Forcing already assigned: ', trim(forcing_instance%type())
                 return
             endif
         endif
         
         allocate(forcing_instance)
         if (present(interpolation)) then
-            call forcing_instance%init(name, duration, interpolation)
+            call forcing_instance%init(name, t_start, t_end, interpolation)
         else
-            call forcing_instance%init(name, duration)
+            call forcing_instance%init(name, t_start, t_end)
         endif
         call forcing_instance%set_data(values)
-        call assign_state_var(trim(name), forcing_instance)
+        call assign_forcing_var(trim(name), forcing_instance)
         status = 0
 
-    end subroutine set_state
+    end subroutine set_state_forcing
 
 
     subroutine remove_forcing(name, status) 
 
-        use sim_state, only : select_forcing, forcings
+        use sim_state, only : select_forcing, get_forcings
+        use m_lists
         use m_forcing
 
         character(LEN=*), intent(in) :: name
         integer, intent(out) :: status
-        class(*), pointer :: p
         class(forcing), pointer :: forcing_instance
+        class(list), pointer :: forcings
         integer :: list_idx
         
         status = 1
+        forcings => get_forcings()
         if (associated(forcings)) then
             call select_forcing(forcings, trim(name), forcing_instance, list_idx)
             if (associated(forcing_instance)) then
@@ -104,32 +110,39 @@ module simulation
         
     end subroutine
 
-    subroutine update_state_duration(name, duration, status)
+    subroutine update_forcing_end(name, t_end, status)
 
-        !use sim_state, only : rain_instance
+        use sim_state, only : select_forcing, get_forcings
+        use m_lists
+        use m_forcing
 
         character(LEN=*), intent(in) :: name
-        integer, intent(in) :: duration
+        double precision, intent(in) :: t_end
         integer, intent(out) :: status
+        class(forcing), pointer :: forcing_instance
+        class(list), pointer :: forcings
+        integer :: list_idx
     
         status = 1
-        select case(trim(name))
-        case('rain')
-            !call rain_instance%update_duration(duration)
-        case default
-            write(*,*) '**ERROR Unknown State variable: ', trim(name)
-        end select
-        status = 0
+        forcings => get_forcings()
+        if (associated(forcings)) then
+            call select_forcing(forcings, trim(name), forcing_instance, list_idx)
+            call forcing_instance%update_end(t_end)
+            status = 0
+        endif
 
-    end subroutine update_state_duration
+    end subroutine update_forcing_end
 
 
     subroutine num_active_forcings(n)
 
-        use sim_state, only : forcings
+        use sim_state, only : get_forcings
+        use m_lists
 
         integer, intent(out) :: n
+        class(list), pointer :: forcings
 
+        forcings => get_forcings()
         if (associated(forcings)) then
             n = forcings%len()
         else
@@ -147,19 +160,21 @@ module simulation
     end subroutine num_active_furcings
 
     
-    subroutine get_active_forcings(size, str_size, active_forcings)
+    subroutine get_active_forcings(forcings_size, str_size, active_forcings)
 
-        use sim_state, only : forcings
+        use sim_state, only : get_forcings
         use m_forcing
+        use m_lists
 
         class(*), pointer :: p
         class(forcing), pointer :: temp
+        class(list), pointer :: forcings
         integer, intent(in) :: str_size
-        integer, intent(in) :: size
-        character, intent(out) :: active_forcings(size, str_size)
+        integer, intent(in) :: forcings_size
+        character, intent(out) :: active_forcings(forcings_size, str_size)
         integer :: n
 
-
+        forcings => get_forcings()
         if (associated(forcings)) then
             call forcings%iter_restart()
             do n=1,forcings%len()
@@ -178,16 +193,16 @@ module simulation
 
     end subroutine get_active_forcings
 
-    pure function string_to_array(string, string_size) result(array)
+    pure function string_to_array(string_in, string_size) result(array)
 
-    character(LEN=*), intent(in) :: string
+    character(LEN=*), intent(in) :: string_in
     integer, intent(in) :: string_size
     character(LEN=1) :: array(string_size)
     integer :: i 
 
     array = ''
-    do i=1, len(trim(string))
-        array(i) = string(i:i)
+    do i=1, len(trim(string_in))
+        array(i) = string_in(i:i)
     enddo
 
 end function string_to_array
