@@ -1,0 +1,11 @@
+version: '3.0'
+
+services:  
+  threedicore:
+    image: threedicore:dev
+    build:
+      context: ../
+      dockerfile: ./py3di/Dockerfile
+    ports:
+      - 8888:8888
+    working_dir: /notebooks
