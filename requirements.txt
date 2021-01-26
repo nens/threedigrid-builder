@@ -1,0 +1,3 @@
+numpy
+threedigrid[geo]
+pytest==5.2.0

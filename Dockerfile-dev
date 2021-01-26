@@ -1,0 +1,26 @@
+FROM python:3.9.1-slim-buster as build
+
+RUN apt-get update \ 
+    && apt-get install -y cmake autoconf libtool gfortran \
+                           python3-pip git gdb procps libgdal-dev \
+                           libsqlite3-mod-spatialite vim valgrind curl \
+    && apt-get clean -y
+
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+
+COPY ./requirements.txt ./requirements_dev.txt /gridgenerator/
+
+RUN pip3 install -r /gridgenerator/requirements.txt \
+    && pip3 install GDAL==2.1.0 --global-option=build_ext \
+    && pip3 install -r /gridgenerator/requirements_dev.txt
+
+COPY . /gridgenerator
+RUN cd /gridgenerator && ./full_build.sh RELEASE
+#RUN cd /gridgenerator/py3digrid && python3 setup.py
+
+
+ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
+WORKDIR /gridgenerator
+
+EXPOSE 8080
