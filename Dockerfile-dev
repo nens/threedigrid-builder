@@ -13,6 +13,7 @@ COPY ./requirements.txt ./requirements_dev.txt /gridgenerator/
 
 RUN pip3 install -r /gridgenerator/requirements.txt \
     && pip3 install GDAL==2.1.0 --global-option=build_ext \
+    && pip3 install cython \
     && pip3 install -r /gridgenerator/requirements_dev.txt
 
 COPY . /gridgenerator
