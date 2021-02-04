@@ -133,7 +133,7 @@ ENDIF()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lgpl) # here we use lgpl/CMakeLists.txt  ##FIX THIS TO BE SEPARATE LIBRARY FOR LINKING
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/grid3di) # here we use core_makegrid/CMakeLists.txt
+add_subdirectory(${CMAKE_SOURCE_DIR}/libgrid) # here we use core_makegrid/CMakeLists.txt
 
 
 ###############################################################
