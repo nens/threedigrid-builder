@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.event import listen
 from geoalchemy2.shape import to_shape
-from pygrid.models import GridRefinement, GridRefinementArea, GlobalSettings
+from .models import GridRefinement, GridRefinementArea, GlobalSettings
 import numpy as np
 
 
