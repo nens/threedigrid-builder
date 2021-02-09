@@ -35,16 +35,19 @@ def channel_points(path, out_path=None):
     geoms = pygeos.apply(geoms, reproject)
 
     # compute number of nodes to add per channel
-    # TODO This does not give correct results. Previous version probably has
-    # some more logic than this (e.g. I get exactly 100m between nodes while
-    # previous version seems to distribute them evenly on the channel)
-    n_nodes = np.floor(pygeos.length(geoms) / dist_calc_points).astype(int)
+    length = pygeos.length(geoms) 
+    n_segments = np.maximum(
+        np.round(length / dist_calc_points).astype(int),
+        1,
+    )
+    segment_size = length(geoms) / n_segments
+    n_nodes = n_segments - 1
     idx = np.repeat(np.arange(geoms.size), n_nodes)
 
     # some numpy juggling to get the distance to the start of each channel
     dist_to_start = np.arange(idx.size)
-    dist_to_start -= np.repeat(np.append([0], np.cumsum(n_nodes)[:-1]), n_nodes)
-    dist_to_start = (dist_to_start + 1) * dist_calc_points[idx]
+    dist_to_start[n_nodes[0]:] -= np.repeat(np.cumsum(n_nodes)[:-1], n_nodes[1:])
+    dist_to_start = (dist_to_start + 1) * segment_size[idx]
 
     points = pygeos.line_interpolate_point(
         geoms[idx],  # note: this only copies geometry pointers
