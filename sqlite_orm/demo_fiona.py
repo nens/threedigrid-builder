@@ -2,6 +2,7 @@ import geopandas
 import pygeos
 import numpy as np
 import fiona
+import pyproj
 
 # https://github.com/Toblerity/Fiona/issues/992
 fiona.supported_drivers["SQLite"] = "r"
@@ -13,13 +14,25 @@ fiona.supported_drivers["SQLite"] = "r"
 # pip install pygeos --no-binary pygeos
 # pip install shapely --no-binary shapely
 
-def channel_points(path, projection="epsg:28992", out_path=None):
+transformer = pyproj.Transformer.from_crs(
+    "epsg:4326", "epsg:28992", always_xy=True
+)
+
+def reproject(coords):
+    x, y = transformer.transform(coords[:, 0], coords[:, 1])
+    return np.array([x, y]).T
+
+
+def channel_points(path, out_path=None):
     # use Geopandas for loading (= fiona/GDAL on the background)
     df = geopandas.GeoDataFrame.from_file(path, layer="v2_channel")
 
     # but go to numpy ASAP to have more control
-    geoms = df["geometry"].to_crs(projection).values.data
+    geoms = df["geometry"].values.data
     dist_calc_points = df["dist_calc_points"].values
+
+    # reproject
+    geoms = pygeos.apply(geoms, reproject)
 
     # compute number of nodes to add per channel
     # TODO This does not give correct results. Previous version probably has
@@ -28,14 +41,10 @@ def channel_points(path, projection="epsg:28992", out_path=None):
     n_nodes = np.floor(pygeos.length(geoms) / dist_calc_points).astype(int)
     idx = np.repeat(np.arange(geoms.size), n_nodes)
 
-    # per node, compute the distance to the start of the channel 
-    # TODO vectorize this using
-    # https://stackoverflow.com/questions/49178977/multiple-cumulative-sum-within-a-numpy-array
-    dist_to_start = np.empty(n_nodes.sum(), dtype=float)
-    cur = 0
-    for count, dist_between in zip(n_nodes, dist_calc_points):
-        dist_to_start[cur:cur+count] = [(i + 1) * dist_between for i in range(count)]
-        cur += count
+    # some numpy juggling to get the distance to the start of each channel
+    dist_to_start = np.arange(idx.size)
+    dist_to_start -= np.repeat(np.append([0], np.cumsum(n_nodes)[:-1]), n_nodes)
+    dist_to_start = (dist_to_start + 1) * dist_calc_points[idx]
 
     points = pygeos.line_interpolate_point(
         geoms[idx],  # note: this only copies geometry pointers
@@ -70,3 +79,10 @@ def channel_conn_nodes(path, projection="epsg:28992", out_path=None):
     # - accessing by layer id -> there is only one with name=v2_connection_nodes
     # - adding various options (propagated to GDALOpenEx) - no option seems
     #   to have an effect
+
+
+if __name__ == "__main__":
+    channel_points(
+        "/var/models/v2_bergermeer/3a58dfb2e95f10ca121e26e4259ed68f60e3268f/v2_bergermeer.sqlite",
+        out_path="/var/models/noded_channels_pygeos.shp",
+    )
