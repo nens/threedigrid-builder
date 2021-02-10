@@ -3,6 +3,10 @@ import pygeos
 import numpy as np
 import fiona
 import pyproj
+from sqlalchemy import cast, Integer
+from geoalchemy2.functions import ST_AsBinary
+from threedi_modelchecker.threedi_database import ThreediDatabase
+from threedi_modelchecker.threedi_model import models
 
 # https://github.com/Toblerity/Fiona/issues/992
 fiona.supported_drivers["SQLite"] = "r"
@@ -24,12 +28,33 @@ def reproject(coords):
 
 
 def channel_points(path, out_path=None):
-    # use Geopandas for loading (= fiona/GDAL on the background)
-    df = geopandas.GeoDataFrame.from_file(path, layer="v2_channel")
+    # use SQLAlchemy for loading
+    sqlite_settings = {"db_path": path, "db_file": path}
+    db = ThreediDatabase(
+        connection_settings=sqlite_settings, db_type="spatialite", echo=False
+    )
+    session = db.get_session()
 
-    # but go to numpy ASAP to have more control
-    geoms = df["geometry"].values.data
-    dist_calc_points = df["dist_calc_points"].values
+    data = session.query(
+        ST_AsBinary(models.Channel.the_geom),
+        models.Channel.dist_calc_points,
+        models.Channel.code,
+        models.Channel.display_name,
+        cast(models.Channel.calculation_type, Integer),
+    ).all()
+
+    # transform tuples to a numpy structured array
+    arr = np.array(
+        data, dtype=[
+            ("the_geom", "O"),
+            ("dist_calc_points", "f4"),
+            ("code", "O"),
+            ("display_name", "O"),
+            ("calculation_type", "u1"),
+        ]
+    )
+    # transform to geometries
+    geoms = pygeos.from_wkb(arr["the_geom"])
 
     # reproject
     geoms = pygeos.apply(geoms, reproject)
@@ -37,7 +62,7 @@ def channel_points(path, out_path=None):
     # compute number of nodes to add per channel
     length = pygeos.length(geoms) 
     n_segments = np.maximum(
-        np.round(length / dist_calc_points).astype(int),
+        np.round(length / arr["dist_calc_points"]).astype(int),
         1,
     )
     segment_size = length / n_segments
@@ -56,9 +81,9 @@ def channel_points(path, out_path=None):
 
     out = geopandas.GeoDataFrame({
         "geometry": points,
-        "ch_code": df.loc[idx, "code"],
-        "ch_name": df.loc[idx, "display_name"],
-        "ch_type": df.loc[idx, "calculation_type"],
+        "ch_code": arr["code"][idx],
+        "ch_name": arr["display_name"][idx],
+        "ch_type": arr["calculation_type"][idx],
     })
 
     # transform back to geopandas for IO
@@ -87,5 +112,5 @@ def channel_conn_nodes(path, projection="epsg:28992", out_path=None):
 if __name__ == "__main__":
     channel_points(
         "/var/models/v2_bergermeer/3a58dfb2e95f10ca121e26e4259ed68f60e3268f/v2_bergermeer.sqlite",
-        out_path="/var/models/noded_channels_pygeos.shp",
+        out_path="/var/models/noded_channels_pygeos2.shp",
     )
