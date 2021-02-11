@@ -33,37 +33,26 @@ class build_ext(_build_ext):
 
 if "clean" in sys.argv:
     # delete any previously Cythonized or compiled files
-    p = pathlib.Path("pygrid/pylibgrid")
-    for pattern in ["*.c", "*.so", "*.pyd"]:
+    p = pathlib.Path("threedigrid_builder")
+    for pattern in ["*.c", "*.so", "*.pyd", "*.dll"]:
         for filename in p.glob(pattern):
             print("removing '{}'".format(filename))
             filename.unlink()
 elif "sdist" not in sys.argv:
-    ext_options = {
-        "define_macros": [("NPY_NO_DEPRECATED_API", 0)],
-        "libraries": ["gridgen3di"],
-        "include_dirs": ["."],
-    }
-
-    ext_modules = []  # TODO compile fortran library "gridgen3di" here
-
     # Cython is required
     if not cythonize:
         sys.exit("ERROR: Cython is required to build grid3di from source.")
 
-    cython_modules = [
-        Extension("grid3di.lib.lines", ["pygrid/pylibgrid/lines.pyx"], **ext_options),
-        Extension("grid3di.lib.nodes", ["pygrid/pylibgrid/nodes.pyx"], **ext_options),
+    cython_modules = cythonize(
         Extension(
-            "grid3di.lib.quadtree", ["pygrid/pylibgrid/quadtree.pyx"], **ext_options
+            name="grid3di.lib.*",
+            sources=["threedigrid_builder/lib/*.pyx"],
+            libraries=["libthreedigrid"],
+            define_macros=[("NPY_NO_DEPRECATED_API", 0)],
+            include_dirs=["."]
         ),
-    ]
-
-    ext_modules += cythonize(
-        cython_modules,
-        compiler_directives={"language_level": "3"},
-        # enable once Cython >= 0.3 is released
-        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+        include_path=["."],
+        language_level=3,
     )
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
@@ -75,7 +64,7 @@ install_requires = ["numpy>=1.13"]
 test_requires = ["pytest"]
 
 setup(
-    name="grid3di",
+    name="threedigrid-builder",
     version=version,
     description="3Di Grid Generator",
     long_description=long_description,
@@ -83,12 +72,12 @@ setup(
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
     license="BSD 3-Clause",
-    packages=["pygrid"],
+    packages=["threedigrid_builder"],
     install_requires=install_requires,
     extras_require={"test": test_requires},
     python_requires=">=3",
     include_package_data=True,
-    ext_modules=ext_modules,
+    ext_modules=cython_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",
