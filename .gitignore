@@ -263,4 +263,12 @@ paket-files/
 __pycache__/
 *.pyc
 
-/build
+# Virtualenv
+.venv
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Misc
+build/
+var/
