@@ -43,14 +43,22 @@ elif "sdist" not in sys.argv:
     if not cythonize:
         sys.exit("ERROR: Cython is required to build grid3di from source.")
 
-    cython_modules = cythonize(
+    cython_opts = dict(
+        libraries=["libthreedigrid"],
+        define_macros=[("NPY_NO_DEPRECATED_API", 0)],
+        include_dirs=["."],
+    )
+
+    cython_modules = [
         Extension(
-            name="grid3di.lib.*",
+            "*",
             sources=["threedigrid_builder/lib/*.pyx"],
-            libraries=["libthreedigrid"],
-            define_macros=[("NPY_NO_DEPRECATED_API", 0)],
-            include_dirs=["."]
-        ),
+            **cython_opts
+        )
+    ]
+
+    ext_modules = cythonize(
+        cython_modules,
         include_path=["."],
         language_level=3,
     )
@@ -77,7 +85,7 @@ setup(
     extras_require={"test": test_requires},
     python_requires=">=3",
     include_package_data=True,
-    ext_modules=cython_modules,
+    ext_modules=ext_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",

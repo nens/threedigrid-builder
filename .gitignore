@@ -278,3 +278,6 @@ __pycache__/
 *.dll
 build/
 var/
+
+# Docker-compose
+docker-compose.override.yml

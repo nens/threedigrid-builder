@@ -1,7 +1,7 @@
-cimport lines
+from . cimport lines
 import numpy as np
 from numpy cimport npy_intp, ndarray, NPY_DOUBLE, NPY_INT
-from utils cimport create_array
+from .utils cimport create_array
 
 
 cdef class Lines:
