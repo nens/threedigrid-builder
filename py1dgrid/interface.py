@@ -16,7 +16,7 @@ SOURCE_EPSG = 4326
 @lru_cache(maxsize=8)  # this function is deterministic
 def get_reproject_func(source_epsg, target_epsg):
     transformer = Transformer.from_crs(
-        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg)
+        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
     )
 
     def func(coords):
@@ -57,6 +57,9 @@ def get_session(path):
 def get_global_settings(path):
     """Return the global settings from the SQLite at path
     
+    Args:
+      path (str): Path to an SQLite
+
     Returns:
       dict
     """
@@ -67,6 +70,9 @@ def get_global_settings(path):
 
 def get_channels(path):
     """Return channels as a dict 1D ndarrays
+
+    Args:
+      path (str): Path to an SQLite
 
     Returns:
       dict with the following keys:
@@ -100,7 +106,7 @@ def get_channels(path):
     arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
 
     # reproject
-    target_epsg = get_global_settings(path).epsg_code
+    target_epsg = get_global_settings(path)["epsg_code"]
     arr["the_geom"] = pygeos.apply(
         arr["the_geom"], get_reproject_func(SOURCE_EPSG, target_epsg)
     )
