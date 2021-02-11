@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install gfortran python3-pip libgomp1 -y \
     && apt-get autoremove --purge -y \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /usr/local/lib/libthreedigridgen*.so* /usr/local/lib/ 
+COPY --from=build /usr/local/lib/libthreedigrid*.so* /usr/local/lib/ 
 # Copy GDAL python files
 COPY --from=build /usr/local/lib/python3.7/site-packages/GDAL-2.1.0-py3.7.egg-info \
     /usr/local/lib/python3.7/site-packages/GDAL-2.1.0-py3.7.egg-info

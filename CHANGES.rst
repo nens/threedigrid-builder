@@ -1,5 +1,5 @@
-Changelog of grid3di
-====================
+Changelog of threedigrid-builder
+================================
 
 0.1 (unreleased)
 ----------------
