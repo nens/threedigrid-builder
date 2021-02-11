@@ -42,6 +42,7 @@ elif "sdist" not in sys.argv:
     ext_options = {
         "define_macros": [("NPY_NO_DEPRECATED_API", 0)],
         "libraries": ["gridgen3di"],
+        "include_dirs": ["."],
     }
 
     ext_modules = []  # TODO compile fortran library "gridgen3di" here

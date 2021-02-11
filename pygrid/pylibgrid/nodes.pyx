@@ -1,13 +1,9 @@
-from numpy cimport ndarray, import_array, npy_intp, PyArray_SimpleNewFromData, \
-                   NPY_DOUBLE, NPY_F_CONTIGUOUS
 cimport nodes
 cimport quadtree
 import numpy as np
-from cpython cimport PyObject
-from cpython.ref cimport PyTypeObject
+from numpy cimport npy_intp, ndarray, NPY_DOUBLE, NPY_INT
+from utils cimport create_array
 
-# Initialization
-import_array()
 
 cdef class Nodes:
     cdef public int[2] handle
@@ -19,30 +15,52 @@ cdef class Nodes:
             quadtree_handle=&c_quadtree_handle[0]
         )
 
-    def node_bnds(self, int n0, int n1):
+    @property
+    def nodtot(self):
+        return <object>nodes.get_nodtot(handle=&self.handle[0])
+
+    def get_coordinates(self, int n0, int n1):
+        cdef rank = 2
         cdef void* data_ptr
         cdef npy_intp shape[2]
-        cdef ndarray ndarray
-        shape[1] = n1 - n0 + 1
-        shape[0] = 4
+        cdef ndarray arr
+        shape[0] = n1 - n0 + 1
+        shape[1] = 2
+
+        data_ptr = nodes.get_coordinates(
+            handle=&self.handle[0],
+            n0=&n0,
+            n1=&n1
+        )
+        arr = create_array(rank, shape, NPY_DOUBLE, data_ptr)
+        return <object>arr
+
+    def get_bnds(self, int n0, int n1):
+        cdef rank = 2
+        cdef void* data_ptr
+        cdef npy_intp shape[2]
+        cdef ndarray arr
+        shape[0] = n1 - n0 + 1
+        shape[1] = 4
 
         data_ptr = nodes.get_node_bnds(
             handle=&self.handle[0],
             n0=&n0,
             n1=&n1
         )
+        arr = create_array(rank, shape, NPY_DOUBLE, data_ptr)
+        return <object>arr
 
-        ndarray = PyArray_SimpleNewFromData(2, shape, NPY_DOUBLE, data_ptr)
+    def get_id(self, int n0, int n1):
+        cdef rank = 1
+        cdef void* data_ptr
+        cdef npy_intp shape[1]
+        shape[0] = n1 - n0 + 1
 
-        # ndarray = PyArray_NewFromDescr(
-            # PyArray_Type,
-            # PyArray_DescrFromType(NPY_DOUBLE),
-            # 2,
-            # shape,
-            # NULL,
-            # data_ptr,
-            # NPY_F_CONTIGUOUS,
-            # None
-        # )
-
-        return <object>ndarray
+        data_ptr = nodes.get_node_id(
+            handle=&self.handle[0],
+            n0=&n0,
+            n1=&n1
+        )
+        arr = create_array(rank, shape, NPY_INT, data_ptr)
+        return <object>arr
