@@ -13,9 +13,9 @@ setup(
             sources=["*.pyx", ],
             libraries=["gridgen3di"],
             define_macros=[("NPY_NO_DEPRECATED_API", 0)],
-            include_dirs=[np.get_include()]
+            include_dirs=[np.get_include(), "."]
         ),
-        include_path=[np.get_include()],
+        include_path=[np.get_include(), "."],
         language_level=3
     ),
     zip_safe=False,

@@ -21,14 +21,30 @@ module m_nodes
         double precision, allocatable :: coordinates(:,:)
         double precision, allocatable :: bounds(:,:)
         double precision, allocatable :: sumax(:)
-
+    contains
+        procedure :: init_nodes
+        procedure :: init_2d_node_attributes
+        procedure :: map_grid_to_nodes
+        procedure :: get_node_coords
+        procedure :: get_id
+        procedure :: get_node_bnds
+        procedure :: get_nodtot
+        procedure :: get_nodk
+        procedure :: get_nodm
+        procedure :: get_nodn
+        procedure :: get_lgrmin
+        procedure, private :: get_node_from_quad_scalar
+        procedure, private :: get_node_from_quad_slice
+        procedure :: get_nodgrid
+        procedure :: finalize_nodes
+        generic   :: get_node_from_quad =>  get_node_from_quad_scalar,&
+                                            get_node_from_quad_slice
     end type ClassNodes
 
-
-    interface get_node_from_quad
-        module procedure get_node_from_quad_scalar
-        module procedure get_node_from_quad_slice
-    end interface get_node_from_quad
+    ! interface get_node_from_quad
+        ! module procedure get_node_from_quad_scalar
+        ! module procedure get_node_from_quad_slice
+    ! end interface get_node_from_quad
 
 
     contains
@@ -38,8 +54,8 @@ module m_nodes
         use m_quadtree, only : QuadTreeFortran, active_node_count,&
                                 get_lgrmin, get_mmax, get_nmax
                                 
-        type(ClassNodes) :: self
-        type(QuadTreeFortran), intent(in) :: quadtree_grid
+        class(ClassNodes) :: self
+        class(QuadTreeFortran), intent(in) :: quadtree_grid
         integer :: shape_lg(2)
 
         self%n2dobc = 0
@@ -53,8 +69,8 @@ module m_nodes
         self%lgrmin = quadtree_grid%get_lgrmin()
 
         shape_lg = (/ quadtree_grid%get_mmax(1), quadtree_grid%get_nmax(1) /)
-        call init_2d_node_attributes(self, shape_lg)
-        call map_grid_to_nodes(self, quadtree_grid)
+        call self%init_2d_node_attributes(shape_lg)
+        call self%map_grid_to_nodes(quadtree_grid)
 
     end subroutine init_nodes
 
@@ -63,7 +79,7 @@ module m_nodes
 
         use parameters, only : NODATA
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer, intent(in) :: shape_lg(2)
 
         allocate(self%id(self%nodtot))
@@ -103,8 +119,8 @@ module m_nodes
                                NODE_1D_BOUND,&
                                NODATA
 
-        type(ClassNodes) :: self
-        type(QuadTreeFortran), intent(in) :: quadtree_grid
+        class(ClassNodes) :: self
+        class(QuadTreeFortran), intent(in) :: quadtree_grid
 
         integer :: nod
         integer :: k
@@ -141,24 +157,36 @@ module m_nodes
     end subroutine map_grid_to_nodes
 
     function get_node_coords(self, n_start, n_end) result(xy)
+        
+        use m_array_utils, only : check_bounds
 
-        type(ClassNodes) :: self
+        class(ClassNodes), target :: self
         integer, intent(in) :: n_start
         integer, intent(in) :: n_end
-        double precision :: xy(n_end-n_start, 2)
+        double precision, pointer :: xy(:,:)
 
-        xy = self%coordinates(n_start:n_end, 1:2)
+        if (check_bounds(self%coordinates, n_start, n_end)) then
+            xy => self%coordinates(n_start:n_end, 1:2)
+        else
+            xy => NULL()
+        endif
 
     end function get_node_coords
 
     function get_id(self, n_start, n_end) result(id)
+        
+        use m_array_utils, only : check_bounds
 
-        type(ClassNodes) :: self
+        class(ClassNodes), target :: self
         integer, intent(in) :: n_start
         integer, intent(in) :: n_end
-        double precision :: id(n_end-n_start)
+        integer, pointer :: id(:)
 
-        id = self%id(n_start:n_end)
+        if (check_bounds(self%id, n_start, n_end)) then
+            id => self%id(n_start:n_end)
+        else
+            id => NULL()
+        endif
 
     end function get_id
 
@@ -166,22 +194,23 @@ module m_nodes
 
         use m_array_utils, only : check_bounds
 
-        type(ClassNodes) :: self
+        class(ClassNodes), target :: self
         integer, intent(in) :: n_start
         integer, intent(in) :: n_end
-        double precision :: bounds(n_end-n_start+1, 4)
+        double precision, pointer :: bounds(:,:)
         
         if (check_bounds(self%bounds, n_start, n_end)) then
-            bounds = self%bounds(n_start:n_end, 1:4)
+            bounds => self%bounds(n_start:n_end, 1:4)
+            write(*,*) 'SHAPE: ', shape(bounds)
         else
-            bounds(1:1,:) = 0
+            bounds => NULL()
         endif
 
     end function get_node_bnds
 
     function get_nodtot(self) result(nodtot)
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer :: nodtot
 
         nodtot = self%nodtot
@@ -190,7 +219,7 @@ module m_nodes
 
     function get_nodk(self, n_start, n_end) result(k)
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer, intent(in) :: n_start
         integer, intent(in) :: n_end
         integer :: k(1:n_end-n_start)
@@ -201,7 +230,7 @@ module m_nodes
 
     function get_nodm(self, nod) result(m)
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer, intent(in) :: nod
         integer :: m
 
@@ -211,7 +240,7 @@ module m_nodes
 
     function get_nodn(self, nod) result(n)
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer, intent(in) :: nod
         integer :: n
 
@@ -221,7 +250,7 @@ module m_nodes
 
     function get_lgrmin(self) result(lgrmin)
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer :: lgrmin
 
         lgrmin = self%lgrmin
@@ -230,7 +259,7 @@ module m_nodes
 
     function get_node_from_quad_scalar(self, m, n) result(nod)
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer, intent(in) :: m
         integer, intent(in) :: n
         integer :: nod
@@ -248,7 +277,7 @@ module m_nodes
 
         use MessageHandling
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         integer, intent(in) :: m0, m1
         integer, intent(in) :: n0, n1
         integer, allocatable :: nod(:,:)
@@ -271,7 +300,7 @@ module m_nodes
 
         use m_grid_utils, only : get_pix_corners
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
         logical, intent(in) :: mask(:,:)
         integer, intent(inout) :: nodgrid(:,:)
         integer :: nod
@@ -303,7 +332,7 @@ module m_nodes
 
         use MessageHandling
 
-        type(ClassNodes) :: self
+        class(ClassNodes) :: self
 
         deallocate(self%id)
         deallocate(self%type)
