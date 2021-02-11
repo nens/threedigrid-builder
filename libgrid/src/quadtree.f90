@@ -17,6 +17,24 @@ module m_quadtree
         integer, allocatable :: nmax(:)
         double precision, allocatable :: dx(:)
         integer, allocatable :: lg(:,:)
+    contains
+        procedure :: init_quadtree
+        procedure :: set_refinement
+        procedure :: make_quadtree
+        procedure :: balance_quadtree
+        procedure :: set_active_2d_comp_cells
+        procedure :: active_node_count
+        procedure :: is_cell_active
+        procedure :: get_lgrmin
+        procedure :: get_kmax
+        procedure :: get_mmax
+        procedure :: get_nmax
+        procedure :: get_dx
+        procedure :: get_lg
+        procedure :: get_origin
+        procedure :: get_extent
+        procedure :: convert_to_grid_crd
+        procedure :: finalize_quadtree
     end type QuadTreeFortran
 
     integer, parameter :: LINESTRING = 1
@@ -28,7 +46,7 @@ module m_quadtree
 
     subroutine init_quadtree(self, x0p, y0p, dxp, imax, jmax, lgrmin, kmax)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         double precision, intent(in) :: x0p
         double precision, intent(in) :: y0p
         double precision, intent(in) :: dxp
@@ -77,7 +95,7 @@ module m_quadtree
                                  get_lg_corners, geom_in_polygon,&
                                  feature_in_bbox
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         double precision, intent(in) :: refine_geom(:,:)
         integer, intent(in) :: refine_id
         integer, intent(in) :: refine_level
@@ -88,7 +106,8 @@ module m_quadtree
         double precision :: cell_geom(5,2)
         double precision :: refine_geom_bbox(4)
         logical :: cross
-
+        
+        status = 0
         if(.not.refine_type==LINESTRING.and..not.refine_type==POLY) then
             call mess(LEVEL_WARN, 'Refinement type not known. Skipping: ', refine_id, refine_type)
             status = 0
@@ -140,7 +159,7 @@ module m_quadtree
 
     subroutine make_quadtree(self)
         
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer :: k
         integer :: m, n
         
@@ -183,7 +202,7 @@ module m_quadtree
 
     subroutine balance_quadtree(self)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer :: k, k1
         integer :: m, n, m1, n1
         integer :: i, j
@@ -226,7 +245,7 @@ module m_quadtree
         use MessageHandling
         use m_grid_utils, only : get_lg_corners, get_pix_corners, get_cell_bbox
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer, intent(in) :: model_area(:,:)
         integer :: k
         integer :: m,n
@@ -258,7 +277,7 @@ module m_quadtree
 
     function active_node_count(self) result(active_nodes)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer :: active_nodes
 
         active_nodes = self%number_active_nodes
@@ -267,7 +286,7 @@ module m_quadtree
 
     function is_cell_active(self, m, n, k) result(cell_active)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer, intent(in) :: m(2)
         integer, intent(in) :: n(2)
         integer, intent(in) :: k
@@ -290,7 +309,7 @@ module m_quadtree
 
     function get_lgrmin(self) result(lgrmin)
         
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer :: lgrmin
 
         lgrmin = self%lgrmin
@@ -299,7 +318,7 @@ module m_quadtree
 
     function get_kmax(self) result(kmax)
         
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer :: kmax
 
         kmax = self%kmax
@@ -308,7 +327,7 @@ module m_quadtree
 
     function get_mmax(self, k) result(mmax)
         
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer, intent(in) :: k
         integer :: mmax
 
@@ -318,7 +337,7 @@ module m_quadtree
 
     function get_nmax(self, k) result(nmax)
         
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer, intent(in) :: k
         integer :: nmax
 
@@ -328,7 +347,7 @@ module m_quadtree
 
     function get_dx(self, k) result(dx)
         
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer, intent(in) :: k
         double precision :: dx
 
@@ -340,7 +359,7 @@ module m_quadtree
 
         use MessageHandling
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         integer, intent(in) :: m0, m1
         integer, intent(in) :: n0, n1
         integer, allocatable :: k(:,:)
@@ -361,7 +380,7 @@ module m_quadtree
 
     function get_origin(self) result(origin)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         double precision :: origin(2)
 
         origin = (/ self%x0p, self%y0p /)
@@ -370,7 +389,7 @@ module m_quadtree
 
     function get_extent(self) result(extent)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         double precision :: extent(4)
 
         extent = self%bbox
@@ -381,7 +400,7 @@ module m_quadtree
 
         use MessageHandling
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
         double precision, intent(in) :: xy(2)
         integer, intent(in) :: round
         integer :: mn(2)
@@ -401,7 +420,7 @@ module m_quadtree
 
     subroutine finalize_quadtree(self)
 
-        type(QuadTreeFortran) :: self
+        class(QuadTreeFortran) :: self
 
         deallocate(self%mmax)
         deallocate(self%nmax)

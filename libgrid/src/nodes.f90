@@ -46,13 +46,13 @@ module m_nodes
         self%n2grbc = 0
         self%n1dtot = 0
         self%n1dobc = 0
-        self%n2dtot = active_node_count(quadtree_grid)
-        self%n2dall = active_node_count(quadtree_grid)
-        self%nodtot = active_node_count(quadtree_grid)
-        self%nodall = active_node_count(quadtree_grid)
-        self%lgrmin = get_lgrmin(quadtree_grid)
+        self%n2dtot = quadtree_grid%active_node_count()
+        self%n2dall = quadtree_grid%active_node_count()
+        self%nodtot = quadtree_grid%active_node_count()
+        self%nodall = quadtree_grid%active_node_count()
+        self%lgrmin = quadtree_grid%get_lgrmin()
 
-        shape_lg = (/ get_mmax(quadtree_grid, 1), get_nmax(quadtree_grid, 1) /)
+        shape_lg = (/ quadtree_grid%get_mmax(1), quadtree_grid%get_nmax(1) /)
         call init_2d_node_attributes(self, shape_lg)
         call map_grid_to_nodes(self, quadtree_grid)
 
@@ -114,11 +114,11 @@ module m_nodes
         double precision :: bbox(4)
 
         nod = 0
-        do k=get_kmax(quadtree_grid),1,-1
-            do m=1,get_mmax(quadtree_grid, k)
-                do n=1,get_nmax(quadtree_grid, k)
+        do k=quadtree_grid%get_kmax(),1,-1
+            do m=1,quadtree_grid%get_mmax(k)
+                do n=1,quadtree_grid%get_nmax(k)
                     call get_lg_corners(k, m, n, m0, m1, n0, n1)
-                    if (is_cell_active(quadtree_grid, (/ m0, m1 /), (/ n0 ,n1 /), k)) then
+                    if (quadtree_grid%is_cell_active((/ m0, m1 /), (/ n0 ,n1 /), k)) then
                         nod = nod + 1
                         self%id(nod) = nod
                         self%type(nod) = NODE_2D
@@ -126,8 +126,8 @@ module m_nodes
                         self%nodm(nod) = m
                         self%nodn(nod) = n
                         self%quad_coord(m0:m1,n0:n1) = nod                        
-                        origin = get_origin(quadtree_grid)
-                        bbox = get_cell_bbox(origin(1), origin(2), m, n, get_dx(quadtree_grid, k))
+                        origin = quadtree_grid%get_origin()
+                        bbox = get_cell_bbox(origin(1), origin(2), m, n, quadtree_grid%get_dx(k))
                         self%bounds(nod,:) = bbox
                         self%coordinates(nod, :) = (/ 0.5d0 * (bbox(1) + bbox(3)), 0.5d0 * (bbox(2) + bbox(4)) /)
                     else
@@ -164,12 +164,18 @@ module m_nodes
 
     function get_node_bnds(self, n_start, n_end) result(bounds)
 
+        use m_array_utils, only : check_bounds
+
         type(ClassNodes) :: self
         integer, intent(in) :: n_start
         integer, intent(in) :: n_end
-        double precision :: bounds(n_end-n_start, 4)
+        double precision :: bounds(n_end-n_start+1, 4)
         
-        bounds = self%bounds(n_start:n_end, 1:4)
+        if (check_bounds(self%bounds, n_start, n_end)) then
+            bounds = self%bounds(n_start:n_end, 1:4)
+        else
+            bounds(1:1,:) = 0
+        endif
 
     end function get_node_bnds
 

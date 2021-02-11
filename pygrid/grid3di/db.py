@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.event import listen
 from geoalchemy2.shape import to_shape
-from pygrid.models import GridRefinement, GridRefinementArea, GlobalSettings
+from .models import GridRefinement, GridRefinementArea, GlobalSettings
 import numpy as np
 
 
@@ -36,7 +36,9 @@ class ModelFileDB:
                 'id': row.id,
                 'refinement_level': row.refinement_level,
                 'geometry_type': 'LINESTRING',
-                'geometry': np.array(to_shape(row[2]).xy)
+                'geometry': np.array(
+                    to_shape(row[2])
+                ).astype(dtype=np.float64, copy=False, order='F')
             }
             refinements.append(refinement)
 
@@ -50,7 +52,9 @@ class ModelFileDB:
                 'id': row.id,
                 'refinement_level': row.refinement_level,
                 'geometry_type': 'POLYGON',
-                'geometry': np.array(to_shape(row[2]).exterior.xy)
+                'geometry': np.array(
+                    to_shape(row[2]).exterior
+                ).astype(dtype=np.float64, copy=False, order='F')
             }
             refinements.append(refinement)
 

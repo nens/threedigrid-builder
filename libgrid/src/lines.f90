@@ -17,7 +17,6 @@ module m_lines
         double precision, allocatable :: coordinates(:,:)
         double precision, allocatable :: edge_bounds(:,:)
         !double precision, allocatable :: dpumax(:)
-        
     end type ClassLines
 
     integer, parameter :: TWOD_OW_LINE = 100
@@ -28,7 +27,6 @@ module m_lines
     subroutine init_lines(self, nodes, model_area)
 
         use m_nodes
-        use m_quadtree
 
         type(ClassLines) :: self
         type(ClassNodes), intent(in) :: nodes

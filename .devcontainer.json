@@ -1,0 +1,13 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+	"dockerComposeFile": "docker-compose.devcontainer.yml",
+	"service": "gridgen3di",
+	"workspaceFolder": "/gridgenerator",
+	"extensions": [
+		"ms-python.python",
+		"ms-vscode.cpptools-extension-pack",
+		"krvajalm.linter-gfortran",
+		"ekibun.fortranbreaker",
+		"littlefoxteam.vscode-python-test-adapter",
+	]
+}

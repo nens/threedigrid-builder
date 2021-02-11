@@ -1,16 +1,16 @@
 import argparse
 import os
-from pygrid.models import GridRefinement, GridRefinementArea, GlobalSettings
-from pygrid.grid3di import QuadTree
-from pygrid.grid3di import SubgridArea
-from pygrid.db import ModelFileDB
-from gridwrapper.m_nodes import ClassNodes
-from gridwrapper.m_lines import ClassLines
+from pygrid.grid3di.models import GlobalSettings
+from pygrid.grid3di.db import ModelFileDB
+from pygrid.grid3di.subgrid import SubgridArea
 from geojson import Feature, LineString, Polygon, FeatureCollection
 import json
 import pyproj
 import numpy as np
 import time
+from pygrid.pylibgrid.quadtree import QuadTree
+from pygrid.pylibgrid.nodes import Nodes
+from pygrid.pylibgrid.lines import Lines
 
 def get_parser():
     """Return argument parser."""
@@ -47,8 +47,6 @@ def command(**kwargs):
     else:
         model_area = kwargs.get("model_area_path")
 
-    
-
     model_db = ModelFileDB(sqlite_path)
     dem_filepath = model_root + '/' + \
         model_db.session.query(GlobalSettings.dem_file).first()[0]
@@ -76,7 +74,8 @@ def command(**kwargs):
     # )
     # 
     start = time.time()
-    [quadtree.set_refinement(refinement) for refinement in refinements]
+    #[quadtree.set_refinement(refinement) for refinement in refinements]
+    quadtree.set_refinements(refinements)
     end = time.time()
     print(
         "==========Time needed for applying refinements is: ", end - start, "=========="
@@ -90,14 +89,16 @@ def command(**kwargs):
     ) 
 
     start = time.time()
-    nodes = ClassNodes(quadtree.quadtree)
+    nodes = Nodes(quadtree)
     end = time.time()
     print(
         "==========Time needed for Node init is: ", end - start, "=========="
     ) 
+    if kwargs.get("debug", False):
+        import ipdb;ipdb.set_trace()
 
     start = time.time()
-    lines = ClassLines(nodes, subgrid.area_pix)
+    lines = Lines(nodes, subgrid.area_pix)
     end = time.time()
     print(
         "==========Time needed for Line init is: ", end - start, "=========="
@@ -105,19 +106,19 @@ def command(**kwargs):
 
     if kwargs.get("debug", False):
         import ipdb;ipdb.set_trace()
-    dump_node_grid_to_json(
-        model_root,
-        nodes.get_id(1, nodes.get_nodtot()+1),
-        nodes.get_node_bnds(1, nodes.get_nodtot()+1),
-        model_db.epsg_code
-    )
-    dump_line_grid_to_json(
-        model_root,
-        lines.id,
-        nodes.get_node_coords(1, nodes.get_nodtot()+1),
-        lines.line,
-        model_db.epsg_code
-    )
+    # dump_node_grid_to_json(
+        # model_root,
+        # nodes.get_id(1, nodes.get_nodtot()+1),
+        # nodes.get_node_bnds(1, nodes.get_nodtot()+1),
+        # model_db.epsg_code
+    # )
+    # dump_line_grid_to_json(
+        # model_root,
+        # lines.id,
+        # nodes.get_node_coords(1, nodes.get_nodtot()+1),
+        # lines.line,
+        # model_db.epsg_code
+    # )
 
     model_db.close_connection()
 

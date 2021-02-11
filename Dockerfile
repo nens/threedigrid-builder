@@ -11,7 +11,8 @@ ENV C_INCLUDE_PATH=/usr/include/gdal
 COPY ./requirements.txt /threedicore/
 
 RUN pip3 install -r /threedicore/requirements.txt \
-    && pip3 install GDAL==2.1.0 --global-option=build_ext
+    && pip3 install GDAL==2.1.0 --global-option=build_ext \
+    && pip3 install cython
 
 COPY . /gridgenerator
 RUN cd /gridgenerator && ./full_build.sh RELEASE
