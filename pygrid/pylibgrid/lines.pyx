@@ -1,6 +1,7 @@
 cimport lines
 import numpy as np
-cimport numpy as np
+from numpy cimport npy_intp, ndarray, NPY_DOUBLE, NPY_INT
+from utils cimport create_array
 
 
 cdef class Lines:
@@ -19,3 +20,37 @@ cdef class Lines:
             n0=&n0,
             n1=&n1
         )
+    
+    @property
+    def lintot(self):
+        return <object>lines.get_lintot(handle=&self.handle[0])
+
+    def get_line(self, int n0, int n1):
+        cdef rank = 2
+        cdef void* data_ptr
+        cdef npy_intp shape[2]
+        cdef ndarray arr
+        shape[0] = n1 - n0 + 1
+        shape[1] = 2
+
+        data_ptr = lines.get_line(
+            handle=&self.handle[0],
+            n0=&n0,
+            n1=&n1
+        )
+        arr = create_array(rank, shape, NPY_INT, data_ptr)
+        return <object>arr
+
+    def get_id(self, int n0, int n1):
+        cdef rank = 1
+        cdef void* data_ptr
+        cdef npy_intp shape[1]
+        shape[0] = n1 - n0 + 1
+
+        data_ptr = lines.get_line_id(
+            handle=&self.handle[0],
+            n0=&n0,
+            n1=&n1
+        )
+        arr = create_array(rank, shape, NPY_INT, data_ptr)
+        return <object>arr
