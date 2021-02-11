@@ -54,13 +54,13 @@ cdef class QuadTree:
     def set_refinements(self, refinements):
         cdef int refine_id 
         cdef double[::1,:] refine_geom
-        cdef int[:] refine_level = refinements['refinement_level']
+        cdef int refine_level
         cdef int refine_type
         cdef int i
         for i in range(len(refinements)):
             refine_id = refinements[i]['id']
             refine_geom = refinements[i]['geometry']
-            refine_level = 
+            refine_level = refinements[i]['refinement_level']
             refine_type = RefineType[refinements[i]['geometry_type'].upper()].value
             self.set_refinement(
                 id = refine_id,

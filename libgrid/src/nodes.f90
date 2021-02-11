@@ -164,12 +164,18 @@ module m_nodes
 
     function get_node_bnds(self, n_start, n_end) result(bounds)
 
+        use m_array_utils, only : check_bounds
+
         type(ClassNodes) :: self
         integer, intent(in) :: n_start
         integer, intent(in) :: n_end
-        double precision :: bounds(n_end-n_start, 4)
+        double precision :: bounds(n_end-n_start+1, 4)
         
-        bounds = self%bounds(n_start:n_end, 1:4)
+        if (check_bounds(self%bounds, n_start, n_end)) then
+            bounds = self%bounds(n_start:n_end, 1:4)
+        else
+            bounds(1:1,:) = 0
+        endif
 
     end function get_node_bnds
 

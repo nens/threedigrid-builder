@@ -1,16 +1,16 @@
 import argparse
 import os
-from py3digrid.grid3di.models import GlobalSettings
-from py3digrid.grid3di.db import ModelFileDB
-from py3digrid.grid3di.subgrid import SubgridArea
+from pygrid.grid3di.models import GlobalSettings
+from pygrid.grid3di.db import ModelFileDB
+from pygrid.grid3di.subgrid import SubgridArea
 from geojson import Feature, LineString, Polygon, FeatureCollection
 import json
 import pyproj
 import numpy as np
 import time
-from py3digrid.py3digrid.quadtree import QuadTree
-from py3digrid.py3digrid.nodes import Nodes
-from py3digrid.py3digrid.lines import Lines
+from pygrid.pylibgrid.quadtree import QuadTree
+from pygrid.pylibgrid.nodes import Nodes
+from pygrid.pylibgrid.lines import Lines
 
 def get_parser():
     """Return argument parser."""
@@ -94,6 +94,8 @@ def command(**kwargs):
     print(
         "==========Time needed for Node init is: ", end - start, "=========="
     ) 
+    if kwargs.get("debug", False):
+        import ipdb;ipdb.set_trace()
 
     start = time.time()
     lines = Lines(nodes, subgrid.area_pix)
