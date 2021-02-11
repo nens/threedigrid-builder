@@ -19,7 +19,7 @@ RUN cd /gridgenerator && ./full_build.sh RELEASE
 #RUN cd /gridgenerator/py3digrd && python3 setup.py
 
 
-FROM python:3.7.2-slim-stretch
+FROM python:3.9.1-slim-buster
 
 LABEL name=gridgenerator3di
 
