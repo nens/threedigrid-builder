@@ -1,16 +1,16 @@
 import argparse
 import os
-from pygrid.grid3di.models import GlobalSettings
-from pygrid.grid3di.db import ModelFileDB
-from pygrid.grid3di.subgrid import SubgridArea
+from threedigrid_builder.models import GlobalSettings
+from threedigrid_builder.db import ModelFileDB
+from threedigrid_builder.subgrid import SubgridArea
 from geojson import Feature, LineString, Polygon, FeatureCollection
 import json
 import pyproj
 import numpy as np
 import time
-from pygrid.pylibgrid.quadtree import QuadTree
-from pygrid.pylibgrid.nodes import Nodes
-from pygrid.pylibgrid.lines import Lines
+from threedigrid_builder.lib.quadtree import QuadTree
+from threedigrid_builder.lib.nodes import Nodes
+from threedigrid_builder.lib.lines import Lines
 
 def get_parser():
     """Return argument parser."""
@@ -106,19 +106,20 @@ def command(**kwargs):
 
     if kwargs.get("debug", False):
         import ipdb;ipdb.set_trace()
-    # dump_node_grid_to_json(
-        # model_root,
-        # nodes.get_id(1, nodes.get_nodtot()+1),
-        # nodes.get_node_bnds(1, nodes.get_nodtot()+1),
-        # model_db.epsg_code
-    # )
-    # dump_line_grid_to_json(
-        # model_root,
-        # lines.id,
-        # nodes.get_node_coords(1, nodes.get_nodtot()+1),
-        # lines.line,
-        # model_db.epsg_code
-    # )
+    dump_node_grid_to_json(
+        model_root,
+        nodes.get_id(1, nodes.nodtot),
+        nodes.get_bnds(1, nodes.nodtot),
+        model_db.epsg_code
+    )
+
+    dump_line_grid_to_json(
+        model_root,
+        lines.get_id(1, lines.lintot),
+        nodes.get_coordinates(1, nodes.nodtot),
+        lines.get_line(1,lines.lintot),
+        model_db.epsg_code
+    )
 
     model_db.close_connection()
 
@@ -146,7 +147,6 @@ def dump_line_grid_to_json(folder, line_ids, node_coords, line_node, srid):
     xy = node_coords.tolist()
     coords_line = []
     for l_nodes in lines_list:
-        #import ipdb;ipdb.set_trace()
         entry = [
             (xy[l_nodes[0] - 1][0], xy[l_nodes[0] - 1][1]),
             (xy[l_nodes[1] - 1][0], xy[l_nodes[1] - 1][1]),
@@ -154,10 +154,10 @@ def dump_line_grid_to_json(folder, line_ids, node_coords, line_node, srid):
         linestring = LineString(entry)
         coords_line.append(linestring)
 
-    return dump_to_json(folder + '/lines.geojson', coords_line, line_ids, srid)
+    return dump_to_json(folder + '/lines.geojson', coords_line, line_ids, srid, lines_list)
 
 
-def dump_to_json(filepath, coords, ids, srid):
+def dump_to_json(filepath, coords, ids, srid, node_ids=None):
 
     crs = {
         "type": "name",
@@ -169,7 +169,11 @@ def dump_to_json(filepath, coords, ids, srid):
     features = []
     for i, coord in enumerate(coords):
         id = str(ids[i])
-        features.append(Feature(geometry=coord, properties={'id': id}))
+        if node_ids:
+            node_id = node_ids[i]
+            features.append(Feature(geometry=coord, properties={'id': id, 'node_a': node_id[0], 'node_b': node_id[1]}))
+        else:
+            features.append(Feature(geometry=coord, properties={'id': id}))
     feature_json = FeatureCollection(features) #
 
     with open(filepath, 'w') as f:

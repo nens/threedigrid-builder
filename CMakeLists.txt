@@ -133,7 +133,7 @@ ENDIF()
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/lgpl) # here we use lgpl/CMakeLists.txt  ##FIX THIS TO BE SEPARATE LIBRARY FOR LINKING
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/libgrid) # here we use core_makegrid/CMakeLists.txt
+add_subdirectory(${CMAKE_SOURCE_DIR}/libthreedigrid) # here we use core_makegrid/CMakeLists.txt
 
 
 ###############################################################
@@ -163,7 +163,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "${3di_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${3di_VERSION_PATCH}")
 
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/CHANGES.rst")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.rst")
 set(CPACK_SOURCE_IGNORE_FILES "${CMAKE_SOURCE_DIR}/build/;${CMAKE_SOURCE_DIR}/.git/")
 
 include(CPack)
