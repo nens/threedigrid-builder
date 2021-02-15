@@ -78,7 +78,6 @@ setup(
     url="https://github.com/nens/grid3di",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
-    license="BSD 3-Clause",
     packages=["threedigrid_builder"],
     install_requires=install_requires,
     extras_require={"test": test_requires},
