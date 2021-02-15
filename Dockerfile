@@ -16,12 +16,13 @@ RUN pip3 install -r /threedicore/requirements.txt \
 
 COPY . /gridgenerator
 RUN cd /gridgenerator && ./full_build.sh RELEASE
-#RUN cd /gridgenerator/py3digrd && python3 setup.py
+# Doesnt work when done from Dockerfile. Run manually!
+# RUN cd /gridgenerator && python3 setup.py build_ext --inplace
 
 
 FROM python:3.9.1-slim-buster
 
-LABEL name=gridgenerator3di
+LABEL name=threedigrid_builder
 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
@@ -34,7 +35,7 @@ RUN apt-get update && apt-get install gfortran python3-pip libgomp1 -y \
     && apt-get autoremove --purge -y \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /usr/local/lib/libgridgen*.so* /usr/local/lib/ 
+COPY --from=build /usr/local/lib/libthreedigrid*.so* /usr/local/lib/ 
 # Copy GDAL python files
 COPY --from=build /usr/local/lib/python3.7/site-packages/GDAL-2.1.0-py3.7.egg-info \
     /usr/local/lib/python3.7/site-packages/GDAL-2.1.0-py3.7.egg-info

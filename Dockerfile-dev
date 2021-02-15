@@ -18,7 +18,8 @@ RUN pip3 install -r /gridgenerator/requirements.txt \
 
 COPY . /gridgenerator
 RUN cd /gridgenerator && ./full_build.sh RELEASE
-#RUN cd /gridgenerator/py3digrid && python3 setup.py
+# Doesnt work when done from Dockerfile. Run manually!
+# RUN cd /gridgenerator && python3 setup.py build_ext --inplace
 
 
 ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib

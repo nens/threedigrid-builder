@@ -1,4 +1,4 @@
-cimport quadtree
+from . cimport quadtree
 import numpy as np
 cimport numpy as np
 from enum import Enum
