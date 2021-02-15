@@ -1,10 +1,11 @@
-import builtins
-from setuptools import setup, Extension
+from setuptools import Extension
+from setuptools import setup
 from setuptools.command.build_ext import build_ext as _build_ext
-import numpy
-import sys
+
+import builtins
 import pathlib
-import os
+import sys
+
 
 # Skip Cython build if not available (for source distributions)
 try:
@@ -31,6 +32,8 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 
+ext_modules = []
+
 if "clean" in sys.argv:
     # delete any previously Cythonized or compiled files
     p = pathlib.Path("threedigrid_builder")
@@ -50,14 +53,10 @@ elif "sdist" not in sys.argv:
     )
 
     cython_modules = [
-        Extension(
-            "*",
-            sources=["threedigrid_builder/lib/*.pyx"],
-            **cython_opts
-        )
+        Extension("*", sources=["threedigrid_builder/lib/*.pyx"], **cython_opts)
     ]
 
-    ext_modules = cythonize(
+    ext_modules += cythonize(
         cython_modules,
         include_path=["."],
         language_level=3,

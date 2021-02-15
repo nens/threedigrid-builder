@@ -277,6 +277,8 @@ __pycache__/
 *.dylib
 *.dll
 build/
+dist/
+*.egg-info/
 var/
 
 # Docker-compose
