@@ -1,7 +1,9 @@
+from threedigrid_builder.interface import get_channels
+from threedigrid_builder.interface import get_global_settings
+
 import numpy as np
 import pygeos
 
-from threedigrid_builder.interface import get_channels, get_global_settings
 
 __all__ = ["node_channels"]
 

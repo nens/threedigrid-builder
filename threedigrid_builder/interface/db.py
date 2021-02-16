@@ -2,15 +2,18 @@
 
 from contextlib import contextmanager
 from functools import lru_cache
-
-import numpy as np
-import pygeos
 from geoalchemy2.functions import ST_AsBinary
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import Integer, cast, inspect
+from sqlalchemy import cast
+from sqlalchemy import inspect
+from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
+
+import numpy as np
+import pygeos
+
 
 SOURCE_EPSG = 4326
 
@@ -26,7 +29,7 @@ def _get_session(path):
 
     Args:
       path (str): Path to an SQLite
-    
+
     Returns:
       SQLAlchemy.orm.Session
     """
@@ -46,7 +49,7 @@ def _object_as_dict(obj):
 
 def get_global_settings(path):
     """Return the global settings dictionary from the SQLite at path
-    
+
     Args:
       path (str): Path to an SQLite
 
