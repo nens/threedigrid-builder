@@ -283,3 +283,6 @@ var/
 
 # Docker-compose
 docker-compose.override.yml
+
+# Pytest
+.pytest_cache
