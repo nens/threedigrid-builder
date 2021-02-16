@@ -62,6 +62,7 @@ class Channels:
             dist_to_start,  # note: this only copies geometry pointers
         )
 
+        # TODO Return a to-be-implemented "Nodes" instance
         return {
             "geometry": points,
             "calculation_type": self.calculation_type[idx],
