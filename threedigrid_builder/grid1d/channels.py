@@ -28,15 +28,16 @@ class Channels:
         """Compute interpolated channel nodes
 
         Args:
-        path (str): Path to an SQLite
+          global_dist_calc_points (float): Default node interdistance.
 
         Returns:
-        dict with the following keys:
-        - geometry (array of points)
-        - dist_calc_points (array of )
-        - code (ndarray of python str objects)
-        - display_name (ndarray of python str objects)
-        - calculation_type (ndarray of uint8)
+          dict of nodes with the following properties (all 1D arrays):
+          - geometry
+          - calculation_type
+          - channel_id
+          - channel_code
+          - connection_node_start_id
+          - connection_node_end_id
         """
         # load data
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
