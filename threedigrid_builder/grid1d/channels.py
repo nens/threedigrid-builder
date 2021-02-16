@@ -1,23 +1,21 @@
 import numpy as np
 import pygeos
 
-from .interface import get_channels, get_global_settings
+from threedigrid_builder.interface import get_channels, get_global_settings
 
-
-def get_target_epsg(path):
-    return get_global_settings(path)["epsg_code"]
+__all__ = ["node_channels"]
 
 
 def node_channels(path):
-    """Compute additional channel nodes
+    """Compute interpolated channel nodes
 
     Args:
       path (str): Path to an SQLite
 
     Returns:
       dict with the following keys:
-      - the_geom (ndarray of pygeos.Geometry)
-      - dist_calc_points (ndarray of float32)
+      - geometry (array of points)
+      - dist_calc_points (array of )
       - code (ndarray of python str objects)
       - display_name (ndarray of python str objects)
       - calculation_type (ndarray of uint8)
@@ -50,7 +48,9 @@ def node_channels(path):
 
     return {
         "geometry": points,
-        "ch_code": data["code"][idx],
-        "ch_name": data["display_name"][idx],
-        "ch_type": data["calculation_type"][idx],
+        "calculation_type": data["calculation_type"][idx],
+        "channel_id": data["id"][idx],
+        "channel_code": data["code"][idx],
+        "connection_node_start_id": data["connection_node_start_id"][idx],
+        "connection_node_end_id": data["connection_node_end_id"][idx],
     }

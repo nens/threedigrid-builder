@@ -1,3 +1,5 @@
+# Module containing functions to read from the SQLite
+
 from contextlib import contextmanager
 from functools import lru_cache
 
@@ -12,27 +14,11 @@ from threedi_modelchecker.threedi_model import models
 
 SOURCE_EPSG = 4326
 
-
-@lru_cache(maxsize=8)  # this function is deterministic
-def get_reproject_func(source_epsg, target_epsg):
-    transformer = Transformer.from_crs(
-        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
-    )
-
-    def func(coords):
-        x, y = transformer.transform(coords[:, 0], coords[:, 1])
-        return np.array([x, y]).T
-
-    return func
-
-
-def object_as_dict(obj):
-    # https://stackoverflow.com/questions/1958219/convert-sqlalchemy-row-object-to-python-dict
-    return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
+__all__ = ["get_global_settings", "get_channels"]
 
 
 @contextmanager
-def get_session(path):
+def _get_session(path):
     """A context manager that yields an SQLAlchemy session.
 
     The session is closed af the context manager exit. No commit or rollback
@@ -53,9 +39,13 @@ def get_session(path):
     session.close()
 
 
-@lru_cache(maxsize=8)  # the sqlite is assumed not to change!
+def _object_as_dict(obj):
+    # https://stackoverflow.com/questions/1958219/convert-sqlalchemy-row-object-to-python-dict
+    return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
+
+
 def get_global_settings(path):
-    """Return the global settings from the SQLite at path
+    """Return the global settings dictionary from the SQLite at path
     
     Args:
       path (str): Path to an SQLite
@@ -63,13 +53,28 @@ def get_global_settings(path):
     Returns:
       dict
     """
-    with get_session(path) as session:
+    with _get_session(path) as session:
         settings = session.query(models.GlobalSetting).one()
-    return object_as_dict(settings)
+    return _object_as_dict(settings)
+
+
+# Constructing a Transformer takes quite long, so we use caching here. The
+# function is deterministic so this doesn't have any side effects.
+@lru_cache(maxsize=8)
+def _get_reproject_func(source_epsg, target_epsg):
+    transformer = Transformer.from_crs(
+        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
+    )
+
+    def func(coords):
+        x, y = transformer.transform(coords[:, 0], coords[:, 1])
+        return np.array([x, y]).T
+
+    return func
 
 
 def get_channels(path):
-    """Return channels as a dict 1D ndarrays
+    """Return channels as a dict of 1D ndarrays
 
     Args:
       path (str): Path to an SQLite
@@ -81,13 +86,19 @@ def get_channels(path):
       - code (ndarray of python str objects)
       - display_name (ndarray of python str objects)
       - calculation_type (ndarray of uint8)
+
+    Note:
+      Most stuff in this function will eventually be implemented in the package
+      "condenser".
     """
-    with get_session(path) as session:
+    with _get_session(path) as session:
         data = session.query(
             ST_AsBinary(models.Channel.the_geom),
             models.Channel.dist_calc_points,
+            models.Channel.id,
             models.Channel.code,
-            models.Channel.display_name,
+            cast(models.Channel.connection_node_start_id, Integer),
+            cast(models.Channel.connection_node_end_id, Integer),
             cast(models.Channel.calculation_type, Integer),
         ).all()
 
@@ -96,10 +107,12 @@ def get_channels(path):
         data,
         dtype=[
             ("the_geom", "O"),
-            ("dist_calc_points", "f4"),
+            ("dist_calc_points", "f8"),
+            ("id", "i8"),
             ("code", "O"),
-            ("display_name", "O"),
-            ("calculation_type", "u1"),
+            ("connection_node_start_id", "i8"),
+            ("connection_node_end_id", "i8"),
+            ("calculation_type", "i8"),
         ],
     )
     # transform to pygeos.Geometry
@@ -108,7 +121,7 @@ def get_channels(path):
     # reproject
     target_epsg = get_global_settings(path)["epsg_code"]
     arr["the_geom"] = pygeos.apply(
-        arr["the_geom"], get_reproject_func(SOURCE_EPSG, target_epsg)
+        arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
     )
 
     # transform to a dict of 1D ndarrays
