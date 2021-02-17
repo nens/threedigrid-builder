@@ -278,8 +278,13 @@ __pycache__/
 *.dll
 build/
 dist/
+lib/
+include/
 *.egg-info/
 var/
 
 # Docker-compose
 docker-compose.override.yml
+
+# Pytest
+.pytest_cache

@@ -1,0 +1,58 @@
+name: Linux
+
+# Run on PR requests. And on master itself.
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  TestLinux:
+    name: Python ${{ matrix.python }} ${{ matrix.display_name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 2017
+          - python: 3.6
+            deps: "numpy==1.13.* pygeos==0.7.*"
+          # 2018
+          - python: 3.7
+            deps: "numpy==1.15.* pygeos==0.7.*"
+          # 2019
+          - python: 3.8
+            deps: "numpy==1.17.* pygeos==0.8.*"
+          # 2020
+          - python: 3.9
+            deps: "numpy==1.19.* pygeos==0.9.*"
+          # current
+          - python: 3.9
+            display_name: "latest"
+            deps: "numpy pygeos"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      
+      - name: Compile libthreedigrid
+        shell: bash
+        run: ./full_build.sh
+
+      - name: Install python dependencies
+        shell: bash
+        run: |
+          pip install --disable-pip-version-check --upgrade pip setuptools wheel
+          pip install cython ${{ matrix.deps }}
+          pip install -e .[test]
+          pip list
+
+      - name: Run tests
+        shell: bash
+        run: |
+          pytest threedigrid_builder

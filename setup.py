@@ -38,35 +38,32 @@ if "clean" in sys.argv:
     # delete any previously Cythonized or compiled files
     p = pathlib.Path("threedigrid_builder")
     for pattern in ["*.c", "*.so", "*.pyd", "*.dll"]:
-        for filename in p.glob(pattern):
+        for filename in p.glob("**/" + pattern):
             print("removing '{}'".format(filename))
             filename.unlink()
 elif "sdist" not in sys.argv:
     # Cython is required
     if not cythonize:
-        sys.exit("ERROR: Cython is required to build grid3di from source.")
+        sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
 
     cython_opts = dict(
-        libraries=["libthreedigrid"],
-        define_macros=[("NPY_NO_DEPRECATED_API", 0)],
-        include_dirs=["."],
+        libraries=["threedigrid"],
+        # We can enable this once Cython 0.3 is released:
+        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+        library_dirs=["./libthreedigrid/lib"],
     )
 
     cython_modules = [
         Extension("*", sources=["threedigrid_builder/lib/*.pyx"], **cython_opts)
     ]
 
-    ext_modules += cythonize(
-        cython_modules,
-        include_path=["."],
-        language_level=3,
-    )
+    ext_modules += cythonize(cython_modules, language_level=3)
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
 version = open("VERSION.rst").read()
 
-install_requires = ["numpy>=1.13", "threedimodel-checker", "pygeos", "pyproj"]
+install_requires = ["numpy>=1.13", "threedi-modelchecker", "pygeos", "pyproj"]
 
 test_requires = ["pytest"]
 
@@ -81,7 +78,7 @@ setup(
     packages=["threedigrid_builder"],
     install_requires=install_requires,
     extras_require={"test": test_requires},
-    python_requires=">=3",
+    python_requires=">=3.6",
     include_package_data=True,
     ext_modules=ext_modules,
     classifiers=[

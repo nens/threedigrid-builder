@@ -85,7 +85,7 @@ endif (NOT CMAKE_BUILD_TYPE)
 message (STATUS "BUILD TYPE IS: " ${CMAKE_BUILD_TYPE})
 
 # default installation
-get_filename_component (default_prefix "/usr/local/" ABSOLUTE)
+get_filename_component (default_prefix "./libthreedigrid" ABSOLUTE)
 set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
       "Choose the installation directory"
       FORCE)
