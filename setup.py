@@ -44,12 +44,13 @@ if "clean" in sys.argv:
 elif "sdist" not in sys.argv:
     # Cython is required
     if not cythonize:
-        sys.exit("ERROR: Cython is required to build grid3di from source.")
+        sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
 
     cython_opts = dict(
         libraries=["libthreedigrid"],
         define_macros=[("NPY_NO_DEPRECATED_API", 0)],
-        include_dirs=["."],
+        include_dirs=[".", "./libthreedigrid/include"],
+        library_dirs=["./libthreedigrid/lib"],
     )
 
     cython_modules = [
@@ -58,7 +59,8 @@ elif "sdist" not in sys.argv:
 
     ext_modules += cythonize(
         cython_modules,
-        include_path=["."],
+        #include_path=["."],
+        #library_dirs=["./lib"],
         language_level=3,
     )
 
