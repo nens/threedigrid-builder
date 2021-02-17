@@ -75,3 +75,28 @@ class Channels:
             "connection_node_start_id": self.connection_node_start_id[idx],
             "connection_node_end_id": self.connection_node_end_id[idx],
         }
+
+    def nodes_and_lines(self, global_dist_calc_points, channel_node_offset, connection_node_offset):
+        """Compute all channel nodes and lines
+
+        The ConnectionNode indices start at 0xFFFFFF (16777215)
+
+        Args:
+          connection_nodes (ConnectionNodes): all available connection nodes
+          global_dist_calc_points (float): Default node interdistance.
+
+        Returns:
+          dict of nodes with the following properties (all 1D arrays):
+          - geometry
+          - calculation_type
+          - channel_id
+          - channel_code
+          - connection_node_start_id
+          - connection_node_end_id
+        """
+        # get all relevant connection nodes
+        connection_node_ids = np.union1d(
+            self.connection_node_start_id, self.connection_node_end_id
+        )
+
+
