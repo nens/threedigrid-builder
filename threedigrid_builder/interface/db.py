@@ -95,6 +95,50 @@ class SQLite:
         # transform to a dict of 1D ndarrays
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
+    def get_grid_refinements(self):
+        """Return Gridrefinements
+
+        """
+        with self.get_session() as session:
+            data = session.query(
+                ST_AsBinary(models.GridRefinement.the_geom),
+                models.GridRefinement.display_name,
+                models.GridRefinement.id,
+                models.GridRefinement.code,
+                cast(models.GridRefinement.refinement_level , Integer),
+            ).all()
+
+            data += session.query(
+                ST_AsBinary(models.GridRefinementArea.the_geom),
+                models.GridRefinementArea.display_name,
+                models.GridRefinementArea.id,
+                models.GridRefinementArea.code,
+                cast(models.GridRefinementArea.refinement_level , Integer),
+            ).all()
+
+        # transform tuples to a numpy structured array
+        arr = np.array(
+            data,
+            dtype=[
+                ("the_geom", "O"),
+                ("display_name", "O"),
+                ("id", "i8"),
+                ("code", "O"),
+                ("refinement_level", "i8"),
+            ],
+        )
+
+        # transform to pygeos.Geometry
+        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+
+        # reproject
+        target_epsg = self.global_settings["epsg_code"]
+        arr["the_geom"] = pygeos.apply(
+            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
+        )
+
+        return {name: arr[name] for name in arr.dtype.names}
+
 
 def _object_as_dict(obj):
     # https://stackoverflow.com/questions/1958219/convert-sqlalchemy-row-object-to-python-dict

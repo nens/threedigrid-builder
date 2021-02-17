@@ -1,9 +1,31 @@
 cdef extern:
 
-    void init_quadtree(int *handle, double *x0p, double *y0p, double *dxp, int *imax, int *jmax, int *lgrmin, int *kmax)
+    void* f_set_refinement(
+        int *refine_id,
+        double *refine_geom,
+        int *n0,
+        int *n1,
+        int *refine_level,
+        int *refine_type,
+        double *origin,
+        double *bbox,
+        int *mmax,
+        int *nmax,
+        double *dx,
+        int *j0,
+        int *lg,
+        int *i0,
+        int *i1
+    )
 
-    int set_refinement(int*handle, int *refine_id, double *refine_geom, int *n0, int *n1, int *refine_level, int *refine_type)
+    void* make_quadtree(
+        int *kmax,
+        int *mmax,
+        int *nmax,
+        int *lg,
+        int *n0,
+        int *i0,
+        int *i1
+    )
 
-    void make_quadtree(int *handle)
-
-    void set_active_2d_comp_cells(int *handle, int *model_area, int *n0, int *n1)
+    #void set_active_2d_comp_cells(int *handle, int *model_area, int *n0, int *n1)
