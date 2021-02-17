@@ -278,6 +278,8 @@ __pycache__/
 *.dll
 build/
 dist/
+lib/
+include/
 *.egg-info/
 var/
 
