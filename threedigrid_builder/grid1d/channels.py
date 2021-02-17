@@ -76,14 +76,18 @@ class Channels:
             "connection_node_end_id": self.connection_node_end_id[idx],
         }
 
-    def nodes_and_lines(self, global_dist_calc_points, channel_node_offset, connection_node_offset):
+    def nodes_and_lines(
+        self, global_dist_calc_points, channel_node_offset, connection_node_offset
+    ):
         """Compute all channel nodes and lines
-
-        The ConnectionNode indices start at 0xFFFFFF (16777215)
 
         Args:
           connection_nodes (ConnectionNodes): all available connection nodes
           global_dist_calc_points (float): Default node interdistance.
+          channel_node_offset (int): the index of the first channel node in the
+            target node array (for the lines)
+          connection_node_offset (int): the index of the first connection node in the
+            target node array (for the lines)
 
         Returns:
           dict of nodes with the following properties (all 1D arrays):
@@ -93,10 +97,21 @@ class Channels:
           - channel_code
           - connection_node_start_id
           - connection_node_end_id
+          dict of lines with the following properties:
+          - nodes (N, 2) array of node ids
         """
-        # get all relevant connection nodes
-        connection_node_ids = np.union1d(
-            self.connection_node_start_id, self.connection_node_end_id
+        nodes = self.interpolate_nodes(global_dist_calc_points)
+        n_nodes = len(nodes["geometry"])
+        lines = np.vstack(
+            [np.arange(n_nodes), np.arange(1, n_nodes + 1)]
+        ) + channel_node_offset
+
+        # ending nodes should not connect to the next channel, but to the
+        # connection_node_end_id of that channel
+        is_channel_end = np.append(
+            nodes["channel_id"][1:] != nodes["channel_id"][:-1], [True]
         )
+        lines[1][is_channel_end] = nodes["connection_node_end_id"][is_channel_end] + connection_node_offset
 
 
+        # Todo add starting lines (for channels without and with interpolated node)
