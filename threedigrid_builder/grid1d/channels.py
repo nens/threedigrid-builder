@@ -24,6 +24,9 @@ class Channels:
         self.connection_node_end_id = connection_node_end_id
         self.calculation_type = calculation_type
 
+    def __repr__(self):
+        return "<Channels object (len:{})>".format(len(self.the_geom))
+
     def interpolate_nodes(self, global_dist_calc_points):
         """Compute interpolated channel nodes
 
