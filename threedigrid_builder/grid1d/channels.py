@@ -91,16 +91,26 @@ class Channels:
           dict of lines with the following properties:
           - nodes (N, 2) array of node ids
         """
-        n_nodes = nodes["geometry"].size
+        # start with the easy ones: channels that connect 2 connection nodes
+        # without interpolated nodes in between
+        lines_start = (
+            np.vstack([self.connection_node_start_id, self.connection_node_end_id])
+            + connection_node_offset
+        )
 
-        # start with all lines that connect subsequent nodes
+        n_nodes = nodes["geometry"].size
+        if n_nodes == 0:
+            # if there are no interpolated nodes then we're done
+            return lines_start
+
+        # generate the lines that interconnect interpolated nodes
         lines = (
             np.vstack([np.arange(n_nodes), np.arange(1, n_nodes + 1)])
             + channel_node_offset
         )
 
-        # correct the channel endings, they are connected to the
-        # connection_node_end_id
+        # connect the last line of each channel to the right
+        # connection_node_end_id (instead of the next channel)
         is_channel_end = np.append(
             nodes["_channel_idx"][1:] != nodes["_channel_idx"][:-1], [True]
         )
@@ -109,12 +119,8 @@ class Channels:
             + connection_node_offset
         )
 
-        # add in lines from the starting connection node
-        lines_start = (
-            np.vstack([self.connection_node_start_id, self.connection_node_end_id])
-            + connection_node_offset
-        )
-        # edit line endings that should actually go a first interpolated node
+        # connect the line endings in 'lines_start' to a first interpolated
+        # node (if there are interpolated nodes)
         is_channel_start = np.roll(is_channel_end, 1)
         channels_with_interp = nodes["_channel_idx"][is_channel_start]
         lines_start[1][channels_with_interp] = (
@@ -122,7 +128,6 @@ class Channels:
         )
 
         return np.concatenate([lines_start, lines], axis=1)
-        # Todo add starting lines (for channels without and with interpolated node)
 
 
 class ChannelNetwork:
