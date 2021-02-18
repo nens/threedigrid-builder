@@ -67,22 +67,13 @@ class Channels:
         )
 
         # TODO Return a to-be-implemented "Nodes" instance
-        return {
-            "geometry": points,
-            "calculation_type": self.calculation_type[idx],
-            "channel_id": self.id[idx],
-            "channel_code": self.code[idx],
-            "connection_node_start_id": self.connection_node_start_id[idx],
-            "connection_node_end_id": self.connection_node_end_id[idx],
-        }
+        return {"geometry": points, "_channel_idx": idx}
 
-    def nodes_and_lines(
-        self, global_dist_calc_points, channel_node_offset, connection_node_offset
-    ):
-        """Compute all channel nodes and lines
+    def get_network(self, nodes, channel_node_offset, connection_node_offset):
+        """Compute the channel network
 
         Args:
-          connection_nodes (ConnectionNodes): all available connection nodes
+          channel_nodes (dict): nodes from Channels().interpolate_nodes
           global_dist_calc_points (float): Default node interdistance.
           channel_node_offset (int): the index of the first channel node in the
             target node array (for the lines)
@@ -100,18 +91,48 @@ class Channels:
           dict of lines with the following properties:
           - nodes (N, 2) array of node ids
         """
-        nodes = self.interpolate_nodes(global_dist_calc_points)
-        n_nodes = len(nodes["geometry"])
-        lines = np.vstack(
-            [np.arange(n_nodes), np.arange(1, n_nodes + 1)]
-        ) + channel_node_offset
+        n_nodes = nodes["geometry"].size
 
-        # ending nodes should not connect to the next channel, but to the
-        # connection_node_end_id of that channel
-        is_channel_end = np.append(
-            nodes["channel_id"][1:] != nodes["channel_id"][:-1], [True]
+        # start with all lines that connect subsequent nodes
+        lines = (
+            np.vstack([np.arange(n_nodes), np.arange(1, n_nodes + 1)])
+            + channel_node_offset
         )
-        lines[1][is_channel_end] = nodes["connection_node_end_id"][is_channel_end] + connection_node_offset
 
+        # correct the channel endings, they are connected to the
+        # connection_node_end_id
+        is_channel_end = np.append(
+            nodes["_channel_idx"][1:] != nodes["_channel_idx"][:-1], [True]
+        )
+        lines[1][is_channel_end] = (
+            self.connection_node_end_id[nodes["_channel_idx"][is_channel_end]]
+            + connection_node_offset
+        )
 
+        # add in lines from the starting connection node
+        lines_start = (
+            np.vstack([self.connection_node_start_id, self.connection_node_end_id])
+            + connection_node_offset
+        )
+        # edit line endings that should actually go a first interpolated node
+        is_channel_start = np.roll(is_channel_end, 1)
+        channels_with_interp = nodes["_channel_idx"][is_channel_start]
+        lines_start[1][channels_with_interp] = (
+            np.where(is_channel_start)[0] + channel_node_offset
+        )
+
+        return np.concatenate([lines_start, lines], axis=1)
         # Todo add starting lines (for channels without and with interpolated node)
+
+
+class ChannelNetwork:
+    """A network of interconnected channels, represented by nodes and lines.
+
+    Attributes:
+      nodes: dict of 1D arrays
+      lines: 2D array of node ids
+    """
+
+    def __init__(self, nodes, lines):
+        self.nodes = nodes
+        self.lines = lines
