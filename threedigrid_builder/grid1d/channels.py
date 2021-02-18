@@ -70,26 +70,17 @@ class Channels:
         return {"geometry": points, "_channel_idx": idx}
 
     def get_network(self, nodes, channel_node_offset, connection_node_offset):
-        """Compute the channel network
+        """Compute the lines that interconnect network
 
         Args:
           channel_nodes (dict): nodes from Channels().interpolate_nodes
-          global_dist_calc_points (float): Default node interdistance.
           channel_node_offset (int): the index of the first channel node in the
             target node array (for the lines)
-          connection_node_offset (int): the index of the first connection node in the
-            target node array (for the lines)
+          connection_node_offset (int): the index of the first connection node 
+            in the target node array (for the lines)
 
         Returns:
-          dict of nodes with the following properties (all 1D arrays):
-          - geometry
-          - calculation_type
-          - channel_id
-          - channel_code
-          - connection_node_start_id
-          - connection_node_end_id
-          dict of lines with the following properties:
-          - nodes (N, 2) array of node ids
+          ChannelNetwork instance
         """
         # start with the easy ones: channels that connect 2 connection nodes
         # without interpolated nodes in between
@@ -101,7 +92,9 @@ class Channels:
         n_nodes = nodes["geometry"].size
         if n_nodes == 0:
             # if there are no interpolated nodes then we're done
-            return lines_start
+            return ChannelNetwork(
+                nodes=nodes, lines=lines_start  # TODO Add in connection nodes
+            )
 
         # generate the lines that interconnect interpolated nodes
         lines = (
@@ -127,7 +120,12 @@ class Channels:
             np.where(is_channel_start)[0] + channel_node_offset
         )
 
-        return np.concatenate([lines_start, lines], axis=1)
+        # Return a ChannelNetwork
+        # TODO Add in connection nodes
+        # TODO 2 Use to-be-implemented Nodes and Lines objects
+        return ChannelNetwork(
+            nodes=nodes, lines=np.concatenate([lines, lines_start], axis=1)
+        )
 
 
 class ChannelNetwork:

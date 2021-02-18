@@ -80,7 +80,13 @@ def test_get_network(channel_idx, expected, one_channel):
     actual = one_channel.get_network(
         nodes, channel_node_offset=100, connection_node_offset=1000
     )
-    assert_array_equal(actual, np.array(expected).T)
+
+    # 'expected' is ordered in a more readable way that what we expect from
+    # .get_network. Transpose and sort on the line starts.
+    expected = np.array(expected).T
+    expected = expected[:, np.argsort(expected[0])]
+
+    assert_array_equal(actual.lines, expected)
 
 
 @pytest.mark.parametrize(
@@ -88,8 +94,8 @@ def test_get_network(channel_idx, expected, one_channel):
     [
         ([], [(121, 142), (125, 133)]),
         ([0], [(121, 0), (0, 142), (125, 133)]),
-        ([0, 0, 0], [(121, 0), (0, 1), (1, 2), (2, 141), (125, 133)]),
-        ([1], [(121, 142), (125, 0), (1, 133)]),
+        ([0, 0, 0], [(121, 0), (0, 1), (1, 2), (2, 142), (125, 133)]),
+        ([1], [(121, 142), (125, 0), (0, 133)]),
         ([1, 1, 1], [(121, 142), (125, 0), (0, 1), (1, 2), (2, 133)]),
         ([0, 1, 1], [(121, 0), (0, 142), (125, 1), (1, 2), (2, 133)]),
         ([0, 0, 1], [(121, 0), (0, 1), (1, 142), (125, 2), (2, 133)]),
@@ -103,4 +109,10 @@ def test_get_network_2(channel_idx, expected, two_channels):
     actual = two_channels.get_network(
         nodes, channel_node_offset=0, connection_node_offset=100
     )
-    assert_array_equal(actual, np.array(expected).T)
+
+    # 'expected' is ordered in a more readable way that what we expect from
+    # .get_network. Transpose and sort on the line starts.
+    expected = np.array(expected).T
+    expected = expected[:, np.argsort(expected[0])]
+
+    assert_array_equal(actual.lines, expected)
