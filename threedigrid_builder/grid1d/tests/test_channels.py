@@ -19,6 +19,21 @@ def one_channel():
     )
 
 
+@pytest.fixture
+def two_channels():
+    return Channels(
+        the_geom=pygeos.linestrings(
+            [[(0, 0), (10, 0), (10, 10)], [(0, 0), (0, 100), (100, 100)]]
+        ),
+        dist_calc_points=np.array([5.0, np.nan]),
+        id=np.array([1, 2]),
+        code=np.array(["one", "two"]),
+        connection_node_start_id=np.array([21, 25]),
+        connection_node_end_id=np.array([42, 33]),
+        calculation_type=np.array([101, 102]),
+    )
+
+
 @pytest.mark.parametrize(
     "dist,expected",
     [
@@ -36,21 +51,7 @@ def test_interpolate_nodes(dist, expected, one_channel):
     actual = one_channel.interpolate_nodes(global_dist_calc_points=74.0)
 
     assert_array_equal(actual["geometry"], expected)
-
-
-@pytest.fixture
-def two_channels():
-    return Channels(
-        the_geom=pygeos.linestrings(
-            [[(0, 0), (10, 0), (10, 10)], [(0, 0), (0, 100), (100, 100)]]
-        ),
-        dist_calc_points=np.array([5.0, np.nan]),
-        id=np.array([1, 2]),
-        code=np.array(["one", "two"]),
-        connection_node_start_id=np.array([21, 33]),
-        connection_node_end_id=np.array([21, 42]),
-        calculation_type=np.array([101, 102]),
-    )
+    assert_array_equal(actual["_channel_idx"], 0)
 
 
 def test_interpolate_nodes_2(two_channels):
@@ -60,5 +61,58 @@ def test_interpolate_nodes_2(two_channels):
         [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
     )
     assert_array_equal(actual["geometry"], expected_points)
-    assert_array_equal(actual["calculation_type"][:3], 101)
-    assert_array_equal(actual["calculation_type"][3:], 102)
+    assert_array_equal(actual["_channel_idx"], [0, 0, 0, 1, 1, 1])
+
+
+@pytest.mark.parametrize(
+    "channel_idx,expected",
+    [
+        ([], [(1021, 1042)]),
+        ([0], [(1021, 100), (100, 1042)]),
+        ([0, 0, 0], [(1021, 100), (100, 101), (101, 102), (102, 1042)]),
+    ],
+)
+def test_get_network(channel_idx, expected, one_channel):
+    nodes = {
+        "geometry": pygeos.points(np.random.random((len(channel_idx), 2))),
+        "_channel_idx": np.array(channel_idx),
+    }
+    actual = one_channel.get_network(
+        nodes, channel_node_offset=100, connection_node_offset=1000
+    )
+
+    # 'expected' is ordered in a more readable way that what we expect from
+    # .get_network. Transpose and sort on the line starts.
+    expected = np.array(expected).T
+    expected = expected[:, np.argsort(expected[0])]
+
+    assert_array_equal(actual.lines, expected)
+
+
+@pytest.mark.parametrize(
+    "channel_idx,expected",
+    [
+        ([], [(121, 142), (125, 133)]),
+        ([0], [(121, 0), (0, 142), (125, 133)]),
+        ([0, 0, 0], [(121, 0), (0, 1), (1, 2), (2, 142), (125, 133)]),
+        ([1], [(121, 142), (125, 0), (0, 133)]),
+        ([1, 1, 1], [(121, 142), (125, 0), (0, 1), (1, 2), (2, 133)]),
+        ([0, 1, 1], [(121, 0), (0, 142), (125, 1), (1, 2), (2, 133)]),
+        ([0, 0, 1], [(121, 0), (0, 1), (1, 142), (125, 2), (2, 133)]),
+    ],
+)
+def test_get_network_2(channel_idx, expected, two_channels):
+    nodes = {
+        "geometry": pygeos.points(np.random.random((len(channel_idx), 2))),
+        "_channel_idx": np.array(channel_idx),
+    }
+    actual = two_channels.get_network(
+        nodes, channel_node_offset=0, connection_node_offset=100
+    )
+
+    # 'expected' is ordered in a more readable way that what we expect from
+    # .get_network. Transpose and sort on the line starts.
+    expected = np.array(expected).T
+    expected = expected[:, np.argsort(expected[0])]
+
+    assert_array_equal(actual.lines, expected)
