@@ -11,10 +11,10 @@ class QuadTree:
         min_gridsize,
         subgrid_width,
         subgrid_height,
-        pixel_size
+        pixel_size,
+        refinements
     ):
 
-        self.num_active_nodes = 0
         self.origin = origin
         self.lgrmin = min_gridsize / pixel_size
         self.kmax = num_refine_levels
@@ -42,6 +42,9 @@ class QuadTree:
             dtype=np.int32,
             order='F'
         )
+    
+        self.set_refinements(refinements)
+        self.create_quadtree()
 
     def _determine_max_quadtree_pixels(self, side):
         max_pix_largest_cell = self.lgrmin * 2 ** (self.kmax - 1)
