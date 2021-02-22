@@ -57,22 +57,4 @@ module m_c_quadtree
 
     end subroutine c_make_quadtree
 
-    ! subroutine c_set_active_2d_comp_cells(handle, model_area, n0, n1) bind(c, name="set_active_2d_comp_cells")
-! 
-        ! use m_quadtree, only : QuadTreeFortran, set_active_2d_comp_cells
-! 
-        ! type quadtreefortran_ptr_type
-            ! type(QuadTreeFortran), pointer :: p => NULL()
-        ! end type quadtreefortran_ptr_type
-        ! type(quadtreefortran_ptr_type) :: handle_ptr
-        ! integer(kind=c_int), intent(inout) :: handle(2)
-        ! integer(kind=c_int), intent(in) :: n0
-        ! integer(kind=c_int), intent(in) :: n1
-        ! integer(kind=c_int), intent(in) :: model_area(n0,n1)
-! 
-        ! handle_ptr = transfer(handle, handle_ptr)
-        ! call set_active_2d_comp_cells(self=handle_ptr%p, model_area=model_area)
-! 
-    ! end subroutine c_set_active_2d_comp_cells
-
 end module m_c_quadtree
