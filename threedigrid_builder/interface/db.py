@@ -11,6 +11,7 @@ from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedigrid_builder.grid1d import Channels
+from threedigrid_builder.grid1d import ConnectionNodes
 
 import numpy as np
 import pygeos
@@ -95,6 +96,42 @@ class SQLite:
         # transform to a dict of 1D ndarrays
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
+    def get_connection_nodes(self):
+        """Return ConnectionNodes
+        Most stuff in this function will eventually be implemented in the package
+        "condenser".
+        """
+        with self.get_session() as session:
+            data = session.query(
+                ST_AsBinary(models.ConnectionNode.the_geom),
+                models.ConnectionNode.id,
+                models.ConnectionNode.code,
+                models.ConnectionNode.storage_area,
+            ).all()
+
+        # transform tuples to a numpy structured array
+        arr = np.array(
+            data,
+            dtype=[
+                ("the_geom", "O"),
+                ("id", "i8"),
+                ("code", "O"),
+                ("storage_area", "f8"),
+            ],
+        )
+        # transform to pygeos.Geometry
+        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+
+        # reproject
+        target_epsg = self.global_settings["epsg_code"]
+        arr["the_geom"] = pygeos.apply(
+            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
+        )
+
+        # transform to a dict of 1D ndarrays
+        return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
+
+
     def get_grid_refinements(self):
         """Return Gridrefinements
 
@@ -114,7 +151,6 @@ class SQLite:
                 models.GridRefinementArea.id,
                 models.GridRefinementArea.code,
                 cast(models.GridRefinementArea.refinement_level , Integer),
-            ).all()
 
         # transform tuples to a numpy structured array
         arr = np.array(

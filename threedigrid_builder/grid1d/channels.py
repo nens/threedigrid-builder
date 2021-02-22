@@ -24,6 +24,9 @@ class Channels:
         self.connection_node_end_id = connection_node_end_id
         self.calculation_type = calculation_type
 
+    def __repr__(self):
+        return "<Channels object (len:{})>".format(len(self.the_geom))
+
     def interpolate_nodes(self, global_dist_calc_points):
         """Compute interpolated channel nodes
 
@@ -64,11 +67,75 @@ class Channels:
         )
 
         # TODO Return a to-be-implemented "Nodes" instance
-        return {
-            "geometry": points,
-            "calculation_type": self.calculation_type[idx],
-            "channel_id": self.id[idx],
-            "channel_code": self.code[idx],
-            "connection_node_start_id": self.connection_node_start_id[idx],
-            "connection_node_end_id": self.connection_node_end_id[idx],
-        }
+        return {"geometry": points, "_channel_idx": idx}
+
+    def get_network(self, nodes, channel_node_offset, connection_node_offset):
+        """Compute the lines that interconnect network
+
+        Args:
+          channel_nodes (dict): nodes from Channels().interpolate_nodes
+          channel_node_offset (int): the index of the first channel node in the
+            target node array (for the lines)
+          connection_node_offset (int): the index of the first connection node 
+            in the target node array (for the lines)
+
+        Returns:
+          ChannelNetwork instance
+        """
+        # start with the easy ones: channels that connect 2 connection nodes
+        # without interpolated nodes in between
+        lines_start = (
+            np.vstack([self.connection_node_start_id, self.connection_node_end_id])
+            + connection_node_offset
+        )
+
+        n_nodes = nodes["geometry"].size
+        if n_nodes == 0:
+            # if there are no interpolated nodes then we're done
+            return ChannelNetwork(
+                nodes=nodes, lines=lines_start  # TODO Add in connection nodes
+            )
+
+        # generate the lines that interconnect interpolated nodes
+        lines = (
+            np.vstack([np.arange(n_nodes), np.arange(1, n_nodes + 1)])
+            + channel_node_offset
+        )
+
+        # connect the last line of each channel to the right
+        # connection_node_end_id (instead of the next channel)
+        is_channel_end = np.append(
+            nodes["_channel_idx"][1:] != nodes["_channel_idx"][:-1], [True]
+        )
+        lines[1][is_channel_end] = (
+            self.connection_node_end_id[nodes["_channel_idx"][is_channel_end]]
+            + connection_node_offset
+        )
+
+        # connect the line endings in 'lines_start' to a first interpolated
+        # node (if there are interpolated nodes)
+        is_channel_start = np.roll(is_channel_end, 1)
+        channels_with_interp = nodes["_channel_idx"][is_channel_start]
+        lines_start[1][channels_with_interp] = (
+            np.where(is_channel_start)[0] + channel_node_offset
+        )
+
+        # Return a ChannelNetwork
+        # TODO Add in connection nodes
+        # TODO 2 Use to-be-implemented Nodes and Lines objects
+        return ChannelNetwork(
+            nodes=nodes, lines=np.concatenate([lines, lines_start], axis=1)
+        )
+
+
+class ChannelNetwork:
+    """A network of interconnected channels, represented by nodes and lines.
+
+    Attributes:
+      nodes: dict of 1D arrays
+      lines: 2D array of node ids
+    """
+
+    def __init__(self, nodes, lines):
+        self.nodes = nodes
+        self.lines = lines
