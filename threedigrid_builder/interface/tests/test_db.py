@@ -2,6 +2,7 @@ from unittest import mock
 import pytest
 import pygeos
 
+from threedigrid_builder.grid1d import Channels
 from threedigrid_builder.interface import SQLite
 
 from numpy.testing import assert_equal
@@ -33,5 +34,5 @@ def test_init(mocked_db):
 
 
 def test_get_channels(mocked_sqlite):
-    actual = mocked_sqlite.get_channels()
-    pass
+    channels = mocked_sqlite.get_channels()
+    assert isinstance(channels, Channels)
