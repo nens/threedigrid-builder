@@ -1,12 +1,15 @@
 # Module containing functions to read from the SQLite
 
+from condenser import NumpyQuery
 from contextlib import contextmanager
 from functools import lru_cache
 from geoalchemy2.functions import ST_AsBinary
 from pyproj import Transformer
 from pyproj.crs import CRS
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import cast
 from sqlalchemy import inspect
+from sqlalchemy import Float
 from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
@@ -17,9 +20,20 @@ import numpy as np
 import pygeos
 
 
+from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
+
+
 SOURCE_EPSG = 4326
 
 __all__ = ["SQLite"]
+
+# put some global defaults on datatypes
+NumpyQuery.default_numpy_settings[Float]["dtype"] = np.float32
+NumpyQuery.default_numpy_settings[Integer]["dtype"] = np.int32
+NumpyQuery.default_numpy_settings[IntegerEnum] = {
+    "sql_cast": lambda x: cast(x, Integer),
+    "dtype": np.int32,
+}
 
 
 class SQLite:
@@ -40,9 +54,11 @@ class SQLite:
         Returns:
           SQLAlchemy.orm.Session
         """
-        session = self.db.get_session()
-        yield session
-        session.close()
+        session = self.db.get_session(query_cls=NumpyQuery)
+        try:
+            yield session
+        finally:
+            session.close()
 
     @property
     def global_settings(self):
@@ -56,42 +72,28 @@ class SQLite:
 
     def get_channels(self):
         """Return Channels
-
-        Most stuff in this function will eventually be implemented in the package
-        "condenser".
         """
+        target_epsg = self.global_settings["epsg_code"]
         with self.get_session() as session:
-            data = session.query(
-                ST_AsBinary(models.Channel.the_geom),
-                models.Channel.dist_calc_points,
-                models.Channel.id,
-                models.Channel.code,
-                cast(models.Channel.connection_node_start_id, Integer),
-                cast(models.Channel.connection_node_end_id, Integer),
-                cast(models.Channel.calculation_type, Integer),
-            ).all()
-
-        # transform tuples to a numpy structured array
-        arr = np.array(
-            data,
-            dtype=[
-                ("the_geom", "O"),
-                ("dist_calc_points", "f8"),
-                ("id", "i8"),
-                ("code", "O"),
-                ("connection_node_start_id", "i8"),
-                ("connection_node_end_id", "i8"),
-                ("calculation_type", "i8"),
-            ],
-        )
-        # transform to pygeos.Geometry
-        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+            arr = (
+                session.query(
+                    models.Channel.the_geom,
+                    models.Channel.dist_calc_points,
+                    models.Channel.id,
+                    models.Channel.code,
+                    models.Channel.connection_node_start_id,
+                    models.Channel.connection_node_end_id,
+                    models.Channel.calculation_type,
+                )
+                .with_transformed_geometries(target_epsg)
+                .as_structarray()
+            )
 
         # reproject
-        target_epsg = self.global_settings["epsg_code"]
-        arr["the_geom"] = pygeos.apply(
-            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        )
+        # target_epsg = self.global_settings["epsg_code"]
+        # arr["the_geom"] = pygeos.apply(
+        #     arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
+        # )
 
         # transform to a dict of 1D ndarrays
         return Channels(**{name: arr[name] for name in arr.dtype.names})
