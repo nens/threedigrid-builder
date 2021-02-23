@@ -1,11 +1,8 @@
 from unittest import mock
 import pytest
-import pygeos
 
 from threedigrid_builder.grid1d import Channels
 from threedigrid_builder.interface import SQLite
-
-from numpy.testing import assert_equal
 
 
 @pytest.fixture

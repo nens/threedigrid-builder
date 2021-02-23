@@ -3,24 +3,20 @@
 from condenser import NumpyQuery
 from contextlib import contextmanager
 from functools import lru_cache
-from geoalchemy2.functions import ST_AsBinary
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import cast
-from sqlalchemy import inspect
 from sqlalchemy import Float
+from sqlalchemy import inspect
 from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
+from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.grid1d import Channels
 from threedigrid_builder.grid1d import ConnectionNodes
 
 import numpy as np
 import pygeos
-
-
-from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 
 
 __all__ = ["SQLite"]
@@ -81,7 +77,7 @@ class SQLite:
           pygeos+pyproj is approx 2x faster than spatialite
 
         Args:
-          geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326       
+          geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
         """
         target_epsg = self.global_settings["epsg_code"]
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
