@@ -23,9 +23,11 @@ import pygeos
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 
 
-SOURCE_EPSG = 4326
-
 __all__ = ["SQLite"]
+
+
+# hardcoded source projection
+SOURCE_EPSG = 4326
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Float]["dtype"] = np.float32
@@ -62,7 +64,9 @@ class SQLite:
 
     @property
     def global_settings(self):
-        """Return the global settings dictionary from the SQLite at path
+        """Return the global settings dictionary from the SQLite at path.
+
+        The global settings are cached on self.
         """
         if self._global_settings is None:
             with self.get_session() as session:
@@ -70,68 +74,53 @@ class SQLite:
             self._global_settings = _object_as_dict(settings)
         return self._global_settings
 
+    def reproject(self, geometries):
+        """Reproject geometries from 4326 to the EPSG in the settings.
+
+        Notes:
+          pygeos+pyproj is approx 2x faster than spatialite
+
+        Args:
+          geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326       
+        """
+        target_epsg = self.global_settings["epsg_code"]
+        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
+        return pygeos.apply(geometries, func)
+
     def get_channels(self):
         """Return Channels
         """
-        target_epsg = self.global_settings["epsg_code"]
         with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.Channel.the_geom,
-                    models.Channel.dist_calc_points,
-                    models.Channel.id,
-                    models.Channel.code,
-                    models.Channel.connection_node_start_id,
-                    models.Channel.connection_node_end_id,
-                    models.Channel.calculation_type,
-                )
-                .with_transformed_geometries(target_epsg)
-                .as_structarray()
-            )
+            arr = session.query(
+                models.Channel.the_geom,
+                models.Channel.dist_calc_points,
+                models.Channel.id,
+                models.Channel.code,
+                models.Channel.connection_node_start_id,
+                models.Channel.connection_node_end_id,
+                models.Channel.calculation_type,
+            ).as_structarray()
 
-        # reproject
-        # target_epsg = self.global_settings["epsg_code"]
-        # arr["the_geom"] = pygeos.apply(
-        #     arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        # )
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        # transform to a dict of 1D ndarrays
+        # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
     def get_connection_nodes(self):
         """Return ConnectionNodes
-
-        Most stuff in this function will eventually be implemented in the package
-        "condenser".
         """
         with self.get_session() as session:
-            data = session.query(
-                ST_AsBinary(models.ConnectionNode.the_geom),
+            arr = session.query(
+                models.ConnectionNode.the_geom,
                 models.ConnectionNode.id,
                 models.ConnectionNode.code,
                 models.ConnectionNode.storage_area,
-            ).all()
-
-        # transform tuples to a numpy structured array
-        arr = np.array(
-            data,
-            dtype=[
-                ("the_geom", "O"),
-                ("id", "i8"),
-                ("code", "O"),
-                ("storage_area", "f8"),
-            ],
-        )
-        # transform to pygeos.Geometry
-        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+            ).as_structarray()
 
         # reproject
-        target_epsg = self.global_settings["epsg_code"]
-        arr["the_geom"] = pygeos.apply(
-            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        )
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        # transform to a dict of 1D ndarrays
+        # transform to a ConnectionNodes object
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
 
