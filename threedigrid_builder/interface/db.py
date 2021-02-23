@@ -26,7 +26,6 @@ __all__ = ["SQLite"]
 SOURCE_EPSG = 4326
 
 # put some global defaults on datatypes
-NumpyQuery.default_numpy_settings[Float]["dtype"] = np.float32
 NumpyQuery.default_numpy_settings[Integer]["dtype"] = np.int32
 NumpyQuery.default_numpy_settings[IntegerEnum] = {
     "sql_cast": lambda x: cast(x, Integer),
