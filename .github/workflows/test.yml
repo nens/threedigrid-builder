@@ -49,6 +49,7 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
           pip install cython ${{ matrix.deps }}
+          pip install git+https://github.com/nens/threedi-modelchecker#egg=threedi-modelchecker
           pip install -e .[test]
           pip list
 
