@@ -122,21 +122,21 @@ class SQLite:
 
         """
         with self.get_session() as session:
-            q = session.query(
+            arr1 = session.query(
                 models.GridRefinement.the_geom,
                 models.GridRefinement.display_name,
                 models.GridRefinement.id,
                 models.GridRefinement.code,
                 models.GridRefinement.refinement_level,
-            )
-            q += session.query(
+            ).as_structarray()
+            arr2 = session.query(
                 models.GridRefinementArea.the_geom,
                 models.GridRefinementArea.display_name,
                 models.GridRefinementArea.id,
                 models.GridRefinementArea.code,
                 models.GridRefinementArea.refinement_level,
-            )
-            arr = q.as_structarray()
+            ).as_structarray()
+            arr = np.concatenate((arr1, arr2))
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])

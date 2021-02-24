@@ -63,7 +63,14 @@ long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").r
 
 version = open("VERSION.rst").read()
 
-install_requires = ["numpy>=1.13", "threedi-modelchecker", "pygeos", "pyproj", "condenser[geo]"]
+install_requires = [
+    "numpy>=1.13",
+    "threedi-modelchecker",
+    "pygeos",
+    "pyproj",
+    "condenser[geo]",
+    "rasterio",
+]
 
 test_requires = ["pytest"]
 
