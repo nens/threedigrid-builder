@@ -1,12 +1,11 @@
-from enum import Enum
+from enum import IntEnum
 from typing import Tuple
 import numpy as np
-from functools import update_wrapper
 
 
 def _to_ndarray(value, elem_type, expected_length):
     """Cast value to numpy array, with some type mappings.
-    
+
     Args:
         value (iterable or None): iterable to convert to ndarray
         elem_type (type)
@@ -23,7 +22,7 @@ def _to_ndarray(value, elem_type, expected_length):
         n_columns = None
 
     # cast python to numpy dtypes
-    if elem_type is int or issubclass(elem_type, Enum):
+    if elem_type is int or issubclass(elem_type, IntEnum):
         dtype = np.int32
     elif elem_type is float:
         dtype = np.float64
@@ -34,13 +33,9 @@ def _to_ndarray(value, elem_type, expected_length):
 
     arr = np.asarray(value, dtype=dtype, order="F")
     if n_columns is None and arr.ndim != 1:
-        raise ValueError(
-            f"Expected a one dimensional array, got {arr.ndim}."
-        )
+        raise ValueError(f"Expected a one dimensional array, got {arr.ndim}.")
     elif n_columns is not None and arr.ndim != 2:
-        raise ValueError(
-            f"Expected a two dimensional array, got {arr.ndim}."
-        )
+        raise ValueError(f"Expected a two dimensional array, got {arr.ndim}.")
     elif arr.ndim == 2 and arr.shape[1] != n_columns:
         raise ValueError(f"Expected {n_columns} columns, got {arr.shape[1]}.")
 
@@ -52,7 +47,7 @@ def _to_ndarray(value, elem_type, expected_length):
 
 class array_of:
     """A decorator to create an array dataclass from a normal dataclass.
-    
+
     The decorated class will have the same attributes as the provided dataclass
     but then transformed into 1D numpy arrays.
 
@@ -101,30 +96,34 @@ class array_of:
 
         Note that the below example is equal to the normal decorator usage
         illustrated above.
-    
+
         >>> class MyRecords:
         ...     pass
         ...
         >>> MyRecords = array_of(MyRecord)(MyRecords)
         """
+
         class Wrapper(cls):
             def __init__(self, **kwargs):
                 """Initialize the array dataclass
-                
+
                 Take the iterables in the arguments and convert them into 1D
                 ndarrays according to the types in the normal dataclass.
                 """
                 # id is required; get its length to use it for validation
-                expected_length = len(kwargs["id"])
+                try:
+                    expected_length = len(kwargs["id"])
+                except KeyError:
+                    raise TypeError("missing required keyword argument 'id")
 
                 # convert each field to an array and set it to self
-                fields = data_class.__annotations__
+                fields = self.data_class.__annotations__
                 for name, elem_type in fields.items():
-                    value = kwargs.get(name, None)
+                    value = kwargs.pop(name, None)
                     try:
                         arr = _to_ndarray(value, elem_type, expected_length)
                     except ValueError as e:
-                        raise ValueError("Error parsing {name} to array: {e}")
+                        raise ValueError(f"Error parsing {name} to array: {e}")
                     setattr(self, name, arr)
 
                 # call the init of the wrapped class
@@ -133,5 +132,11 @@ class array_of:
             def __repr__(self):
                 return f"<array of {self._type.__name__} (len:{len(self.id)})>"
 
-        # update_wrapper transfers __name__, __doc__, etc. from cls to Wrapper
-        return update_wrapper(Wrapper, cls)
+        Wrapper.data_class = self.data_class
+
+        # transfers __name__, __doc__, etc. from cls to Wrapper
+        Wrapper.__doc__ = cls.__doc__
+        Wrapper.__name__ = cls.__name__
+        Wrapper.__qualname__ = cls.__qualname__
+        Wrapper.__module__ = cls.__module__
+        return Wrapper

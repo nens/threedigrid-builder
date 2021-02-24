@@ -1,8 +1,9 @@
-from enum import Enum, unique
+from enum import IntEnum
+from enum import unique
 
 
 @unique
-class CalculationType(Enum):
+class CalculationType(IntEnum):
     # -1 tot 99 ::= Node | 'verbinding-zonder-subnodes(="vertices")'
     BOUNDARY_NODE = -1
     EMBEDDED_NODE = 0
@@ -20,7 +21,7 @@ class CalculationType(Enum):
 
 
 @unique
-class NodeType(Enum):
+class NodeType(IntEnum):
     NODE_2D_OPEN_WATER = 1
     NODE_2D_GROUNDWATER = 2
     NODE_1D_NO_STORAGE = 3
@@ -31,7 +32,7 @@ class NodeType(Enum):
 
 
 @unique
-class ContentType(Enum):
+class ContentType(IntEnum):
     TYPE_V2_PIPE = 1
     TYPE_V2_CHANNEL = 2
     TYPE_V2_CULVERT = 3

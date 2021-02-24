@@ -1,7 +1,4 @@
-from enum import Enum, unique
 from typing import Tuple
-from threedi_modelchecker.threedi_model import constants
-import numpy as np
 
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import NodeType, ContentType, CalculationType

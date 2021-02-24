@@ -1,1 +1,1 @@
-from .array import array_of
+from .array import array_of  # NOQA
