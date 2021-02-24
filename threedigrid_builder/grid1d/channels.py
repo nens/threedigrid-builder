@@ -3,6 +3,9 @@ from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import Lines
 from threedigrid_builder.grid import Nodes
 
+from threedigrid_builder.base import array_of
+from threedigrid_builder.constants import CalculationType
+
 import numpy as np
 import pygeos
 
@@ -10,28 +13,18 @@ import pygeos
 __all__ = ["Channels"]
 
 
+class Channel:
+    id: int
+    code: str
+    the_geom: pygeos.Geometry
+    dist_calc_points: float
+    connection_node_start_id: int
+    connection_node_end_id: int
+    calculation_type: CalculationType
+
+
+@array_of(Channel)
 class Channels:
-    def __init__(
-        self,
-        the_geom,
-        dist_calc_points,
-        id,
-        code,
-        connection_node_start_id,
-        connection_node_end_id,
-        calculation_type,
-    ):
-        self.the_geom = the_geom
-        self.dist_calc_points = dist_calc_points
-        self.id = id
-        self.code = code
-        self.connection_node_start_id = connection_node_start_id
-        self.connection_node_end_id = connection_node_end_id
-        self.calculation_type = calculation_type
-
-    def __repr__(self):
-        return "<Channels object (len:{})>".format(len(self.the_geom))
-
     def interpolate_nodes(self, global_dist_calc_points):
         """Compute interpolated channel nodes
 
@@ -44,7 +37,9 @@ class Channels:
             - id: 0-based counter generated here
             - coordinates
             - content_type: ContentType.TYPE_V2_CHANNEL
-            - content_pk:  # the 0-based index into Channels (not the id!)
+            - content_pk: the 0-based index into Channels (not the id!)
+
+        TODO make content_pk the real channel id in a next step?
         """
         # load data
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -78,7 +73,7 @@ class Channels:
         )
 
     def get_grid(self, nodes, channel_node_offset, connection_node_offset):
-        """Compute the lines for this channel
+        """Compute the grid (nodes + lines) for the channels
 
         Args:
             self (Channels):
