@@ -1,4 +1,5 @@
 from numpy.testing import assert_array_equal
+from threedigrid_builder.grid import Nodes
 from threedigrid_builder.grid1d import Channels
 
 import numpy as np
@@ -37,31 +38,31 @@ def two_channels():
 @pytest.mark.parametrize(
     "dist,expected",
     [
-        (3.0, pygeos.points([(3, 0), (6, 0), (6, 3)])),  # 12 / 3  = 4 segments
-        (4.0, pygeos.points([(4, 0), (6, 2)])),  # 12 / 4  = 3 segments
-        (5.0, pygeos.points([(6, 0)])),  # 12 / 5  = 2.4 -> 2 segments
-        (6.0, pygeos.points([(6, 0)])),  # 12 / 6  = 2 segments
-        (8.0, pygeos.points([(6, 0)])),  # 12 / 8  = 1.5 -> 2
-        (9.0, np.empty((0,), dtype=object)),  # 12 / 9  = 1.33 -> 1
-        (100.0, np.empty((0,), dtype=object)),
+        (3.0, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments
+        (4.0, [(4, 0), (6, 2)]),  # 12 / 4  = 3 segments
+        (5.0, [(6, 0)]),  # 12 / 5  = 2.4 -> 2 segments
+        (6.0, [(6, 0)]),  # 12 / 6  = 2 segments
+        (8.0, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
+        (9.0, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
+        (100.0, np.empty((0, 2), dtype=float)),
     ],
 )
 def test_interpolate_nodes(dist, expected, one_channel):
     one_channel.dist_calc_points[0] = dist
     actual = one_channel.interpolate_nodes(global_dist_calc_points=74.0)
 
-    assert_array_equal(actual["geometry"], expected)
-    assert_array_equal(actual["_channel_idx"], 0)
+    assert_array_equal(actual.coordinates, expected)
+    assert_array_equal(actual.content_pk, 0)
 
 
 def test_interpolate_nodes_2(two_channels):
     actual = two_channels.interpolate_nodes(global_dist_calc_points=50.0)
 
-    expected_points = pygeos.points(
+    expected_points = \
         [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
-    )
-    assert_array_equal(actual["geometry"], expected_points)
-    assert_array_equal(actual["_channel_idx"], [0, 0, 0, 1, 1, 1])
+
+    assert_array_equal(actual.coordinates, expected_points)
+    assert_array_equal(actual.content_pk, [0, 0, 0, 1, 1, 1])
 
 
 @pytest.mark.parametrize(
@@ -72,21 +73,16 @@ def test_interpolate_nodes_2(two_channels):
         ([0, 0, 0], [(1021, 100), (100, 101), (101, 102), (102, 1042)]),
     ],
 )
-def test_get_network(channel_idx, expected, one_channel):
-    nodes = {
-        "geometry": pygeos.points(np.random.random((len(channel_idx), 2))),
-        "_channel_idx": np.array(channel_idx),
-    }
-    actual = one_channel.get_network(
+def test_get_grid(channel_idx, expected, one_channel):
+    nodes = Nodes(
+        id=np.arange(len(channel_idx)),
+        content_pk=channel_idx,
+    )
+    grid = one_channel.get_grid(
         nodes, channel_node_offset=100, connection_node_offset=1000
     )
 
-    # 'expected' is ordered in a more readable way that what we expect from
-    # .get_network. Transpose and sort on the line starts.
-    expected = np.array(expected).T
-    expected = expected[:, np.argsort(expected[0])]
-
-    assert_array_equal(actual.lines, expected)
+    assert {tuple(x) for x in grid.lines.line} == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -102,17 +98,13 @@ def test_get_network(channel_idx, expected, one_channel):
     ],
 )
 def test_get_network_2(channel_idx, expected, two_channels):
-    nodes = {
-        "geometry": pygeos.points(np.random.random((len(channel_idx), 2))),
-        "_channel_idx": np.array(channel_idx),
-    }
-    actual = two_channels.get_network(
+    nodes = Nodes(
+        id=np.arange(len(channel_idx)),
+        content_pk=channel_idx,
+    )
+
+    grid = two_channels.get_grid(
         nodes, channel_node_offset=0, connection_node_offset=100
     )
 
-    # 'expected' is ordered in a more readable way that what we expect from
-    # .get_network. Transpose and sort on the line starts.
-    expected = np.array(expected).T
-    expected = expected[:, np.argsort(expected[0])]
-
-    assert_array_equal(actual.lines, expected)
+    assert {tuple(x) for x in grid.lines.line} == set(expected)
