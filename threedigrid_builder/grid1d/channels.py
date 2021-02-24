@@ -1,10 +1,9 @@
+from threedigrid_builder.base import array_of
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import Lines
 from threedigrid_builder.grid import Nodes
-
-from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import CalculationType
 
 import numpy as np
 import pygeos
@@ -127,7 +126,6 @@ class Channels:
         lines_start[1][channels_with_interp] = (
             np.where(is_channel_start)[0] + channel_node_offset
         )
-
 
         lines = Lines(id=np.arange(lines_start.shape[1]), line=lines_start.T)
         lines += Lines(

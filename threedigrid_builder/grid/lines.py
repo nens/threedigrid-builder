@@ -3,7 +3,9 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from typing import Tuple
+
 import pygeos
+
 
 __all__ = ["Lines"]
 

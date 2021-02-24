@@ -1,6 +1,7 @@
 from .lines import Lines
 from .nodes import Nodes
 
+
 __all__ = ["Grid"]
 
 
@@ -24,3 +25,6 @@ class Grid:
             nodes=self.nodes + other.nodes,
             lines=self.lines + other.lines,
         )
+
+    def __repr__(self):
+        return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"

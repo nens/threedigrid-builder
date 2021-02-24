@@ -97,7 +97,7 @@ def test_get_grid(channel_idx, expected, one_channel):
         ([0, 0, 1], [(121, 0), (0, 1), (1, 142), (125, 2), (2, 133)]),
     ],
 )
-def test_get_network_2(channel_idx, expected, two_channels):
+def test_get_grid_2(channel_idx, expected, two_channels):
     nodes = Nodes(
         id=np.arange(len(channel_idx)),
         content_pk=channel_idx,

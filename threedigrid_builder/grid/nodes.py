@@ -4,6 +4,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from typing import Tuple
 
+
 __all__ = ["Nodes"]
 
 

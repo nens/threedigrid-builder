@@ -118,8 +118,8 @@ class ArrayDataClass:
         """Concatenate two array dataclasses of equal type."""
         if self.__class__ is not other.__class__:
             raise TypeError(
-                "Cannot concatenate {self} with {other} as they are not of "
-                "equal types."
+                f"Cannot concatenate {self} with {other} as they are not of "
+                f"equal types."
             )
         new_fields = {
             name: np.concatenate((getattr(self, name), getattr(other, name)))

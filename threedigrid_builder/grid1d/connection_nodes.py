@@ -1,8 +1,10 @@
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import Lines
+from threedigrid_builder.grid import Nodes
 
-from threedigrid_builder.grid import Nodes, Lines, Grid
-
+import numpy as np
 import pygeos
 
 
@@ -33,7 +35,7 @@ class ConnectionNodes:
             - nodes.content_pk: connection node primary key (from self.id)
         """
         nodes = Nodes(
-            id=np.arange(idx.size),
+            id=np.arange(self.id.size),
             coordinates=pygeos.get_coordinates(self.the_geom),
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             content_pk=self.id,
