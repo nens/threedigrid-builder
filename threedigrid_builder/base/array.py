@@ -162,7 +162,13 @@ class array_of:
                 super().__init__(**kwargs)
 
             def __repr__(self):
-                return f"<array of {self._type.__name__} (len:{len(self.id)})>"
+                return (
+                    f"<{self.__class__.__name__} object, "
+                    f"{self.data_class.__name__} array of length {len(self)}>"
+                )
+
+            def __len__(self):
+                return len(self.id)
 
         Wrapper.data_class = self.data_class
 

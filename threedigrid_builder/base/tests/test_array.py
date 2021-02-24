@@ -93,5 +93,13 @@ def test_python_attrs():
     assert Records.__module__ == "threedigrid_builder.base.tests.test_array"
 
 
+def test_len():
+    assert len(Records(id=[2, 1])) == 2
+
+
+def test_repr():
+    assert repr(Records(id=[2, 3])) == "<Records object, Record array of length 2>"
+
+
 def test_methods():
     assert Records(id=[1]).does_it_work() == "yes"
