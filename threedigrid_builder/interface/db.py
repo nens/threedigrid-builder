@@ -131,9 +131,8 @@ class SQLite:
         # transform to a dict of 1D ndarrays
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
-
     def get_grid_refinements(self):
-        """Return Gridrefinements
+        """Return Gridrefinement and GridRefinementArea concatenated into one array.
 
         """
         with self.get_session() as session:

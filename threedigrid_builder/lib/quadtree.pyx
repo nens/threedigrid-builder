@@ -1,9 +1,7 @@
-from . cimport quadtree
 import numpy as np
 cimport numpy as np
 from enum import Enum
 from enum import unique
-import pygeos
 
 @unique
 class RefineType(Enum):
@@ -29,7 +27,7 @@ cpdef set_refinement(
     cdef int i0 = lg.shape[0]
     cdef int i1 = lg.shape[1]
 
-    status = quadtree.f_set_refinement(
+    status = f_set_refinement(
         refine_id=&id,
         refine_geom=&geom[0, 0],
         n0=&n0,
@@ -61,7 +59,7 @@ def create_quadtree(int kmax, int[:] mmax, int[:] nmax, int[:,:] lg):
     cdef int n0 = mmax.shape[0]
     cdef int i0 = lg.shape[0]
     cdef int i1 = lg.shape[1]
-    quadtree.make_quadtree(
+    make_quadtree(
         kmax=&kmax,
         mmax=&mmax[0],
         nmax=&nmax[0],
@@ -70,9 +68,3 @@ def create_quadtree(int kmax, int[:] mmax, int[:] nmax, int[:,:] lg):
         i0=&i0,
         i1=&i1
     )
-    # quadtree.set_active_2d_comp_cells(
-        # handle=&c_handle[0],
-        # model_area=&model_area[0,0],
-        # n0=&n0,
-        # n1=&n1
-    # )
