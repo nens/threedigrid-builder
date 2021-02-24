@@ -77,6 +77,12 @@ def test_empty_values():
     assert_equal(records.xyz, np.full((2, 3), np.nan, dtype=np.float64))
 
 
+def test_broadcast_scalar_values():
+    records = Records(id=[0, 1], number=5.2)
+
+    assert_equal(records.number, np.array([5.2, 5.2], dtype=np.float64))
+
+
 def test_id_required():
     with pytest.raises(TypeError):
         Records(number=[5, 7])

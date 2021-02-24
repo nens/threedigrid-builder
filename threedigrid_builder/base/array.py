@@ -64,8 +64,11 @@ def _to_ndarray(value, elem_type, expected_length):
     # return empty array if no value or None is supplied
     if value is None:
         return np.full(expected_shape, null_value, dtype=dtype, order="F")
+    elif np.isscalar(value):
+        return np.full(expected_shape, value, dtype=dtype, order="F")
 
     arr = np.asarray(value, dtype=dtype, order="F")
+
     if arr.shape != expected_shape:
         raise ValueError(
             f"Expected an array with shape {expected_shape}, got {arr.shape}."
