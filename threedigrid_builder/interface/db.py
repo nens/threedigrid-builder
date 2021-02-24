@@ -112,7 +112,6 @@ class SQLite:
                 models.ConnectionNode.storage_area,
             ).as_structarray()
 
-        # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # transform to a ConnectionNodes object
@@ -123,42 +122,24 @@ class SQLite:
 
         """
         with self.get_session() as session:
-            data = session.query(
-                ST_AsBinary(models.GridRefinement.the_geom),
+            q = session.query(
+                models.GridRefinement.the_geom,
                 models.GridRefinement.display_name,
                 models.GridRefinement.id,
                 models.GridRefinement.code,
-                cast(models.GridRefinement.refinement_level , Integer),
-            ).all()
-
-            data += session.query(
-                ST_AsBinary(models.GridRefinementArea.the_geom),
+                models.GridRefinement.refinement_level,
+            )
+            q += session.query(
+                models.GridRefinementArea.the_geom,
                 models.GridRefinementArea.display_name,
                 models.GridRefinementArea.id,
                 models.GridRefinementArea.code,
-                cast(models.GridRefinementArea.refinement_level , Integer),
-            ).all()
-
-        # transform tuples to a numpy structured array
-        arr = np.array(
-            data,
-            dtype=[
-                ("the_geom", "O"),
-                ("display_name", "O"),
-                ("id", "i8"),
-                ("code", "O"),
-                ("refinement_level", "i8"),
-            ],
-        )
-
-        # transform to pygeos.Geometry
-        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+                models.GridRefinementArea.refinement_level,
+            )
+            arr = q.as_structarray()
 
         # reproject
-        target_epsg = self.global_settings["epsg_code"]
-        arr["the_geom"] = pygeos.apply(
-            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        )
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return {name: arr[name] for name in arr.dtype.names}
 
