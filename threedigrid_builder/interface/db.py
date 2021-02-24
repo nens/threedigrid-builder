@@ -1,8 +1,8 @@
 # Module containing functions to read from the SQLite
 
+from condenser import NumpyQuery
 from contextlib import contextmanager
 from functools import lru_cache
-from geoalchemy2.functions import ST_AsBinary
 from pyproj import Transformer
 from pyproj.crs import CRS
 from sqlalchemy import cast
@@ -10,6 +10,7 @@ from sqlalchemy import inspect
 from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
+from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.grid1d import Channels
 from threedigrid_builder.grid1d import ConnectionNodes
 
@@ -17,13 +18,23 @@ import numpy as np
 import pygeos
 
 
+__all__ = ["SQLite"]
+
+
+# hardcoded source projection
 SOURCE_EPSG = 4326
 
-__all__ = ["SQLite"]
+# put some global defaults on datatypes
+NumpyQuery.default_numpy_settings[Integer]["dtype"] = np.int32
+NumpyQuery.default_numpy_settings[IntegerEnum] = {
+    "sql_cast": lambda x: cast(x, Integer),
+    "dtype": np.int32,
+}
 
 
 class SQLite:
     def __init__(self, path):
+        path = str(path)
         sqlite_settings = {"db_path": path, "db_file": path}
         self.db = ThreediDatabase(
             connection_settings=sqlite_settings, db_type="spatialite"
@@ -40,13 +51,17 @@ class SQLite:
         Returns:
           SQLAlchemy.orm.Session
         """
-        session = self.db.get_session()
-        yield session
-        session.close()
+        session = self.db.get_session(query_cls=NumpyQuery)
+        try:
+            yield session
+        finally:
+            session.close()
 
     @property
     def global_settings(self):
-        """Return the global settings dictionary from the SQLite at path
+        """Return the global settings dictionary from the SQLite at path.
+
+        The global settings are cached on self.
         """
         if self._global_settings is None:
             with self.get_session() as session:
@@ -54,81 +69,52 @@ class SQLite:
             self._global_settings = _object_as_dict(settings)
         return self._global_settings
 
+    def reproject(self, geometries):
+        """Reproject geometries from 4326 to the EPSG in the settings.
+
+        Notes:
+          pygeos+pyproj is approx 2x faster than spatialite
+
+        Args:
+          geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
+        """
+        target_epsg = self.global_settings["epsg_code"]
+        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
+        return pygeos.apply(geometries, func)
+
     def get_channels(self):
         """Return Channels
-
-        Most stuff in this function will eventually be implemented in the package
-        "condenser".
         """
         with self.get_session() as session:
-            data = session.query(
-                ST_AsBinary(models.Channel.the_geom),
+            arr = session.query(
+                models.Channel.the_geom,
                 models.Channel.dist_calc_points,
                 models.Channel.id,
                 models.Channel.code,
-                cast(models.Channel.connection_node_start_id, Integer),
-                cast(models.Channel.connection_node_end_id, Integer),
-                cast(models.Channel.calculation_type, Integer),
-            ).all()
+                models.Channel.connection_node_start_id,
+                models.Channel.connection_node_end_id,
+                models.Channel.calculation_type,
+            ).as_structarray()
 
-        # transform tuples to a numpy structured array
-        arr = np.array(
-            data,
-            dtype=[
-                ("the_geom", "O"),
-                ("dist_calc_points", "f8"),
-                ("id", "i8"),
-                ("code", "O"),
-                ("connection_node_start_id", "i8"),
-                ("connection_node_end_id", "i8"),
-                ("calculation_type", "i8"),
-            ],
-        )
-        # transform to pygeos.Geometry
-        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        # reproject
-        target_epsg = self.global_settings["epsg_code"]
-        arr["the_geom"] = pygeos.apply(
-            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        )
-
-        # transform to a dict of 1D ndarrays
+        # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
     def get_connection_nodes(self):
         """Return ConnectionNodes
-        Most stuff in this function will eventually be implemented in the package
-        "condenser".
         """
         with self.get_session() as session:
-            data = session.query(
-                ST_AsBinary(models.ConnectionNode.the_geom),
+            arr = session.query(
+                models.ConnectionNode.the_geom,
                 models.ConnectionNode.id,
                 models.ConnectionNode.code,
                 models.ConnectionNode.storage_area,
-            ).all()
+            ).as_structarray()
 
-        # transform tuples to a numpy structured array
-        arr = np.array(
-            data,
-            dtype=[
-                ("the_geom", "O"),
-                ("id", "i8"),
-                ("code", "O"),
-                ("storage_area", "f8"),
-            ],
-        )
-        # transform to pygeos.Geometry
-        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        # reproject
-        target_epsg = self.global_settings["epsg_code"]
-        arr["the_geom"] = pygeos.apply(
-            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        )
-
-        # transform to a dict of 1D ndarrays
+        # transform to a ConnectionNodes object
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
     def get_grid_refinements(self):
@@ -136,42 +122,24 @@ class SQLite:
 
         """
         with self.get_session() as session:
-            data = session.query(
-                ST_AsBinary(models.GridRefinement.the_geom),
+            arr1 = session.query(
+                models.GridRefinement.the_geom,
                 models.GridRefinement.display_name,
                 models.GridRefinement.id,
                 models.GridRefinement.code,
-                cast(models.GridRefinement.refinement_level , Integer),
-            ).all()
-
-            data += session.query(
-                ST_AsBinary(models.GridRefinementArea.the_geom),
+                models.GridRefinement.refinement_level,
+            ).as_structarray()
+            arr2 = session.query(
+                models.GridRefinementArea.the_geom,
                 models.GridRefinementArea.display_name,
                 models.GridRefinementArea.id,
                 models.GridRefinementArea.code,
-                cast(models.GridRefinementArea.refinement_level , Integer),
-            ).all()
-
-        # transform tuples to a numpy structured array
-        arr = np.array(
-            data,
-            dtype=[
-                ("the_geom", "O"),
-                ("display_name", "O"),
-                ("id", "i8"),
-                ("code", "O"),
-                ("refinement_level", "i8"),
-            ],
-        )
-
-        # transform to pygeos.Geometry
-        arr["the_geom"] = pygeos.from_wkb(arr["the_geom"])
+                models.GridRefinementArea.refinement_level,
+            ).as_structarray()
+            arr = np.concatenate((arr1, arr2))
 
         # reproject
-        target_epsg = self.global_settings["epsg_code"]
-        arr["the_geom"] = pygeos.apply(
-            arr["the_geom"], _get_reproject_func(SOURCE_EPSG, target_epsg)
-        )
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return {name: arr[name] for name in arr.dtype.names}
 

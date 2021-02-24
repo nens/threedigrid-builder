@@ -1,6 +1,8 @@
+from ..lib.quadtree import create_quadtree
+from ..lib.quadtree import set_refinement
+
 import numpy as np
 import pygeos
-from ..lib.quadtree import set_refinement, create_quadtree
 
 
 __all__ = ["QuadTree"]

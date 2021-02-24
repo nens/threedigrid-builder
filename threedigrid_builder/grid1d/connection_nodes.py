@@ -1,9 +1,3 @@
-from threedi_modelchecker.threedi_model.models import ConnectionNode
-
-import numpy as np
-import pygeos
-
-
 __all__ = ["ConnectionNodes"]
 
 
