@@ -50,13 +50,17 @@ jobs:
         shell: bash
         run: ./full_build.sh
 
+      - name: Cache python dependencies
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.id }}-${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}
+
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --disable-pip-version-check --upgrade pip setuptools wheel
-          pip install cython ${{ matrix.deps }}
           pip install git+https://github.com/nens/threedi-modelchecker.git#egg=threedi-modelchecker
-          pip install -e .[test]
+          pip install --upgrade --upgrade-strategy eager cython ${{ matrix.deps }} -e .[test]
           pip list
 
       - name: Run tests
