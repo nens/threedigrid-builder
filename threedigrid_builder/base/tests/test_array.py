@@ -117,3 +117,21 @@ def test_repr():
 
 def test_methods():
     assert Records(id=[1]).does_it_work() == "yes"
+
+
+def test_concatenate():
+    a = Records(id=[1], xyz=[[0, 0, 0]])
+    b = Records(id=[2], xyz=[[1, 1, 1]])
+    actual = a + b
+    assert len(actual) == 2
+    assert_equal(actual.id, [1, 2])
+    assert_equal(actual.xyz, [[0, 0, 0], [1, 1, 1]])
+
+
+def test_concatenate_inplace():
+    a = Records(id=[1], xyz=[[0, 0, 0]])
+    b = Records(id=[2], xyz=[[1, 1, 1]])
+    a += b
+    assert len(a) == 2
+    assert_equal(a.id, [1, 2])
+    assert_equal(a.xyz, [[0, 0, 0], [1, 1, 1]])
