@@ -35,6 +35,7 @@ NumpyQuery.default_numpy_settings[IntegerEnum] = {
 
 class SQLite:
     def __init__(self, path):
+        path = str(path)
         sqlite_settings = {"db_path": path, "db_file": path}
         self.db = ThreediDatabase(
             connection_settings=sqlite_settings, db_type="spatialite"
