@@ -9,27 +9,26 @@ on:
 
 jobs:
   TestLinux:
-    name: Python ${{ matrix.python }} ${{ matrix.display_name }}
+    name: Python ${{ matrix.python }} ${{ matrix.tag }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          # 2017
-          - python: 3.6
+          - tag: "2017"
+            python: 3.6
             deps: "numpy==1.13.* pygeos==0.7.*"
-          # 2018
-          - python: 3.7
+          - tag: "2018"
+            python: 3.7
             deps: "numpy==1.15.* pygeos==0.7.*"
-          # 2019
-          - python: 3.8
+          - tag: "2019"
+            python: 3.8
             deps: "numpy==1.17.* pygeos==0.8.*"
-          # 2020
-          - python: 3.9
+          - tag: "2020"
+            python: 3.9
             deps: "numpy==1.19.* pygeos==0.9.*"
-          # current
-          - python: 3.9
-            display_name: "latest"
+          - tag: "latest"
+            python: 3.9
             deps: "numpy pygeos"
 
     steps:
@@ -54,7 +53,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.id }}-${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}
+          key: ${{ runner.tag }}-${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}
 
       - name: Install python dependencies
         shell: bash
