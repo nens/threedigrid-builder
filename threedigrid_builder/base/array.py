@@ -1,15 +1,34 @@
 from enum import IntEnum
-from typing import Tuple
 import numpy as np
 
+import sys
 
-def get_type_class(typ):
+USE_PEP560 = sys.version_info[:3] >= (3, 7, 0)
+if USE_PEP560:
+    from typing import _GenericAlias
+else:
+    from typing import TupleMeta
+
+
+def _is_tuple_type(_type):
+    """Test if the type is a indexed typing.Tuple type.
+
+    Examples:
+        is_tuple_type(Tuple[int, int]) == True
+    """
+    if USE_PEP560:
+        return isinstance(_type, _GenericAlias) and _type.__origin__ is tuple
+    else:
+        return type(_type) is TupleMeta
+
+
+def _is_int_enum(_type):
+    """Test if the type is a subclass of IntEnum.
+    """
     try:
-        # Python 3.5 / 3.6
-        return typ.__extra__
-    except AttributeError:
-        # Python 3.7
-        return typ.__origin__
+        return issubclass(_type, IntEnum)
+    except TypeError:  # happens when _type is something like List[int]
+        return False
 
 
 def _to_ndarray(value, elem_type, expected_length):
@@ -23,7 +42,7 @@ def _to_ndarray(value, elem_type, expected_length):
     if value is None:
         return
     # Tuple[...] becomes 2D Array
-    if issubclass(elem_type, Tuple):
+    if _is_tuple_type(elem_type):
         sub_types = elem_type.__args__
         n_columns = len(sub_types)
         elem_type = sub_types[0]
@@ -31,7 +50,7 @@ def _to_ndarray(value, elem_type, expected_length):
         n_columns = None
 
     # cast python to numpy dtypes
-    if elem_type is int or get_type_class(elem_type) is tuple:
+    if elem_type is int or _is_int_enum(elem_type):
         dtype = np.int32
     elif elem_type is float:
         dtype = np.float64
@@ -85,11 +104,15 @@ class array_of:
 
     def __init__(self, data_class):
         """Validate the dataclass passed into the decorator"""
+        fields = data_class.__annotations__
+
+        # id must be present
+        if "id" not in fields:
+            raise TypeError("The id field is required")
 
         # check the subtypes of Tuples
-        fields = data_class.__annotations__
         for name, elem_type in fields.items():
-            if get_type_class(elem_type) is tuple:
+            if _is_tuple_type(elem_type):
                 sub_types = elem_type.__args__
                 n_columns = len(sub_types)
                 if n_columns == 0:
