@@ -34,12 +34,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          lfs: true
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-      
+
+      - name: Install sqlite3 and spatialite libraries
+        run: |
+          sudo apt-get install --yes --no-install-recommends sqlite3 libsqlite3-mod-spatialite
+
       - name: Compile libthreedigrid
         shell: bash
         run: ./full_build.sh
@@ -49,6 +55,7 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
           pip install cython ${{ matrix.deps }}
+          pip install git+https://github.com/nens/threedi-modelchecker#egg=threedi-modelchecker
           pip install -e .[test]
           pip list
 
