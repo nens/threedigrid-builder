@@ -9,57 +9,47 @@ on:
 
 jobs:
   TestLinux:
-    name: Python ${{ matrix.python }} ${{ matrix.tag }}
+    name: Python ${{ matrix.python }} ${{ matrix.display_name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - tag: "2017"
-            python: 3.6
+          # 2017
+          - python: 3.6
             deps: "numpy==1.13.* pygeos==0.7.*"
-          - tag: "2018"
-            python: 3.7
+          # 2018
+          - python: 3.7
             deps: "numpy==1.15.* pygeos==0.7.*"
-          - tag: "2019"
-            python: 3.8
+          # 2019
+          - python: 3.8
             deps: "numpy==1.17.* pygeos==0.8.*"
-          - tag: "2020"
-            python: 3.9
+          # 2020
+          - python: 3.9
             deps: "numpy==1.19.* pygeos==0.9.*"
-          - tag: "latest"
-            python: 3.9
+          # current
+          - python: 3.9
+            display_name: "latest"
             deps: "numpy pygeos"
 
     steps:
       - uses: actions/checkout@v2
-        with:
-          lfs: true
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-
-      - name: Install sqlite3 and spatialite
-        run: |
-          sudo apt-get install --yes --no-install-recommends sqlite3 libsqlite3-mod-spatialite
-
+      
       - name: Compile libthreedigrid
         shell: bash
         run: ./full_build.sh
 
-      - name: Cache python dependencies
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ runner.tag }}-${{ env.pythonLocation }}-${{ hashFiles('setup.py') }}
-
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install git+https://github.com/nens/threedi-modelchecker.git#egg=threedi-modelchecker
-          pip install --upgrade --upgrade-strategy eager cython ${{ matrix.deps }} -e .[test]
+          pip install --disable-pip-version-check --upgrade pip setuptools wheel
+          pip install cython ${{ matrix.deps }}
+          pip install -e .[test]
           pip list
 
       - name: Run tests
