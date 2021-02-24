@@ -5,7 +5,6 @@ from unittest import mock
 
 import numpy as np
 import pygeos
-import pytest
 
 
 def test_init():

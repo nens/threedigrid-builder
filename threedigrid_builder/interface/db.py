@@ -6,7 +6,6 @@ from functools import lru_cache
 from pyproj import Transformer
 from pyproj.crs import CRS
 from sqlalchemy import cast
-from sqlalchemy import Float
 from sqlalchemy import inspect
 from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase

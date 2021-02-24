@@ -76,7 +76,7 @@ class Channels:
           channel_nodes (dict): nodes from Channels().interpolate_nodes
           channel_node_offset (int): the index of the first channel node in the
             target node array (for the lines)
-          connection_node_offset (int): the index of the first connection node 
+          connection_node_offset (int): the index of the first connection node
             in the target node array (for the lines)
 
         Returns:
