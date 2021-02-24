@@ -150,6 +150,7 @@ class SQLite:
                 models.GridRefinementArea.id,
                 models.GridRefinementArea.code,
                 cast(models.GridRefinementArea.refinement_level , Integer),
+            ).all()
 
         # transform tuples to a numpy structured array
         arr = np.array(

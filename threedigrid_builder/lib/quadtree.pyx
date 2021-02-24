@@ -13,7 +13,6 @@ cpdef set_refinement(
     double[::1,:] geom,
     int level,
     int type,
-    double[:] origin,
     double[:] bbox,
     int[:] mmax,
     int[:] nmax,
@@ -34,7 +33,6 @@ cpdef set_refinement(
         n1=&n1,
         refine_level=&level,
         refine_type=&type,
-        origin=&origin[0],
         bbox=&bbox[0],
         mmax=&mmax[0],
         nmax=&nmax[0],
@@ -46,7 +44,7 @@ cpdef set_refinement(
     )
             
     
-def set_refinements(self, refinements, mmax, nmax, dx, lg):
+def set_refinements(refinements, mmax, nmax, dx, lg):
     cdef int refine_id 
     cdef double[::1,:] refine_geom
     cdef int refine_level

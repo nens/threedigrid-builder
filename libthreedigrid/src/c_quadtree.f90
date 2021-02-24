@@ -7,7 +7,7 @@ module m_c_quadtree
     contains
 
     subroutine c_set_refinement(refine_id, refine_geom, n0, n1, refine_level,&
-        refine_type, origin, bbox, mmax, nmax, dx, j0, lg, i0, i1)&
+        refine_type, bbox, mmax, nmax, dx, j0, lg, i0, i1)&
         bind(c, name="f_set_refinement")
         
         use m_quadtree, only : set_refinement
@@ -21,7 +21,6 @@ module m_c_quadtree
         integer(kind=c_int), intent(in) :: refine_id
         integer(kind=c_int), intent(in) :: refine_level
         integer(kind=c_int), intent(in) :: refine_type
-        real(kind=c_double), intent(in) :: origin(2)
         real(kind=c_double), intent(in) :: bbox(4)
         integer(kind=c_int), intent(in) :: mmax(j0)
         integer(kind=c_int), intent(in) :: nmax(j0)
@@ -32,7 +31,6 @@ module m_c_quadtree
                             refine_geom=refine_geom,&
                             refine_level=refine_level,&
                             refine_type=refine_type,&
-                            origin=origin,&
                             bbox=bbox,&
                             mmax=mmax,&
                             nmax=nmax,&

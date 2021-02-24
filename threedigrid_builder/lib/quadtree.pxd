@@ -7,7 +7,6 @@ cdef extern:
         int *n1,
         int *refine_level,
         int *refine_type,
-        double *origin,
         double *bbox,
         int *mmax,
         int *nmax,

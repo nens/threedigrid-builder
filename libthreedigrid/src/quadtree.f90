@@ -12,7 +12,7 @@ module m_quadtree
 
     contains
 
-    subroutine set_refinement(refine_id, refine_geom, refine_level, refine_type, origin, bbox, mmax, nmax, dx, lg)
+    subroutine set_refinement(refine_id, refine_geom, refine_level, refine_type, bbox, mmax, nmax, dx, lg)
         
         use MessageHandling
         use m_grid_utils, only : get_cell_geom, find_cell_intersects,&
@@ -23,7 +23,6 @@ module m_quadtree
         integer, intent(in) :: refine_id
         integer, intent(in) :: refine_level
         integer, intent(in) :: refine_type
-        double precision, intent(in) :: origin(2)
         double precision, intent(in) :: bbox(4)
         integer, intent(in) :: mmax(:)
         integer, intent(in) :: nmax(:)
@@ -46,8 +45,8 @@ module m_quadtree
         refine_geom_bbox = (/ minval(refine_geom(:,1)), minval(refine_geom(:,2)),&
                                 maxval(refine_geom(:,1)), maxval(refine_geom(:,2)) /)
         if (feature_in_bbox(refine_geom_bbox, bbox)) then
-            mnmin = convert_to_grid_crd(origin, dx(1), refine_geom_bbox(1:2), mmax, nmax, DOWN)
-            mnmax = convert_to_grid_crd(origin, dx(1), refine_geom_bbox(3:4), mmax, nmax, UP)
+            mnmin = convert_to_grid_crd(bbox(1:2), dx(1), refine_geom_bbox(1:2), mmax, nmax, DOWN)
+            mnmax = convert_to_grid_crd(bbox(1:2), dx(1), refine_geom_bbox(3:4), mmax, nmax, UP)
         else
             call mess(LEVEL_INFO, 'Refinement outside model_area. ID and type: ', refine_id, refine_type)
             status = 0
@@ -58,7 +57,7 @@ module m_quadtree
         cross=.FALSE.
         do n=mnmin(2), mnmax(2)
             do m=mnmin(1), mnmax(1)
-                cell_geom = get_cell_geom(origin(1), origin(2), m, n, dx(1))
+                cell_geom = get_cell_geom(bbox(1), bbox(2), m, n, dx(1))
                 if (minval(cell_geom(:,1))>=minval(refine_geom(:,1)) - dx(1).and.&
                     maxval(cell_geom(:,1))<=maxval(refine_geom(:,1)) + dx(1).and.&
                     minval(cell_geom(:,2))>=minval(refine_geom(:,2)) - dx(1).and.&
@@ -173,65 +172,6 @@ module m_quadtree
 
     end subroutine balance_quadtree
 
-
-    ! subroutine set_active_2d_comp_cells(self, model_area)
-! 
-        ! use MessageHandling
-        ! use m_grid_utils, only : get_lg_corners, get_pix_corners, get_cell_bbox
-! 
-        ! class(QuadTreeFortran) :: self
-        ! integer, intent(in) :: model_area(:,:)
-        ! integer :: k
-        ! integer :: m,n
-        ! integer :: m0, m1, n0, n1
-        ! integer :: i0, i1, j0, j1
-! 
-        ! self%number_active_nodes=0
-        ! do k=1,self%kmax
-            ! do m=1,self%mmax(k)
-                ! do n=1,self%nmax(k)
-                    ! call get_pix_corners(k, m, n, self%lgrmin, i0, i1, j0, j1)
-                    ! call get_lg_corners(k, m, n, m0, m1, n0, n1)
-                    ! i1 = min(i1, size(model_area, 1))
-                    ! j1 = min(j1, size(model_area, 2))
-                    ! if(all(model_area(i0:i1, j0:j1) == 0)) then
-                        ! self%lg(m0:m1,n0:n1) = -99
-                    ! else
-                        ! if (any(self%lg(m0:m1,n0:n1) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                            ! self%number_active_nodes = self%number_active_nodes+1
-                            ! self%lg(m0:m1,n0:n1) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
-                        ! endif
-                    ! endif
-                ! enddo
-            ! enddo
-        ! enddo
-        ! call mess(LEVEL_INFO, 'No. active 2D computational cells: ', self%number_active_nodes)
-! 
-    ! end subroutine set_active_2d_comp_cells
-
-    
-    ! function is_cell_active(self, m, n, k) result(cell_active)
-! 
-        ! class(QuadTreeFortran) :: self
-        ! integer, intent(in) :: m(2)
-        ! integer, intent(in) :: n(2)
-        ! integer, intent(in) :: k
-        ! logical :: cell_active
-! 
-        ! cell_active = .FALSE.
-        ! if (m(1)>0.and.m(1)<=m(2).and.m(2)<=size(self%lg,1).and.&
-            ! n(1)>0.and.n(1)<=n(2).and.n(2)<=size(self%lg,2)) then
-            ! if (all(self%lg(m(1):m(2),n(1):n(2)) == k)) then
-                ! cell_active = .TRUE.
-            ! else
-                ! cell_active = .FALSE.
-            ! endif
-        ! else
-            ! write(msgbuf, '(A,4i4)') 'Slice indices for active cell is out of bounds: ', m(1), m(2), n(1), n(2)
-            ! call warn_flush()
-        ! endif
-! 
-    ! end function is_cell_active
 
     function convert_to_grid_crd(origin, dx, xy, mmax, nmax, round) result (mn)
 

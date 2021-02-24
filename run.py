@@ -2,7 +2,7 @@ import argparse
 import os
 from threedigrid_builder.models import GlobalSettings
 from threedigrid_builder.db import ModelFileDB
-from threedigrid_builder.subgrid import SubgridArea
+from threedigrid_builder.interface import SubgridArea
 from geojson import Feature, LineString, Polygon, FeatureCollection
 import json
 import pyproj
@@ -11,6 +11,7 @@ import time
 from threedigrid_builder.lib.quadtree import QuadTree
 from threedigrid_builder.lib.nodes import Nodes
 from threedigrid_builder.lib.lines import Lines
+
 
 def get_parser():
     """Return argument parser."""
