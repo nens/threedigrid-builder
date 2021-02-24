@@ -3,6 +3,15 @@ from typing import Tuple
 import numpy as np
 
 
+def get_type_class(typ):
+    try:
+        # Python 3.5 / 3.6
+        return typ.__extra__
+    except AttributeError:
+        # Python 3.7
+        return typ.__origin__
+
+
 def _to_ndarray(value, elem_type, expected_length):
     """Cast value to numpy array, with some type mappings.
 
@@ -22,7 +31,7 @@ def _to_ndarray(value, elem_type, expected_length):
         n_columns = None
 
     # cast python to numpy dtypes
-    if elem_type is int or issubclass(elem_type, IntEnum):
+    if elem_type is int or get_type_class(elem_type) is tuple:
         dtype = np.int32
     elif elem_type is float:
         dtype = np.float64
@@ -80,7 +89,7 @@ class array_of:
         # check the subtypes of Tuples
         fields = data_class.__annotations__
         for name, elem_type in fields.items():
-            if issubclass(elem_type, Tuple):
+            if get_type_class(elem_type) is tuple:
                 sub_types = elem_type.__args__
                 n_columns = len(sub_types)
                 if n_columns == 0:
