@@ -1,9 +1,10 @@
-from threedigrid_builder.base import array_of
+from enum import IntEnum
 from numpy.testing import assert_equal
+from threedigrid_builder.base import array_of
+from typing import Tuple
+
 import numpy as np
 import pytest
-from typing import Tuple
-from enum import IntEnum
 
 
 class Animal(IntEnum):
@@ -25,6 +26,10 @@ class Record:
 @array_of(Record)
 class Records:
     """Records docstring."""
+
+    def __init__(self):
+        self.length_for_init_test = len(self.id)
+
     def does_it_work(self):
         return "yes"
 
@@ -62,12 +67,14 @@ def test_arrays_from_arrays():
     assert_equal(records.yesno, np.array([True, False], dtype=bool))
 
 
-def test_none():
+def test_empty_values():
     records = Records(id=[0, 1])
 
-    assert records.number is None
-    assert records.yesno is None
-    assert records.name is None
+    assert_equal(records.number, np.array([np.nan, np.nan], dtype=np.float64))
+    assert_equal(records.yesno, np.array([False, False], dtype=bool))
+    assert_equal(records.name, np.array([None, None], dtype=object))
+    assert_equal(records.animal, np.array([-9999, -9999], dtype=np.int32))
+    assert_equal(records.xyz, np.full((2, 3), np.nan, dtype=np.float64))
 
 
 def test_id_required():
@@ -80,8 +87,11 @@ def test_unqual_lengths():
         Records(id=[1], number=[5, 7])
 
 
-def test_fortran_order():
-    records = Records(id=[0, 1], xyz=np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]))
+@pytest.mark.parametrize(
+    "xyz", [[[1, 1, 1], [2, 2, 2]], np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]]), None]
+)
+def test_fortran_order(xyz):
+    records = Records(id=[0, 1], xyz=xyz)
 
     assert records.xyz.flags["F_CONTIGUOUS"]
     assert records.xyz.shape == (2, 3)
@@ -91,6 +101,10 @@ def test_python_attrs():
     assert Records.__name__ == Records.__qualname__ == "Records"
     assert Records.__doc__ == "Records docstring."
     assert Records.__module__ == "threedigrid_builder.base.tests.test_array"
+
+
+def test_init():
+    assert Records(id=[2, 1]).length_for_init_test == 2
 
 
 def test_len():

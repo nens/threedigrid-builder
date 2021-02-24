@@ -4,20 +4,13 @@ from enum import unique
 
 @unique
 class CalculationType(IntEnum):
-    # -1 tot 99 ::= Node | 'verbinding-zonder-subnodes(="vertices")'
     BOUNDARY_NODE = -1
-    EMBEDDED_NODE = 0
-    STANDALONE_NODE = 1
-    CONNECTED_NODE = 2
+    EMBEDDED = 0
+    STANDALONE = 1
+    CONNECTED = 2
     BROAD_CRESTED = 3  # only orifices + weirs, corresponds
     SHORT_CRESTED = 4  # only orifices + weirs
     DOUBLE_CONNECTED = 5
-    # 100 tot oneindig ::= 'verbinding-met-subnodes(="vertices")'
-    # a.k.a. pinpoint
-    EMBEDDED_VERTEX = 100
-    STANDALONE_VERTEX = 101
-    CONNECTED_VERTEX = 102
-    DOUBLE_CONNECTED_VERTEX = 105
 
 
 @unique

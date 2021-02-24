@@ -1,7 +1,8 @@
 from enum import IntEnum
-import numpy as np
 
+import numpy as np
 import sys
+
 
 USE_PEP560 = sys.version_info[:3] >= (3, 7, 0)
 if USE_PEP560:
@@ -39,38 +40,78 @@ def _to_ndarray(value, elem_type, expected_length):
         elem_type (type)
         expected_length (int or None): the expected number of rows
     """
-    if value is None:
-        return
     # Tuple[...] becomes 2D Array
     if _is_tuple_type(elem_type):
         sub_types = elem_type.__args__
-        n_columns = len(sub_types)
+        expected_shape = (expected_length, len(sub_types))
         elem_type = sub_types[0]
     else:
-        n_columns = None
+        expected_shape = (expected_length,)
 
     # cast python to numpy dtypes
     if elem_type is int or _is_int_enum(elem_type):
         dtype = np.int32
+        null_value = -9999
     elif elem_type is float:
         dtype = np.float64
+        null_value = np.nan
     elif elem_type is bool:
         dtype = bool
+        null_value = False
     else:
         dtype = object
+        null_value = None
+
+    # return empty array if no value or None is supplied
+    if value is None:
+        return np.full(expected_shape, null_value, dtype=dtype, order="F")
 
     arr = np.asarray(value, dtype=dtype, order="F")
-    if n_columns is None and arr.ndim != 1:
-        raise ValueError(f"Expected a one dimensional array, got {arr.ndim}.")
-    elif n_columns is not None and arr.ndim != 2:
-        raise ValueError(f"Expected a two dimensional array, got {arr.ndim}.")
-    elif arr.ndim == 2 and arr.shape[1] != n_columns:
-        raise ValueError(f"Expected {n_columns} columns, got {arr.shape[1]}.")
-
-    if expected_length is not None and arr.shape[0] != expected_length:
-        raise ValueError(f"Expected {expected_length} rows, got {arr.shape[0]}.")
-
+    if arr.shape != expected_shape:
+        raise ValueError(
+            f"Expected an array with shape {expected_shape}, got {arr.shape}."
+        )
     return arr
+
+
+class ArrayDataClass:
+    """A dataclass with fields ("columns") that are numpy arrays of equal size.
+    """
+
+    def __init__(self, **kwargs):
+        """Initialize the array dataclass from values.
+
+        None values are converted to arrays with NULL values that are appropriate
+        for the type (nan for float, -9999 for int, None for object,
+        False for bool).
+        """
+        # id is required; get its length to use it for validation
+        try:
+            expected_length = len(kwargs["id"])
+        except KeyError:
+            raise TypeError("missing required keyword argument 'id'")
+
+        # convert each field to an array and set it to self
+        fields = self.data_class.__annotations__
+        for name, elem_type in fields.items():
+            value = kwargs.pop(name, None)
+            try:
+                arr = _to_ndarray(value, elem_type, expected_length)
+            except ValueError as e:
+                raise ValueError(f"Error parsing {name} to array: {e}")
+            setattr(self, name, arr)
+
+        # call the init of the wrapped class
+        super().__init__(**kwargs)
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__} object, "
+            f"{self.data_class.__name__} array of length {len(self)}>"
+        )
+
+    def __len__(self):
+        return len(self.id)
 
 
 class array_of:
@@ -80,11 +121,11 @@ class array_of:
     but then transformed into 1D numpy arrays.
 
     Supported types are:
-    - float (cast to numpy.float64)
-    - int (cast to numpy.int32)
-    - bool (cast to numpy._bool)
-    - Enum (cast to numpy.int32)
-    - Tuple[...] (cast to numpy.float64)
+    - float (becomes 1D numpy array of numpy.float64)
+    - int (becomes 1D numpy array of numpy.int32)
+    - bool (becomes 1D numpy array of numpy._bool)
+    - Enum (becomes 1D numpy array of numpy.int32)
+    - Tuple[<type>] (becomes 2D numpy array of <type>)
 
     Other types are not converted to numpy dtypes and kept as python object.
 
@@ -124,10 +165,9 @@ class array_of:
         self.data_class = data_class
 
     def __call__(self, cls):
-        """Wrap a class by subclassing it.
+        """Transform a class into a ArrayDataClass subclass.
 
-        Note that the below example is equal to the normal decorator usage
-        illustrated above.
+        Note that the normal decorator usage is equivalent to::
 
         >>> class MyRecords:
         ...     pass
@@ -135,40 +175,8 @@ class array_of:
         >>> MyRecords = array_of(MyRecord)(MyRecords)
         """
 
-        class Wrapper(cls):
-            def __init__(self, **kwargs):
-                """Initialize the array dataclass
-
-                Take the iterables in the arguments and convert them into 1D
-                ndarrays according to the types in the normal dataclass.
-                """
-                # id is required; get its length to use it for validation
-                try:
-                    expected_length = len(kwargs["id"])
-                except KeyError:
-                    raise TypeError("missing required keyword argument 'id")
-
-                # convert each field to an array and set it to self
-                fields = self.data_class.__annotations__
-                for name, elem_type in fields.items():
-                    value = kwargs.pop(name, None)
-                    try:
-                        arr = _to_ndarray(value, elem_type, expected_length)
-                    except ValueError as e:
-                        raise ValueError(f"Error parsing {name} to array: {e}")
-                    setattr(self, name, arr)
-
-                # call the init of the wrapped class
-                super().__init__(**kwargs)
-
-            def __repr__(self):
-                return (
-                    f"<{self.__class__.__name__} object, "
-                    f"{self.data_class.__name__} array of length {len(self)}>"
-                )
-
-            def __len__(self):
-                return len(self.id)
+        class Wrapper(ArrayDataClass, cls):
+            pass
 
         Wrapper.data_class = self.data_class
 
