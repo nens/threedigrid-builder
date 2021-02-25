@@ -82,7 +82,7 @@ def test_get_lines(connection_nodes, two_channels):
     lines = two_channels.get_lines(
         connection_nodes,
         nodes,
-        offsets={ConnectionNodes: 100},
+        node_id_offsets={ConnectionNodes: 100},
     )
 
     assert_array_equal(
@@ -118,7 +118,7 @@ def test_get_grid_lines_one_channel(
     lines = one_channel.get_lines(
         connection_nodes,
         nodes,
-        offsets={ConnectionNodes: 1000, Channels: 100},
+        node_id_offsets={ConnectionNodes: 1000, Channels: 100},
     )
 
     assert {tuple(x) for x in lines.line} == set(expected)
@@ -147,7 +147,7 @@ def test_get_grid_lines_two_channels(
     lines = two_channels.get_lines(
         connection_nodes,
         nodes,
-        offsets={ConnectionNodes: 100},
+        node_id_offsets={ConnectionNodes: 100},
     )
 
     assert {tuple(x) for x in lines.line} == set(expected)

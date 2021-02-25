@@ -1,6 +1,5 @@
 from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import Grid, ConnectionNodes
 
 import numpy as np
 import pygeos
@@ -17,7 +16,7 @@ def connection_nodes():
 
 
 def test_get_grid(connection_nodes):
-    grid = connection_nodes.get_grid()
+    grid = Grid.from_connection_nodes(connection_nodes, {})
 
     assert_array_equal(grid.nodes.id, [0, 1])
     assert_array_equal(grid.nodes.coordinates, [(0, 0), (10, 0)])

@@ -83,18 +83,21 @@ class SQLite:
         return pygeos.apply(geometries, func)
 
     def get_channels(self):
-        """Return Channels
-        """
+        """Return Channels"""
         with self.get_session() as session:
-            arr = session.query(
-                models.Channel.the_geom,
-                models.Channel.dist_calc_points,
-                models.Channel.id,
-                models.Channel.code,
-                models.Channel.connection_node_start_id,
-                models.Channel.connection_node_end_id,
-                models.Channel.calculation_type,
-            ).order_by(models.Channel.id).as_structarray()
+            arr = (
+                session.query(
+                    models.Channel.the_geom,
+                    models.Channel.dist_calc_points,
+                    models.Channel.id,
+                    models.Channel.code,
+                    models.Channel.connection_node_start_id,
+                    models.Channel.connection_node_end_id,
+                    models.Channel.calculation_type,
+                )
+                .order_by(models.Channel.id)
+                .as_structarray()
+            )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
@@ -102,15 +105,18 @@ class SQLite:
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
     def get_connection_nodes(self):
-        """Return ConnectionNodes
-        """
+        """Return ConnectionNodes"""
         with self.get_session() as session:
-            arr = session.query(
-                models.ConnectionNode.the_geom,
-                models.ConnectionNode.id,
-                models.ConnectionNode.code,
-                models.ConnectionNode.storage_area,
-            ).order_by(models.ConnectionNode.id).as_structarray()
+            arr = (
+                session.query(
+                    models.ConnectionNode.the_geom,
+                    models.ConnectionNode.id,
+                    models.ConnectionNode.code,
+                    models.ConnectionNode.storage_area,
+                )
+                .order_by(models.ConnectionNode.id)
+                .as_structarray()
+            )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
@@ -118,24 +124,30 @@ class SQLite:
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
     def get_grid_refinements(self):
-        """Return Gridrefinement and GridRefinementArea concatenated into one array.
-
-        """
+        """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
-            arr1 = session.query(
-                models.GridRefinement.the_geom,
-                models.GridRefinement.display_name,
-                models.GridRefinement.id,
-                models.GridRefinement.code,
-                models.GridRefinement.refinement_level,
-            ).order_by(models.GridRefinement.id).as_structarray()
-            arr2 = session.query(
-                models.GridRefinementArea.the_geom,
-                models.GridRefinementArea.display_name,
-                models.GridRefinementArea.id,
-                models.GridRefinementArea.code,
-                models.GridRefinementArea.refinement_level,
-            ).order_by(models.GridRefinementArea.id).as_structarray()
+            arr1 = (
+                session.query(
+                    models.GridRefinement.the_geom,
+                    models.GridRefinement.display_name,
+                    models.GridRefinement.id,
+                    models.GridRefinement.code,
+                    models.GridRefinement.refinement_level,
+                )
+                .order_by(models.GridRefinement.id)
+                .as_structarray()
+            )
+            arr2 = (
+                session.query(
+                    models.GridRefinementArea.the_geom,
+                    models.GridRefinementArea.display_name,
+                    models.GridRefinementArea.id,
+                    models.GridRefinementArea.code,
+                    models.GridRefinementArea.refinement_level,
+                )
+                .order_by(models.GridRefinementArea.id)
+                .as_structarray()
+            )
             arr = np.concatenate((arr1, arr2))
 
         # reproject
