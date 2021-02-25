@@ -92,24 +92,30 @@ class Channels:
         """
         # start with the easy ones: channels that connect 2 connection nodes
         # without interpolated nodes in between
-        lines_start = (
-            np.vstack([self.connection_node_start_id, self.connection_node_end_id])
-            + connection_node_offset
+        lines_start = np.vstack(
+            [
+                self.connection_node_start_id,
+                self.connection_node_end_id,
+            ]
+        )
+        lines_start += connection_node_offset
+        lines = Lines(
+            id=np.arange(len(self)),
+            line=lines_start.T,
+            content_pk=np.arange(len(self)),  # indices into self (channels)
+            content_type=ContentType.TYPE_V2_CHANNEL,
         )
 
         n_nodes = len(nodes)
         if n_nodes == 0:
             # if there are no interpolated nodes then we're done
-            lines = Lines(id=np.arange(lines_start.shape[1]), line=lines_start.T)
             return Grid(nodes=nodes, lines=lines)
 
         # generate the lines that interconnect interpolated nodes
-        line_ids = (
-            np.vstack([np.arange(n_nodes), np.arange(1, n_nodes + 1)])
-            + channel_node_offset
-        )
+        line_ids = np.vstack([np.arange(n_nodes), np.arange(1, n_nodes + 1)])
+        line_ids += channel_node_offset
 
-        # connect the last line of each channel to the right
+        # connect the last line of each channel to the corresponding
         # connection_node_end_id (instead of the next channel)
         is_channel_end = np.append(
             nodes.content_pk[1:] != nodes.content_pk[:-1], [True]
@@ -123,15 +129,14 @@ class Channels:
         # node (if there are interpolated nodes)
         is_channel_start = np.roll(is_channel_end, 1)
         channels_with_interp = nodes.content_pk[is_channel_start]
-        lines_start[1][channels_with_interp] = (
+        lines.line[channels_with_interp, 1] = (
             np.where(is_channel_start)[0] + channel_node_offset
         )
 
-        lines = Lines(id=np.arange(lines_start.shape[1]), line=lines_start.T)
         lines += Lines(
-            id=np.arange(
-                lines_start.shape[1], lines_start.shape[1] + line_ids.shape[1]
-            ),
+            id=np.arange(len(lines), len(lines) + len(nodes)),
             line=line_ids.T,
+            content_pk=nodes.content_pk,
+            content_type=ContentType.TYPE_V2_CHANNEL,
         )
         return Grid(nodes=nodes, lines=lines)
