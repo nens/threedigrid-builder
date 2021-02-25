@@ -11,8 +11,8 @@ from sqlalchemy import Integer
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
-from threedigrid_builder.grid1d import Channels
-from threedigrid_builder.grid1d import ConnectionNodes
+from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import ConnectionNodes
 
 import numpy as np
 import pygeos

@@ -1,8 +1,8 @@
+from .grid import Grid  # TODO this import should not be here
 from threedigrid_builder.base import array_of
+from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import Lines
-from threedigrid_builder.grid import Nodes
 
 import numpy as np
 import pygeos

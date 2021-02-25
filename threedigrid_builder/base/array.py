@@ -10,6 +10,8 @@ if USE_PEP560:
 else:
     from typing import TupleMeta
 
+__all__ = ["array_of"]
+
 
 def _is_tuple_type(_type):
     """Test if the type is a indexed typing.Tuple type.
