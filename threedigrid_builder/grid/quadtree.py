@@ -56,6 +56,9 @@ class QuadTree:
             self.lg
         )
 
+    def __repr__(self):
+        return f"<Quadtree object with {self.kmax} refinement levels and {self.active_cells} active computational cells>" #NOQA
+
     @property
     def min_cell_pixels(self):
         """Returns minimum number of pixels in smallles computational_cell.

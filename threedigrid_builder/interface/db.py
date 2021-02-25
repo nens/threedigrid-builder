@@ -65,7 +65,7 @@ class SQLite:
         """
         if self._global_settings is None:
             with self.get_session() as session:
-                settings = session.query(models.GlobalSetting).one()
+                settings = session.query(models.GlobalSetting).one() #TODO: How does this work with multiple global_settings lines?
             self._global_settings = _object_as_dict(settings)
         return self._global_settings
 

@@ -5,11 +5,11 @@ import rasterio
 
 
 class SubgridMeta:
-    def __init__(self, dem_filepath, model_area=None):
+    def __init__(self, filepath, model_area=None):
 
-        self.dem_filepath = dem_filepath
+        self.filepath = filepath
         with rasterio.Env():
-            with rasterio.open(dem_filepath, "r") as dem:
+            with rasterio.open(filepath, "r") as dem:
                 self.transform = dem.profile["transform"]
                 self._dxp = self.transform[0]
                 if model_area is not None:
@@ -19,6 +19,9 @@ class SubgridMeta:
                     )
                 else:
                     self._area_raster = self._create_area_arr_from_dem(dem)
+
+    def __repr__(self):
+        return f"<SubgridMeta object of raster file {self.filepath}>"
 
     @property
     def area_pix(self):
