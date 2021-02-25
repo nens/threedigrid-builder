@@ -139,8 +139,6 @@ module m_grid_utils
 
     function find_cell_intersects(geom1, geom2) result (cross)
 
-        use MessageHandling
-
         double precision, intent(in) :: geom1(:,:)
         double precision, intent(in) :: geom2(:,:)
         double precision :: edge_geom(4)
@@ -166,8 +164,6 @@ module m_grid_utils
     end function find_cell_intersects
 
     subroutine find_crossing(geom1,geom2,cross,xcross,ycross)
-
-        use MessageHandling
         
         implicit none
         
@@ -226,8 +222,6 @@ module m_grid_utils
 
     subroutine find_intersection(geom1, geom2, intersects, intersection)
 
-        use MessageHandling
-
         implicit none
 
         double precision, intent(in) :: geom1(4)
@@ -246,11 +240,9 @@ module m_grid_utils
        
         intersects = .FALSE.
         if ((max(geom1(2),geom1(4)).lt.min(geom2(2),geom2(4))).or.(min(geom1(2),geom1(4)).gt.max(geom2(2),geom2(4)))) then
-            !call mess(LEVEL_DEBUG, 'Outside Y region')
             return
         endif
         if ((max(geom1(1),geom1(3)).lt.min(geom2(1),geom2(3))).or.(min(geom1(1),geom1(3)).gt.max(geom2(1),geom2(3)))) then
-            !call mess(LEVEL_DEBUG, 'Outside X region')
             return
         endif
 
@@ -278,7 +270,7 @@ module m_grid_utils
 
         if( (a1 - a2)<1.0d-5 ) then
             intersects = .FALSE.
-            call mess(LEVEL_DEBUG, 'lines do not intersect')
+            write(*,*) '** DEBUG: Lines do not intersect'
             return
         else
             intersects = .TRUE.
@@ -293,8 +285,6 @@ module m_grid_utils
 
     subroutine get_line_intersection(geom1, geom2, intersect, intersection)
         
-        use MessageHandling
-
         implicit none
 
         double precision, intent(in) :: geom1(4)
@@ -309,11 +299,9 @@ module m_grid_utils
         if ((geom2(4).eq.geom2(2)).and.(geom1(2).lt.geom2(2)).and.(geom1(4).lt.geom2(2))) return
         if ((geom2(3).eq.geom2(1)).and.(geom1(1).lt.geom2(1)).and.(geom1(3).lt.geom2(1))) return
         if ((max(geom1(2),geom1(4)).lt.min(geom2(2),geom2(4))).or.(min(geom1(2),geom1(4)).gt.max(geom2(2),geom2(4)))) then
-            !call mess(LEVEL_DEBUG, 'Outside Y region')
             return
         endif
         if ((max(geom1(1),geom1(3)).lt.min(geom2(1),geom2(3))).or.(min(geom1(1),geom1(3)).gt.max(geom2(1),geom2(3)))) then
-            !call mess(LEVEL_DEBUG, 'Outside X region')
             return
         endif
 
@@ -345,8 +333,6 @@ module m_grid_utils
     end subroutine get_line_intersection
 
     function geom_in_polygon(geom1, geom2) result(cross)
-
-        use MessageHandling
 
         double precision, intent(in) :: geom1(:,:)
         double precision, intent(in) :: geom2(:,:)

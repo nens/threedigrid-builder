@@ -1,6 +1,5 @@
 module m_quadtree
 
-    use MessageHandling
     use parameters, only : NODATA
 
     implicit none
@@ -14,7 +13,6 @@ module m_quadtree
 
     subroutine set_refinement(refine_id, refine_geom, refine_level, refine_type, bbox, mmax, nmax, dx, lg)
         
-        use MessageHandling
         use m_grid_utils, only : get_cell_geom, find_cell_intersects,&
                                  get_lg_corners, geom_in_polygon,&
                                  feature_in_bbox
@@ -37,7 +35,7 @@ module m_quadtree
         
         status = 0
         if(.not.refine_type==LINESTRING.and..not.refine_type==POLY) then
-            call mess(LEVEL_WARN, 'Refinement type not known. Skipping: ', refine_id, refine_type)
+            write(*,*) '** WARNING: Refinement type not known. Skipping: ', refine_id, refine_type
             status = 0
             return
         endif
@@ -48,12 +46,12 @@ module m_quadtree
             mnmin = convert_to_grid_crd(bbox(1:2), dx(1), refine_geom_bbox(1:2), mmax, nmax, DOWN)
             mnmax = convert_to_grid_crd(bbox(1:2), dx(1), refine_geom_bbox(3:4), mmax, nmax, UP)
         else
-            call mess(LEVEL_INFO, 'Refinement outside model_area. ID and type: ', refine_id, refine_type)
+            write(*,*) '** INFO: Refinement outside model_area. ID and type: ', refine_id, refine_type
             status = 0
             return
         endif
 
-        call mess(LEVEL_INFO, 'Start applying refinement with refinement level and type: ', refine_id, refine_level, refine_type)
+        write(*,*) '** INFO: Start applying refinement with refinement level and type: ', refine_id, refine_level, refine_type
         cross=.FALSE.
         do n=mnmin(2), mnmax(2)
             do m=mnmin(1), mnmax(1)
@@ -79,8 +77,7 @@ module m_quadtree
         enddo
 
         if (status == 0) then
-            write(msgbuf, '(A,i8,A,i1)') 'Unsuccessfully applied refinement geometry with id: ', refine_id, ' and type: ', refine_type
-            call warn_flush()
+            write(*,*) '** WARNING: Unsuccessfully applied refinement geometry with id: ', refine_id, ' and type: ', refine_type
         endif
 
     end subroutine set_refinement
@@ -175,8 +172,6 @@ module m_quadtree
 
     function convert_to_grid_crd(origin, dx, xy, mmax, nmax, round) result (mn)
 
-        use MessageHandling
-
         double precision, intent(in) :: xy(2)
         double precision, intent(in) :: origin(2)
         double precision, intent(in) :: dx
@@ -192,7 +187,7 @@ module m_quadtree
             mn(1) = min(mmax(1), int(ceiling((xy(1) - origin(1)) / dx)))
             mn(2) = min(nmax(1), int(ceiling((xy(2) - origin(2)) / dx)))
         else
-            call mess(LEVEL_ERROR, 'Rounding option not known: ', round)
+            write(*,*) '** ERROR: Rounding option not known: ', round
         endif
 
     end function convert_to_grid_crd
