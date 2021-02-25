@@ -42,27 +42,33 @@ cpdef set_refinement(
         i0=&i0,
         i1=&i1
     )
-            
-    
-def set_refinements(refinements, mmax, nmax, dx, lg):
-    cdef int refine_id 
-    cdef double[::1,:] refine_geom
-    cdef int refine_level
-    cdef int refine_type
-    cdef int i
-    pass
 
+def create_quadtree(
+    int kmax, 
+    int[:] mmax,
+    int[:] nmax,
+    int lgrmin,
+    int[:,:] model_area,
+    int[:,:] lg
+):
 
-def create_quadtree(int kmax, int[:] mmax, int[:] nmax, int[:,:] lg):
-    cdef int n0 = mmax.shape[0]
+    cdef int m0 = mmax.shape[0]
+    cdef int n0 = model_area.shape[0]
+    cdef int n1 = model_area.shape[1]
     cdef int i0 = lg.shape[0]
     cdef int i1 = lg.shape[1]
-    make_quadtree(
+
+    num_active_nodes = make_quadtree(
         kmax=&kmax,
         mmax=&mmax[0],
         nmax=&nmax[0],
+        lgrmin=&lgrmin,
+        model_area=&model_area[0,0],
         lg=&lg[0,0],
+        m0=&m0,
         n0=&n0,
+        n1=&n1,
         i0=&i0,
         i1=&i1
     )
+    return <object>num_active_nodes
