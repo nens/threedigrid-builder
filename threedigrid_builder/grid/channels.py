@@ -5,6 +5,8 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 
+from .connection_nodes import ConnectionNodes
+
 import numpy as np
 import pygeos
 
@@ -37,7 +39,7 @@ class Channels:
             - id: 0-based counter generated here
             - coordinates
             - content_type: ContentType.TYPE_V2_CHANNEL
-            - content_pk: the 0-based index into Channels (not the channel id)
+            - content_pk: the id of the Channel from which this node originates
         """
         # load data
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -67,20 +69,19 @@ class Channels:
             id=range(len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
-            content_pk=idx,
+            content_pk=self.index_to_id(idx),
         )
 
-    def get_grid(self, nodes, channel_node_offset, connection_node_offset):
+    def get_lines(self, connection_nodes, nodes, offsets):
         """Compute the grid (nodes + lines) for the channels.
 
         Fields connection_node_start_id and connection_node_end_id are used.
 
         Args:
-            nodes (dict): additional channel nodes (see interpolate_nodes)
-            channel_node_offset (int): the index of the first channel node in the
-                target node array (for the lines)
-            connection_node_offset (int): the index of the first connection node
-                in the target node array (for the lines)
+            connection_nodes (ConnectionNodes)
+            nodes (Nodes): additional channel nodes (see interpolate_nodes)
+            offsets (dict): offsets to give line indices, per type
+                e.g. {ConnectionNodes: 0, Channels: 105}
 
         Returns:
             Grid with data in the following columns:
@@ -91,47 +92,43 @@ class Channels:
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the 0-based index into Channels (not the channel id)
         """
+        # convert connection_node_start_id / connection_node_end_id to index
+        cn_start_idx = connection_nodes.id_to_index(self.connection_node_start_id) + offsets.get(ConnectionNodes, 0)
+        cn_end_idx = connection_nodes.id_to_index(self.connection_node_end_id) + offsets.get(ConnectionNodes, 0)
+
         # start with the easy ones: channels that connect 2 connection nodes
         # without interpolated nodes in between
-        lines_start = np.vstack(
-            [
-                self.connection_node_start_id,
-                self.connection_node_end_id,
-            ]
-        )
-        lines_start += connection_node_offset
         lines = Lines(
             id=range(len(self)),
-            line=lines_start.T,
-            content_pk=range(len(self)),  # indices into self (channels)
+            line=np.array([cn_start_idx, cn_end_idx]).T,
+            content_pk=self.id,
             content_type=ContentType.TYPE_V2_CHANNEL,
         )
 
-        n_nodes = len(nodes)
-        if n_nodes == 0:
-            # if there are no interpolated nodes then we're done
-            return Grid(nodes=nodes, lines=lines)
+        # if there are no interpolated nodes then we're done
+        if len(nodes) == 0:
+            return lines
 
         # generate the lines that interconnect interpolated nodes
-        line_ids = np.vstack([np.arange(n_nodes), np.arange(1, n_nodes + 1)])
-        line_ids += channel_node_offset
+        line_ids = np.array([np.arange(len(nodes)), np.arange(1, len(nodes) + 1)])
+        line_ids += offsets.get(Channels, 0)
 
         # connect the last line of each channel to the corresponding
         # connection_node_end_id (instead of the next channel)
         is_channel_end = np.append(
             nodes.content_pk[1:] != nodes.content_pk[:-1], [True]
         )
-        line_ids[1][is_channel_end] = (
-            self.connection_node_end_id[nodes.content_pk[is_channel_end]]
-            + connection_node_offset
-        )
+        channel_id = nodes.content_pk[is_channel_end]
+        channel_idx = self.id_to_index(channel_id)
+        line_ids[1][is_channel_end] = cn_end_idx[channel_idx]
 
-        # connect the line endings in 'lines_start' to a first interpolated
+        # connect the line endings in 'lines.line' to a first interpolated
         # node (if there are interpolated nodes)
         is_channel_start = np.roll(is_channel_end, 1)
-        channels_with_interp = nodes.content_pk[is_channel_start]
-        lines.line[channels_with_interp, 1] = (
-            np.where(is_channel_start)[0] + channel_node_offset
+        channel_id = nodes.content_pk[is_channel_start]
+        channel_idx = self.id_to_index(channel_id)
+        lines.line[channel_idx, 1] = (
+            np.where(is_channel_start)[0] + offsets.get(Channels, 0)
         )
 
         lines += Lines(
@@ -140,4 +137,4 @@ class Channels:
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,
         )
-        return Grid(nodes=nodes, lines=lines)
+        return lines

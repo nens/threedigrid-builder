@@ -1,11 +1,19 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import Channels, ConnectionNodes
 
 import numpy as np
 import pygeos
 import pytest
+
+
+@pytest.fixture
+def connection_nodes():
+    # Used to map connection_node_start/end_id to an index (sequence id)
+    return ConnectionNodes(
+        id=np.array([21, 25, 33, 42]),
+    )
 
 
 @pytest.fixture
@@ -53,7 +61,7 @@ def test_interpolate_nodes_one_channel(dist, expected, one_channel):
     actual = one_channel.interpolate_nodes(global_dist_calc_points=74.0)
 
     assert_array_equal(actual.coordinates, expected)
-    assert_array_equal(actual.content_pk, 0)
+    assert_array_equal(actual.content_pk, 1)
 
 
 def test_interpolate_nodes_two_channels(two_channels):
@@ -62,74 +70,84 @@ def test_interpolate_nodes_two_channels(two_channels):
     expected_points = [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
 
     assert_array_equal(actual.coordinates, expected_points)
-    assert_array_equal(actual.content_pk, [0, 0, 0, 1, 1, 1])
+    assert_array_equal(actual.content_pk, [1, 1, 1, 2, 2, 2])
 
 
-def test_get_grid(two_channels):
+def test_get_lines(connection_nodes, two_channels):
     nodes = Nodes(
         id=[0, 1, 2],
-        content_pk=[0, 1, 1],
+        content_pk=[1, 2, 2],
     )
 
-    grid = two_channels.get_grid(
-        nodes, channel_node_offset=0, connection_node_offset=100
+    lines = two_channels.get_lines(
+        connection_nodes,
+        nodes,
+        offsets={ConnectionNodes: 100},
     )
 
     assert_array_equal(
-        grid.lines.id,
+        lines.id,
         range(5),
     )
     assert_array_equal(
-        grid.lines.line,
-        [(121, 0), (125, 1), (0, 142), (1, 2), (2, 133)],
+        lines.line,
+        [(100, 0), (101, 1), (0, 103), (1, 2), (2, 102)],
     )
     assert_array_equal(
-        grid.lines.content_pk,
-        [0, 1, 0, 1, 1],
+        lines.content_pk,
+        [1, 2, 1, 2, 2],
     )
-    assert_array_equal(grid.lines.content_type, ContentType.TYPE_V2_CHANNEL)
+    assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
 
 
 @pytest.mark.parametrize(
     "channel_idx,expected",
     [
-        ([], [(1021, 1042)]),
-        ([0], [(1021, 100), (100, 1042)]),
-        ([0, 0, 0], [(1021, 100), (100, 101), (101, 102), (102, 1042)]),
+        ([], [(1000, 1003)]),
+        ([1], [(1000, 100), (100, 1003)]),
+        ([1, 1, 1], [(1000, 100), (100, 101), (101, 102), (102, 1003)]),
     ],
 )
-def test_get_grid_lines_one_channel(channel_idx, expected, one_channel):
+def test_get_grid_lines_one_channel(
+    channel_idx, expected, connection_nodes, one_channel
+):
     nodes = Nodes(
         id=range(len(channel_idx)),
         content_pk=channel_idx,
     )
-    grid = one_channel.get_grid(
-        nodes, channel_node_offset=100, connection_node_offset=1000
+    lines = one_channel.get_lines(
+        connection_nodes,
+        nodes,
+        offsets={ConnectionNodes: 1000, Channels: 100},
     )
 
-    assert {tuple(x) for x in grid.lines.line} == set(expected)
+    assert {tuple(x) for x in lines.line} == set(expected)
 
 
 @pytest.mark.parametrize(
     "channel_idx,expected",
     [
-        ([], [(121, 142), (125, 133)]),
-        ([0], [(121, 0), (0, 142), (125, 133)]),
-        ([0, 0, 0], [(121, 0), (0, 1), (1, 2), (2, 142), (125, 133)]),
-        ([1], [(121, 142), (125, 0), (0, 133)]),
-        ([1, 1, 1], [(121, 142), (125, 0), (0, 1), (1, 2), (2, 133)]),
-        ([0, 1, 1], [(121, 0), (0, 142), (125, 1), (1, 2), (2, 133)]),
-        ([0, 0, 1], [(121, 0), (0, 1), (1, 142), (125, 2), (2, 133)]),
+        ([], [(100, 103), (101, 102)]),
+        ([1], [(100, 0), (0, 103), (101, 102)]),
+        ([1, 1, 1], [(100, 0), (0, 1), (1, 2), (2, 103), (101, 102)]),
+        ([2], [(100, 103), (101, 0), (0, 102)]),
+        ([2, 2, 2], [(100, 103), (101, 0), (0, 1), (1, 2), (2, 102)]),
+        ([1, 2, 2], [(100, 0), (0, 103), (101, 1), (1, 2), (2, 102)]),
+        ([1, 1, 2], [(100, 0), (0, 1), (1, 103), (101, 2), (2, 102)]),
     ],
 )
-def test_get_grid_lines_two_channels(channel_idx, expected, two_channels):
+def test_get_grid_lines_two_channels(
+    channel_idx, expected, connection_nodes, two_channels
+):
     nodes = Nodes(
         id=range(len(channel_idx)),
         content_pk=channel_idx,
     )
 
-    grid = two_channels.get_grid(
-        nodes, channel_node_offset=0, connection_node_offset=100
+    lines = two_channels.get_lines(
+        connection_nodes,
+        nodes,
+        offsets={ConnectionNodes: 100},
     )
 
-    assert {tuple(x) for x in grid.lines.line} == set(expected)
+    assert {tuple(x) for x in lines.line} == set(expected)

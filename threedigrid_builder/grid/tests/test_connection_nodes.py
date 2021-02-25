@@ -21,4 +21,4 @@ def test_get_grid(connection_nodes):
 
     assert_array_equal(grid.nodes.id, [0, 1])
     assert_array_equal(grid.nodes.coordinates, [(0, 0), (10, 0)])
-    assert_array_equal(grid.nodes.content_pk, [0, 1])
+    assert_array_equal(grid.nodes.content_pk, [1, 3])

@@ -32,14 +32,13 @@ class ConnectionNodes:
             - nodes.id: 0-based counter generated here
             - nodes.coordinates: node coordinates (from self.the_geom)
             - nodes.content_type: ContentType.TYPE_V2_CONNECTION_NODES
-            - nodes.content_pk: the 0-based index into ConnectionNodes
-              (not the id)
+            - nodes.content_pk: the user-supplied id
         """
         nodes = Nodes(
             id=range(len(self)),
             coordinates=pygeos.get_coordinates(self.the_geom),
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
-            content_pk=range(len(self)),
+            content_pk=self.id,
         )
         lines = Lines(id=[])
         return Grid(nodes, lines)
