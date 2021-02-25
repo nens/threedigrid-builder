@@ -18,8 +18,9 @@ class Grid:
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
         self.nodes = nodes
         self.lines = lines
+        self.epsg_code = None  # a Grid is aware of its projection
 
-    def concatenate(self, other):
+    def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
         if self.__class__ is not other.__class__:
             raise TypeError(

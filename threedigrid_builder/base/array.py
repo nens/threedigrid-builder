@@ -175,6 +175,10 @@ class ArrayDataClass:
         # 1000       10000          5.2
         return np.take(self.id, index)  # same as self.id[index]
 
+    def to_dict(self):
+        fields = self.data_class.__annotations__
+        return {field: getattr(self, field) for field in fields}
+
 
 class array_of:
     """A decorator to create an array dataclass from a normal dataclass.
