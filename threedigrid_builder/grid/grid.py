@@ -1,5 +1,5 @@
-from .lines import Lines
-from .nodes import Nodes
+from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
 
 
 __all__ = ["Grid"]
