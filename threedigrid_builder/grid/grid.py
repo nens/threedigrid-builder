@@ -34,7 +34,8 @@ class Grid:
     def from_quadtree(
         cls, subgrid_meta, num_refine_levels, min_gridsize, refinements
     ):
-
+        """Construct the 2D grid based on the quadtree object.
+        """
         quadtree = QuadTree(
             subgrid_meta,
             num_refine_levels,

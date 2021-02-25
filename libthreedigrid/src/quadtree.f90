@@ -221,7 +221,7 @@ module m_quadtree
                 enddo
             enddo
         enddo
-        write(*,*) '**INFO: No. active 2D computational cells: ', num_active_nodes
+        write(*,*) '** INFO: No. active 2D computational cells: ', num_active_nodes
 
     end subroutine find_active_2d_comp_cells
 

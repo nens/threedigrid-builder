@@ -1,5 +1,6 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_refinement
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes
@@ -130,19 +131,16 @@ class QuadTree:
             )
 
     def get_nodes(self, subgrid_meta):
-                """Set active grid levels for based on refinement dict and 
-        filling lg variable for refinement locations.
+        """Compute 2D openwater Nodes based computed Quadtree
 
         Args:
-          dict of refinemnets containing at least
-          - geometry
-          - refinement_level
-          - id
-        
+          SubgridMeta object for passing active model_area to node computation.
+
         Return:
           Nodes object
         """
 
+        # Create all arrays for filling in external Fortran routine.
         id = np.arange(self.active_cells)
         nodk = np.empty(len(id), dtype=np.int32, order='F')
         nodm = np.empty(len(id), dtype=np.int32, order='F')
@@ -150,6 +148,11 @@ class QuadTree:
         quad_nod = np.empty(self.lg.shape, dtype=np.int32, order='F')
         bounds = np.empty((len(id), 4), dtype=np.float64, order='F')
         coords = np.empty((len(id), 2), dtype=np.float64, order='F')
+        
+        # Node type is always openwater at first init
+        node_type = np.full(
+            (len(id)), NodeType.NODE_2D_OPEN_WATER, dtype='O', order='F'
+        )
 
         set_2d_computational_nodes(
             np.array([self.bbox[0], self.bbox[1]]),
@@ -165,9 +168,10 @@ class QuadTree:
             bounds,
             coords,
         )
-        
+
         return Nodes(
             id=id,
+            node_type=node_type,
             nodk=nodk,
             nodm=nodm,
             nodn=nodn,

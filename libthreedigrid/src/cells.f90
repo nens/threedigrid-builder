@@ -36,13 +36,13 @@ module m_cells
                 do n=1,nmax(k)
                     call get_lg_corners(k, m, n, m0, m1, n0, n1)
                     if(all(lg(m0:m1,n0:n1) == k)) then
+                        nod = nod + 1
                         nodk(nod) = k
                         nodm(nod) = m
                         nodn(nod) = n
                         quad_nod(m0:m1,n0:n1) = nod
                         bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
                         coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
-                        nod = nod + 1
                     else
                         continue
                     endif
