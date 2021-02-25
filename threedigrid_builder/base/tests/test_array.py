@@ -88,6 +88,16 @@ def test_id_required():
         Records(number=[5, 7])
 
 
+def test_id_dimensionality():
+    with pytest.raises(ValueError):
+        Records(id=7)
+
+
+def test_id_sorted():
+    with pytest.raises(ValueError):
+        Records(id=[7, 5])
+
+
 def test_unqual_lengths():
     with pytest.raises(ValueError):
         Records(id=[1], number=[5, 7])
@@ -110,15 +120,45 @@ def test_python_attrs():
 
 
 def test_init():
-    assert Records(id=[2, 1]).length_for_init_test == 2
+    assert Records(id=[1, 2]).length_for_init_test == 2
 
 
 def test_len():
-    assert len(Records(id=[2, 1])) == 2
+    assert len(Records(id=[1, 2])) == 2
 
 
 def test_repr():
     assert repr(Records(id=[2, 3])) == "<Records object, Record array of length 2>"
+
+
+@pytest.mark.parametrize(
+    "id,expected",
+    [
+        (1, 0),
+        ([5], [2]),
+        ([5, 3], [2, 1]),
+        ([1, 1, 1], [0, 0, 0]),
+    ],
+)
+def test_id_to_index(id, expected):
+    records = Records(id=[1, 3, 5])
+
+    assert_equal(records.id_to_index(id), expected)
+
+
+@pytest.mark.parametrize(
+    "id,expected",
+    [
+        (1, 3),
+        ([2], [5]),
+        ([1, 0], [3, 1]),
+        ([1, 1, 1], [3, 3, 3]),
+    ],
+)
+def test_index_to_id(id, expected):
+    records = Records(id=[1, 3, 5])
+
+    assert_equal(records.index_to_id(id), expected)
 
 
 def test_methods():
