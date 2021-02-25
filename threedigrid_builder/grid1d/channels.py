@@ -64,7 +64,7 @@ class Channels:
         )
 
         return Nodes(
-            id=np.arange(idx.size),
+            id=range(len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
             content_pk=idx,
@@ -101,9 +101,9 @@ class Channels:
         )
         lines_start += connection_node_offset
         lines = Lines(
-            id=np.arange(len(self)),
+            id=range(len(self)),
             line=lines_start.T,
-            content_pk=np.arange(len(self)),  # indices into self (channels)
+            content_pk=range(len(self)),  # indices into self (channels)
             content_type=ContentType.TYPE_V2_CHANNEL,
         )
 
@@ -135,7 +135,7 @@ class Channels:
         )
 
         lines += Lines(
-            id=np.arange(len(lines), len(lines) + len(nodes)),
+            id=range(len(lines), len(lines) + len(nodes)),
             line=line_ids.T,
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,

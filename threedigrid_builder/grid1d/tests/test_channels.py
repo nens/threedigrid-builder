@@ -1,5 +1,6 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.grid import Nodes
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid1d import Channels
 
 import numpy as np
@@ -47,7 +48,7 @@ def two_channels():
         (100.0, np.empty((0, 2), dtype=float)),
     ],
 )
-def test_interpolate_nodes(dist, expected, one_channel):
+def test_interpolate_nodes_one_channel(dist, expected, one_channel):
     one_channel.dist_calc_points[0] = dist
     actual = one_channel.interpolate_nodes(global_dist_calc_points=74.0)
 
@@ -55,14 +56,38 @@ def test_interpolate_nodes(dist, expected, one_channel):
     assert_array_equal(actual.content_pk, 0)
 
 
-def test_interpolate_nodes_2(two_channels):
+def test_interpolate_nodes_two_channels(two_channels):
     actual = two_channels.interpolate_nodes(global_dist_calc_points=50.0)
 
-    expected_points = \
-        [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
+    expected_points = [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
 
     assert_array_equal(actual.coordinates, expected_points)
     assert_array_equal(actual.content_pk, [0, 0, 0, 1, 1, 1])
+
+
+def test_get_grid(two_channels):
+    nodes = Nodes(
+        id=[0, 1, 2],
+        content_pk=[0, 1, 1],
+    )
+
+    grid = two_channels.get_grid(
+        nodes, channel_node_offset=0, connection_node_offset=100
+    )
+
+    assert_array_equal(
+        grid.lines.id,
+        range(5),
+    )
+    assert_array_equal(
+        grid.lines.line,
+        [(121, 0), (125, 1), (0, 142), (1, 2), (2, 133)],
+    )
+    assert_array_equal(
+        grid.lines.content_pk,
+        [0, 1, 0, 1, 1],
+    )
+    assert_array_equal(grid.lines.content_type, ContentType.TYPE_V2_CHANNEL)
 
 
 @pytest.mark.parametrize(
@@ -73,9 +98,9 @@ def test_interpolate_nodes_2(two_channels):
         ([0, 0, 0], [(1021, 100), (100, 101), (101, 102), (102, 1042)]),
     ],
 )
-def test_get_grid(channel_idx, expected, one_channel):
+def test_get_grid_lines_one_channel(channel_idx, expected, one_channel):
     nodes = Nodes(
-        id=np.arange(len(channel_idx)),
+        id=range(len(channel_idx)),
         content_pk=channel_idx,
     )
     grid = one_channel.get_grid(
@@ -97,9 +122,9 @@ def test_get_grid(channel_idx, expected, one_channel):
         ([0, 0, 1], [(121, 0), (0, 1), (1, 142), (125, 2), (2, 133)]),
     ],
 )
-def test_get_grid_2(channel_idx, expected, two_channels):
+def test_get_grid_lines_two_channels(channel_idx, expected, two_channels):
     nodes = Nodes(
-        id=np.arange(len(channel_idx)),
+        id=range(len(channel_idx)),
         content_pk=channel_idx,
     )
 
