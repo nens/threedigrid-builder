@@ -27,8 +27,9 @@ class Channels:
     def interpolate_nodes(self, global_dist_calc_points):
         """Compute interpolated channel nodes
 
+        Fields dist_calc_points and the_geom are used.
+
         Args:
-            self (Channels): only dist_calc_points and the_geom are used
             global_dist_calc_points (float): Default node interdistance.
 
         Returns:
@@ -36,9 +37,7 @@ class Channels:
             - id: 0-based counter generated here
             - coordinates
             - content_type: ContentType.TYPE_V2_CHANNEL
-            - content_pk: the 0-based index into Channels (not the id!)
-
-        TODO make content_pk the real channel id in a next step?
+            - content_pk: the 0-based index into Channels (not the channel id)
         """
         # load data
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -72,11 +71,11 @@ class Channels:
         )
 
     def get_grid(self, nodes, channel_node_offset, connection_node_offset):
-        """Compute the grid (nodes + lines) for the channels
+        """Compute the grid (nodes + lines) for the channels.
+
+        Fields connection_node_start_id and connection_node_end_id are used.
 
         Args:
-            self (Channels):
-                connection_node_start_id and connection_node_end_id are used
             nodes (dict): additional channel nodes (see interpolate_nodes)
             channel_node_offset (int): the index of the first channel node in the
                 target node array (for the lines)
@@ -89,6 +88,8 @@ class Channels:
             - lines.id: 0-based counter generated here
             - lines.line: lines between connetion nodes and added channel
               nodes. The indices are offset using the respective parameters.
+            - lines.content_type: ContentType.TYPE_V2_CHANNEL
+            - content_pk: the 0-based index into Channels (not the channel id)
         """
         # start with the easy ones: channels that connect 2 connection nodes
         # without interpolated nodes in between
