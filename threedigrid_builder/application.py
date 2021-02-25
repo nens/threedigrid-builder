@@ -1,15 +1,30 @@
 from threedigrid_builder.interface import SQLite
 
 
-def export_1D_nodes_to_shapefile(path, out_path):
-    """Compute interpolated channel nodes and export to shapefile"""
-    import geopandas
-
+def get_1d_grid(path):
+    """Compute interpolated channel nodes"""
     db = SQLite(path)
 
+    connection_nodes = db.get_connection_nodes()
     channels = db.get_channels()
-    points = channels.interpolate_nodes(db.global_settings["dist_calc_points"])
 
-    df = geopandas.GeoDataFrame(points, crs=db.global_settings["epsg_code"])
-    df.set_geometry("geometry")
-    df.to_file(out_path)
+    channel_nodes = channels.interpolate_nodes(
+        global_dist_calc_points=db.global_settings["dist_calc_points"]
+    )
+
+    connection_node_grid = connection_nodes.get_grid()
+    channel_grid = channels.get_grid(
+        channel_nodes,
+        connection_node_offset=0,
+        channel_node_offset=len(connection_node_grid.nodes),
+    )
+
+    grid = connection_node_grid.concatenate(channel_grid)
+
+    # import geopandas
+    # df_nodes = geopandas.GeoDataFrame(
+    #     geometry=pygeos.points()
+
+    #     , crs=db.global_settings["epsg_code"])
+    # df.set_geometry("geometry")
+    # df.to_file(out_path)

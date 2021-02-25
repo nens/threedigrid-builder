@@ -77,6 +77,12 @@ def test_empty_values():
     assert_equal(records.xyz, np.full((2, 3), np.nan, dtype=np.float64))
 
 
+def test_broadcast_scalar_values():
+    records = Records(id=[0, 1], number=5.2)
+
+    assert_equal(records.number, np.array([5.2, 5.2], dtype=np.float64))
+
+
 def test_id_required():
     with pytest.raises(TypeError):
         Records(number=[5, 7])
@@ -117,3 +123,21 @@ def test_repr():
 
 def test_methods():
     assert Records(id=[1]).does_it_work() == "yes"
+
+
+def test_concatenate():
+    a = Records(id=[1], xyz=[[0, 0, 0]])
+    b = Records(id=[2], xyz=[[1, 1, 1]])
+    actual = a + b
+    assert len(actual) == 2
+    assert_equal(actual.id, [1, 2])
+    assert_equal(actual.xyz, [[0, 0, 0], [1, 1, 1]])
+
+
+def test_concatenate_inplace():
+    a = Records(id=[1], xyz=[[0, 0, 0]])
+    b = Records(id=[2], xyz=[[1, 1, 1]])
+    a += b
+    assert len(a) == 2
+    assert_equal(a.id, [1, 2])
+    assert_equal(a.xyz, [[0, 0, 0], [1, 1, 1]])

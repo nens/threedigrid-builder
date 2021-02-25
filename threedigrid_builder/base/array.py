@@ -24,8 +24,7 @@ def _is_tuple_type(_type):
 
 
 def _is_int_enum(_type):
-    """Test if the type is a subclass of IntEnum.
-    """
+    """Test if the type is a subclass of IntEnum."""
     try:
         return issubclass(_type, IntEnum)
     except TypeError:  # happens when _type is something like List[int]
@@ -65,8 +64,11 @@ def _to_ndarray(value, elem_type, expected_length):
     # return empty array if no value or None is supplied
     if value is None:
         return np.full(expected_shape, null_value, dtype=dtype, order="F")
+    elif np.isscalar(value) or isinstance(value, IntEnum):
+        return np.full(expected_shape, value, dtype=dtype, order="F")
 
     arr = np.asarray(value, dtype=dtype, order="F")
+
     if arr.shape != expected_shape:
         raise ValueError(
             f"Expected an array with shape {expected_shape}, got {arr.shape}."
@@ -75,8 +77,7 @@ def _to_ndarray(value, elem_type, expected_length):
 
 
 class ArrayDataClass:
-    """A dataclass with fields ("columns") that are numpy arrays of equal size.
-    """
+    """A dataclass with fields ("columns") that are numpy arrays of equal size."""
 
     def __init__(self, **kwargs):
         """Initialize the array dataclass from values.
@@ -112,6 +113,19 @@ class ArrayDataClass:
 
     def __len__(self):
         return len(self.id)
+
+    def __add__(self, other):
+        """Concatenate two array dataclasses of equal type."""
+        if self.__class__ is not other.__class__:
+            raise TypeError(
+                f"Cannot concatenate {self} with {other} as they are not of "
+                f"equal types."
+            )
+        new_fields = {
+            name: np.concatenate((getattr(self, name), getattr(other, name)))
+            for name in self.data_class.__annotations__.keys()
+        }
+        return self.__class__(**new_fields)
 
 
 class array_of:
