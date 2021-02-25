@@ -94,7 +94,7 @@ class SQLite:
                 models.Channel.connection_node_start_id,
                 models.Channel.connection_node_end_id,
                 models.Channel.calculation_type,
-            ).as_structarray()
+            ).order_by(models.Channel.id).as_structarray()
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
@@ -110,7 +110,7 @@ class SQLite:
                 models.ConnectionNode.id,
                 models.ConnectionNode.code,
                 models.ConnectionNode.storage_area,
-            ).as_structarray()
+            ).order_by(models.ConnectionNode.id).as_structarray()
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
@@ -128,14 +128,14 @@ class SQLite:
                 models.GridRefinement.id,
                 models.GridRefinement.code,
                 models.GridRefinement.refinement_level,
-            ).as_structarray()
+            ).order_by(models.GridRefinement.id).as_structarray()
             arr2 = session.query(
                 models.GridRefinementArea.the_geom,
                 models.GridRefinementArea.display_name,
                 models.GridRefinementArea.id,
                 models.GridRefinementArea.code,
                 models.GridRefinementArea.refinement_level,
-            ).as_structarray()
+            ).order_by(models.GridRefinementArea.id).as_structarray()
             arr = np.concatenate((arr1, arr2))
 
         # reproject
