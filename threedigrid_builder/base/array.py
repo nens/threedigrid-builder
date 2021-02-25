@@ -64,7 +64,7 @@ def _to_ndarray(value, elem_type, expected_length):
     # return empty array if no value or None is supplied
     if value is None:
         return np.full(expected_shape, null_value, dtype=dtype, order="F")
-    elif np.isscalar(value):
+    elif np.isscalar(value) or isinstance(value, IntEnum):
         return np.full(expected_shape, value, dtype=dtype, order="F")
 
     arr = np.asarray(value, dtype=dtype, order="F")
