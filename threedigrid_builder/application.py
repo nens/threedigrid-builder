@@ -2,12 +2,10 @@ from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.interface import SQLite
-from threedigrid_builder.constants import (
-    ContentType,
-    LineType,
-    NodeType,
-    CalculationType,
-)
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import CalculationType
 
 import numpy as np
 import pygeos
@@ -54,8 +52,9 @@ def grid_to_gpkg(grid, out_path):
     # convert enums to strings
     node_data["node_type"] = _enum_to_str(node_data["node_type"], NodeType)
     node_data["content_type"] = _enum_to_str(node_data["content_type"], ContentType)
-    node_data["calculation_type"] = \ 
-        _enum_to_str(node_data["calculation_type"], CalculationType)
+    node_data["calculation_type"] = _enum_to_str(
+        node_data["calculation_type"], CalculationType
+    )
 
     # construct the geodataframe
     df_nodes = geopandas.GeoDataFrame(

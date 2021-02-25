@@ -1,9 +1,5 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
 
-import numpy as np
 import pygeos
 
 
