@@ -2,6 +2,7 @@ module m_quadtree
 
     use MessageHandling
     use parameters, only : NODATA
+    use iso_c_binding
 
     implicit none
 
@@ -12,22 +13,28 @@ module m_quadtree
 
     contains
 
-    subroutine set_refinement(refine_id, refine_geom, refine_level, refine_type, bbox, mmax, nmax, dx, lg)
+    subroutine set_refinement(refine_id, refine_geom, n0, n1, refine_level,&
+        refine_type, bbox, mmax, nmax, dx, j0, lg, i0, i1) bind(c, name="f_set_refinement")
         
         use MessageHandling
         use m_grid_utils, only : get_cell_geom, find_cell_intersects,&
                                  get_lg_corners, geom_in_polygon,&
                                  feature_in_bbox
 
-        double precision, intent(in) :: refine_geom(:,:)
-        integer, intent(in) :: refine_id
-        integer, intent(in) :: refine_level
-        integer, intent(in) :: refine_type
-        double precision, intent(in) :: bbox(4)
-        integer, intent(in) :: mmax(:)
-        integer, intent(in) :: nmax(:)
-        double precision, intent(in) :: dx(:)
-        integer, intent(inout) :: lg(:,:)
+        integer(kind=c_int), intent(in) :: n0
+        integer(kind=c_int), intent(in) :: n1
+        integer(kind=c_int), intent(in) :: j0
+        integer(kind=c_int), intent(in) :: i0
+        integer(kind=c_int), intent(in) :: i1
+        real(kind=c_double), intent(in) :: refine_geom(n0,n1)
+        integer(kind=c_int), intent(in) :: refine_id
+        integer(kind=c_int), intent(in) :: refine_level
+        integer(kind=c_int), intent(in) :: refine_type
+        real(kind=c_double), intent(in) :: bbox(4)
+        integer(kind=c_int), intent(in) :: mmax(j0)
+        integer(kind=c_int), intent(in) :: nmax(j0)
+        real(kind=c_double), intent(in) :: dx(j0)
+        integer(kind=c_int), intent(inout) :: lg(i0,i1)
         integer :: status
         integer :: m, n
         integer :: mnmin(2), mnmax(2)
@@ -85,12 +92,20 @@ module m_quadtree
 
     end subroutine set_refinement
 
-    subroutine make_quadtree(kmax, mmax, nmax, lg)
-        
-        integer, intent(in) :: kmax
-        integer, intent(in) :: mmax(:)
-        integer, intent(in) :: nmax(:)
-        integer, intent(inout) :: lg(:,:)
+    subroutine make_quadtree(kmax, mmax, nmax, lgrmin, model_area, lg,&
+        m0, n0, n1, i0, i1, num_active_nodes) bind(c, name="make_quadtree")
+        integer(kind=c_int), intent(in) :: m0
+        integer(kind=c_int), intent(in) :: n0
+        integer(kind=c_int), intent(in) :: n1
+        integer(kind=c_int), intent(in) :: i0
+        integer(kind=c_int), intent(in) :: i1
+        integer(kind=c_int), intent(in) :: kmax
+        integer(kind=c_int), intent(in) :: mmax(m0)
+        integer(kind=c_int), intent(in) :: nmax(m0)
+        integer(kind=c_int), intent(in) :: lgrmin
+        integer(kind=c_int), intent(in) :: model_area(n0,n1)
+        integer(kind=c_int), intent(inout) :: lg(i0,i1)
+        integer(kind=c_int), intent(out) :: num_active_nodes
         integer :: k
         integer :: m, n
         
@@ -102,6 +117,7 @@ module m_quadtree
         enddo
 
         call balance_quadtree(kmax, mmax, nmax, lg)
+        call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
 
     end subroutine make_quadtree
 
@@ -171,6 +187,46 @@ module m_quadtree
         enddo
 
     end subroutine balance_quadtree
+
+    subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
+
+        use MessageHandling
+        use m_grid_utils, only : get_lg_corners, get_pix_corners, get_cell_bbox
+
+        integer, intent(in) :: kmax
+        integer, intent(in) :: mmax(:)
+        integer, intent(in) :: nmax(:)
+        integer, intent(in) :: lgrmin
+        integer, intent(inout) :: lg(:,:)
+        integer, intent(in) :: model_area(:,:)
+        integer :: k
+        integer :: m,n
+        integer :: m0, m1, n0, n1
+        integer :: i0, i1, j0, j1
+        integer :: num_active_nodes
+
+        num_active_nodes = 0
+        do k=1,kmax
+            do m=1,mmax(k)
+                do n=1,nmax(k)
+                    call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
+                    call get_lg_corners(k, m, n, m0, m1, n0, n1)
+                    i1 = min(i1, size(model_area, 1))
+                    j1 = min(j1, size(model_area, 2))
+                    if(all(model_area(i0:i1, j0:j1) == 0)) then
+                        lg(m0:m1,n0:n1) = -99
+                    else
+                        if (any(lg(m0:m1,n0:n1) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
+                            num_active_nodes = num_active_nodes + 1
+                            lg(m0:m1,n0:n1) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
+                        endif
+                    endif
+                enddo
+            enddo
+        enddo
+        call mess(LEVEL_INFO, 'No. active 2D computational cells: ', num_active_nodes)
+
+    end subroutine find_active_2d_comp_cells
 
 
     function convert_to_grid_crd(origin, dx, xy, mmax, nmax, round) result (mn)

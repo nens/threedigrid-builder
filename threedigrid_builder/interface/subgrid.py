@@ -1,11 +1,10 @@
 from rasterio import features as rasterio_features
-
 import json
 import numpy as np
 import rasterio
 
 
-class SubgridArea:
+class SubgridMeta:
     def __init__(self, dem_filepath, model_area=None):
 
         self.dem_filepath = dem_filepath
@@ -28,8 +27,8 @@ class SubgridArea:
         )
 
     @property
-    def origin(self):
-        return (self._left, self._bottom)
+    def bbox(self):
+        return self._bbox
 
     @property
     def pixel_size(self):
@@ -59,13 +58,18 @@ class SubgridArea:
         )
         self._height = window.height
         self._width = window.width
-        self._left = dem.bounds.left + window.col_off * self.pixel_size
+        left = dem.bounds.left + window.col_off * self.pixel_size,
         top = dem.bounds.top + window.row_off * -self.pixel_size
-        self._bottom = top + window.height * -self.pixel_size
+        self._bbox = (
+            left,
+            top + window.height * -self.pixel_size,
+            left + window.width * self.pixel_size,
+            top
+        )
         self._i_off = window.col_off
         self._j_off = dem.height - window.row_off - window.height
         self.transform = rasterio.transform.from_origin(
-            self._left, top, self.pixel_size, self.pixel_size
+            left, top, self.pixel_size, self.pixel_size
         )
 
         data = rasterio.features.rasterize(
@@ -77,8 +81,7 @@ class SubgridArea:
         return data
 
     def _create_area_arr_from_dem(self, dem):
-        self._left = dem.bounds.left
-        self._bottom = dem.bounds.bottom
+        self._bbox = dem.bounds
         self._height = dem.height
         self._width = dem.width
         self._i_off = self._j_off = 0

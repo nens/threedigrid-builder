@@ -1,4 +1,6 @@
 from threedigrid_builder.interface import SQLite
+from threedigrid_builder.interface import SubgridMeta
+from threedigrid_builder.grid2d import QuadTree
 
 
 def get_1d_grid(path):
@@ -28,3 +30,22 @@ def get_1d_grid(path):
     #     , crs=db.global_settings["epsg_code"])
     # df.set_geometry("geometry")
     # df.to_file(out_path)
+
+
+def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
+    """Make 2D computational grid
+    """
+
+    subgrid_meta = SubgridMeta(dem_path, model_area=model_area_path)
+
+    db = SQLite(sqlite_path)
+    refinements = db.get_grid_refinements()
+
+    quadtree = QuadTree(
+        subgrid_meta,
+        db.global_settings['kmax'],
+        db.global_settings['grid_space'],
+        refinements
+    )
+
+    

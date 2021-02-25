@@ -12,38 +12,27 @@ class QuadTree:
     """Defines active cell levels for computational grid.
     """
     def __init__(
-        self,
-        origin,
-        num_refine_levels,
-        min_gridsize,
-        subgrid_width,
-        subgrid_height,
-        pixel_size,
-        refinements
+        self, subgrid_meta, num_refine_levels, min_gridsize, refinements
     ):
 
-        self._lgrmin = min_gridsize / pixel_size
+        self._lgrmin = min_gridsize / subgrid_meta.pixel_size
         self._kmax = num_refine_levels
         self._mmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._nmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._dx = np.empty((self.kmax,), dtype=np.float64, order='F')
 
         max_grid_x_pix = self._determine_max_quadtree_pixels(
-            subgrid_width
+            subgrid_meta.width
         )
         max_grid_y_pix = self._determine_max_quadtree_pixels(
-            subgrid_height
+            subgrid_meta.height
         )
 
         pix_grid_levels = self._lgrmin * 2 ** np.arange(0, self.kmax)
-        self.mmax[:] = max_grid_x_pix / pix_grid_levels
-        self.nmax[:] = max_grid_y_pix / pix_grid_levels
-        self._dx[:] = pix_grid_levels * pixel_size
-        ur_corner = (
-            origin[0] + max_grid_x_pix * pixel_size,
-            origin[1] + max_grid_y_pix * pixel_size
-        )
-        self.bbox = np.array(tuple(origin) + ur_corner)
+        self._mmax[:] = max_grid_x_pix / pix_grid_levels
+        self._nmax[:] = max_grid_y_pix / pix_grid_levels
+        self._dx[:] = pix_grid_levels * subgrid_meta.pixel_size
+        self.bbox = np.array(subgrid_meta.bbox)
 
         # Array with dimensions of smallest active grid level and contains
         # map of active grid level for each quadtree cell.
@@ -53,9 +42,11 @@ class QuadTree:
             dtype=np.int32,
             order='F'
         )
-    
+
         self.apply_refinements(refinements)
-        self.create_quadtree()
+        self.active_cells = create_quadtree(
+            subgrid_meta.area_pix, self.kmax, self.mmax, self.nmax, self.lg
+        )
 
     @property
     def min_cell_pixels(self):
@@ -130,9 +121,3 @@ class QuadTree:
                 dx=self.dx,
                 lg=self.lg
             )
-
-    def create_quadtree(self):
-        """Actually creating quadtree with correct level transitions for 
-        quadtree cells.
-        """
-        return create_quadtree(self.kmax, self.mmax, self.nmax, self.lg)
