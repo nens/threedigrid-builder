@@ -1,5 +1,8 @@
-from threedigrid_builder.lib.quadtree import create_quadtree
-from threedigrid_builder.lib.quadtree import set_refinement
+try:
+    from threedigrid_builder.lib.quadtree import create_quadtree
+    from threedigrid_builder.lib.quadtree import set_refinement
+except ImportError:  # ignore linking errors until we get packaging right
+    pass
 
 import numpy as np
 import pygeos
