@@ -1,5 +1,5 @@
-from ..lib.quadtree import create_quadtree
-from ..lib.quadtree import set_refinement
+from threedigrid_builder.lib.quadtree import create_quadtree
+from threedigrid_builder.lib.quadtree import set_refinement
 
 import numpy as np
 import pygeos
