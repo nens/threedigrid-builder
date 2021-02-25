@@ -17,7 +17,7 @@ cdef extern:
         int *i1
     )
 
-    int make_quadtree(
+    void* make_quadtree(
         int *kmax,
         int *mmax,
         int *nmax,
@@ -28,5 +28,6 @@ cdef extern:
         int *n0,
         int *n1,
         int *i0,
-        int *i1
+        int *i1,
+        int *num_active_nodes
     )

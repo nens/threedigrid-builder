@@ -51,10 +51,11 @@ elif "sdist" not in sys.argv:
         # We can enable this once Cython 0.3 is released:
         # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         library_dirs=["./libthreedigrid/lib"],
+        runtime_library_dirs=["./libthreedigrid/lib"],
     )
 
     cython_modules = [
-        Extension("*", sources=["threedigrid_builder/lib/*.pyx"], **cython_opts)
+        Extension("*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts)
     ]
 
     ext_modules += cythonize(cython_modules, language_level=3)
@@ -101,4 +102,5 @@ setup(
     ],
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
+    package_data={"threedigrid_builder.lib": ["../libthreedigrid/lib/*"]}
 )

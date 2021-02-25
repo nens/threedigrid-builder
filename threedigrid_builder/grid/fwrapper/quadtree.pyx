@@ -43,7 +43,7 @@ cpdef set_refinement(
         i1=&i1
     )
 
-def create_quadtree(
+cpdef create_quadtree(
     int kmax, 
     int[:] mmax,
     int[:] nmax,
@@ -57,8 +57,9 @@ def create_quadtree(
     cdef int n1 = model_area.shape[1]
     cdef int i0 = lg.shape[0]
     cdef int i1 = lg.shape[1]
+    cdef int num_active_nodes
 
-    num_active_nodes = make_quadtree(
+    make_quadtree(
         kmax=&kmax,
         mmax=&mmax[0],
         nmax=&nmax[0],
@@ -69,6 +70,7 @@ def create_quadtree(
         n0=&n0,
         n1=&n1,
         i0=&i0,
-        i1=&i1
+        i1=&i1,
+        num_active_nodes=&num_active_nodes
     )
     return <object>num_active_nodes

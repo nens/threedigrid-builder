@@ -3,7 +3,7 @@ recursive-include threedigrid_builder *.pyx *.pxd
 recursive-include * *.rst
 recursive-exclude .venv *
 
-recursive-exclude lgpl *
-recursive-exclude libthreedigrid *
+recursive-exclude lgpl/src *
+recursive-exclude libthreedigrid/src *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

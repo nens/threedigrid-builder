@@ -1,5 +1,6 @@
-from .lines import Lines
-from .nodes import Nodes
+from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
+from .quadtree import QuadTree
 
 
 __all__ = ["Grid"]
@@ -28,3 +29,20 @@ class Grid:
 
     def __repr__(self):
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
+
+    @classmethod
+    def from_quadtree(
+        cls, subgrid_meta, num_refine_levels, min_gridsize, refinements
+    ):
+
+        quadtree = QuadTree(
+            subgrid_meta,
+            num_refine_levels,
+            min_gridsize,
+            refinements
+        )
+
+        nodes = quadtree.get_nodes(subgrid_meta)
+        lines = Lines(id=[])
+
+        return cls(nodes=nodes, lines=lines)

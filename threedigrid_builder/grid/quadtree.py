@@ -1,6 +1,8 @@
-from ..lib.quadtree import create_quadtree
-from ..lib.quadtree import set_refinement
-
+from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.grid.fwrapper import create_quadtree
+from threedigrid_builder.grid.fwrapper import set_refinement
+from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes
 import numpy as np
 import pygeos
 
@@ -43,9 +45,14 @@ class QuadTree:
             order='F'
         )
 
-        self.apply_refinements(refinements)
+        self._apply_refinements(refinements)
         self.active_cells = create_quadtree(
-            subgrid_meta.area_pix, self.kmax, self.mmax, self.nmax, self.lg
+            self.kmax,
+            self.mmax,
+            self.nmax,
+            self.min_cell_pixels,
+            subgrid_meta.area_pix,
+            self.lg
         )
 
     @property
@@ -95,7 +102,7 @@ class QuadTree:
         return (max_pix_largest_cell * (side / (max_pix_largest_cell))) \
             + max_pix_largest_cell
 
-    def apply_refinements(self, refinements):
+    def _apply_refinements(self, refinements):
         """Set active grid levels for based on refinement dict and 
         filling lg variable for refinement locations.
 
@@ -121,3 +128,49 @@ class QuadTree:
                 dx=self.dx,
                 lg=self.lg
             )
+
+    def get_nodes(self, subgrid_meta):
+                """Set active grid levels for based on refinement dict and 
+        filling lg variable for refinement locations.
+
+        Args:
+          dict of refinemnets containing at least
+          - geometry
+          - refinement_level
+          - id
+        
+        Return:
+          Nodes object
+        """
+
+        id = np.arange(self.active_cells)
+        nodk = np.empty(len(id), dtype=np.int32, order='F')
+        nodm = np.empty(len(id), dtype=np.int32, order='F')
+        nodn = np.empty(len(id), dtype=np.int32, order='F')
+        quad_nod = np.empty(self.lg.shape, dtype=np.int32, order='F')
+        bounds = np.empty((len(id), 4), dtype=np.float64, order='F')
+        coords = np.empty((len(id), 2), dtype=np.float64, order='F')
+
+        set_2d_computational_nodes(
+            np.array([self.bbox[0], self.bbox[1]]),
+            self.kmax,
+            self.mmax,
+            self.nmax,
+            self.dx,
+            self.lg,
+            nodk,
+            nodm,
+            nodn,
+            quad_nod,
+            bounds,
+            coords,
+        )
+        
+        return Nodes(
+            id=id,
+            nodk=nodk,
+            nodm=nodm,
+            nodn=nodn,
+            bounds=bounds,
+            coordinates=coords
+        )

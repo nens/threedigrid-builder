@@ -1,6 +1,5 @@
 module m_quadtree
 
-    use MessageHandling
     use parameters, only : NODATA
     use iso_c_binding
 
@@ -16,7 +15,6 @@ module m_quadtree
     subroutine set_refinement(refine_id, refine_geom, n0, n1, refine_level,&
         refine_type, bbox, mmax, nmax, dx, j0, lg, i0, i1) bind(c, name="f_set_refinement")
         
-        use MessageHandling
         use m_grid_utils, only : get_cell_geom, find_cell_intersects,&
                                  get_lg_corners, geom_in_polygon,&
                                  feature_in_bbox
@@ -44,7 +42,7 @@ module m_quadtree
         
         status = 0
         if(.not.refine_type==LINESTRING.and..not.refine_type==POLY) then
-            call mess(LEVEL_WARN, 'Refinement type not known. Skipping: ', refine_id, refine_type)
+            write(*,*) '** WARNING: Refinement type not known. Skipping: ', refine_id, refine_type
             status = 0
             return
         endif
@@ -55,12 +53,12 @@ module m_quadtree
             mnmin = convert_to_grid_crd(bbox(1:2), dx(1), refine_geom_bbox(1:2), mmax, nmax, DOWN)
             mnmax = convert_to_grid_crd(bbox(1:2), dx(1), refine_geom_bbox(3:4), mmax, nmax, UP)
         else
-            call mess(LEVEL_INFO, 'Refinement outside model_area. ID and type: ', refine_id, refine_type)
+            write(*,*) '** INFO: Refinement outside model_area. ID and type: ', refine_id, refine_type
             status = 0
             return
         endif
 
-        call mess(LEVEL_INFO, 'Start applying refinement with refinement level and type: ', refine_id, refine_level, refine_type)
+        write(*,*) '** INFO: Start applying refinement with refinement level and type: ', refine_id, refine_level, refine_type
         cross=.FALSE.
         do n=mnmin(2), mnmax(2)
             do m=mnmin(1), mnmax(1)
@@ -86,8 +84,7 @@ module m_quadtree
         enddo
 
         if (status == 0) then
-            write(msgbuf, '(A,i8,A,i1)') 'Unsuccessfully applied refinement geometry with id: ', refine_id, ' and type: ', refine_type
-            call warn_flush()
+            write(*,*) '** WARNING: Unsuccessfully applied refinement geometry with id: ', refine_id, ' and type: ', refine_type
         endif
 
     end subroutine set_refinement
@@ -109,7 +106,7 @@ module m_quadtree
         integer :: k
         integer :: m, n
         
-        
+        write(*,*) '** INFO: Start making quadtree.'
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
@@ -118,6 +115,7 @@ module m_quadtree
 
         call balance_quadtree(kmax, mmax, nmax, lg)
         call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
+        write(*,*) '** INFO: Done making quadtree.'
 
     end subroutine make_quadtree
 
@@ -190,7 +188,6 @@ module m_quadtree
 
     subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
 
-        use MessageHandling
         use m_grid_utils, only : get_lg_corners, get_pix_corners, get_cell_bbox
 
         integer, intent(in) :: kmax
@@ -224,14 +221,12 @@ module m_quadtree
                 enddo
             enddo
         enddo
-        call mess(LEVEL_INFO, 'No. active 2D computational cells: ', num_active_nodes)
+        write(*,*) '**INFO: No. active 2D computational cells: ', num_active_nodes
 
     end subroutine find_active_2d_comp_cells
 
 
     function convert_to_grid_crd(origin, dx, xy, mmax, nmax, round) result (mn)
-
-        use MessageHandling
 
         double precision, intent(in) :: xy(2)
         double precision, intent(in) :: origin(2)
@@ -248,7 +243,7 @@ module m_quadtree
             mn(1) = min(mmax(1), int(ceiling((xy(1) - origin(1)) / dx)))
             mn(2) = min(nmax(1), int(ceiling((xy(2) - origin(2)) / dx)))
         else
-            call mess(LEVEL_ERROR, 'Rounding option not known: ', round)
+            write(*,*) '** ERROR: Rounding option not known: ', round
         endif
 
     end function convert_to_grid_crd

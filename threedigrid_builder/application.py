@@ -1,5 +1,6 @@
 from threedigrid_builder.interface import SQLite
 from threedigrid_builder.interface import SubgridMeta
+from threedigrid_builder.grid import Grid
 
 
 def get_1d_grid(path):
@@ -39,3 +40,12 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
 
     db = SQLite(sqlite_path)
     refinements = db.get_grid_refinements()
+
+    grid = Grid.from_quadtree(
+        subgrid_meta,
+        db.global_settings["kmax"],
+        db.global_settings["grid_space"],
+        refinements
+    )
+
+    return grid

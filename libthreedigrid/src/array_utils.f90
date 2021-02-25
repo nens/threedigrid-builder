@@ -1,7 +1,5 @@
 module m_array_utils
 
-    use MessageHandling
-
     implicit none 
 
 
@@ -29,7 +27,7 @@ module m_array_utils
                 check = .FALSE.
             endif
         else
-            call mess(LEVEL_WARN, 'Array out of bounds')
+            write(*,*) '** WARNING: Array out of bounds'
         endif
 
     end function check_bounds_d_1d
@@ -54,11 +52,11 @@ module m_array_utils
             if(i0 <= i1) then
                 check = .TRUE.
             else
-                call mess(LEVEL_WARN, 'Indices in incorrect order.')
+                write(*,*) '** WARNING: Indices in incorrect order.'
                 check = .FALSE.
             endif
         else
-            call mess(LEVEL_WARN, 'Array out of bounds')
+            write(*,*) '** WARNING: Array out of bounds'
         endif
 
     end function check_bounds_d_2d
@@ -78,7 +76,7 @@ module m_array_utils
                 check = .FALSE.
             endif
         else
-            call mess(LEVEL_WARN, 'Array out of bounds')
+            write(*,*) '** WARNING: Array out of bounds'
         endif
 
     end function check_bounds_i_1d
@@ -106,7 +104,7 @@ module m_array_utils
                 check = .FALSE.
             endif
         else
-            call mess(LEVEL_WARN, 'Array out of bounds')
+            write(*,*) '** WARNING: Array out of bounds'
         endif
 
     end function check_bounds_i_2d

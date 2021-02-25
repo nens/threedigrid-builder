@@ -1,5 +1,5 @@
-from threedigrid_builder.grid1d import Channels
-from threedigrid_builder.grid1d import ConnectionNodes
+from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
