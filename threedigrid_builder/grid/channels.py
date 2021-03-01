@@ -7,6 +7,7 @@ from threedigrid_builder.constants import ContentType
 
 import numpy as np
 import pygeos
+import itertools
 
 
 __all__ = ["Channels"]
@@ -24,12 +25,13 @@ class Channel:
 
 @array_of(Channel)
 class Channels:
-    def interpolate_nodes(self, global_dist_calc_points):
+    def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute interpolated channel nodes
 
         Fields dist_calc_points and the_geom are used.
 
         Args:
+            node_id_counter (iterable): an iterable yielding integers
             global_dist_calc_points (float): Default node interdistance.
 
         Returns:
@@ -64,13 +66,13 @@ class Channels:
         )
 
         return Nodes(
-            id=range(len(points)),
+            id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
             content_pk=self.index_to_id(idx),
         )
 
-    def get_lines(self, connection_nodes, nodes, node_id_offsets):
+    def get_lines(self, connection_nodes, nodes, connection_node_offset=0):
         """Compute the grid (nodes + lines) for the channels.
 
         Fields connection_node_start_id and connection_node_end_id are used.
@@ -78,24 +80,25 @@ class Channels:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             nodes (Nodes): additional channel nodes (see interpolate_nodes)
-            node_id_offsets (dict): offsets to give node indices, per type
-                e.g. {ConnectionNodes: 0, Channels: 105}
+            connection_node_offset (int): offset to give connection node
+              indices in the returned lines.line. Default 0.
 
         Returns:
             Lines with data in the following columns:
             - id: 0-based counter generated here
-            - line: lines between connetion nodes and added channel
-              nodes. The indices are offset using the respective parameters.
+            - line: lines between connection nodes and added channel nodes
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this line originates
         """
         # convert connection_node_start_id / connection_node_end_id to index
-        cn_start_idx = connection_nodes.id_to_index(
-            self.connection_node_start_id
-        ) + node_id_offsets.get(ConnectionNodes, 0)
-        cn_end_idx = connection_nodes.id_to_index(
-            self.connection_node_end_id
-        ) + node_id_offsets.get(ConnectionNodes, 0)
+        cn_start_idx = (
+            connection_nodes.id_to_index(self.connection_node_start_id)
+            + connection_node_offset
+        )
+        cn_end_idx = (
+            connection_nodes.id_to_index(self.connection_node_end_id)
+            + connection_node_offset
+        )
 
         # start with the easy ones: channels that connect 2 connection nodes
         # without interpolated nodes in between
@@ -111,26 +114,22 @@ class Channels:
             return lines
 
         # generate the lines that interconnect interpolated nodes
-        line_ids = np.array([np.arange(len(nodes)), np.arange(1, len(nodes) + 1)])
-        line_ids += node_id_offsets.get(Channels, 0)
+        line_ids = np.array([nodes.id, np.roll(nodes.id, -1)])
 
         # connect the last line of each channel to the corresponding
         # connection_node_end_id (instead of the next channel)
-        is_channel_end = np.append(
-            nodes.content_pk[1:] != nodes.content_pk[:-1], [True]
-        )
+        is_channel_end = nodes.content_pk != np.roll(nodes.content_pk, -1)
+        is_channel_end[-1] = True
         channel_id = nodes.content_pk[is_channel_end]
         channel_idx = self.id_to_index(channel_id)
         line_ids[1][is_channel_end] = cn_end_idx[channel_idx]
 
-        # connect the line endings in 'lines.line' to a first interpolated
-        # node (if there are interpolated nodes)
+        # connect the line endings in CN-CN lines to a first interpolated
+        # node (if there are any)
         is_channel_start = np.roll(is_channel_end, 1)
         channel_id = nodes.content_pk[is_channel_start]
         channel_idx = self.id_to_index(channel_id)
-        lines.line[channel_idx, 1] = np.where(is_channel_start)[
-            0
-        ] + node_id_offsets.get(Channels, 0)
+        lines.line[channel_idx, 1] = nodes.id[is_channel_start]
 
         lines += Lines(
             id=range(len(lines), len(lines) + len(nodes)),

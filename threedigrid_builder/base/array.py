@@ -92,7 +92,10 @@ class ArrayDataClass:
         id = kwargs.pop("id", None)
         if id is None:
             raise TypeError("missing required keyword argument 'id'")
-        # cast to integer
+        # handle generators
+        if hasattr(id, "__iter__") and not hasattr(id, "__len__"):
+            id = np.fromiter(id, dtype=np.int32)
+        # cast to integer array
         id = np.asarray(id, dtype=np.int32, order="F")
         if id.ndim != 1:
             raise ValueError(f"Expected one-dimensional 'id' array, got {id.ndim}")

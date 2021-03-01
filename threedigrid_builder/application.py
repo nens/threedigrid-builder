@@ -1,12 +1,13 @@
+from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.interface import SQLite
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.constants import CalculationType
 
+import itertools
 import numpy as np
 import pygeos
 
@@ -18,14 +19,16 @@ def get_1d_grid(path):
     # the offsets of the node ids are controlled from here
     # for now, we have ConnectionNodes - ChannelNodes:
     connection_nodes = db.get_connection_nodes()
-    node_id_offsets = {ConnectionNodes: 0, Channels: len(connection_nodes)}
+    counter = itertools.count()
 
-    grid = Grid.from_connection_nodes(connection_nodes, node_id_offsets=node_id_offsets)
+    grid = Grid.from_connection_nodes(
+        connection_nodes=connection_nodes, node_id_counter=counter
+    )
     grid += Grid.from_channels(
-        connection_nodes,
-        db.get_channels(),
+        connection_nodes=connection_nodes,
+        channels=db.get_channels(),
         global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_offsets=node_id_offsets,
+        node_id_counter=counter,
     )
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
