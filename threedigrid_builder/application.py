@@ -2,8 +2,6 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.interface import SQLite
 

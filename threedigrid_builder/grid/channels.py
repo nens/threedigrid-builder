@@ -1,4 +1,3 @@
-from .connection_nodes import ConnectionNodes
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes

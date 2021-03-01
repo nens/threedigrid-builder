@@ -17,7 +17,7 @@ def connection_nodes():
     )
 
 
-def test_get_grid(connection_nodes):
+def test_from_connection_nodes(connection_nodes):
     counter = itertools.count(start=2)
 
     grid = Grid.from_connection_nodes(connection_nodes, counter)

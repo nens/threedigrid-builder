@@ -1,5 +1,3 @@
-from .channels import Channels
-from .connection_nodes import ConnectionNodes
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
