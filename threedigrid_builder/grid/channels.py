@@ -2,7 +2,7 @@ from .connection_nodes import ConnectionNodes
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import CalculationType, FrictionType
 from threedigrid_builder.constants import ContentType
 
 import numpy as np
@@ -20,6 +20,18 @@ class Channel:
     connection_node_start_id: int
     connection_node_end_id: int
     calculation_type: CalculationType
+
+
+class CrossSectionLocation:
+    id: int
+    code: str
+    the_geom: pygeos.Geometry
+    definition_id: id  # refers to CrossSectionDefinition
+    channel_id: id  # refers to Channel
+    reference_level: float
+    bank_level: float
+    friction_type: FrictionType
+    friction_value: float
 
 
 @array_of(Channel)

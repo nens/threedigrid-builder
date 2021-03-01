@@ -69,3 +69,9 @@ class ContentType(IntEnum):
     TYPE_V2_CROSS_SECTION_LOCATION = 15
     TYPE_V2_ADDED_CALCULATION_POINT = 16
     TYPE_V2_WINDSHIELD = 17
+
+
+@unique
+class FrictionType(IntEnum):
+    CHEZY = 1
+    MANNING = 2
