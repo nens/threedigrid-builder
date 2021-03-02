@@ -14,7 +14,6 @@ class Line:
     line_type: LineType  # kcu
     line: Tuple[int, int]
     ds1d: float  # arclength
-    internal_seq_id: int  # the per-channel or per-pipe sequence id
     line_geometries: pygeos.Geometry
     content_type: ContentType
     content_pk: int

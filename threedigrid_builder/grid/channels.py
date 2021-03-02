@@ -88,6 +88,8 @@ class Channels:
             - line: lines between connection nodes and added channel nodes
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this line originates
+            The lines are ordered by content_pk and then by position on the
+            channel.
         """
         # convert connection_node_start_id / connection_node_end_id to index
         cn_start_idx = (
@@ -136,4 +138,10 @@ class Channels:
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,
         )
+
+        # Reorder the lines so that they are sorted by channel_id,
+        # position on channel).
+        id_before = lines.id
+        lines.reorder_by(np.argsort(lines.content_pk))
+        lines.id = id_before
         return lines

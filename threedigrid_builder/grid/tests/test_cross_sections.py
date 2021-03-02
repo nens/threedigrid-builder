@@ -31,7 +31,6 @@ def channel_lines():
         id=[0, 1, 2, 3],
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=[51, 52, 52, 52],
-        internal_seq_id=[0, 0, 1, 2],
         line=[(0, 1), (2, 4), (4, 5), (5, 3)],
         line_geometries=[
             pygeos.linestrings([(0, 0), (0, 8)]),

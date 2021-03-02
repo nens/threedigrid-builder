@@ -31,17 +31,22 @@ class CrossSectionLocations:
         position on channel).
 
         Args:
-            channels (Channels): used to lookup the channel geometry
-            lines (Lines): content_type, content_pk and ds1d are used.
-              cross1, cross2, cross_weight will be changed in place.
+            channels (Channels): Used to lookup the channel geometry
+            lines (Lines): Lines for which to compute cross1, cross2, and
+              cross_weight. The attributes will be changed in place. Only
+              lines of type Channel will be included. Those lines MUST be
+              ordered by channel_id and then by position on channel. If this
+              is not the case, the computed weights will be bogus.
+
+        See also:
+            Channels.get_lines: this computes the lines in the correct order
         """
         if not np.in1d(channels.id, self.channel_id).all():
             missing = set(channels.id) - set(self.channel_id)
             raise ValueError(f"Channels {missing} have no cross section location set.")
 
-        # get the indices that sort channel lines by their content_pk
-        line_idx = np.lexsort((lines.internal_seq_id, lines.content_pk))
-        line_idx = line_idx[lines.content_type == ContentType.TYPE_V2_CHANNEL]
+        # get a boolean mask to the Channel lines
+        is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         # reorder self by channel_id
         self.reorder_by(np.argsort(self.channel_id))
@@ -64,7 +69,7 @@ class CrossSectionLocations:
 
         # compute where a line-midpoint (velocity point) is, cumulative over
         # all channels
-        cumul = np.cumsum(lines.ds1d[line_idx])
+        cumul = np.cumsum(lines.ds1d[is_channel])
         midpoint_ds = (cumul + np.roll(cumul, 1)) / 2
         midpoint_ds[0] = cumul[0] / 2
 
@@ -76,14 +81,14 @@ class CrossSectionLocations:
         cross_idx_1[cross_idx_1 < 0] = 0
 
         # make cross1 and cross2 equal if one is from a wrong channel
-        to_equalize = self.channel_id[cross_idx_1] != lines.content_pk[line_idx]
+        to_equalize = self.channel_id[cross_idx_1] != lines.content_pk[is_channel]
         cross_idx_1[to_equalize] = cross_idx_2[to_equalize]
-        to_equalize = self.channel_id[cross_idx_2] != lines.content_pk[line_idx]
+        to_equalize = self.channel_id[cross_idx_2] != lines.content_pk[is_channel]
         cross_idx_2[to_equalize] = cross_idx_1[to_equalize]
 
         # map index to id and set on the (filtered & sorted) lines
-        lines.cross1[line_idx] = self.index_to_id(cross_idx_1)
-        lines.cross2[line_idx] = self.index_to_id(cross_idx_2)
+        lines.cross1[is_channel] = self.index_to_id(cross_idx_1)
+        lines.cross2[is_channel] = self.index_to_id(cross_idx_2)
 
         # compute the weights. for each line, we have 3 times ds:
         # 1. the ds of the CrossSectionLocation before it
@@ -96,7 +101,7 @@ class CrossSectionLocations:
             weights = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
         weights[~np.isfinite(weights)] = 1.0
 
-        lines.cross_weight[line_idx] = weights
+        lines.cross_weight[is_channel] = weights
 
 
 class CrossSectionDefinition:

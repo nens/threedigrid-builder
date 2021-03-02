@@ -84,11 +84,11 @@ def test_get_lines(connection_nodes, two_channels):
 
     lines = two_channels.get_lines(connection_nodes, nodes, connection_node_offset=100)
 
-    expected_line = [(100, 10), (101, 11), (10, 103), (11, 12), (12, 102)]
+    expected_line = [(100, 10), (10, 103), (101, 11), (11, 12), (12, 102)]
 
     assert_array_equal(lines.id, range(5))
     assert_array_equal(lines.line, expected_line)
-    assert_array_equal(lines.content_pk, [1, 2, 1, 2, 2])
+    assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
 
 
@@ -104,7 +104,7 @@ def test_get_lines_one_channel(channel_idx, expected, connection_nodes, one_chan
     nodes = Nodes(id=range(4, 4 + len(channel_idx)), content_pk=channel_idx)
     lines = one_channel.get_lines(connection_nodes, nodes)
 
-    assert {tuple(x) for x in lines.line} == set(expected)
+    assert_array_equal(lines.line, expected)
 
 
 @pytest.mark.parametrize(
@@ -124,4 +124,4 @@ def test_get_lines_two_channels(channel_idx, expected, connection_nodes, two_cha
 
     lines = two_channels.get_lines(connection_nodes, nodes)
 
-    assert {tuple(x) for x in lines.line} == set(expected)
+    assert_array_equal(lines.line, expected)
