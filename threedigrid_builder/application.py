@@ -22,12 +22,18 @@ def get_1d_grid(path):
     grid = Grid.from_connection_nodes(
         connection_nodes=connection_nodes, node_id_counter=counter
     )
+
+    channels = db.get_channels()
     grid += Grid.from_channels(
         connection_nodes=connection_nodes,
-        channels=db.get_channels(),
+        channels=channels,
         global_dist_calc_points=db.global_settings["dist_calc_points"],
         node_id_counter=counter,
     )
+
+    cross_section_locations = db.get_cross_section_locations()
+    cross_section_locations.apply_to_channels(channels, grid.lines)
+
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
 

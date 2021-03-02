@@ -183,8 +183,13 @@ class ArrayDataClass:
         return {field: getattr(self, field) for field in fields}
 
     def reorder_by(self, idx):
-        """Reorder self by given idx, inplace"""
+        """Reorder self by given idx, inplace.
+
+        Note that this skips self.id, effectively the records are renumbered.
+        """
         for field in self.data_class.__annotations__:
+            if field == "id":
+                continue
             setattr(self, field, getattr(self, field)[idx])
 
 

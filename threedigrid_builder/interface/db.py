@@ -131,6 +131,7 @@ class SQLite:
             arr = (
                 session.query(
                     models.CrossSectionDefinition.id,
+                    models.CrossSectionDefinition.code,
                     models.CrossSectionDefinition.shape,
                     models.CrossSectionDefinition.width,
                     models.CrossSectionDefinition.height,
@@ -148,6 +149,7 @@ class SQLite:
             arr = (
                 session.query(
                     models.CrossSectionLocation.id,
+                    models.CrossSectionLocation.code,
                     models.CrossSectionLocation.the_geom,
                     models.CrossSectionLocation.definition_id,
                     models.CrossSectionLocation.channel_id,

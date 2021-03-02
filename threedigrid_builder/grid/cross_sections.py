@@ -12,7 +12,7 @@ __all__ = ["CrossSectionLocations", "CrossSectionDefinitions"]
 
 class CrossSectionLocation:
     id: int
-    # code: str  unused?
+    code: str
     the_geom: pygeos.Geometry
     definition_id: id  # refers to CrossSectionDefinition
     channel_id: id  # refers to Channel
@@ -49,11 +49,11 @@ class CrossSectionLocations:
         # get a boolean mask to the Channel lines
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
-        # reorder self by channel_id
-        self.reorder_by(np.argsort(self.channel_id))
+        # make a sorter array that sorts self by channel_id
+        sorter = np.argsort(self.channel_id)
         _, n_locations = np.unique(self.channel_id, return_counts=True)
 
-        # compute where a location is on each channel, cumulative over
+        # compute where a CS location is on each channel, cumulative over
         # all channels
         location_ds = pygeos.line_locate_point(
             np.repeat(channels.the_geom, n_locations), self.the_geom
@@ -63,10 +63,10 @@ class CrossSectionLocations:
         channel_ds_cumul[0] = 0
         location_ds += np.repeat(channel_ds_cumul, n_locations)
 
-        # reorder self again so that locations are ordered on each channel
+        # update the sorter so that CS locations are ordered on each channel
         _location_ds_sorter = np.argsort(location_ds)
         location_ds = location_ds[_location_ds_sorter]
-        self.reorder_by(_location_ds_sorter)
+        sorter = sorter[_location_ds_sorter]
 
         # compute where a line-midpoint (velocity point) is, cumulative over
         # all channels
@@ -74,7 +74,7 @@ class CrossSectionLocations:
         midpoint_ds = (cumul + np.roll(cumul, 1)) / 2
         midpoint_ds[0] = cumul[0] / 2
 
-        # for each midpoint, find what location comes after and before
+        # for each midpoint, find what CS location comes after and before
         cross_idx_2 = np.searchsorted(location_ds, midpoint_ds)
         cross_idx_1 = cross_idx_2 - 1
         # clip so that we do not get out-of-bounds errors
@@ -91,33 +91,34 @@ class CrossSectionLocations:
         # Equalization: if a newly assigned crosssection location would not
         # belong to the correct channel, we have only 1 crossection location
         # in the channel so we assign the same cross_idx to both 1 and 2.
+        channel_id = self.channel_id[sorter]  # lines are sorted the same
         extrap_left = (
-            self.channel_id[cross_idx_1] != lines.content_pk[is_channel]
+            channel_id[cross_idx_1] != lines.content_pk[is_channel]
         ) | out_of_bounds_1
         cross_idx_1[extrap_left] = cross_idx_2[extrap_left]
         # additional filtering to prevent cross_idx_2 being out of bounds
         extrap_left[extrap_left] &= cross_idx_2[extrap_left] < len(self) - 1
         extrap_left[extrap_left] &= (
-            self.channel_id[cross_idx_2[extrap_left] + 1]
+            channel_id[cross_idx_2[extrap_left] + 1]
             == lines.content_pk[is_channel][extrap_left]
         )
         cross_idx_2[extrap_left] += 1
 
         extrap_right = (
-            self.channel_id[cross_idx_2] != lines.content_pk[is_channel]
+            channel_id[cross_idx_2] != lines.content_pk[is_channel]
         ) | out_of_bounds_2
         cross_idx_2[extrap_right] = cross_idx_1[extrap_right]
         # additional filtering to prevent cross_idx_1 being out of bounds
         extrap_right[extrap_right] &= cross_idx_1[extrap_right] >= 0
         extrap_right[extrap_right] &= (
-            self.channel_id[cross_idx_1[extrap_right] - 1]
+            channel_id[cross_idx_1[extrap_right] - 1]
             == lines.content_pk[is_channel][extrap_right]
         )
         cross_idx_1[extrap_right] -= 1
 
-        # map index to id and set on the (filtered & sorted) lines
-        lines.cross1[is_channel] = self.index_to_id(cross_idx_1)
-        lines.cross2[is_channel] = self.index_to_id(cross_idx_2)
+        # map index to id and set on the (filtered) lines
+        lines.cross1[is_channel] = self.id[sorter][cross_idx_1]
+        lines.cross2[is_channel] = self.id[sorter][cross_idx_2]
 
         # compute the weights. for each line, we have 3 times ds:
         # 1. the ds of the CrossSectionLocation before it
@@ -135,7 +136,7 @@ class CrossSectionLocations:
 
 class CrossSectionDefinition:
     id: int
-    # code: str  unused?
+    code: str
     shape: CrossSectionShape
     height: float
     width: float

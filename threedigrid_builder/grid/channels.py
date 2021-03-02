@@ -150,20 +150,5 @@ class Channels:
         )
 
         # Reorder the lines so that they are sorted by [channel_id, position]
-        id_before = lines.id
         lines.reorder_by(np.argsort(lines.content_pk))
-        lines.id = id_before
         return lines
-
-    def set_ds1d(self, segment_size, lines):
-        """Set the ds1d attribute of lines from the per-channel segment size
-
-        Args:
-            segment_size (ndarray of float): the size of a segment per channel,
-              as obtained by Channels().interpolate_nodes
-            lines (Lines): the lines to set the ds1d on
-        """
-        is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
-        channel_ids = lines.content_pk[is_channel]
-        channel_idx = self.id_to_index(channel_ids)
-        lines.ds1d[is_channel] = segment_size[channel_idx]

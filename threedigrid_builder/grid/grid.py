@@ -83,7 +83,5 @@ class Grid:
         nodes, segment_size = channels.interpolate_nodes(
             node_id_counter, global_dist_calc_points
         )
-        lines = channels.get_lines(
-            connection_nodes, nodes, segment_size=segment_size
-        )
+        lines = channels.get_lines(connection_nodes, nodes, segment_size=segment_size)
         return cls(nodes, lines)
