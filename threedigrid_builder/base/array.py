@@ -89,17 +89,28 @@ class ArrayDataClass:
         False for bool).
         """
         # id is required; get its length to use it for validation
-        try:
-            expected_length = len(kwargs["id"])
-        except KeyError:
+        id = kwargs.pop("id", None)
+        if id is None:
             raise TypeError("missing required keyword argument 'id'")
+        # handle generators
+        if hasattr(id, "__iter__") and not hasattr(id, "__len__"):
+            id = np.fromiter(id, dtype=np.int32)
+        # cast to integer array
+        id = np.asarray(id, dtype=np.int32, order="F")
+        if id.ndim != 1:
+            raise ValueError(f"Expected one-dimensional 'id' array, got {id.ndim}")
+        if id.size > 1 and not np.all(id[1:] > id[:-1]):
+            raise ValueError("Values in 'id' must be unique and sorted")
+        self.id = id
 
         # convert each field to an array and set it to self
         fields = self.data_class.__annotations__
         for name, elem_type in fields.items():
+            if name == "id":
+                continue
             value = kwargs.pop(name, None)
             try:
-                arr = _to_ndarray(value, elem_type, expected_length)
+                arr = _to_ndarray(value, elem_type, id.size)
             except ValueError as e:
                 raise ValueError(f"Error parsing {name} to array: {e}")
             setattr(self, name, arr)
@@ -128,6 +139,48 @@ class ArrayDataClass:
             for name in self.data_class.__annotations__.keys()
         }
         return self.__class__(**new_fields)
+
+    def id_to_index(self, id):
+        """Find the index of records with given id.
+
+        Note:
+            It is not checked if the id actually exists! In that case
+            behaviour of numpy.searchsorted is produced: the returned index is
+            the index where to insert id to maintain order in self.id.
+
+        Args:
+            id (int or array_like): The id(s) to find in self.id
+
+        Returns:
+            int or array_like: the indexes into self.id
+        """
+        # some timings:
+        # len(id)    len(self.id)   timing (microseconds)
+        # 1000       2000           44
+        # 1000       10000          62
+        return np.searchsorted(self.id, id)  # inverse of self.id[index]
+
+    def index_to_id(self, index):
+        """Find the id of records with given index.
+
+        Note:
+            Index should be 0 <= index < len(self).
+
+        Args:
+            index (int or array_like): The indices to return from self.id
+
+        Returns:
+            int or array_like: the ids from self.id
+        """
+        # some timings:
+        # len(id)    len(self.id)   timing (microseconds)
+        # 1000       2000           5.2
+        # 1000       10000          5.2
+        return np.take(self.id, index)  # same as self.id[index]
+
+    def to_dict(self):
+        fields = self.data_class.__annotations__
+        return {field: getattr(self, field) for field in fields}
 
 
 class array_of:
@@ -166,6 +219,8 @@ class array_of:
         # id must be present
         if "id" not in fields:
             raise TypeError("The id field is required")
+        if fields["id"] is not int:
+            raise TypeError("The id field should be of integer type")
 
         # check the subtypes of Tuples
         for name, elem_type in fields.items():
