@@ -14,14 +14,15 @@ class Line:
     line_type: LineType  # kcu
     line: Tuple[int, int]
     ds1d: float  # arclength
+    internal_seq_id: int  # the per-channel or per-pipe sequence id
     line_geometries: pygeos.Geometry
     content_type: ContentType
     content_pk: int
     dpumax: float  # bottom_level
     flod: float  # obstacle height
     flou: float  # obstacle height
-    cross1: int  # to discuss if this is cross definition pk or other id)
-    cross2: int  # to discuss if this is cross definition pk or other id)
+    cross1: int  # the id of the cross section location
+    cross2: int  # the id of the cross section location
     cross_weight: float
 
 

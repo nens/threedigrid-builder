@@ -182,6 +182,11 @@ class ArrayDataClass:
         fields = self.data_class.__annotations__
         return {field: getattr(self, field) for field in fields}
 
+    def reorder_by(self, idx):
+        """Reorder self by given idx, inplace"""
+        for field in self.data_class.__annotations__:
+            setattr(self, field, getattr(self, field)[idx])
+
 
 class array_of:
     """A decorator to create an array dataclass from a normal dataclass.
