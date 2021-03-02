@@ -83,3 +83,10 @@ class Grid:
         nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = channels.get_lines(connection_nodes, nodes)
         return cls(nodes, lines)
+
+    def set_cross_section_weights(self, locations):
+        """Compute and set the cross section weights for each channel.
+
+        Args:
+            locations (CrossSectionLocations)
+        """
