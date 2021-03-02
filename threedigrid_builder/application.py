@@ -105,9 +105,7 @@ def grid_to_gpkg(grid, out_path):
     df_lines = geopandas.GeoDataFrame(
         line_data, geometry=line_geometries, crs=grid.epsg_code
     )
-    #     , crs=db.global_settings["epsg_code"])
-    # df.set_geometry("geometry")
-    # df.to_file(out_path)
+    
     # ---WRITE THE FILE---
     df_nodes.to_file(out_path, layer="nodes", driver="GPKG")
     df_lines.to_file(out_path, layer="lines", driver="GPKG")
