@@ -5,7 +5,7 @@ from threedigrid_builder.grid import QuadTree
 import numpy as np
 import pygeos
 import pytest
-import mock
+
 
 @pytest.fixture
 def subgrid_meta():
