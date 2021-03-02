@@ -34,7 +34,8 @@ class Channels:
             global_dist_calc_points (float): Default node interdistance.
 
         Returns:
-            Nodes with data in the following columns:
+            tuple of nodes (Nodes), segment_size (ndarray)
+            nodes has data in the following columns:
             - id: 0-based counter generated here
             - coordinates
             - content_type: ContentType.TYPE_V2_CHANNEL
@@ -64,14 +65,17 @@ class Channels:
             dist_to_start,  # note: this only copies geometry pointers
         )
 
-        return Nodes(
+        nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
             content_pk=self.index_to_id(idx),
         )
+        return nodes, segment_size
 
-    def get_lines(self, connection_nodes, nodes, connection_node_offset=0):
+    def get_lines(
+        self, connection_nodes, nodes, segment_size=None, connection_node_offset=0
+    ):
         """Compute the grid (nodes + lines) for the channels.
 
         Fields connection_node_start_id and connection_node_end_id are used.
@@ -79,6 +83,8 @@ class Channels:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             nodes (Nodes): additional channel nodes (see interpolate_nodes)
+            segment_size (ndarray of float): the segment size of each channel
+              (see interpolate_nodes)
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
 
@@ -88,6 +94,7 @@ class Channels:
             - line: lines between connection nodes and added channel nodes
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this line originates
+            - ds1d: the arclength of the line (if segment_size is supplied)
             The lines are ordered by content_pk and then by position on the
             channel.
         """
@@ -108,6 +115,7 @@ class Channels:
             line=np.array([cn_start_idx, cn_end_idx]).T,
             content_pk=self.id,
             content_type=ContentType.TYPE_V2_CHANNEL,
+            ds1d=segment_size,
         )
 
         # if there are no interpolated nodes then we're done
@@ -117,31 +125,45 @@ class Channels:
         # generate the lines that interconnect interpolated nodes
         line_ids = np.array([nodes.id, np.roll(nodes.id, -1)])
 
+        # map channel ids to channel index
+        channel_idx = self.id_to_index(nodes.content_pk)
+
         # connect the last line of each channel to the corresponding
         # connection_node_end_id (instead of the next channel)
         is_channel_end = nodes.content_pk != np.roll(nodes.content_pk, -1)
         is_channel_end[-1] = True
-        channel_id = nodes.content_pk[is_channel_end]
-        channel_idx = self.id_to_index(channel_id)
-        line_ids[1][is_channel_end] = cn_end_idx[channel_idx]
+        end_idx = channel_idx[is_channel_end]
+        line_ids[1][is_channel_end] = cn_end_idx[end_idx]
 
         # connect the line endings in CN-CN lines to a first interpolated
         # node (if there are any)
         is_channel_start = np.roll(is_channel_end, 1)
-        channel_id = nodes.content_pk[is_channel_start]
-        channel_idx = self.id_to_index(channel_id)
-        lines.line[channel_idx, 1] = nodes.id[is_channel_start]
+        start_idx = channel_idx[is_channel_start]
+        lines.line[start_idx, 1] = nodes.id[is_channel_start]
 
         lines += Lines(
             id=range(len(lines), len(lines) + len(nodes)),
             line=line_ids.T,
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,
+            ds1d=None if segment_size is None else segment_size[channel_idx],
         )
 
-        # Reorder the lines so that they are sorted by channel_id,
-        # position on channel).
+        # Reorder the lines so that they are sorted by [channel_id, position]
         id_before = lines.id
         lines.reorder_by(np.argsort(lines.content_pk))
         lines.id = id_before
         return lines
+
+    def set_ds1d(self, segment_size, lines):
+        """Set the ds1d attribute of lines from the per-channel segment size
+
+        Args:
+            segment_size (ndarray of float): the size of a segment per channel,
+              as obtained by Channels().interpolate_nodes
+            lines (Lines): the lines to set the ds1d on
+        """
+        is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
+        channel_ids = lines.content_pk[is_channel]
+        channel_idx = self.id_to_index(channel_ids)
+        lines.ds1d[is_channel] = segment_size[channel_idx]

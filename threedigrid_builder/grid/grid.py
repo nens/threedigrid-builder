@@ -80,6 +80,10 @@ class Grid:
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
         """
-        nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
-        lines = channels.get_lines(connection_nodes, nodes)
+        nodes, segment_size = channels.interpolate_nodes(
+            node_id_counter, global_dist_calc_points
+        )
+        lines = channels.get_lines(
+            connection_nodes, nodes, segment_size=segment_size
+        )
         return cls(nodes, lines)

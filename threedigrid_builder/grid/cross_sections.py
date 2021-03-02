@@ -37,6 +37,7 @@ class CrossSectionLocations:
               lines of type Channel will be included. Those lines MUST be
               ordered by channel_id and then by position on channel. If this
               is not the case, the computed weights will be bogus.
+              Required attributes: content_type, content_pk, and ds1d.
 
         See also:
             Channels.get_lines: this computes the lines in the correct order

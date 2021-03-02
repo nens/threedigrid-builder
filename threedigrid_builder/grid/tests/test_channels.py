@@ -45,44 +45,51 @@ def two_channels():
 
 
 @pytest.mark.parametrize(
-    "dist,expected",
+    "dist,size,expected",
     [
-        (3.0, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments
-        (4.0, [(4, 0), (6, 2)]),  # 12 / 4  = 3 segments
-        (5.0, [(6, 0)]),  # 12 / 5  = 2.4 -> 2 segments
-        (6.0, [(6, 0)]),  # 12 / 6  = 2 segments
-        (8.0, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
-        (9.0, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
-        (100.0, np.empty((0, 2), dtype=float)),
+        (3.0, 12 / 4, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments
+        (4.0, 12 / 3, [(4, 0), (6, 2)]),  # 12 / 4  = 3 segments
+        (5.0, 12 / 2, [(6, 0)]),  # 12 / 5  = 2.4 -> 2 segments
+        (6.0, 12 / 2, [(6, 0)]),  # 12 / 6  = 2 segments
+        (8.0, 12 / 2, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
+        (9.0, 12, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
+        (100.0, 12, np.empty((0, 2), dtype=float)),
     ],
 )
-def test_interpolate_nodes_one_channel(dist, expected, one_channel):
+def test_interpolate_nodes_one_channel(dist, size, expected, one_channel):
     one_channel.dist_calc_points[0] = dist
-    actual = one_channel.interpolate_nodes(
+    nodes, segment_size = one_channel.interpolate_nodes(
         itertools.count(start=2), global_dist_calc_points=74.0
     )
 
-    assert_array_equal(actual.id, range(2, 2 + len(expected)))
-    assert_array_equal(actual.coordinates, expected)
-    assert_array_equal(actual.content_pk, 1)
+    assert_array_equal(nodes.id, range(2, 2 + len(expected)))
+    assert_array_equal(nodes.coordinates, expected)
+    assert_array_equal(nodes.content_pk, 1)
+    assert_array_equal(segment_size, size)
 
 
 def test_interpolate_nodes_two_channels(two_channels):
-    actual = two_channels.interpolate_nodes(
+    nodes, segment_size = two_channels.interpolate_nodes(
         itertools.count(start=2), global_dist_calc_points=50.0
     )
 
     expected_points = [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
 
-    assert_array_equal(actual.id, range(2, 8))
-    assert_array_equal(actual.coordinates, expected_points)
-    assert_array_equal(actual.content_pk, [1, 1, 1, 2, 2, 2])
+    assert_array_equal(nodes.id, range(2, 8))
+    assert_array_equal(nodes.coordinates, expected_points)
+    assert_array_equal(nodes.content_pk, [1, 1, 1, 2, 2, 2])
+    assert_array_equal(segment_size, [5.0, 50.0])
 
 
 def test_get_lines(connection_nodes, two_channels):
     nodes = Nodes(id=[10, 11, 12], content_pk=[1, 2, 2])
 
-    lines = two_channels.get_lines(connection_nodes, nodes, connection_node_offset=100)
+    lines = two_channels.get_lines(
+        connection_nodes,
+        nodes,
+        connection_node_offset=100,
+        segment_size=np.array([23, 101]),
+    )
 
     expected_line = [(100, 10), (10, 103), (101, 11), (11, 12), (12, 102)]
 
@@ -90,6 +97,7 @@ def test_get_lines(connection_nodes, two_channels):
     assert_array_equal(lines.line, expected_line)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
+    assert_array_equal(lines.ds1d, [23, 23, 101, 101, 101])
 
 
 @pytest.mark.parametrize(
