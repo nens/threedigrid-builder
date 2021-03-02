@@ -27,20 +27,20 @@ module m_cells
         integer :: nod
         integer :: k
         integer :: m, n
-        integer :: m0, m1, n0, n1
+        integer :: mn(4)
 
         write(*,*) '** INFO: Start setting 2D calculation cells.'
         nod = 0
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
-                    call get_lg_corners(k, m, n, m0, m1, n0, n1)
-                    if(all(lg(m0:m1,n0:n1) == k)) then
+                    mn = get_lg_corners(k, m, n)
+                    if(all(lg(mn(1):mn(2),mn(3):mn(4)) == k)) then
                         nod = nod + 1
                         nodk(nod) = k
                         nodm(nod) = m
                         nodn(nod) = n
-                        quad_nod(m0:m1,n0:n1) = nod
+                        quad_nod(mn(1):mn(2),mn(3):mn(4)) = nod
                         bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
                         coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
                     else

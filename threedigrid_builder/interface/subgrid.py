@@ -4,7 +4,7 @@ import numpy as np
 import rasterio
 
 
-class SubgridMeta:
+class Subgrid:
     def __init__(self, filepath, model_area=None):
 
         self.filepath = filepath
@@ -24,7 +24,7 @@ class SubgridMeta:
         return f"<SubgridMeta object of raster file {self.filepath}>"
 
     @property
-    def area_pix(self):
+    def mask(self):
         return np.flipud(self._area_raster).T.astype(
             dtype=np.int32, copy=False, order="F"
         )
@@ -92,6 +92,17 @@ class SubgridMeta:
         data[data > 0] = 1
 
         return data
+
+    def get_meta(self):
+        """Return meta information of subgrid from raster.
+        """
+        return {
+            "pixel_size": self.pixel_size,
+            "width": self.width,
+            "height": self.height,
+            "bbox": self.bbox,
+            "area_mask": self.mask,
+        }
 
     def create_model_area_tiff(self, out_filepath):
 

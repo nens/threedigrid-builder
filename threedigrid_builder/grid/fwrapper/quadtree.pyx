@@ -48,8 +48,8 @@ cpdef create_quadtree(
     int[:] mmax,
     int[:] nmax,
     int lgrmin,
-    int[:,:] model_area,
-    int[:,:] lg
+    int[::1,:] model_area,
+    int[::1,:] lg
 ):
 
     cdef int m0 = mmax.shape[0]

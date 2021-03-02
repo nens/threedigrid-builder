@@ -43,7 +43,7 @@ class Grid:
             refinements
         )
 
-        nodes = quadtree.get_nodes(subgrid_meta)
+        nodes = quadtree.get_nodes()
         lines = Lines(id=[])
 
         return cls(nodes=nodes, lines=lines)

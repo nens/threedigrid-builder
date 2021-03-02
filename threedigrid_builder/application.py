@@ -1,5 +1,5 @@
 from threedigrid_builder.interface import SQLite
-from threedigrid_builder.interface import SubgridMeta
+from threedigrid_builder.interface import Subgrid
 from threedigrid_builder.grid import Grid
 
 
@@ -36,7 +36,8 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
     """Make 2D computational grid
     """
 
-    subgrid_meta = SubgridMeta(dem_path, model_area=model_area_path)
+    subgrid = Subgrid(dem_path, model_area=model_area_path)
+    subgrid_meta = subgrid.get_meta()
 
     db = SQLite(sqlite_path)
     refinements = db.get_grid_refinements()
@@ -45,7 +46,7 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         subgrid_meta,
         db.global_settings["kmax"],
         db.global_settings["grid_space"],
-        refinements
+        refinements,
     )
     grid.epsg_code = db.global_settings["epsg_code"]
 

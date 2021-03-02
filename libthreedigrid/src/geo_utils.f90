@@ -77,25 +77,21 @@ module m_grid_utils
 
     end subroutine crop_pix_coords_to_raster
 
-    subroutine get_lg_corners(k, m, n, m0, m1, n0, n1)
+    function get_lg_corners(k, m, n) result (mn)
 
-        integer(KIND=4), intent(in) :: k
+        integer, intent(in) :: k
         integer, intent(in) :: m
         integer, intent(in) :: n
-        integer, intent(out) :: m0
-        integer, intent(out) :: m1
-        integer, intent(out) :: n0
-        integer, intent(out) :: n1
+        integer :: mn(4)
         integer :: num_cells
+        
+        num_cells = 1 * 2 ** (k - 1)
+        mn(0) = (m-1)*num_cells + 1
+        mn(1) = (n-1)*num_cells + 1
+        mn(3) = m*num_cells
+        mn(4) = n*num_cells
 
-        num_cells = 1*2**(k-1)
-
-        m0 = (m-1)*num_cells + 1
-        m1 = m*num_cells
-        n0 = (n-1)*num_cells + 1
-        n1 = n*num_cells
-
-    end subroutine get_lg_corners
+    end function get_lg_corners
 
     function get_cell_bbox(xorig, yorig, m, n, dx) result(bbox)
 

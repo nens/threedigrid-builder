@@ -16,7 +16,7 @@ module m_quadtree
         refine_type, bbox, mmax, nmax, dx, j0, lg, i0, i1) bind(c, name="f_set_refinement")
         
         use m_grid_utils, only : get_cell_geom, find_cell_intersects,&
-                                 get_lg_corners, geom_in_polygon,&
+                                 geom_in_polygon,&
                                  feature_in_bbox
 
         integer(kind=c_int), intent(in) :: n0
@@ -112,7 +112,6 @@ module m_quadtree
                 call divide(kmax, m, n, lg)
             enddo
         enddo
-
         call balance_quadtree(kmax, mmax, nmax, lg)
         call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
         write(*,*) '** INFO: Done making quadtree.'
@@ -128,15 +127,15 @@ module m_quadtree
         integer, intent(in) :: n
         integer, intent(inout) :: lg(:,:)
         integer :: k1
-        integer :: m0, n0, m1, n1
+        integer :: mn(4)
         integer :: m_n, n_n
 
-        call get_lg_corners(k, m, n, m0, m1, n0, n1)
-        if(any(lg(m0:m1,n0:n1) < k)) then
+        mn = get_lg_corners(k, m, n)
+        if(any(lg(mn(1):mn(2),mn(3):mn(4)) < k).and.k>1) then
             k1 = k-1
             m_n=2*m-1
             n_n=2*n-1
-            lg(m0:m1,n0:n1) = min(lg(m0:m1,n0:n1), k1)
+            lg(mn(1):mn(2),mn(3):mn(4)) = min(lg(mn(1):mn(2),mn(3):mn(4)), k1)
             call divide(k1, m_n, n_n, lg)
             call divide(k1, m_n+1, n_n, lg)
             call divide(k1, m_n, n_n+1, lg)
@@ -198,7 +197,7 @@ module m_quadtree
         integer, intent(in) :: model_area(:,:)
         integer :: k
         integer :: m,n
-        integer :: m0, m1, n0, n1
+        integer :: mn(4)
         integer :: i0, i1, j0, j1
         integer :: num_active_nodes
 
@@ -207,15 +206,15 @@ module m_quadtree
             do m=1,mmax(k)
                 do n=1,nmax(k)
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
-                    call get_lg_corners(k, m, n, m0, m1, n0, n1)
+                    mn = get_lg_corners(k, m, n)
                     i1 = min(i1, size(model_area, 1))
                     j1 = min(j1, size(model_area, 2))
-                    if(all(model_area(i0:i1, j0:j1) == 0)) then
-                        lg(m0:m1,n0:n1) = -99
+                    if (all(model_area(i0:i1, j0:j1) == 0)) then
+                        lg(mn(1):mn(2),mn(3):mn(4)) = -99
                     else
-                        if (any(lg(m0:m1,n0:n1) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
+                        if (any(lg(mn(1):mn(2),mn(3):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
                             num_active_nodes = num_active_nodes + 1
-                            lg(m0:m1,n0:n1) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
+                            lg(mn(1):mn(2),mn(3):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                         endif
                     endif
                 enddo

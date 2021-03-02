@@ -6,6 +6,7 @@ from threedigrid_builder.grid.fwrapper import set_refinement
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes
 import numpy as np
 import pygeos
+import math
 
 
 __all__ = ["QuadTree"]
@@ -18,24 +19,29 @@ class QuadTree:
         self, subgrid_meta, num_refine_levels, min_gridsize, refinements
     ):
 
-        self._lgrmin = min_gridsize / subgrid_meta.pixel_size
+        self._lgrmin = min_gridsize / subgrid_meta["pixel_size"]
         self._kmax = num_refine_levels
         self._mmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._nmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._dx = np.empty((self.kmax,), dtype=np.float64, order='F')
 
-        max_grid_x_pix = self._determine_max_quadtree_pixels(
-            subgrid_meta.width
+        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1)
+
+        # Determine number of largest cells that fit over subgrid extent.
+        max_pix_largest_cell = self.min_cell_pixels * lvl_multiplr[0]
+        max_large_cells_col = math.ceil(
+            subgrid_meta["width"] / (max_pix_largest_cell)
         )
-        max_grid_y_pix = self._determine_max_quadtree_pixels(
-            subgrid_meta.height
+        max_large_cells_row = math.ceil(
+            subgrid_meta["height"] / (max_pix_largest_cell)
         )
 
-        pix_grid_levels = self._lgrmin * 2 ** np.arange(0, self.kmax)
-        self._mmax[:] = max_grid_x_pix / pix_grid_levels
-        self._nmax[:] = max_grid_y_pix / pix_grid_levels
-        self._dx[:] = pix_grid_levels * subgrid_meta.pixel_size
-        self.bbox = np.array(subgrid_meta.bbox)
+        # Calculate grid level dimensions.
+        self._mmax[:] = max_large_cells_col * lvl_multiplr
+        self._nmax[:] = max_large_cells_row * lvl_multiplr
+        self._dx[:] = \
+            self._lgrmin * lvl_multiplr[::-1] * subgrid_meta["pixel_size"]
+        self.bbox = np.array(subgrid_meta["bbox"])
 
         # Array with dimensions of smallest active grid level and contains
         # map of active grid level for each quadtree cell.
@@ -46,13 +52,15 @@ class QuadTree:
             order='F'
         )
 
-        self._apply_refinements(refinements)
+        if refinements:
+            self._apply_refinements(refinements)
+
         self.active_cells = create_quadtree(
             self.kmax,
             self.mmax,
             self.nmax,
             self.min_cell_pixels,
-            subgrid_meta.area_pix,
+            subgrid_meta["area_mask"],
             self.lg
         )
 
@@ -92,20 +100,6 @@ class QuadTree:
         """
         return self._dx
 
-    def _determine_max_quadtree_pixels(self, side):
-        """Compute pixels dimension of active quadtree. (extend raster
-        dimension to quadtree cell bound.)
-
-        Args:
-          number of pixels of raster dimension.
-
-        Returns:
-          Value of pixel dimension of quadtree dimension.
-        """
-        max_pix_largest_cell = self.min_cell_pixels * 2 ** (self.kmax - 1)
-        return (max_pix_largest_cell * (side / (max_pix_largest_cell))) \
-            + max_pix_largest_cell
-
     def _apply_refinements(self, refinements):
         """Set active grid levels for based on refinement dict and 
         filling lg variable for refinement locations.
@@ -133,7 +127,7 @@ class QuadTree:
                 lg=self.lg
             )
 
-    def get_nodes(self, subgrid_meta):
+    def get_nodes(self):
         """Compute 2D openwater Nodes based computed Quadtree
 
         Args:
