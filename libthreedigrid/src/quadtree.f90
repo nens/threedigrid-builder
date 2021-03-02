@@ -131,11 +131,11 @@ module m_quadtree
         integer :: m_n, n_n
 
         mn = get_lg_corners(k, m, n)
-        if(any(lg(mn(1):mn(2),mn(3):mn(4)) < k).and.k>1) then
+        if(any(lg(mn(1):mn(3),mn(2):mn(4)) < k).and.k>1) then
             k1 = k-1
             m_n=2*m-1
             n_n=2*n-1
-            lg(mn(1):mn(2),mn(3):mn(4)) = min(lg(mn(1):mn(2),mn(3):mn(4)), k1)
+            lg(mn(1):mn(3),mn(2):mn(4)) = min(lg(mn(1):mn(3),mn(2):mn(4)), k1)
             call divide(k1, m_n, n_n, lg)
             call divide(k1, m_n+1, n_n, lg)
             call divide(k1, m_n, n_n+1, lg)
@@ -210,11 +210,11 @@ module m_quadtree
                     i1 = min(i1, size(model_area, 1))
                     j1 = min(j1, size(model_area, 2))
                     if (all(model_area(i0:i1, j0:j1) == 0)) then
-                        lg(mn(1):mn(2),mn(3):mn(4)) = -99
+                        lg(mn(1):mn(3),mn(2):mn(4)) = -99
                     else
-                        if (any(lg(mn(1):mn(2),mn(3):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
+                        if (any(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
                             num_active_nodes = num_active_nodes + 1
-                            lg(mn(1):mn(2),mn(3):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
+                            lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                         endif
                     endif
                 enddo

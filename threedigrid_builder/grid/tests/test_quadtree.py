@@ -42,7 +42,6 @@ def quadtree_line_refinement(subgrid_meta):
         ),
         "type": np.array([1])
     }
-
     return QuadTree(
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
@@ -71,7 +70,6 @@ def quadtree_poly_refinement(subgrid_meta):
 
 
 def test_quadtree_no_refinement(quadtree_no_refinement):
-
     assert quadtree_no_refinement.kmax == 3
     assert np.size(quadtree_no_refinement.mmax) == 3
     assert quadtree_no_refinement.mmax[2] == 3

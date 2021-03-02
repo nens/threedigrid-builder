@@ -35,12 +35,12 @@ module m_cells
             do m=1,mmax(k)
                 do n=1,nmax(k)
                     mn = get_lg_corners(k, m, n)
-                    if(all(lg(mn(1):mn(2),mn(3):mn(4)) == k)) then
+                    if(all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then
                         nod = nod + 1
                         nodk(nod) = k
                         nodm(nod) = m
                         nodn(nod) = n
-                        quad_nod(mn(1):mn(2),mn(3):mn(4)) = nod
+                        quad_nod(mn(1):mn(3),mn(2):mn(4)) = nod
                         bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
                         coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
                     else

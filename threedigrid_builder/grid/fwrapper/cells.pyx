@@ -7,13 +7,13 @@ def set_2d_computational_nodes(
     int[:] mmax,
     int[:] nmax,
     double[:] dx,
-    int[:,:] lg,
+    int[::1,:] lg,
     int[:] nodk,
     int[:] nodm,
     int[:] nodn,
-    int[:,:] quad_nod,
-    double[:,:] bounds,
-    double[:,:] coords,
+    int[::1,:] quad_nod,
+    double[::1,:] bounds,
+    double[::1,:] coords,
 ):
 
     cdef int size_i = lg.shape[0]
