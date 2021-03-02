@@ -1,3 +1,4 @@
+from numpy.testing import assert_almost_equal
 from numpy.testing import assert_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import ContentType
@@ -63,4 +64,4 @@ def test_set_cross_section_weights(channels, channel_lines, cross_section_locati
 
     assert_equal(channel_lines.cross1, [6, 8, 8, 8])
     assert_equal(channel_lines.cross2, [6, 8, 7, 7])
-    assert_equal(channel_lines.cross_weights, [1.0, 1.0, 10 / 13, 5 / 18])
+    assert_almost_equal(channel_lines.cross_weight, [1.0, 1.0, 15 / 18, 5 / 18])

@@ -64,28 +64,38 @@ class CrossSectionLocations:
         # compute where a line-midpoint (velocity point) is, cumulative over
         # all channels
         cumul = np.cumsum(lines.ds1d[line_idx])
-        midpoints = (cumul + np.roll(cumul, 1)) / 2
-        midpoints[0] = cumul[0] / 2
+        midpoint_ds = (cumul + np.roll(cumul, 1)) / 2
+        midpoint_ds[0] = cumul[0] / 2
 
-        # for each midpoint, find what location comes after
-        location_idx_after = np.searchsorted(location_ds, midpoints)
-        location_idx_before = location_idx_after - 1
-
+        # for each midpoint, find what location comes after and before
+        cross_idx_2 = np.searchsorted(location_ds, midpoint_ds)
+        cross_idx_1 = cross_idx_2 - 1
         # clip so that we do not get out-of-bounds errors
-        location_idx_after[location_idx_after >= len(self)] = len(self) - 1
-        location_idx_before[location_idx_before < 0] = 0
+        cross_idx_2[cross_idx_2 >= len(self)] = len(self) - 1
+        cross_idx_1[cross_idx_1 < 0] = 0
 
-        lines.cross1[line_idx] = self.id[location_idx_before]
-        lines.cross2[line_idx] = self.id[location_idx_after]
+        # make cross1 and cross2 equal if one is from a wrong channel
+        to_equalize = self.channel_id[cross_idx_1] != lines.content_pk[line_idx]
+        cross_idx_1[to_equalize] = cross_idx_2[to_equalize]
+        to_equalize = self.channel_id[cross_idx_2] != lines.content_pk[line_idx]
+        cross_idx_2[to_equalize] = cross_idx_1[to_equalize]
 
-        # make cross1 and cross2 equal if they are not from the correct channel
-        to_equalize = self.channel_id[location_idx_before] != lines.content_pk[line_idx]
-        lines.cross1[to_equalize] = lines.cross2[to_equalize]
-        to_equalize = self.channel_id[location_idx_after] != lines.content_pk[line_idx]
-        lines.cross2[to_equalize] = lines.cross2[to_equalize]
+        # map index to id and set on the (filtered & sorted) lines
+        lines.cross1[line_idx] = self.index_to_id(cross_idx_1)
+        lines.cross2[line_idx] = self.index_to_id(cross_idx_2)
 
-        # for each cross section location, test how far it is from the channel
-        # start
+        # compute the weights. for each line, we have 3 times ds:
+        # 1. the ds of the CrossSectionLocation before it
+        # 2. the ds of the CrossSectionLocation after it
+        # 3. the ds of the midpoint (velocity point)
+        ds_1 = location_ds[cross_idx_1]
+        ds_2 = location_ds[cross_idx_2]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
+            weights = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
+        weights[~np.isfinite(weights)] = 1.0
+
+        lines.cross_weight[line_idx] = weights
 
 
 class CrossSectionDefinition:
