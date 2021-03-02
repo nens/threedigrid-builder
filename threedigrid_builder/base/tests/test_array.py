@@ -3,8 +3,8 @@ from numpy.testing import assert_equal
 from threedigrid_builder.base import array_of
 from typing import Tuple
 
-import numpy as np
 import itertools
+import numpy as np
 import pytest
 
 

@@ -4,10 +4,10 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 
+import itertools
 import numpy as np
 import pygeos
 import pytest
-import itertools
 
 
 @pytest.fixture

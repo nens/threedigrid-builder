@@ -2,8 +2,8 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 
-import pygeos
 import itertools
+import pygeos
 
 
 __all__ = ["Grid"]

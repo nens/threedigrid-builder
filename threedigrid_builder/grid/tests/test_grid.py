@@ -2,10 +2,10 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 
+import itertools
 import numpy as np
 import pygeos
 import pytest
-import itertools
 
 
 @pytest.fixture

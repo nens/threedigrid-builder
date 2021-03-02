@@ -75,3 +75,12 @@ class ContentType(IntEnum):
 class FrictionType(IntEnum):
     CHEZY = 1
     MANNING = 2
+
+
+@unique
+class CrossSectionShape(IntEnum):
+    RECTANGLE = 1
+    CIRCLE = 2
+    EGG = 3
+    TABULATED_RECTANGLE = 5
+    TABULATED_TRAPEZIUM = 6
