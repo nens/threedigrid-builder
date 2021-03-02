@@ -45,7 +45,7 @@ FortranCInterface_HEADER(FCMangle.h
 ##VERSION INFO                                               ##
 ###############################################################
 file (STRINGS "VERSION.rst" VERSION_NUMBER)
-message (STATUS 3Di version: ${VERSION_NUMBER}) 
+message (STATUS libthreedigrid: ${VERSION_NUMBER}) 
 string(REPLACE "." ";" VERSION_LIST ${VERSION_NUMBER})
 message (STATUS "list is " ${VERSION_LIST}) 
 list(LENGTH VERSION_LIST LEN_VERSION)
@@ -65,7 +65,7 @@ endif()
 
 #if (3di_VERSION_TWEAK 
 set (VERSION ${3di_VERSION})
-message (STATUS "3Di version: " ${3di_VERSION}) 
+message (STATUS "libthreedigrid version: " ${3di_VERSION}) 
 ###############################################################
 ##VERSION INFO                                               ##
 ###############################################################
@@ -128,11 +128,6 @@ ENDIF()
 ###############################################################
 ##CMAKE PATHS                                                ##
 ###############################################################
-
-#add_subdirectory(${CMAKE_SOURCE_DIR}/lgpl) # here we use lgpl/CMakeLists.txt
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/lgpl) # here we use lgpl/CMakeLists.txt  ##FIX THIS TO BE SEPARATE LIBRARY FOR LINKING
-
 add_subdirectory(${CMAKE_SOURCE_DIR}/libthreedigrid) # here we use core_makegrid/CMakeLists.txt
 
 
