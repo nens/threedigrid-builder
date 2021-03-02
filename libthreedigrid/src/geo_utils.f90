@@ -86,8 +86,8 @@ module m_grid_utils
         integer :: num_cells
         
         num_cells = 1 * 2 ** (k - 1)
-        mn(0) = (m-1)*num_cells + 1
-        mn(1) = (n-1)*num_cells + 1
+        mn(1) = (m-1)*num_cells + 1
+        mn(2) = (n-1)*num_cells + 1
         mn(3) = m*num_cells
         mn(4) = n*num_cells
 
