@@ -27,12 +27,13 @@ class CrossSectionLocations:
     def apply_to_channels(self, channels, lines):
         """Compute cross section weights for channels.
 
-        As a side-effect, this function sorts self inplace on (channel_id,
+        As a side-effect, this function sorts self on (channel_id,
         position on channel).
 
         Args:
-            channels (Channels): will be changed in place
-            lines (Lines): will be changed in place
+            channels (Channels): used to lookup the channel geometry
+            lines (Lines): content_type, content_pk and ds1d are used.
+              cross1, cross2, cross_weight will be changed in place.
         """
         if not np.in1d(channels.id, self.channel_id).all():
             missing = set(channels.id) - set(self.channel_id)
