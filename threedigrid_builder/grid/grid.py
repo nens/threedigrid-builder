@@ -1,10 +1,9 @@
-from .channels import Channels
-from .connection_nodes import ConnectionNodes
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 
 import pygeos
+import itertools
 
 
 __all__ = ["Grid"]
@@ -28,32 +27,29 @@ class Grid:
                 "equal types."
             )
         return self.__class__(
-            nodes=self.nodes + other.nodes,
-            lines=self.lines + other.lines,
+            nodes=self.nodes + other.nodes, lines=self.lines + other.lines
         )
 
     def __repr__(self):
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
-    def from_connection_nodes(cls, connection_nodes, node_id_offsets):
+    def from_connection_nodes(cls, connection_nodes, node_id_counter):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
             connection_nodes (ConnectionNodes): id and the_geom are used
-            node_id_offsets (dict): offsets to give node indices, per type
-                e.g. {ConnectionNodes: 0, Channels: 105}
+            node_id_counter (iterable): an iterable yielding integers
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: 0-based counter generated here
+            - nodes.id: ids generated based on counter
             - nodes.coordinates: node coordinates (from self.the_geom)
             - nodes.content_type: ContentType.TYPE_V2_CONNECTION_NODES
             - nodes.content_pk: the user-supplied id
         """
-        offset = node_id_offsets.get(ConnectionNodes, 0)
         nodes = Nodes(
-            id=range(offset, len(connection_nodes) + offset),
+            id=itertools.islice(node_id_counter, len(connection_nodes)),
             coordinates=pygeos.get_coordinates(connection_nodes.the_geom),
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             content_pk=connection_nodes.id,
@@ -62,7 +58,7 @@ class Grid:
 
     @classmethod
     def from_channels(
-        cls, connection_nodes, channels, global_dist_calc_points, node_id_offsets
+        cls, connection_nodes, channels, global_dist_calc_points, node_id_counter
     ):
         """Construct a grid for the channels
 
@@ -70,8 +66,7 @@ class Grid:
             connection_nodes (ConnectionNodes): used to map ids to indices
             channels (Channels)
             global_dist_calc_points (float): Default node interdistance.
-            node_id_offsets (dict): offsets to give node indices, per type
-                e.g. {ConnectionNodes: 0, Channels: 105}
+            node_id_counter (iterable): an iterable yielding integers
 
         Returns:
             Grid with data in the following columns:
@@ -85,9 +80,6 @@ class Grid:
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
         """
-        nodes = channels.interpolate_nodes(global_dist_calc_points)
-        nodes.id += node_id_offsets.get(Channels, 0)
-        lines = channels.get_lines(
-            connection_nodes, nodes, node_id_offsets=node_id_offsets
-        )
+        nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = channels.get_lines(connection_nodes, nodes)
         return cls(nodes, lines)
