@@ -77,7 +77,7 @@ module m_grid_utils
 
     end subroutine crop_pix_coords_to_raster
 
-    function get_lg_corners(k, m, n) result (mn)
+    function get_lg_corners(k, m, n) result(mn)
 
         integer, intent(in) :: k
         integer, intent(in) :: m

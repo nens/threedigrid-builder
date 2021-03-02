@@ -67,10 +67,16 @@ def grid_to_gpkg(grid, out_path):
     # ---NODES---
 
     node_data = grid.nodes.to_dict()
-    node_data.pop("bounds")  # cannot export 2D arrays
 
     # construct points from nodes.coordinates
     node_geometries = pygeos.points(node_data.pop("coordinates"))
+    cell_geometries = pygeos.box(
+        node_data["bounds"][:, 0],
+        node_data["bounds"][:, 1],
+        node_data["bounds"][:, 2],
+        node_data["bounds"][:, 3],
+    )
+    node_data.pop("bounds")
 
     # convert enums to strings
     node_data["node_type"] = _enum_to_str(node_data["node_type"], NodeType)
@@ -82,6 +88,9 @@ def grid_to_gpkg(grid, out_path):
     # construct the geodataframe
     df_nodes = geopandas.GeoDataFrame(
         node_data, geometry=node_geometries, crs=grid.epsg_code
+    )
+    df_cells = geopandas.GeoDataFrame(
+        node_data, geometry=cell_geometries, crs=grid.epsg_code
     )
 
     # ---LINES---
@@ -105,9 +114,9 @@ def grid_to_gpkg(grid, out_path):
     df_lines = geopandas.GeoDataFrame(
         line_data, geometry=line_geometries, crs=grid.epsg_code
     )
-    
+
     # ---WRITE THE FILE---
     df_nodes.to_file(out_path, layer="nodes", driver="GPKG")
+    df_cells.to_file(out_path, layer="cells", driver="GPKG")
     df_lines.to_file(out_path, layer="lines", driver="GPKG")
-    # TODO make a "cells" layer from nodes.bounds
     # TODO make a "line_geometries" layer from lines.line_geometries
