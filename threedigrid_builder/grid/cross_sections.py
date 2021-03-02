@@ -77,14 +77,42 @@ class CrossSectionLocations:
         cross_idx_2 = np.searchsorted(location_ds, midpoint_ds)
         cross_idx_1 = cross_idx_2 - 1
         # clip so that we do not get out-of-bounds errors
-        cross_idx_2[cross_idx_2 >= len(self)] = len(self) - 1
-        cross_idx_1[cross_idx_1 < 0] = 0
+        out_of_bounds_1 = cross_idx_1 < 0
+        out_of_bounds_2 = cross_idx_2 >= len(self)
+        cross_idx_1[out_of_bounds_1] = 0
+        cross_idx_2[out_of_bounds_2] = len(self) - 1
 
-        # make cross1 and cross2 equal if one is from a wrong channel
-        to_equalize = self.channel_id[cross_idx_1] != lines.content_pk[is_channel]
-        cross_idx_1[to_equalize] = cross_idx_2[to_equalize]
-        to_equalize = self.channel_id[cross_idx_2] != lines.content_pk[is_channel]
-        cross_idx_2[to_equalize] = cross_idx_1[to_equalize]
+        # Extrapolation: if a midpoint does not have a cross section location
+        # to its left (cross_idx_1 is invalid), assign to it the 2 cross_idx
+        # to its right. And vice versa for cross_idx_2 that is invalid. Note
+        # that because every channel has at least 1 crosssection, one the two
+        # must always be valid. This is not checked here.
+        # Equalization: if a newly assigned crosssection location would not
+        # belong to the correct channel, we have only 1 crossection location
+        # in the channel so we assign the same cross_idx to both 1 and 2.
+        extrap_left = (
+            self.channel_id[cross_idx_1] != lines.content_pk[is_channel]
+        ) | out_of_bounds_1
+        cross_idx_1[extrap_left] = cross_idx_2[extrap_left]
+        # additional filtering to prevent cross_idx_2 being out of bounds
+        extrap_left[extrap_left] &= cross_idx_2[extrap_left] < len(self) - 1
+        extrap_left[extrap_left] &= (
+            self.channel_id[cross_idx_2[extrap_left] + 1]
+            == lines.content_pk[is_channel][extrap_left]
+        )
+        cross_idx_2[extrap_left] += 1
+
+        extrap_right = (
+            self.channel_id[cross_idx_2] != lines.content_pk[is_channel]
+        ) | out_of_bounds_2
+        cross_idx_2[extrap_right] = cross_idx_1[extrap_right]
+        # additional filtering to prevent cross_idx_1 being out of bounds
+        extrap_right[extrap_right] &= cross_idx_1[extrap_right] >= 0
+        extrap_right[extrap_right] &= (
+            self.channel_id[cross_idx_1[extrap_right] - 1]
+            == lines.content_pk[is_channel][extrap_right]
+        )
+        cross_idx_1[extrap_right] -= 1
 
         # map index to id and set on the (filtered & sorted) lines
         lines.cross1[is_channel] = self.index_to_id(cross_idx_1)

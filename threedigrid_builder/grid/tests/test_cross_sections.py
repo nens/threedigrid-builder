@@ -53,14 +53,21 @@ def cross_section_locations():
 
 
 def test_set_cross_section_weights(channels, channel_lines, cross_section_locations):
-    # The test set has the following situation:
+    """The test set has the following situation:
 
-    # - channel with no added nodes, the cs location at the velocity point:
-    #   O --6-- O
-    # - channel with 2 added nodes, with 2 cs locations:
-    #   O --X-- O 8-X-- O --X-- 7
+    - channel with no added nodes, the cs location at the velocity point:
+      O --6-- O
+    - channel with 2 added nodes, with 2 cs locations:
+      O --X-- O 8-X-- O --X-- 7
+
+    The 4 velocity points cover the following situations:
+    1. Only 1 CS location
+    2. 2 CS locations to its right (extrapolation)
+    3. In between 2 CS locations
+    4. In between 2 CS locations.
+    """
     cross_section_locations.apply_to_channels(channels, channel_lines)
 
     assert_equal(channel_lines.cross1, [6, 8, 8, 8])
-    assert_equal(channel_lines.cross2, [6, 8, 7, 7])
-    assert_almost_equal(channel_lines.cross_weight, [1.0, 1.0, 15 / 18, 5 / 18])
+    assert_equal(channel_lines.cross2, [6, 7, 7, 7])
+    assert_almost_equal(channel_lines.cross_weight, [1.0, 25 / 18, 15 / 18, 5 / 18])
