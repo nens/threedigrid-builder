@@ -34,7 +34,7 @@ def get_1d_grid(path):
     )
 
     cross_section_locations = db.get_cross_section_locations()
-    cross_section_locations.apply_to_channels(channels, grid.lines)
+    grid.set_channel_cross_sections(cross_section_locations, channels)
 
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid

@@ -95,3 +95,15 @@ class Grid:
         )
         lines = channels.get_lines(connection_nodes, nodes, segment_size=segment_size)
         return cls(nodes, lines)
+
+    def set_channel_cross_sections(self, cross_section_locations, channels):
+        """Set cross section weights to channel lines.
+
+        The attributes lines.cross1, lines.cross2, lines.cross_weight are
+        changed in place, for lines whose content_type equals TYPE_V2_CHANNEL.
+
+        Args:
+            cross_section_locations (CrossSectionLocations)
+            channels (Channels): Used to lookup the channel geometry
+        """
+        cross_section_locations.apply_to_channels(channels, self.lines)

@@ -27,9 +27,6 @@ class CrossSectionLocations:
     def apply_to_channels(self, channels, lines):
         """Compute cross section weights for channels.
 
-        As a side-effect, this function sorts self on (channel_id,
-        position on channel).
-
         Args:
             channels (Channels): Used to lookup the channel geometry
             lines (Lines): Lines for which to compute cross1, cross2, and
@@ -49,14 +46,14 @@ class CrossSectionLocations:
         # get a boolean mask to the Channel lines
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
-        # make a sorter array that sorts self by channel_id
+        # make a sorter array that sorts the CS locations
         sorter = np.argsort(self.channel_id)
         _, n_locations = np.unique(self.channel_id, return_counts=True)
 
         # compute where a CS location is on each channel, cumulative over
         # all channels
         location_ds = pygeos.line_locate_point(
-            np.repeat(channels.the_geom, n_locations), self.the_geom
+            np.repeat(channels.the_geom, n_locations), self.the_geom[sorter]
         )
         channel_ds_cumul = np.cumsum(pygeos.length(channels.the_geom))
         channel_ds_cumul = np.roll(channel_ds_cumul, 1)
@@ -109,7 +106,7 @@ class CrossSectionLocations:
         ) | out_of_bounds_2
         cross_idx_2[extrap_right] = cross_idx_1[extrap_right]
         # additional filtering to prevent cross_idx_1 being out of bounds
-        extrap_right[extrap_right] &= cross_idx_1[extrap_right] >= 0
+        extrap_right[extrap_right] &= cross_idx_1[extrap_right] > 0
         extrap_right[extrap_right] &= (
             channel_id[cross_idx_1[extrap_right] - 1]
             == lines.content_pk[is_channel][extrap_right]
