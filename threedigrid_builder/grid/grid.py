@@ -34,6 +34,16 @@ class Grid:
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
+    def from_quadtree(cls, quadtree):
+        """Construct the 2D grid based on the quadtree object.
+        """
+
+        nodes = quadtree.get_nodes()
+        lines = Lines(id=[])
+
+        return cls(nodes=nodes, lines=lines)
+
+    @classmethod
     def from_connection_nodes(cls, connection_nodes, node_id_counter):
         """Construct a grid (only nodes) for the connection nodes
 

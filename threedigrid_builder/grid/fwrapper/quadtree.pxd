@@ -21,10 +21,13 @@ cdef extern:
         int *kmax,
         int *mmax,
         int *nmax,
+        int *lgrmin,
+        int *model_area,
         int *lg,
+        int *m0,
         int *n0,
+        int *n1,
         int *i0,
-        int *i1
+        int *i1,
+        int *num_active_nodes
     )
-
-    #void set_active_2d_comp_cells(int *handle, int *model_area, int *n0, int *n1)

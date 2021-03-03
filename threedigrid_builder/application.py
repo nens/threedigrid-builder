@@ -2,8 +2,10 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import Grid
 from threedigrid_builder.interface import SQLite
+from threedigrid_builder.interface import Subgrid
+from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import QuadTree
 
 import itertools
 import numpy as np
@@ -37,6 +39,26 @@ def get_1d_grid(path):
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
 
+def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
+    """Make 2D computational grid
+    """
+
+    subgrid = Subgrid(dem_path, model_area=model_area_path)
+    subgrid_meta = subgrid.get_meta()
+
+    db = SQLite(sqlite_path)
+    refinements = db.get_grid_refinements()
+    quadtree = QuadTree(
+        subgrid_meta,
+        db.global_settings["kmax"],
+        db.global_settings["grid_space"],
+        refinements
+    )
+    grid = Grid.from_quadtree(quadtree)
+    grid.epsg_code = db.global_settings["epsg_code"]
+
+    return grid
+
 
 def _enum_to_str(arr, enum_type):
     result = np.full_like(arr, "", dtype=object)
@@ -51,10 +73,16 @@ def grid_to_gpkg(grid, out_path):
     # ---NODES---
 
     node_data = grid.nodes.to_dict()
-    node_data.pop("bounds")  # cannot export 2D arrays
 
     # construct points from nodes.coordinates
     node_geometries = pygeos.points(node_data.pop("coordinates"))
+    cell_geometries = pygeos.box(
+        node_data["bounds"][:, 0],
+        node_data["bounds"][:, 1],
+        node_data["bounds"][:, 2],
+        node_data["bounds"][:, 3],
+    )
+    node_data.pop("bounds")
 
     # convert enums to strings
     node_data["node_type"] = _enum_to_str(node_data["node_type"], NodeType)
@@ -66,6 +94,9 @@ def grid_to_gpkg(grid, out_path):
     # construct the geodataframe
     df_nodes = geopandas.GeoDataFrame(
         node_data, geometry=node_geometries, crs=grid.epsg_code
+    )
+    df_cells = geopandas.GeoDataFrame(
+        node_data, geometry=cell_geometries, crs=grid.epsg_code
     )
 
     # ---LINES---
@@ -92,6 +123,6 @@ def grid_to_gpkg(grid, out_path):
 
     # ---WRITE THE FILE---
     df_nodes.to_file(out_path, layer="nodes", driver="GPKG")
+    df_cells.to_file(out_path, layer="cells", driver="GPKG")
     df_lines.to_file(out_path, layer="lines", driver="GPKG")
-    # TODO make a "cells" layer from nodes.bounds
     # TODO make a "line_geometries" layer from lines.line_geometries

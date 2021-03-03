@@ -1,16 +1,15 @@
 from rasterio import features as rasterio_features
-
 import json
 import numpy as np
 import rasterio
 
 
-class SubgridArea:
-    def __init__(self, dem_filepath, model_area=None):
+class Subgrid:
+    def __init__(self, filepath, model_area=None):
 
-        self.dem_filepath = dem_filepath
+        self.filepath = filepath
         with rasterio.Env():
-            with rasterio.open(dem_filepath, "r") as dem:
+            with rasterio.open(filepath, "r") as dem:
                 self.transform = dem.profile["transform"]
                 self._dxp = self.transform[0]
                 if model_area is not None:
@@ -21,15 +20,18 @@ class SubgridArea:
                 else:
                     self._area_raster = self._create_area_arr_from_dem(dem)
 
+    def __repr__(self):
+        return f"<SubgridMeta object of raster file {self.filepath}>"
+
     @property
-    def area_pix(self):
+    def mask(self):
         return np.flipud(self._area_raster).T.astype(
             dtype=np.int32, copy=False, order="F"
         )
 
     @property
-    def origin(self):
-        return (self._left, self._bottom)
+    def bbox(self):
+        return self._bbox
 
     @property
     def pixel_size(self):
@@ -59,13 +61,18 @@ class SubgridArea:
         )
         self._height = window.height
         self._width = window.width
-        self._left = dem.bounds.left + window.col_off * self.pixel_size
+        left = dem.bounds.left + window.col_off * self.pixel_size,
         top = dem.bounds.top + window.row_off * -self.pixel_size
-        self._bottom = top + window.height * -self.pixel_size
+        self._bbox = (
+            left,
+            top + window.height * -self.pixel_size,
+            left + window.width * self.pixel_size,
+            top
+        )
         self._i_off = window.col_off
         self._j_off = dem.height - window.row_off - window.height
         self.transform = rasterio.transform.from_origin(
-            self._left, top, self.pixel_size, self.pixel_size
+            left, top, self.pixel_size, self.pixel_size
         )
 
         data = rasterio.features.rasterize(
@@ -77,8 +84,7 @@ class SubgridArea:
         return data
 
     def _create_area_arr_from_dem(self, dem):
-        self._left = dem.bounds.left
-        self._bottom = dem.bounds.bottom
+        self._bbox = dem.bounds
         self._height = dem.height
         self._width = dem.width
         self._i_off = self._j_off = 0
@@ -86,6 +92,17 @@ class SubgridArea:
         data[data > 0] = 1
 
         return data
+
+    def get_meta(self):
+        """Return meta information of subgrid from raster.
+        """
+        return {
+            "pixel_size": self.pixel_size,
+            "width": self.width,
+            "height": self.height,
+            "bbox": self.bbox,
+            "area_mask": self.mask,
+        }
 
     def create_model_area_tiff(self, out_filepath):
 
