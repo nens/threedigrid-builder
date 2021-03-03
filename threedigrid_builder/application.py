@@ -34,7 +34,7 @@ def get_1d_grid(path):
     )
 
     cross_section_locations = db.get_cross_section_locations()
-    grid.set_channel_cross_sections(cross_section_locations, channels)
+    grid.set_channel_weights(cross_section_locations, channels)
 
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
@@ -77,6 +77,8 @@ def grid_to_gpkg(grid, out_path):
 
     # construct points from nodes.coordinates
     node_geometries = pygeos.points(node_data.pop("coordinates"))
+    # protect against https://github.com/pygeos/pygeos/issues/306
+    node_data["bounds"][~np.isfinite(node_data["bounds"])] = 0.
     cell_geometries = pygeos.box(
         node_data["bounds"][:, 0],
         node_data["bounds"][:, 1],
