@@ -1,4 +1,4 @@
-FROM python:3.9.1-slim-buster as build
+FROM python:3.9.1-slim-buster
 
 RUN apt-get update \ 
     && apt-get install -y cmake autoconf libtool gfortran \
@@ -20,7 +20,7 @@ COPY . /threedigrid-builder
 RUN cd /threedigrid-builder && ./full_build.sh RELEASE
 
 
-ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
+ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib:/threedigrid-builder/libthreedigrid/lib
 WORKDIR /threedigrid-builder
 
-EXPOSE 8080
+EXPOSE 8888
