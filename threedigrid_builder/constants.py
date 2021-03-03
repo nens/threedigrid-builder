@@ -69,3 +69,19 @@ class ContentType(IntEnum):
     TYPE_V2_CROSS_SECTION_LOCATION = 15
     TYPE_V2_ADDED_CALCULATION_POINT = 16
     TYPE_V2_WINDSHIELD = 17
+
+
+@unique
+class FrictionType(IntEnum):
+    CHEZY = 1
+    MANNING = 2
+
+
+@unique
+class CrossSectionShape(IntEnum):
+    # TODO Check valus, 0 possibly means "CLOSED_RECTANGLE"
+    RECTANGLE = 1
+    CIRCLE = 2
+    EGG = 3
+    TABULATED_RECTANGLE = 5
+    TABULATED_TRAPEZIUM = 6

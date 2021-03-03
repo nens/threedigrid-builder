@@ -2,10 +2,10 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.interface import SQLite
-from threedigrid_builder.interface import Subgrid
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.interface import SQLite
+from threedigrid_builder.interface import Subgrid
 
 import itertools
 import numpy as np
@@ -24,14 +24,21 @@ def get_1d_grid(path):
     grid = Grid.from_connection_nodes(
         connection_nodes=connection_nodes, node_id_counter=counter
     )
+
+    channels = db.get_channels()
     grid += Grid.from_channels(
         connection_nodes=connection_nodes,
-        channels=db.get_channels(),
+        channels=channels,
         global_dist_calc_points=db.global_settings["dist_calc_points"],
         node_id_counter=counter,
     )
+
+    cross_section_locations = db.get_cross_section_locations()
+    grid.set_channel_cross_sections(cross_section_locations, channels)
+
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
+
 
 def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
     """Make 2D computational grid
