@@ -79,6 +79,7 @@ class FrictionType(IntEnum):
 
 @unique
 class CrossSectionShape(IntEnum):
+    # TODO Check valus, 0 possibly means "CLOSED_RECTANGLE"
     RECTANGLE = 1
     CIRCLE = 2
     EGG = 3
