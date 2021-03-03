@@ -119,7 +119,6 @@ ENDIF()
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
   message (STATUS "COMPILER FLAGS ARE: " ${CMAKE_Fortran_FLAGS_DEBUG})
 ENDIF()
-
 ###############################################################
 ##COMPILER OPTIONS                                           ##
 ###############################################################

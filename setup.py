@@ -55,7 +55,7 @@ elif "sdist" not in sys.argv:
     )
 
     cython_modules = [
-        Extension("*", sources=["threedigrid_builder/lib/*.pyx"], **cython_opts)
+        Extension("*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts)
     ]
 
     ext_modules += cythonize(cython_modules, language_level=3)

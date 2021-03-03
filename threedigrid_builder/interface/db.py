@@ -65,7 +65,9 @@ class SQLite:
         """
         if self._global_settings is None:
             with self.get_session() as session:
-                settings = session.query(models.GlobalSetting).one()
+                settings = session.query(
+                    models.GlobalSetting
+                ).order_by("id").first()
             self._global_settings = _object_as_dict(settings)
         return self._global_settings
 
