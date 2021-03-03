@@ -1,6 +1,7 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid import cross_sections
 
 import itertools
 import pygeos
@@ -96,14 +97,14 @@ class Grid:
         lines = channels.get_lines(connection_nodes, nodes, segment_size=segment_size)
         return cls(nodes, lines)
 
-    def set_channel_cross_sections(self, cross_section_locations, channels):
+    def set_channel_weights(self, locations, channels):
         """Set cross section weights to channel lines.
 
         The attributes lines.cross1, lines.cross2, lines.cross_weight are
-        changed in place, for lines whose content_type equals TYPE_V2_CHANNEL.
+        changed in place for lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
-            cross_section_locations (CrossSectionLocations)
+            locations (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
-        cross_section_locations.apply_to_channels(channels, self.lines)
+        cross_sections.compute_weights(self.lines, locations, channels)

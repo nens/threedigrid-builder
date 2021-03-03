@@ -4,6 +4,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import CrossSectionLocations
+from threedigrid_builder.grid.cross_sections import compute_weights
 
 import numpy as np
 import pygeos
@@ -52,7 +53,7 @@ def cross_section_locations():
     )
 
 
-def test_set_cross_section_weights(channels, channel_lines, cross_section_locations):
+def test_compute_weights(channels, channel_lines, cross_section_locations):
     """The test set has the following situation:
 
     - channel with no added nodes, the cs location at the velocity point:
@@ -66,7 +67,7 @@ def test_set_cross_section_weights(channels, channel_lines, cross_section_locati
     3. In between 2 CS locations
     4. In between 2 CS locations.
     """
-    cross_section_locations.apply_to_channels(channels, channel_lines)
+    compute_weights(channel_lines, cross_section_locations, channels)
 
     assert_equal(channel_lines.cross1, [6, 8, 8, 8])
     assert_equal(channel_lines.cross2, [6, 7, 7, 7])

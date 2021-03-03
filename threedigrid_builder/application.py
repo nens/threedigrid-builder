@@ -2,10 +2,10 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.interface import SQLite
-from threedigrid_builder.interface import Subgrid
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.interface import SQLite
+from threedigrid_builder.interface import Subgrid
 
 import itertools
 import numpy as np
@@ -38,6 +38,7 @@ def get_1d_grid(path):
 
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
+
 
 def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
     """Make 2D computational grid
