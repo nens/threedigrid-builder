@@ -111,32 +111,31 @@ def compute_weights(lines, cs, channels):
     cs_ch_id = cs.channel_id[cs_sorter]
     line_ch_id = lines.content_pk[line_mask]
 
-    extrap_left = (cs_ch_id[cs_idx_1] != line_ch_id) | out_of_bounds_1
-    cs_idx_1[extrap_left] = cs_idx_2[extrap_left]
-    # additional filtering to prevent cs_idx_2 being out of bounds
-    extrap_left[extrap_left] &= cs_idx_2[extrap_left] < len(cs) - 1
-    extrap_left[extrap_left] &= (
-        cs_ch_id[cs_idx_2[extrap_left] + 1] == line_ch_id[extrap_left]
-    )
-    cs_idx_2[extrap_left] += 1
+    # Fix situations where cs_idx_1 is incorrect
+    extrapolate = (cs_ch_id[cs_idx_1] != line_ch_id) | out_of_bounds_1
+    cs_idx_1[extrapolate] = cs_idx_2[extrapolate]
+    cs_idx_2[extrapolate] = np.clip(cs_idx_2[extrapolate] + 1, None, len(cs) - 1)
+    equalize = extrapolate & (cs_ch_id[cs_idx_2] != line_ch_id)
+    cs_idx_2[equalize] -= 1
 
-    extrap_right = (cs_ch_id[cs_idx_2] != line_ch_id) | out_of_bounds_2
-    cs_idx_2[extrap_right] = cs_idx_1[extrap_right]
-    # additional filtering to prevent cs_idx_1 being out of bounds
-    extrap_right[extrap_right] &= cs_idx_1[extrap_right] > 0
-    extrap_right[extrap_right] &= (
-        cs_ch_id[cs_idx_1[extrap_right] - 1] == line_ch_id[extrap_right]
-    )
-    cs_idx_1[extrap_right] -= 1
+    # Fix situations where cs_idx_2 is incorrect
+    extrapolate = (cs_ch_id[cs_idx_2] != line_ch_id) | out_of_bounds_2
+    cs_idx_2[extrapolate] = cs_idx_1[extrapolate]
+    cs_idx_1[extrapolate] = np.clip(cs_idx_2[extrapolate] - 1, 0, None)
+    equalize = extrapolate & (cs_ch_id[cs_idx_1] != line_ch_id)
+    cs_idx_1[equalize] += 1
 
-    # map index to id and set on the (filtered) lines
+    # Map index to id and set on the (masked) lines
     lines.cross1[line_mask] = cs.id[cs_sorter][cs_idx_1]
     lines.cross2[line_mask] = cs.id[cs_sorter][cs_idx_2]
 
-    # compute the weights. for each line, we have 3 times ds:
-    # 1. the ds of the CrossSectionLocation before it
-    # 2. the ds of the CrossSectionLocation after it
-    # 3. the ds of the midpoint (velocity point)
+    # Compute the weights. For each line, we have 3 times ds:
+    # 1. the ds of the CrossSectionLocation before it (ds_1)
+    # 2. the ds of the CrossSectionLocation after it (ds_2)
+    # 3. the ds of the midpoint (velocity point) (midpoint_ds)
+    #
+    # The weight is calculated such that a value at midpoint can be interpolated
+    # as:   weight * v_1 + (1 - weight) * v_2
     ds_1 = cs_ds[cs_idx_1]
     ds_2 = cs_ds[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
