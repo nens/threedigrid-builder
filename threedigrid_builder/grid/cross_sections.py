@@ -40,7 +40,7 @@ class CrossSectionDefinitions:
     pass
 
 
-def compute_weights(lines, locations, channels):
+def compute_weights(lines, cs, channels):
     """Compute cross section weights for channel lines.
 
     Args:
@@ -50,99 +50,98 @@ def compute_weights(lines, locations, channels):
             ordered by channel_id and then by position on channel. If this
             is not the case, the computed weights will be bogus.
             Required attributes: content_type, content_pk, and ds1d.
-        locations (CrossSectionLocations)
+        cs (CrossSectionLocations)
         channels (Channels): Used to lookup the channel geometry
 
     See also:
         Channels.get_lines: computes the lines in the correct order
     """
-    if not np.in1d(channels.id, locations.channel_id).all():
-        missing = set(channels.id) - set(locations.channel_id)
+    if not np.in1d(channels.id, cs.channel_id).all():
+        missing = set(channels.id) - set(cs.channel_id)
         raise ValueError(f"Channels {missing} have no cross section location set.")
 
-    # get a boolean mask to the Channel lines
-    is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
+    # Mask the lines to only the Channel lines
+    line_mask = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
-    # make a sorter array that sorts the CS locations
-    sorter = np.argsort(locations.channel_id)
-    _, n_locations = np.unique(locations.channel_id, return_counts=True)
+    # Make an array that sorts the cross section (cs) locations by channel_id
+    cs_sorter = np.argsort(cs.channel_id)
 
-    # compute where a CS location is on each channel, cumulative over
-    # all channels
-    location_ds = pygeos.line_locate_point(
-        np.repeat(channels.the_geom, n_locations), locations.the_geom[sorter]
+    # Count how many cs locations we have per channel
+    _, cs_per_channel = np.unique(cs.channel_id, return_counts=True)
+
+    # Locate the position measured along the channel (ds) of the CS locations
+    cs_ds = pygeos.line_locate_point(
+        np.repeat(channels.the_geom, cs_per_channel), cs.the_geom[cs_sorter]
     )
-    channel_ds_cumul = np.cumsum(pygeos.length(channels.the_geom))
-    channel_ds_cumul = np.roll(channel_ds_cumul, 1)
-    channel_ds_cumul[0] = 0
-    location_ds += np.repeat(channel_ds_cumul, n_locations)
 
-    # update the sorter so that CS locations are ordered on each channel
-    _location_ds_sorter = np.argsort(location_ds)
-    location_ds = location_ds[_location_ds_sorter]
-    sorter = sorter[_location_ds_sorter]
+    # To each cs_ds, add the length of all channels before it
+    _cumulative = np.cumsum(pygeos.length(channels.the_geom))
+    _cumulative = np.roll(_cumulative, 1)
+    _cumulative[0] = 0
+    cs_ds += np.repeat(_cumulative, cs_per_channel)
 
-    # compute where a line-midpoint (velocity point) is, cumulative over
-    # all channels
-    cumul = np.cumsum(lines.ds1d[is_channel])
-    midpoint_ds = (cumul + np.roll(cumul, 1)) / 2
-    midpoint_ds[0] = cumul[0] / 2
+    # Make cs_ds monotonically increasing and update cs_sorter to match it
+    _cs_ds_sorter = np.argsort(cs_ds)
+    cs_ds = cs_ds[_cs_ds_sorter]
+    cs_sorter = cs_sorter[_cs_ds_sorter]
 
-    # for each midpoint, find what CS location comes after and before
-    cross_idx_2 = np.searchsorted(location_ds, midpoint_ds)
-    cross_idx_1 = cross_idx_2 - 1
-    # clip so that we do not get out-of-bounds errors
-    out_of_bounds_1 = cross_idx_1 < 0
-    out_of_bounds_2 = cross_idx_2 >= len(locations)
-    cross_idx_1[out_of_bounds_1] = 0
-    cross_idx_2[out_of_bounds_2] = len(locations) - 1
+    # Compute the ds of the line midpoints, cumulative over all channels
+    _cumulative = np.cumsum(lines.ds1d[line_mask])
+    midpoint_ds = (_cumulative + np.roll(_cumulative, 1)) / 2
+    midpoint_ds[0] = _cumulative[0] / 2
+
+    # Find what CS location comes after and before each midpoint
+    cs_idx_2 = np.searchsorted(cs_ds, midpoint_ds)
+    cs_idx_1 = cs_idx_2 - 1
+    out_of_bounds_1 = cs_idx_1 < 0
+    out_of_bounds_2 = cs_idx_2 >= len(cs)
+    cs_idx_1[out_of_bounds_1] = 0
+    cs_idx_2[out_of_bounds_2] = len(cs) - 1
 
     # Extrapolation: if a midpoint does not have a cross section location
-    # to its left (cross_idx_1 is invalid), assign to it the 2 cross_idx
-    # to its right. And vice versa for cross_idx_2 that is invalid. Note
+    # to its left (cs_idx_1 is invalid), assign to it the 2 cross_idx
+    # to its right. And vice versa for cs_idx_2 that is invalid. Note
     # that because every channel has at least 1 crosssection, one the two
     # must always be valid. This is not checked here.
     # Equalization: if a newly assigned crosssection location would not
     # belong to the correct channel, we have only 1 crossection location
     # in the channel so we assign the same cross_idx to both 1 and 2.
-    channel_id = locations.channel_id[sorter]  # lines are sorted the same
-    extrap_left = (
-        channel_id[cross_idx_1] != lines.content_pk[is_channel]
-    ) | out_of_bounds_1
-    cross_idx_1[extrap_left] = cross_idx_2[extrap_left]
-    # additional filtering to prevent cross_idx_2 being out of bounds
-    extrap_left[extrap_left] &= cross_idx_2[extrap_left] < len(locations) - 1
-    extrap_left[extrap_left] &= (
-        channel_id[cross_idx_2[extrap_left] + 1]
-        == lines.content_pk[is_channel][extrap_left]
-    )
-    cross_idx_2[extrap_left] += 1
 
-    extrap_right = (
-        channel_id[cross_idx_2] != lines.content_pk[is_channel]
-    ) | out_of_bounds_2
-    cross_idx_2[extrap_right] = cross_idx_1[extrap_right]
-    # additional filtering to prevent cross_idx_1 being out of bounds
-    extrap_right[extrap_right] &= cross_idx_1[extrap_right] > 0
-    extrap_right[extrap_right] &= (
-        channel_id[cross_idx_1[extrap_right] - 1]
-        == lines.content_pk[is_channel][extrap_right]
+    # Create two matching channel id arrays
+    cs_ch_id = cs.channel_id[cs_sorter]
+    line_ch_id = lines.content_pk[line_mask]
+
+    extrap_left = (cs_ch_id[cs_idx_1] != line_ch_id) | out_of_bounds_1
+    cs_idx_1[extrap_left] = cs_idx_2[extrap_left]
+    # additional filtering to prevent cs_idx_2 being out of bounds
+    extrap_left[extrap_left] &= cs_idx_2[extrap_left] < len(cs) - 1
+    extrap_left[extrap_left] &= (
+        cs_ch_id[cs_idx_2[extrap_left] + 1] == line_ch_id[extrap_left]
     )
-    cross_idx_1[extrap_right] -= 1
+    cs_idx_2[extrap_left] += 1
+
+    extrap_right = (cs_ch_id[cs_idx_2] != line_ch_id) | out_of_bounds_2
+    cs_idx_2[extrap_right] = cs_idx_1[extrap_right]
+    # additional filtering to prevent cs_idx_1 being out of bounds
+    extrap_right[extrap_right] &= cs_idx_1[extrap_right] > 0
+    extrap_right[extrap_right] &= (
+        cs_ch_id[cs_idx_1[extrap_right] - 1] == line_ch_id[extrap_right]
+    )
+    cs_idx_1[extrap_right] -= 1
 
     # map index to id and set on the (filtered) lines
-    lines.cross1[is_channel] = locations.id[sorter][cross_idx_1]
-    lines.cross2[is_channel] = locations.id[sorter][cross_idx_2]
+    lines.cross1[line_mask] = cs.id[cs_sorter][cs_idx_1]
+    lines.cross2[line_mask] = cs.id[cs_sorter][cs_idx_2]
 
     # compute the weights. for each line, we have 3 times ds:
     # 1. the ds of the CrossSectionLocation before it
     # 2. the ds of the CrossSectionLocation after it
     # 3. the ds of the midpoint (velocity point)
-    ds_1 = location_ds[cross_idx_1]
-    ds_2 = location_ds[cross_idx_2]
+    ds_1 = cs_ds[cs_idx_1]
+    ds_2 = cs_ds[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
         weights = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
     weights[~np.isfinite(weights)] = 1.0
 
-    lines.cross_weight[is_channel] = weights
+    lines.cross_weight[line_mask] = weights
