@@ -25,16 +25,16 @@ class QuadTree:
         self._nmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._dx = np.empty((self.kmax,), dtype=np.float64, order='F')
 
-        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1)
+        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.uint8)
 
         # Determine number of largest cells that fit over subgrid extent.
         max_pix_largest_cell = self.min_cell_pixels * lvl_multiplr[0]
-        max_large_cells_col = math.ceil(
+        max_large_cells_col = int(math.ceil(
             subgrid_meta["width"] / (max_pix_largest_cell)
-        )
-        max_large_cells_row = math.ceil(
+        ))
+        max_large_cells_row = int(math.ceil(
             subgrid_meta["height"] / (max_pix_largest_cell)
-        )
+        ))
 
         # Calculate grid level dimensions.
         self._mmax[:] = max_large_cells_col * lvl_multiplr
