@@ -3,6 +3,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 
 import numpy as np
+import pygeos
 
 
 try:
@@ -32,10 +33,9 @@ class GridAdminOut(OutputInterface):
         Raises a ValueError if it exists already.
 
         Notes:
-            The following datasets (node attributes) where previously 64-bit, but now
-            32-bit integer: calculation_type, is_manhole, manhole_indicator,
-            pixel_coords, pixel_width, zoom_category.
-            For floats (double precision) we use NaN instead of -9999.0 to denote empty.
+            Some datasets were 64-bit integers, but now they are saved as 32-bit integers.
+            The following datasets were added: code.
+            For floats (double) we use NaN instead of -9999.0 to denote empty.
 
         Args:
             nodes (Nodes)
@@ -50,6 +50,8 @@ class GridAdminOut(OutputInterface):
 
         # Datasets that match directly to a nodes attribute:
         group.create_dataset("id", data=nodes.id)
+        group.create_dataset("code", data=nodes.code.astype("S32"))
+        group.create_dataset("display_name", data=nodes.code.astype("S64"))
         group.create_dataset("node_type", data=nodes.node_type)
         group.create_dataset("calculation_type", data=nodes.calculation_type)
         group.create_dataset("coordinates", data=nodes.coordinates.T)
@@ -91,10 +93,6 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("pixel_width", data=pixel_width)
 
         # can be collected from SQLite, but empty for now:
-        # missing in gridadmin: code
-        group.create_dataset(
-            "display_name", data=np.full(len(nodes), -9999, dtype="S64")
-        )
         group.create_dataset(
             "zoom_category", data=np.full(len(nodes), -9999, dtype="i4")
         )
@@ -113,4 +111,65 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("sumax", len(nodes), dtype=float)
 
     def write_lines(self, lines, **kwargs):
-        pass
+        """Write the "lines" group in the gridadmin file
+
+        Raises a ValueError if it exists already.
+
+        Notes:
+            Some datasets were 64-bit integers, but now they are saved as 32-bit integers.
+            content_type is now saved as integer instead of string
+            The following datasets were added: ds1d, dpumax, flod, flou, cross1, cross2,
+            cross_weight
+            For floats (double) we use NaN instead of -9999.0 to denote empty.
+
+        Args:
+            lines (Lines)
+        """
+        group = self._file.create_group("lines")
+
+        # Datasets that match directly to a lines attribute:
+        group.create_dataset("id", data=lines.id)
+        group.create_dataset("code", data=lines.code.astype("S32"))
+        group.create_dataset("display_name", data=lines.display_name.astype("S64"))
+        group.create_dataset("kcu", data=lines.line_type)
+        group.create_dataset("calculation_type", data=lines.calculation_type)
+        group.create_dataset("line", data=lines.line.T)
+        group.create_dataset("ds1d", data=lines.ds1d)
+        group.create_dataset("content_type", data=lines.content_type)
+        group.create_dataset("content_pk", data=lines.content_pk)
+        group.create_dataset("dpumax", data=lines.dpumax)
+        group.create_dataset("flod", data=lines.flod)
+        group.create_dataset("flou", data=lines.flou)
+        group.create_dataset("cross1", data=lines.cross1)
+        group.create_dataset("cross2", data=lines.cross2)
+        group.create_dataset("cross_weight", data=lines.cross_weight)
+
+        # Transform an array of linestrings to list of coordinate arrays (x,y,x,y,...)
+        coords = pygeos.get_coordinates(lines.line_geometries)
+        end = np.cumsum(pygeos.get_num_coordinates(lines.line_geometries))
+        start = np.roll(end, 1)
+        start[0] = 0
+        line_geometries = [coords[a:b].ravel() for a, b in zip(start, end)]
+        group.create_dataset("line_geometries", data=line_geometries)
+
+        # can be collected from SQLite, but empty for now:
+        group.create_dataset("connection_node_end_pk", len(lines), dtype="i4")
+        group.create_dataset("connection_node_start_pk", len(lines), dtype="i4")
+        group.create_dataset("crest_level", len(lines), dtype=float)
+        group.create_dataset("crest_type", len(lines), dtype="i4")
+        group.create_dataset("cross_section_height", len(lines), dtype="i4")
+        group.create_dataset("cross_section_shape", len(lines), dtype="i4")
+        group.create_dataset("cross_section_width", len(lines), dtype=float)
+        group.create_dataset("discharge_coefficient", len(lines), dtype=float)
+        group.create_dataset("discharge_coefficient_negative", len(lines), dtype=float)
+        group.create_dataset("discharge_coefficient_positive", len(lines), dtype=float)
+        group.create_dataset("dist_calc_points", len(lines), dtype=float)
+        group.create_dataset("friction_type", len(lines), dtype="i4")
+        group.create_dataset("friction_value", len(lines), dtype=float)
+        group.create_dataset("invert_level_end_point", len(lines), dtype=float)
+        group.create_dataset("invert_level_start_point", len(lines), dtype=float)
+        group.create_dataset("lik", len(lines), dtype="i4")
+        group.create_dataset("material", len(lines), dtype="i4")
+        group.create_dataset("sewerage", len(lines), dtype="i4")
+        group.create_dataset("sewerage_type", len(lines), dtype="i4")
+        group.create_dataset("zoom_category", len(lines), dtype="i4")

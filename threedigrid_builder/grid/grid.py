@@ -109,3 +109,10 @@ class Grid:
             channels (Channels): Used to lookup the channel geometry
         """
         cross_sections.compute_weights(self.lines, locations, channels)
+
+    def finalize(self, epsg_code=None, pixel_size=None):
+        """Finalize the Grid, computing and setting derived attributes"""
+        self.lines.set_line_coords(self.nodes)
+        self.lines.fix_line_geometries()
+        self.epsg_code = epsg_code
+        self.pixel_size = pixel_size

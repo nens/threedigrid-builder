@@ -39,8 +39,7 @@ def get_1d_grid(path):
     cross_section_locations = db.get_cross_section_locations()
     grid.set_channel_weights(cross_section_locations, channels)
 
-    grid.lines.fix_line_geometries(grid.nodes)
-    grid.epsg_code = db.global_settings["epsg_code"]
+    grid.finalize(epsg_code=db.global_settings["epsg_code"], pixel_size=None)
     return grid
 
 
@@ -60,9 +59,10 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         refinements,
     )
     grid = Grid.from_quadtree(quadtree)
-    grid.epsg_code = db.global_settings["epsg_code"]
-    grid.pixel_size = subgrid_meta["pixel_size"]
 
+    grid.finalize(
+        epsg_code=db.global_settings["epsg_code"], pixel_size=subgrid_meta["pixel_size"]
+    )
     return grid
 
 

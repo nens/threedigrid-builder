@@ -10,6 +10,8 @@ __all__ = ["Nodes"]
 
 class Node:
     id: int
+    code: str
+    display_name: str
     node_type: NodeType
     calculation_type: CalculationType
     content_type: ContentType

@@ -1,4 +1,5 @@
 from .array import array_of
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from typing import Tuple
@@ -12,10 +13,14 @@ __all__ = ["Lines"]
 
 class Line:
     id: int
+    code: str
+    display_name: str
     line_type: LineType  # kcu
+    calculation_type: CalculationType
     line: Tuple[int, int]
     ds1d: float  # arclength
     line_geometries: pygeos.Geometry
+    line_coords: Tuple[float, float, float, float]
     content_type: ContentType
     content_pk: int
     dpumax: float  # bottom_level
@@ -30,13 +35,20 @@ class Line:
 class Lines:
     """Line between two calculation nodes (a.k.a. velocity point)."""
 
-    def fix_line_geometries(self, nodes):
-        """Construct line_geometries from node coordinates, where necessary"""
+    def set_line_coords(self, nodes):
+        """Set line_coords from the node coordinates"""
+        start = nodes.coordinates[nodes.id_to_index(self.line[:, 0])]
+        end = nodes.coordinates[nodes.id_to_index(self.line[:, 1])]
+        self.line_coords[:, :2] = start
+        self.line_coords[:, 2:] = end
+
+    def fix_line_geometries(self):
+        """Construct line_geometries from line_coords, where necessary"""
         to_fix = pygeos.is_missing(self.line_geometries)
         if not to_fix.any():
             return
-        start = nodes.coordinates[nodes.id_to_index(self.line[to_fix, 0])]
-        end = nodes.coordinates[nodes.id_to_index(self.line[to_fix, 1])]
+        if np.any(~np.isfinite(self.line_coords[to_fix])):
+            raise ValueError("No line coords available")
         self.line_geometries[to_fix] = pygeos.linestrings(
-            np.concatenate([start[:, np.newaxis], end[:, np.newaxis]], axis=1)
+            self.line_coords[to_fix].reshape(-1, 2, 2)
         )
