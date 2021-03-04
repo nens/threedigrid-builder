@@ -1,3 +1,10 @@
+"""The application layer a.k.a. use cases of the project
+
+Use cases orchestrate the flow of data to and from the domain entities.
+
+This layer depends on the interfaces as well as on the domain layer.
+"""
+
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType

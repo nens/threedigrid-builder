@@ -71,6 +71,7 @@ install_requires = [
     "pyproj",
     "condenser[geo]",
     "rasterio",
+    "h5py",
 ]
 
 test_requires = ["pytest"]
