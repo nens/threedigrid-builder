@@ -3,6 +3,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from typing import Tuple
 
+import numpy as np
 import pygeos
 
 
@@ -28,3 +29,14 @@ class Line:
 @array_of(Line)
 class Lines:
     """Line between two calculation nodes (a.k.a. velocity point)."""
+
+    def fix_line_geometries(self, nodes):
+        """Construct line_geometries from node coordinates, where necessary"""
+        to_fix = pygeos.is_missing(self.line_geometries)
+        if not to_fix.any():
+            return
+        start = nodes.coordinates[nodes.id_to_index(self.line[to_fix, 0])]
+        end = nodes.coordinates[nodes.id_to_index(self.line[to_fix, 1])]
+        self.line_geometries[to_fix] = pygeos.linestrings(
+            np.concatenate([start[:, np.newaxis], end[:, np.newaxis]], axis=1)
+        )
