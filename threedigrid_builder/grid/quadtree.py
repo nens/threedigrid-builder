@@ -145,11 +145,6 @@ class QuadTree:
         quad_nod = np.empty(self.lg.shape, dtype=np.int32, order='F')
         bounds = np.empty((len(id), 4), dtype=np.float64, order='F')
         coords = np.empty((len(id), 2), dtype=np.float64, order='F')
-        
-        # Node type is always openwater at first init
-        node_type = np.full(
-            (len(id)), NodeType.NODE_2D_OPEN_WATER, dtype='O', order='F'
-        )
 
         set_2d_computational_nodes(
             np.array([self.bbox[0], self.bbox[1]]),
@@ -168,7 +163,7 @@ class QuadTree:
 
         return Nodes(
             id=id,
-            node_type=node_type,
+            node_type=NodeType.NODE_2D_OPEN_WATER,
             nodk=nodk,
             nodm=nodm,
             nodn=nodn,

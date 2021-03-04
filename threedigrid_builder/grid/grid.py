@@ -19,6 +19,7 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.epsg_code = None  # a Grid is aware of its projection
+        self.pixel_size = None  # a Grid is aware of the pixel size in the DEM
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
