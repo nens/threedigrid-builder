@@ -149,8 +149,10 @@ def test_quadtree_poly_refinement(quadtree_poly_refinement):
     )
 
 
-def test_nodes_from_quadtree(quadtree_line_refinement):
-    nodes = quadtree_line_refinement.get_nodes()
+def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
+    nodes, lines = quadtree_line_refinement.get_nodes_lines(
+        subgrid_meta["area_mask"]
+    )
     coordinates = np.array(
         [[12., 12.],
          [11., 15.],
@@ -179,6 +181,7 @@ def test_nodes_from_quadtree(quadtree_line_refinement):
 
 
 def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
-    nodes = quadtree_line_refinement.get_nodes()
-    lines = quadtree_line_refinement.get_lines(nodes, subgrid_meta["area_mask"])
+    nodes, lines = quadtree_line_refinement.get_nodes_lines(
+        subgrid_meta["area_mask"]
+    )
 

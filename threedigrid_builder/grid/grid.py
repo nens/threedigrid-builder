@@ -38,8 +38,7 @@ class Grid:
         """Construct the 2D grid based on the quadtree object.
         """
 
-        nodes = quadtree.get_nodes()
-        lines = quadtree.get_lines(nodes, subgrid_meta["area_mask"])
+        nodes, lines = quadtree.get_nodes_lines(subgrid_meta["area_mask"])
 
         return cls(nodes=nodes, lines=lines)
 

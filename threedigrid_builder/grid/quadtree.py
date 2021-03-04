@@ -4,8 +4,7 @@ from threedigrid_builder.constants import NodeType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_refinement
-from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes
-from threedigrid_builder.grid.fwrapper import set_2d_computational_lines
+from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
 import numpy as np
 import pygeos
 import math
@@ -69,7 +68,7 @@ class QuadTree:
         )
 
     def __repr__(self):
-        return f"<Quadtree object with {self.kmax} refinement levels and {self.active_cells} active computational cells>" #NOQA
+        return f"<Quadtree object with {self.kmax} refinement levels and {self.active_cells} active computational cells>" # NOQA
 
     @property
     def min_cell_pixels(self):
@@ -105,7 +104,7 @@ class QuadTree:
         return self._dx
 
     def _apply_refinements(self, refinements):
-        """Set active grid levels for based on refinement dict and 
+        """Set active grid levels for based on refinement dict and
         filling lg variable for refinement locations.
 
         Args:
@@ -131,42 +130,54 @@ class QuadTree:
                 lg=self.lg
             )
 
-    def get_nodes(self):
+    def get_nodes_lines(self, area_mask):
         """Compute 2D openwater Nodes based on computed Quadtree.
 
         Return:
           Nodes object
         """
 
-        # Create all arrays for filling in external Fortran routine.
-        id = np.arange(self.active_cells)
-        nodk = np.empty(len(id), dtype=np.int32, order='F')
-        nodm = np.empty(len(id), dtype=np.int32, order='F')
-        nodn = np.empty(len(id), dtype=np.int32, order='F')
-        bounds = np.empty((len(id), 4), dtype=np.float64, order='F')
-        coords = np.empty((len(id), 2), dtype=np.float64, order='F')
+        # Create all node arrays for filling in external Fortran routine.
+        id_n = np.arange(self.active_cells)
+        nodk = np.empty((self.active_cells,), dtype=np.int32, order='F')
+        nodm = np.empty((self.active_cells,), dtype=np.int32, order='F')
+        nodn = np.empty((self.active_cells,), dtype=np.int32, order='F')
+        bounds = np.empty((self.active_cells, 4), dtype=np.float64, order='F')
+        coords = np.empty((self.active_cells, 2), dtype=np.float64, order='F')
 
         # Node type is always openwater at first init
         node_type = np.full(
-            (len(id)), NodeType.NODE_2D_OPEN_WATER, dtype='O', order='F'
+            (len(id_n)), NodeType.NODE_2D_OPEN_WATER, dtype='O', order='F'
         )
 
-        set_2d_computational_nodes(
+        # Create all line array for filling in external Fortran routine
+        id_l = np.arange(self.active_lines)
+        # Line type is always openwater at first init
+        line_type = np.full(
+            (self.active_lines,), LineType.LINE_2D, dtype='O', order='F'
+        )
+        line = np.empty((self.active_lines, 2), dtype=np.int32, order='F')
+
+        set_2d_computational_nodes_lines(
             np.array([self.bbox[0], self.bbox[1]]),
+            self.min_cell_pixels,
             self.kmax,
             self.mmax,
             self.nmax,
             self.dx,
+            self.lg,
+            self.quad_idx,
+            area_mask,
             nodk,
             nodm,
             nodn,
-            self.quad_idx,
             bounds,
             coords,
+            line
         )
 
-        return Nodes(
-            id=id,
+        nodes = Nodes(
+            id=id_n,
             node_type=node_type,
             nodk=nodk,
             nodm=nodm,
@@ -175,33 +186,6 @@ class QuadTree:
             coordinates=coords
         )
 
-    def get_lines(self, nodes, area_mask):
-        """Compute 2D openwater Lines based on computed Quadtree and Nodes
+        lines = Lines(id=id_l, line_type=line_type, line=line)
 
-        Args:
-          Nodes object for passing node attrs to line computation.
-
-        Return:
-          Lines object
-        """
-
-        id = np.arange(self.active_lines)
-        # Line type is always openwater at first init
-        line_type = np.full(
-            (len(id)), LineType.LINE_2D, dtype='O', order='F'
-        )
-
-        line = np.empty((self.active_lines, 2), dtype=np.int32, order='F')
-        set_2d_computational_lines(
-            nodes.nodk,
-            nodes.nodm,
-            nodes.nodn,
-            self.min_cell_pixels,
-            area_mask,
-            self.quad_idx,
-            line
-        )
-
-        return Lines(id=id, line_type=line_type, line=line)
-
-
+        return nodes, lines
