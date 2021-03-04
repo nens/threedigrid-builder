@@ -24,10 +24,12 @@ cdef extern:
         int *lgrmin,
         int *model_area,
         int *lg,
+        int *quad_idx,
         int *m0,
         int *n0,
         int *n1,
         int *i0,
         int *i1,
-        int *num_active_nodes
+        int *num_active_nodes,
+        int *num_active_lines
     )

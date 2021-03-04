@@ -34,12 +34,12 @@ class Grid:
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
-    def from_quadtree(cls, quadtree):
+    def from_quadtree(cls, quadtree, subgrid_meta):
         """Construct the 2D grid based on the quadtree object.
         """
 
         nodes = quadtree.get_nodes()
-        lines = Lines(id=[])
+        lines = quadtree.get_lines(nodes, subgrid_meta["area_mask"])
 
         return cls(nodes=nodes, lines=lines)
 

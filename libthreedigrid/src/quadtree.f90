@@ -89,8 +89,8 @@ module m_quadtree
 
     end subroutine set_refinement
 
-    subroutine make_quadtree(kmax, mmax, nmax, lgrmin, model_area, lg,&
-        m0, n0, n1, i0, i1, num_active_nodes) bind(c, name="make_quadtree")
+    subroutine make_quadtree(kmax, mmax, nmax, lgrmin, model_area, lg, quad_idx,&
+        m0, n0, n1, i0, i1, num_active_nodes, num_active_lines) bind(c, name="make_quadtree")
         integer(kind=c_int), intent(in) :: m0
         integer(kind=c_int), intent(in) :: n0
         integer(kind=c_int), intent(in) :: n1
@@ -102,7 +102,9 @@ module m_quadtree
         integer(kind=c_int), intent(in) :: lgrmin
         integer(kind=c_int), intent(in) :: model_area(n0,n1)
         integer(kind=c_int), intent(inout) :: lg(i0,i1)
-        integer(kind=c_int), intent(out) :: num_active_nodes
+        integer(kind=c_int), intent(inout) :: quad_idx(i0,i1)
+        integer(kind=c_int), intent(inout) :: num_active_nodes
+        integer(kind=c_int), intent(inout) :: num_active_lines
         integer :: k
         integer :: m, n
         
@@ -113,7 +115,7 @@ module m_quadtree
             enddo
         enddo
         call balance_quadtree(kmax, mmax, nmax, lg)
-        call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
+        call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, quad_idx, num_active_nodes, num_active_lines)
         write(*,*) '** INFO: Done making quadtree.'
 
     end subroutine make_quadtree
@@ -185,7 +187,7 @@ module m_quadtree
 
     end subroutine balance_quadtree
 
-    subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, num_active_nodes)
+    subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, quad_idx, num_active_nodes, num_active_lines)
 
         use m_grid_utils, only : get_lg_corners, get_pix_corners, get_cell_bbox
 
@@ -195,17 +197,21 @@ module m_quadtree
         integer, intent(in) :: lgrmin
         integer, intent(inout) :: lg(:,:)
         integer, intent(in) :: model_area(:,:)
+        integer, intent(inout) :: quad_idx(:,:)
         integer :: k
         integer :: m,n
         integer :: mn(4)
-        integer :: i0, i1, j0, j1
+        integer :: i0, i1, j0, j1, i2, i3, j2, j3
         integer :: num_active_nodes
+        integer :: num_active_lines
 
         num_active_nodes = 0
-        do k=1,kmax
+        num_active_lines = 0
+        quad_idx = 0
+        do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
-                    call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
+                    call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1, i2, i3, j2, j3)
                     mn = get_lg_corners(k, m, n)
                     i1 = min(i1, size(model_area, 1))
                     j1 = min(j1, size(model_area, 2))
@@ -215,14 +221,108 @@ module m_quadtree
                         if (any(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
                             num_active_nodes = num_active_nodes + 1
                             lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
+                            quad_idx(mn(1):mn(3),mn(2):mn(4)) = num_active_nodes
+                            num_active_lines = num_active_lines + count_2d_computational_lines(k, mn, lg, model_area, quad_idx, i0, i1, j0, j1, i2, i3, j2, j3)
                         endif
                     endif
                 enddo
             enddo
         enddo
         write(*,*) '** INFO: No. active 2D computational cells: ', num_active_nodes
+        write(*,*) '** INFO: Number of 2D Surface flow lines is: ', num_active_lines
 
     end subroutine find_active_2d_comp_cells
+    
+
+    function count_2d_computational_lines(k, mn, lg, model_area, quad_idx, i0, i1, j0, j1, i2, i3, j2, j3) result(num_active_lines)
+
+        use m_grid_utils, only : crop_pix_coords_to_raster
+
+        integer, intent(in) :: k
+        integer, intent(in) :: mn(4)
+        integer, intent(in) :: lg(:,:)
+        integer, intent(in) :: model_area(:,:)
+        integer, intent(in) :: quad_idx(:,:)
+        integer, intent(inout) :: i0,i1,j0,j1,i2, i3, j2, j3
+        integer :: num_active_lines
+        integer :: nod
+        integer :: lintot_u, lintot_v
+        integer :: neighbour
+        integer :: k_neighbour
+
+        lintot_u = 0
+        lintot_v = 0
+        k_neighbour = 0
+        !! U direction
+        call crop_pix_coords_to_raster(model_area, i0, i1, j0, j1, i2, i3, j2, j3)
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!! U - direction !!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        if (mn(3) < size(lg, 1)) then
+            k_neighbour = lg(mn(3)+1, mn(2))
+            if (k_neighbour == k.and.any(minval(model_area(i1:i1+1,j0:j1), 1) > 0)) then
+                lintot_u = lintot_u + 1
+            else
+                if (k_neighbour == k-1 .and. any(minval(model_area(i1:i1+1,j0:j2), 1) > 0)) then
+                    lintot_u = lintot_u + 1
+                endif
+                k_neighbour = lg(mn(3)+1,mn(4))
+                if (k_neighbour == k-1 .and. any(minval(model_area(i1:i1+1,j3:j1), 1) > 0)) then
+                    lintot_u = lintot_u + 1
+                endif
+            endif
+        endif
+
+        if (mn(1) > 1) then
+            k_neighbour = lg(mn(1)-1, mn(2))
+            if(k_neighbour == k-1 .and. any(minval(model_area(i0-1:i0,j0:j2), 1) > 0)) then
+                lintot_u = lintot_u + 1
+            endif
+            k_neighbour = lg(mn(1)-1, mn(4))
+            if(k_neighbour == k-1 .and. any(minval(model_area(i0-1:i0,j3:j1), 1) > 0)) then
+                lintot_u = lintot_u + 1
+            endif
+        endif
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!! U - direction !!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!! V - direction !!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        if (mn(4) < size(lg, 2)) then
+            k_neighbour = lg(mn(1), mn(4)+1)
+            if (k_neighbour == k .and. any(minval(model_area(i0:i1,j1:j1+1), 2) > 0)) then
+                lintot_v = lintot_v + 1
+            else
+                if (k_neighbour == k-1 .and. any(minval(model_area(i0:i2,j1:j1+1), 2) > 0)) then
+                    lintot_v = lintot_v + 1
+                endif
+                k_neighbour = lg(mn(3), mn(4)+1)
+                if (k_neighbour == k-1 .and. any(minval(model_area(i3:i1,j1:j1+1), 2) > 0)) then
+                    lintot_v = lintot_v + 1
+                endif
+            endif
+        endif
+            
+        if (mn(2) > 1) then
+            k_neighbour = lg(mn(1), mn(2)-1)
+            if(k_neighbour == k-1 .and. any(minval(model_area(i0:i2,max(1,j0-1):j0), 2) > 0)) then
+                lintot_v = lintot_v + 1
+            endif
+            k_neighbour = lg(mn(3), mn(2)-1)
+            if(k_neighbour == k-1 .and. any(minval(model_area(i3:i1,max(1,j0-1):j0), 2) > 0)) then
+                lintot_v = lintot_v + 1
+            endif
+        endif
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!! V - direction !!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!
+        num_active_lines = lintot_u + lintot_v
+
+    end function count_2d_computational_lines
 
 
     function convert_to_grid_crd(origin, dx, xy, mmax, nmax, round) result (mn)

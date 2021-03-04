@@ -33,6 +33,7 @@ def get_1d_grid(path):
     grid.epsg_code = db.global_settings["epsg_code"]
     return grid
 
+
 def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
     """Make 2D computational grid
     """
@@ -48,7 +49,7 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         db.global_settings["grid_space"],
         refinements
     )
-    grid = Grid.from_quadtree(quadtree)
+    grid = Grid.from_quadtree(quadtree, subgrid_meta)
     grid.epsg_code = db.global_settings["epsg_code"]
 
     return grid

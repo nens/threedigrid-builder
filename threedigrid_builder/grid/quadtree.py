@@ -1,9 +1,11 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import LineType
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_refinement
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes
+from threedigrid_builder.grid.fwrapper import set_2d_computational_lines
 import numpy as np
 import pygeos
 import math
@@ -25,7 +27,7 @@ class QuadTree:
         self._nmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._dx = np.empty((self.kmax,), dtype=np.float64, order='F')
 
-        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.uint8)
+        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
 
         # Determine number of largest cells that fit over subgrid extent.
         max_pix_largest_cell = self.min_cell_pixels * lvl_multiplr[0]
@@ -46,22 +48,24 @@ class QuadTree:
         # Array with dimensions of smallest active grid level and contains
         # map of active grid level for each quadtree cell.
         self.lg = np.full(
-            (self.mmax[0], self.nmax[0]),
-            self.kmax,
-            dtype=np.int32,
-            order='F'
+            (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order='F'
         )
 
         if refinements:
             self._apply_refinements(refinements)
 
-        self.active_cells = create_quadtree(
+        self.quad_idx = np.empty(
+            (self.mmax[0], self.nmax[0]), dtype=np.int32, order='F'
+        )
+
+        self.active_cells, self.active_lines = create_quadtree(
             self.kmax,
             self.mmax,
             self.nmax,
             self.min_cell_pixels,
             subgrid_meta["area_mask"],
-            self.lg
+            self.quad_idx,
+            self.lg,
         )
 
     def __repr__(self):
@@ -128,10 +132,7 @@ class QuadTree:
             )
 
     def get_nodes(self):
-        """Compute 2D openwater Nodes based computed Quadtree
-
-        Args:
-          SubgridMeta object for passing active model_area to node computation.
+        """Compute 2D openwater Nodes based on computed Quadtree.
 
         Return:
           Nodes object
@@ -142,10 +143,9 @@ class QuadTree:
         nodk = np.empty(len(id), dtype=np.int32, order='F')
         nodm = np.empty(len(id), dtype=np.int32, order='F')
         nodn = np.empty(len(id), dtype=np.int32, order='F')
-        quad_nod = np.empty(self.lg.shape, dtype=np.int32, order='F')
         bounds = np.empty((len(id), 4), dtype=np.float64, order='F')
         coords = np.empty((len(id), 2), dtype=np.float64, order='F')
-        
+
         # Node type is always openwater at first init
         node_type = np.full(
             (len(id)), NodeType.NODE_2D_OPEN_WATER, dtype='O', order='F'
@@ -157,11 +157,10 @@ class QuadTree:
             self.mmax,
             self.nmax,
             self.dx,
-            self.lg,
             nodk,
             nodm,
             nodn,
-            quad_nod,
+            self.quad_idx,
             bounds,
             coords,
         )
@@ -175,3 +174,34 @@ class QuadTree:
             bounds=bounds,
             coordinates=coords
         )
+
+    def get_lines(self, nodes, area_mask):
+        """Compute 2D openwater Lines based on computed Quadtree and Nodes
+
+        Args:
+          Nodes object for passing node attrs to line computation.
+
+        Return:
+          Lines object
+        """
+
+        id = np.arange(self.active_lines)
+        # Line type is always openwater at first init
+        line_type = np.full(
+            (len(id)), LineType.LINE_2D, dtype='O', order='F'
+        )
+
+        line = np.empty((self.active_lines, 2), dtype=np.int32, order='F')
+        set_2d_computational_lines(
+            nodes.nodk,
+            nodes.nodm,
+            nodes.nodn,
+            self.min_cell_pixels,
+            area_mask,
+            self.quad_idx,
+            line
+        )
+
+        return Lines(id=id, line_type=line_type, line=line)
+
+
