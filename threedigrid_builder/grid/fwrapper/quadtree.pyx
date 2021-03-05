@@ -59,7 +59,8 @@ cpdef create_quadtree(
     cdef int i0 = lg.shape[0]
     cdef int i1 = lg.shape[1]
     cdef int num_active_nodes
-    cdef int num_active_lines
+    cdef int cnt_line_u
+    cdef int cnt_line_v
 
     make_quadtree(
         kmax=&kmax,
@@ -75,7 +76,8 @@ cpdef create_quadtree(
         i0=&i0,
         i1=&i1,
         num_active_nodes=&num_active_nodes,
-        num_active_lines=&num_active_lines
+        cnt_line_u=&cnt_line_u,
+        cnt_line_v=&cnt_line_v
     )
 
-    return <object>num_active_nodes, <object>num_active_lines
+    return <object>num_active_nodes, <object>(cnt_line_u, cnt_line_v)

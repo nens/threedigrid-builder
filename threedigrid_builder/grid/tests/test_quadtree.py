@@ -181,7 +181,49 @@ def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
 
 
 def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
+
     nodes, lines = quadtree_line_refinement.get_nodes_lines(
         subgrid_meta["area_mask"]
     )
 
+    line = np.array(
+        [[0, 5],
+         [0, 6],
+         [1, 3],
+         [2, 4],
+         [3, 7],
+         [4, 10],
+         [4, 11],
+         [5, 8],
+         [6, 9],
+         [7, 14],
+         [7, 15],
+         [10, 12],
+         [11, 13],
+         [12, 16],
+         [13, 17],
+         [14, 18],
+         [15, 19],
+         [16, 20],
+         [17, 21],
+         [0, 1],
+         [0, 3],
+         [1, 2],
+         [3, 4],
+         [5, 6],
+         [6, 7],
+         [7, 10],
+         [7, 12],
+         [8, 9],
+         [9, 14],
+         [9, 18],
+         [10, 11],
+         [12, 13],
+         [14, 15],
+         [15, 16],
+         [16, 17],
+         [18, 19],
+         [19, 20],
+         [20, 21]]
+    )
+    assert_array_equal(lines.line, line)

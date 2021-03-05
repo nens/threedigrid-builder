@@ -6,7 +6,7 @@ module m_cells
 
     subroutine set_2d_computational_nodes_lines(origin, lgrmin, kmax, mmax, nmax, dx,&
         lg, size_i, size_j, nodk, nodm, nodn, quad_idx, bounds, coords, size_n,&
-        area_mask, size_a, size_b, line, size_l) bind(c, name="f_set_2d_computational_nodes_lines")
+        area_mask, size_a, size_b, line, cnt_line_u, cnt_line_v) bind(c, name="f_set_2d_computational_nodes_lines")
 
         use m_grid_utils, only : get_lg_corners, get_cell_bbox
 
@@ -15,7 +15,6 @@ module m_cells
         integer(kind=c_int), intent(in) :: size_i
         integer(kind=c_int), intent(in) :: size_j
         integer(kind=c_int), intent(in) :: size_n
-        integer(kind=c_int), intent(in) :: size_l
         real(kind=c_double), intent(in) :: origin(2)
         integer(kind=c_int), intent(in) :: lgrmin
         integer(kind=c_int), intent(in) :: kmax
@@ -30,16 +29,19 @@ module m_cells
         real(kind=c_double), intent(inout) :: bounds(size_n, 4)
         real(kind=c_double), intent(inout) :: coords(size_n, 2)
         integer(kind=c_int), intent(inout) :: area_mask(size_a,size_b)
-        integer(kind=c_int), intent(inout) :: line(size_l, 2)
+        integer(kind=c_int), intent(in) :: cnt_line_u
+        integer(kind=c_int), intent(in) :: cnt_line_v
+        integer(kind=c_int), intent(inout) :: line(cnt_line_u+cnt_line_v, 2)
         integer :: nod
         integer :: k
-        integer :: l
+        integer :: l_u, l_v
         integer :: m, n
         integer :: mn(4)
 
         write(*,*) '** INFO: Start setting 2D calculation cells.'
         nod = 1
-        l = 1
+        l_u = 0
+        l_v = cnt_line_u
         line = 0
         do k=kmax,1,-1
             do m=1,mmax(k)
@@ -51,7 +53,7 @@ module m_cells
                         nodn(nod) = n
                         bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
                         coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
-                        call set_2d_computational_lines(l, k, m, n, nod, mn, lg, lgrmin, area_mask, quad_idx, line)
+                        call set_2d_computational_lines(l_u, l_v, k, m, n, nod, mn, lg, lgrmin, area_mask, quad_idx, line)
                         nod = nod + 1
                     else
                         continue
@@ -60,16 +62,17 @@ module m_cells
             enddo
         enddo
         write(*,*) '** INFO: Number of 2D nodes is: ', nod - 1
-        write(*,*) '** INFO: Number of 2D lines is: ', l
+        write(*,*) '** INFO: Number of 2D lines is: ', l_u + l_v
         write(*,*) '** INFO: Done setting 2D calculation cells.'
 
     end subroutine set_2d_computational_nodes_lines
 
-    subroutine set_2d_computational_lines(l, k, m, n, nod, mn, lg, lgrmin, area_mask, quad_idx, line)
+    subroutine set_2d_computational_lines(l_u, l_v, k, m, n, nod, mn, lg, lgrmin, area_mask, quad_idx, line)
 
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster
 
-        integer, intent(inout) :: l
+        integer, intent(inout) :: l_u
+        integer, intent(inout) :: l_v
         integer, intent(in) :: k
         integer, intent(in) :: m
         integer, intent(in) :: n
@@ -93,19 +96,19 @@ module m_cells
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(3) < size(quad_idx, 1)) then
             if (lg(mn(3)+1, mn(2)) == k.and.any(minval(area_mask(i1:i1+1,j0:j1), 1) > 0)) then
-                l = l + 1
+                l_u = l_u + 1
                 neighbour = quad_idx(mn(3)+1, mn(2)) 
-                line(l,:) = (/ nod - 1, neighbour - 1/)
+                line(l_u,:) = (/ nod - 1, neighbour - 1/)
             else
                 if (lg(mn(3)+1, mn(2)) == k-1 .and. any(minval(area_mask(i1:i1+1,j0:j2), 1) > 0)) then
-                    l = l + 1
+                    l_u = l_u + 1
                     neighbour = quad_idx(mn(3)+1, mn(2)) 
-                    line(l,:) = (/ nod - 1, neighbour - 1 /)
+                    line(l_u,:) = (/ nod - 1, neighbour - 1 /)
                 endif
                 if (lg(mn(3)+1, mn(4)) == k-1 .and. any(minval(area_mask(i1:i1+1,j3:j1), 1) > 0)) then
-                    l = l + 1
+                    l_u = l_u + 1
                     neighbour = quad_idx(mn(3)+1,mn(4))
-                    line(l,:) = (/ nod - 1, neighbour - 1 /)
+                    line(l_u,:) = (/ nod - 1, neighbour - 1 /)
                 endif
             endif
         endif
@@ -113,13 +116,13 @@ module m_cells
         if (mn(1) > 1) then
             neighbour = quad_idx(mn(1)-1, mn(2))
             if(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
-                l = l + 1
-                line(l,:) = (/ neighbour - 1, nod - 1 /)
+                l_u = l_u + 1
+                line(l_u,:) = (/ neighbour - 1, nod - 1 /)
             endif
             if(lg(mn(1)-1, mn(4)) == k-1 .and. any(minval(area_mask(i0-1:i0,j3:j1), 1) > 0)) then
-                l = l + 1
+                l_u = l_u + 1
                 neighbour = quad_idx(mn(1)-1, mn(4))
-                line(l,:) = (/ neighbour - 1, nod - 1 /)
+                line(l_u,:) = (/ neighbour - 1, nod - 1 /)
             endif
         endif
         !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -133,32 +136,32 @@ module m_cells
         if (mn(4) < size(quad_idx, 2)) then
             neighbour = quad_idx(mn(1), mn(4)+1)
             if (lg(mn(1), mn(4)+1) == k .and. any(minval(area_mask(i0:i1,j1:j1+1), 2) > 0)) then
-                l = l + 1
-                line(l,:) = (/ nod - 1, neighbour - 1 /)
+                l_v = l_v + 1
+                line(l_v,:) = (/ nod - 1, neighbour - 1 /)
             else
                 !neighbour = quad_idx(m0, n1+1)
                 if (lg(mn(1), mn(4)+1) == k-1 .and. any(minval(area_mask(i0:i2,j1:j1+1), 2) > 0)) then
-                    l = l + 1
-                    line(l,:) = (/ nod - 1, neighbour - 1 /)
+                    l_v = l_v + 1
+                    line(l_v,:) = (/ nod - 1, neighbour - 1 /)
                 endif
                 neighbour = quad_idx(mn(3), mn(4)+1)
                 if (lg(mn(3), mn(4)+1) == k-1 .and. any(minval(area_mask(i3:i1,j1:j1+1), 2) > 0)) then
-                    l = l + 1
-                    line(l,:) = (/ nod - 1, neighbour - 1 /)
+                    l_v = l_v + 1
+                    line(l_v,:) = (/ nod - 1, neighbour - 1 /)
                 endif
             endif
         endif
             
         if (mn(2) > 1) then
             if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
-                l = l + 1
+                l_v = l_v + 1
                 neighbour = quad_idx(mn(1), mn(2)-1)
-                line(l,:) = (/ neighbour - 1, nod - 1 /)
+                line(l_v,:) = (/ neighbour - 1, nod - 1 /)
             endif
             if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i3:i1,max(1,j0-1):j0), 2) > 0)) then
-                l = l + 1
+                l_v = l_v + 1
                 neighbour = quad_idx(mn(3), mn(2)-1)
-                line(l,:) = (/ neighbour - 1, nod - 1 /)
+                line(l_v,:) = (/ neighbour - 1, nod - 1 /)
             endif
         endif
         !!!!!!!!!!!!!!!!!!!!!!!!!

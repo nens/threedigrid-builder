@@ -21,5 +21,6 @@ cdef extern:
         int *size_a,
         int *size_b,
         int *line,
-        int *size_l
+        int *cnt_line_u,
+        int *cnt_line_v
     )

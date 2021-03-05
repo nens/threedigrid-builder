@@ -31,5 +31,6 @@ cdef extern:
         int *i0,
         int *i1,
         int *num_active_nodes,
-        int *num_active_lines
+        int *cnt_line_u,
+        int *cnt_line_v
     )

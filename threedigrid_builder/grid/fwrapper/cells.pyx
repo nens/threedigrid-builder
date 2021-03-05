@@ -16,13 +16,14 @@ def set_2d_computational_nodes_lines(
     int[:] nodn,
     double[::1,:] bounds,
     double[::1,:] coords,
-    int[::1,:] line
+    int[::1,:] line,
+    int cnt_line_u,
+    int cnt_line_v
 ):
 
     cdef int size_i = quad_idx.shape[0]
     cdef int size_j = quad_idx.shape[1]
     cdef int size_n = nodk.shape[0]
-    cdef int size_l = line.shape[0]
     cdef int size_a = area_mask.shape[0]
     cdef int size_b = area_mask.shape[1]
 
@@ -33,19 +34,20 @@ def set_2d_computational_nodes_lines(
         mmax=&mmax[0],
         nmax=&nmax[0],
         dx=&dx[0],
-        lg=&lg[0,0],
+        lg=&lg[0, 0],
         size_i=&size_i,
         size_j=&size_j,
         nodk=&nodk[0],
         nodm=&nodm[0],
         nodn=&nodn[0],
-        quad_idx=&quad_idx[0,0],
-        bounds=&bounds[0,0],
-        coords=&coords[0,0],
+        quad_idx=&quad_idx[0, 0],
+        bounds=&bounds[0, 0],
+        coords=&coords[0, 0],
         size_n=&size_n,
-        area_mask=&area_mask[0,0],
+        area_mask=&area_mask[0, 0],
         size_a=&size_a,
         size_b=&size_b,
-        line=&line[0,0],
-        size_l=&size_l
+        line=&line[0, 0],
+        cnt_line_u=&cnt_line_u,
+        cnt_line_v=&cnt_line_v
     )
