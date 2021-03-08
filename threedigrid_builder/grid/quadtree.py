@@ -114,15 +114,15 @@ class QuadTree:
           - id
 
         """
-        for i in range(len(refinements['id'])):
+        for i in range(len(refinements.id)):
             geom = np.asfortranarray(
-                pygeos.get_coordinates(refinements['the_geom'][i])
+                pygeos.get_coordinates(refinements.the_geom[i])
             )
             set_refinement(
-                id=refinements['id'][i],
+                id=refinements.id[i],
                 geom=geom,
-                level=refinements['refinement_level'][i],
-                type=pygeos.get_type_id(refinements['the_geom'][i]),
+                level=refinements.refinement_level[i],
+                type=pygeos.get_type_id(refinements.the_geom[i]),
                 bbox=self.bbox,
                 mmax=self.mmax,
                 nmax=self.nmax,
