@@ -57,7 +57,7 @@ class QuadTree:
             (self.mmax[0], self.nmax[0]), dtype=np.int32, order='F'
         )
 
-        self.active_cells, self.active_lines = create_quadtree(
+        self.n_cells, self.n_lines = create_quadtree(
             self.kmax,
             self.mmax,
             self.nmax,
@@ -68,7 +68,7 @@ class QuadTree:
         )
 
     def __repr__(self):
-        return f"<Quadtree object with {self.kmax} refinement levels and {self.active_cells} active computational cells>" # NOQA
+        return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>" # NOQA
 
     @property
     def min_cell_pixels(self):
@@ -138,12 +138,12 @@ class QuadTree:
         """
 
         # Create all node arrays for filling in external Fortran routine.
-        id_n = np.arange(self.active_cells)
-        nodk = np.empty((self.active_cells,), dtype=np.int32, order='F')
-        nodm = np.empty((self.active_cells,), dtype=np.int32, order='F')
-        nodn = np.empty((self.active_cells,), dtype=np.int32, order='F')
-        bounds = np.empty((self.active_cells, 4), dtype=np.float64, order='F')
-        coords = np.empty((self.active_cells, 2), dtype=np.float64, order='F')
+        id_n = np.arange(self.n_cells)
+        nodk = np.empty((self.n_cells,), dtype=np.int32, order='F')
+        nodm = np.empty((self.n_cells,), dtype=np.int32, order='F')
+        nodn = np.empty((self.n_cells,), dtype=np.int32, order='F')
+        bounds = np.empty((self.n_cells, 4), dtype=np.float64, order='F')
+        coords = np.empty((self.n_cells, 2), dtype=np.float64, order='F')
 
         # Node type is always openwater at first init
         node_type = np.full(
@@ -151,7 +151,7 @@ class QuadTree:
         )
 
         # Create all line array for filling in external Fortran routine
-        total_lines = self.active_lines[0] + self.active_lines[1]
+        total_lines = self.n_lines[0] + self.n_lines[1]
         id_l = np.arange(total_lines)
         # Line type is always openwater at first init
         line_type = np.full(
@@ -175,8 +175,8 @@ class QuadTree:
             bounds,
             coords,
             line,
-            self.active_lines[0],
-            self.active_lines[1]
+            self.n_lines[0],
+            self.n_lines[1]
         )
 
         nodes = Nodes(

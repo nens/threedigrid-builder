@@ -17,8 +17,8 @@ def set_2d_computational_nodes_lines(
     double[::1,:] bounds,
     double[::1,:] coords,
     int[::1,:] line,
-    int cnt_line_u,
-    int cnt_line_v
+    int n_line_u,
+    int n_line_v
 ):
 
     cdef int size_i = quad_idx.shape[0]
@@ -48,6 +48,6 @@ def set_2d_computational_nodes_lines(
         size_a=&size_a,
         size_b=&size_b,
         line=&line[0, 0],
-        cnt_line_u=&cnt_line_u,
-        cnt_line_v=&cnt_line_v
+        n_line_u=&n_line_u,
+        n_line_v=&n_line_v
     )

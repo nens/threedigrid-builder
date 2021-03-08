@@ -22,15 +22,14 @@ cdef extern:
         int *mmax,
         int *nmax,
         int *lgrmin,
-        int *model_area,
+        int *area_mask,
         int *lg,
         int *quad_idx,
-        int *m0,
         int *n0,
         int *n1,
         int *i0,
         int *i1,
-        int *num_active_nodes,
-        int *cnt_line_u,
-        int *cnt_line_v
+        int *n_cells,
+        int *n_line_u,
+        int *n_line_v
     )
