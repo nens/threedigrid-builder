@@ -1,6 +1,7 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid import GridRefinements
 
 import numpy as np
 import pygeos
@@ -34,14 +35,13 @@ def quadtree_no_refinement(subgrid_meta):
 
 @pytest.fixture
 def quadtree_line_refinement(subgrid_meta):
-    refinement = {
-        "id": np.array([1]),
-        "refinement_level": np.array([1]),
-        "the_geom": np.array(
+    refinement = GridRefinements(
+        id=np.array([1]),
+        refinement_level=np.array([1]),
+        the_geom=np.array(
             [pygeos.linestrings([[15., 17.5], [17.5, 17.5], [17.5, 14.5]])]
-        ),
-        "type": np.array([1])
-    }
+        )
+    )
     return QuadTree(
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
@@ -52,15 +52,13 @@ def quadtree_line_refinement(subgrid_meta):
 
 @pytest.fixture
 def quadtree_poly_refinement(subgrid_meta):
-    refinement = {
-        "id": np.array([2]),
-        "refinement_level": np.array([2]),
-        "the_geom": np.array(
+    refinement = GridRefinements(
+        id=np.array([1]),
+        refinement_level=np.array([2]),
+        the_geom=np.array(
             [pygeos.box(15., 17.5, 17.5, 14.5)]
-        ),
-        "type": np.array([3])
-    }
-
+        )
+    )
     return QuadTree(
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
