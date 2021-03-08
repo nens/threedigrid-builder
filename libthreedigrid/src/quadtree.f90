@@ -190,7 +190,8 @@ module m_quadtree
 
     subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, model_area, quad_idx, num_active_nodes, cnt_line_u, cnt_line_v)
 
-        use m_grid_utils, only : get_lg_corners, get_pix_corners, get_cell_bbox
+        use m_grid_utils, only : get_lg_corners, get_pix_corners
+        use m_cells, only : set_2d_computational_lines
 
         integer, intent(in) :: kmax
         integer, intent(in) :: mmax(:)
@@ -226,7 +227,7 @@ module m_quadtree
                             num_active_nodes = num_active_nodes + 1
                             lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                             quad_idx(mn(1):mn(3),mn(2):mn(4)) = num_active_nodes
-                            call count_2d_computational_lines(k, mn, lg, model_area, quad_idx, i0, i1, j0, j1, i2, i3, j2, j3, cnt_line_u, cnt_line_v)
+                            call set_2d_computational_lines(cnt_line_u, cnt_line_v, k, m, n, mn, lg, lgrmin, model_area, quad_idx)
                         endif
                     endif
                 enddo
@@ -237,94 +238,6 @@ module m_quadtree
 
     end subroutine find_active_2d_comp_cells
     
-
-    subroutine count_2d_computational_lines(k, mn, lg, model_area, quad_idx, i0, i1, j0, j1, i2, i3, j2, j3, cnt_line_u, cnt_line_v)
-
-        use m_grid_utils, only : crop_pix_coords_to_raster
-
-        integer, intent(in) :: k
-        integer, intent(in) :: mn(4)
-        integer, intent(in) :: lg(:,:)
-        integer, intent(in) :: model_area(:,:)
-        integer, intent(in) :: quad_idx(:,:)
-        integer, intent(inout) :: i0,i1,j0,j1,i2, i3, j2, j3
-        integer, intent(inout) :: cnt_line_u
-        integer, intent(inout) :: cnt_line_v
-        integer :: nod
-        integer :: neighbour
-        integer :: k_neighbour
-
-        k_neighbour = 0
-        !! U direction
-        call crop_pix_coords_to_raster(model_area, i0, i1, j0, j1, i2, i3, j2, j3)
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-        !!!!! U - direction !!!!!
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-        if (mn(3) < size(lg, 1)) then
-            k_neighbour = lg(mn(3)+1, mn(2))
-            if (k_neighbour == k.and.any(minval(model_area(i1:i1+1,j0:j1), 1) > 0)) then
-                cnt_line_u = cnt_line_u + 1
-            else
-                if (k_neighbour == k-1 .and. any(minval(model_area(i1:i1+1,j0:j2), 1) > 0)) then
-                    cnt_line_u = cnt_line_u + 1
-                endif
-                k_neighbour = lg(mn(3)+1,mn(4))
-                if (k_neighbour == k-1 .and. any(minval(model_area(i1:i1+1,j3:j1), 1) > 0)) then
-                    cnt_line_u = cnt_line_u + 1
-                endif
-            endif
-        endif
-
-        if (mn(1) > 1) then
-            k_neighbour = lg(mn(1)-1, mn(2))
-            if(k_neighbour == k-1 .and. any(minval(model_area(i0-1:i0,j0:j2), 1) > 0)) then
-                cnt_line_u = cnt_line_u + 1
-            endif
-            k_neighbour = lg(mn(1)-1, mn(4))
-            if(k_neighbour == k-1 .and. any(minval(model_area(i0-1:i0,j3:j1), 1) > 0)) then
-                cnt_line_u = cnt_line_u + 1
-            endif
-        endif
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-        !!!!! U - direction !!!!!
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-        !!!!! V - direction !!!!!
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-        if (mn(4) < size(lg, 2)) then
-            k_neighbour = lg(mn(1), mn(4)+1)
-            if (k_neighbour == k .and. any(minval(model_area(i0:i1,j1:j1+1), 2) > 0)) then
-                cnt_line_v = cnt_line_v + 1
-            else
-                if (k_neighbour == k-1 .and. any(minval(model_area(i0:i2,j1:j1+1), 2) > 0)) then
-                    cnt_line_v = cnt_line_v + 1
-                endif
-                k_neighbour = lg(mn(3), mn(4)+1)
-                if (k_neighbour == k-1 .and. any(minval(model_area(i3:i1,j1:j1+1), 2) > 0)) then
-                    cnt_line_v = cnt_line_v + 1
-                endif
-            endif
-        endif
-            
-        if (mn(2) > 1) then
-            k_neighbour = lg(mn(1), mn(2)-1)
-            if(k_neighbour == k-1 .and. any(minval(model_area(i0:i2,max(1,j0-1):j0), 2) > 0)) then
-                cnt_line_v = cnt_line_v + 1
-            endif
-            k_neighbour = lg(mn(3), mn(2)-1)
-            if(k_neighbour == k-1 .and. any(minval(model_area(i3:i1,max(1,j0-1):j0), 2) > 0)) then
-                cnt_line_v = cnt_line_v + 1
-            endif
-        endif
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-        !!!!! V - direction !!!!!
-        !!!!!!!!!!!!!!!!!!!!!!!!!
-
-    end subroutine count_2d_computational_lines
-
     function convert_to_grid_crd(origin, dx, xy, mmax, nmax, round) result (mn)
 
         double precision, intent(in) :: xy(2)
