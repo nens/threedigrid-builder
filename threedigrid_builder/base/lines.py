@@ -20,8 +20,8 @@ class Line:
     dpumax: float  # bottom_level
     flod: float  # obstacle height
     flou: float  # obstacle height
-    cross1: int  # to discuss if this is cross definition pk or other id)
-    cross2: int  # to discuss if this is cross definition pk or other id)
+    cross1: int  # the id of the cross section location
+    cross2: int  # the id of the cross section location
     cross_weight: float
 
 

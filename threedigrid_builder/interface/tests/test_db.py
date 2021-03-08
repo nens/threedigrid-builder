@@ -1,5 +1,7 @@
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionDefinitions
+from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
@@ -50,6 +52,34 @@ def test_get_connection_nodes(db):
     assert connection_nodes.storage_area[39] == 0.64
     assert np.isnan(connection_nodes.storage_area[49])
     assert connection_nodes.code[494] == ""
+
+
+def test_get_cross_section_definitions(db):
+    definitions = db.get_cross_section_definitions()
+    assert isinstance(definitions, CrossSectionDefinitions)
+
+    # some test samples
+    assert len(definitions.id) == 11
+    assert definitions.id[8] == 97
+    assert definitions.shape[7] == 1
+    assert definitions.height[10] == 0.4
+    assert definitions.width[2] == 0.315
+
+
+def test_get_cross_section_locations(db):
+    locations = db.get_cross_section_locations()
+    assert isinstance(locations, CrossSectionLocations)
+
+    # some test samples
+    assert len(locations.id) == 1175
+    assert pygeos.to_wkt(locations.the_geom[96]) == "POINT (111104 521655)"
+    assert locations.id[11] == 12
+    assert locations.definition_id[365] == 98
+    assert locations.channel_id[448] == 452
+    assert locations.reference_level[691] == -3.0
+    assert locations.bank_level[995] == -1.7
+    assert locations.friction_type[1103] == 2
+    assert locations.friction_value[1103] == 0.03
 
 
 def test_get_grid_refinements(db):

@@ -3,8 +3,8 @@ from numpy.testing import assert_equal
 from threedigrid_builder.base import array_of
 from typing import Tuple
 
-import numpy as np
 import itertools
+import numpy as np
 import pytest
 
 
@@ -180,3 +180,11 @@ def test_concatenate_inplace():
     assert len(a) == 2
     assert_equal(a.id, [1, 2])
     assert_equal(a.xyz, [[0, 0, 0], [1, 1, 1]])
+
+
+def test_reorder_by():
+    records = Records(id=[5, 7], number=[2, 3])
+    records.reorder_by([1, 0])
+
+    assert_equal(records.number, [3, 2])  # reordered
+    assert_equal(records.id, [5, 7])  # kept the same

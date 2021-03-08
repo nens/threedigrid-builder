@@ -14,6 +14,8 @@ from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import GridRefinements
+from threedigrid_builder.grid import CrossSectionDefinitions
+from threedigrid_builder.grid import CrossSectionLocations
 
 import numpy as np
 import pygeos
@@ -125,6 +127,48 @@ class SQLite:
 
         # transform to a ConnectionNodes object
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_cross_section_definitions(self):
+        """Return CrossSectionDefinitions"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.CrossSectionDefinition.id,
+                    models.CrossSectionDefinition.code,
+                    models.CrossSectionDefinition.shape,
+                    models.CrossSectionDefinition.width,
+                    models.CrossSectionDefinition.height,
+                )
+                .order_by(models.CrossSectionDefinition.id)
+                .as_structarray()
+            )
+
+        # transform to a CrossSectionDefinitions object
+        return CrossSectionDefinitions(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_cross_section_locations(self):
+        """Return CrossSectionLocations"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.CrossSectionLocation.id,
+                    models.CrossSectionLocation.code,
+                    models.CrossSectionLocation.the_geom,
+                    models.CrossSectionLocation.definition_id,
+                    models.CrossSectionLocation.channel_id,
+                    models.CrossSectionLocation.reference_level,
+                    models.CrossSectionLocation.bank_level,
+                    models.CrossSectionLocation.friction_type,
+                    models.CrossSectionLocation.friction_value,
+                )
+                .order_by(models.CrossSectionLocation.id)
+                .as_structarray()
+            )
+
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # transform to a CrossSectionLocations object
+        return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
 
     def get_grid_refinements(self):
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
