@@ -42,6 +42,7 @@ class GridAdminOut(OutputInterface):
             pixel_size (float): the size of a pixel in projected units (mostly meters)
         """
         group = self._file.create_group("nodes")
+        shape = (len(nodes), )
 
         # Some convenient masks:
         is_mh = nodes.content_type == ContentType.TYPE_V2_MANHOLE
@@ -96,19 +97,19 @@ class GridAdminOut(OutputInterface):
         group.create_dataset(
             "zoom_category", data=np.full(len(nodes), -9999, dtype="i4")
         )
-        group.create_dataset("initial_waterlevel", len(nodes), dtype=float)
+        group.create_dataset("initial_waterlevel", shape, dtype=float)
         # (manhole specific:)
         group.create_dataset(
             "manhole_indicator", data=np.full(len(nodes), -9999, dtype="i4")
         )
         group.create_dataset("shape", data=np.full(len(nodes), b"-999", dtype="S4"))
-        group.create_dataset("drain_level", len(nodes), dtype=float)
-        group.create_dataset("surface_level", len(nodes), dtype=float)
-        group.create_dataset("width", len(nodes), dtype=float)  # but no length?
+        group.create_dataset("drain_level", shape, dtype=float)
+        group.create_dataset("surface_level", shape, dtype=float)
+        group.create_dataset("width", shape, dtype=float)  # but no length?
 
         # unknown
         group.create_dataset("seq_id", data=nodes.id)
-        group.create_dataset("sumax", len(nodes), dtype=float)
+        group.create_dataset("sumax", shape, dtype=float)
 
     def write_lines(self, lines, **kwargs):
         """Write the "lines" group in the gridadmin file
@@ -125,6 +126,7 @@ class GridAdminOut(OutputInterface):
             lines (Lines)
         """
         group = self._file.create_group("lines")
+        shape = (len(lines), )
 
         # Datasets that match directly to a lines attribute:
         group.create_dataset("id", data=lines.id)
@@ -157,28 +159,27 @@ class GridAdminOut(OutputInterface):
         start[0] = 0
         line_geometries = [coords[a:b].ravel() for a, b in zip(start, end)]
         # The dataset has a special "variable length" dtype
-        group.create_dataset(
-            "line_geometries", data=line_geometries, dtype=h5py.vlen_dtype(float)
-        )
+        vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+        group.create_dataset("line_geometries", data=line_geometries, dtype=vlen_dtype)
 
         # can be collected from SQLite, but empty for now:
-        group.create_dataset("connection_node_end_pk", len(lines), dtype="i4")
-        group.create_dataset("connection_node_start_pk", len(lines), dtype="i4")
-        group.create_dataset("crest_level", len(lines), dtype=float)
-        group.create_dataset("crest_type", len(lines), dtype="i4")
-        group.create_dataset("cross_section_height", len(lines), dtype="i4")
-        group.create_dataset("cross_section_shape", len(lines), dtype="i4")
-        group.create_dataset("cross_section_width", len(lines), dtype=float)
-        group.create_dataset("discharge_coefficient", len(lines), dtype=float)
-        group.create_dataset("discharge_coefficient_negative", len(lines), dtype=float)
-        group.create_dataset("discharge_coefficient_positive", len(lines), dtype=float)
-        group.create_dataset("dist_calc_points", len(lines), dtype=float)
-        group.create_dataset("friction_type", len(lines), dtype="i4")
-        group.create_dataset("friction_value", len(lines), dtype=float)
-        group.create_dataset("invert_level_end_point", len(lines), dtype=float)
-        group.create_dataset("invert_level_start_point", len(lines), dtype=float)
-        group.create_dataset("lik", len(lines), dtype="i4")
-        group.create_dataset("material", len(lines), dtype="i4")
-        group.create_dataset("sewerage", len(lines), dtype="i4")
-        group.create_dataset("sewerage_type", len(lines), dtype="i4")
-        group.create_dataset("zoom_category", len(lines), dtype="i4")
+        group.create_dataset("connection_node_end_pk", shape, dtype="i4")
+        group.create_dataset("connection_node_start_pk", shape, dtype="i4")
+        group.create_dataset("crest_level", shape, dtype=float)
+        group.create_dataset("crest_type", shape, dtype="i4")
+        group.create_dataset("cross_section_height", shape, dtype="i4")
+        group.create_dataset("cross_section_shape", shape, dtype="i4")
+        group.create_dataset("cross_section_width", shape, dtype=float)
+        group.create_dataset("discharge_coefficient", shape, dtype=float)
+        group.create_dataset("discharge_coefficient_negative", shape, dtype=float)
+        group.create_dataset("discharge_coefficient_positive", shape, dtype=float)
+        group.create_dataset("dist_calc_points", shape, dtype=float)
+        group.create_dataset("friction_type", shape, dtype="i4")
+        group.create_dataset("friction_value", shape, dtype=float)
+        group.create_dataset("invert_level_end_point", shape, dtype=float)
+        group.create_dataset("invert_level_start_point", shape, dtype=float)
+        group.create_dataset("lik", shape, dtype="i4")
+        group.create_dataset("material", shape, dtype="i4")
+        group.create_dataset("sewerage", shape, dtype="i4")
+        group.create_dataset("sewerage_type", shape, dtype="i4")
+        group.create_dataset("zoom_category", shape, dtype="i4")
