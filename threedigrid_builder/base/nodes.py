@@ -10,17 +10,19 @@ __all__ = ["Nodes"]
 
 class Node:
     id: int
+    code: str
+    display_name: str
     node_type: NodeType
     calculation_type: CalculationType
     content_type: ContentType
     content_pk: int
     coordinates: Tuple[float, float]
-    bounds: Tuple[float, float, float, float]
-    dmax: float  # bottom level
+    bounds: Tuple[float, float, float, float]  # cell_coords in gridadmin
+    dmax: float  # bottom_level or z_coordinate (?) in gridadmin
     dimp: float  # bottom level groundwater
-    nodk: int  # quadtree grid coordinates
-    nodm: int  # quadtree grid coordinates
-    nodn: int  # quadtree grid coordinates
+    nodk: int  # quadtree grid coordinate z
+    nodm: int  # quadtree grid coordinate x
+    nodn: int  # quadtree grid coordinate y
     storage_area: float
 
 

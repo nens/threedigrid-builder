@@ -19,6 +19,7 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.epsg_code = None  # a Grid is aware of its projection
+        self.pixel_size = None  # a Grid is aware of the pixel size in the DEM
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -108,3 +109,10 @@ class Grid:
             channels (Channels): Used to lookup the channel geometry
         """
         cross_sections.compute_weights(self.lines, locations, channels)
+
+    def finalize(self, epsg_code=None, pixel_size=None):
+        """Finalize the Grid, computing and setting derived attributes"""
+        self.lines.set_line_coords(self.nodes)
+        self.lines.fix_line_geometries()
+        self.epsg_code = epsg_code
+        self.pixel_size = pixel_size
