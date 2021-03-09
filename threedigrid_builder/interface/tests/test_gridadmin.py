@@ -2,6 +2,7 @@ import h5py
 import pytest
 import numpy as np
 import tempfile
+import pygeos
 
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Lines
@@ -11,7 +12,17 @@ from threedigrid_builder.interface import GridAdminOut
 @pytest.fixture(scope="session")
 def h5_out():
     nodes = Nodes(id=[1, 2, 3])
-    lines = Lines(id=[1, 2, 3, 4, 5], line=[[1, 2], [2, 3], [3, 1], [1, 3], [3, 2]])
+    lines = Lines(
+        id=[1, 2, 3, 4, 5],
+        line=[[1, 2], [2, 3], [3, 1], [1, 3], [3, 2]],
+        line_geometries=[
+            pygeos.linestrings([[1, 1], [2, 2]]),
+            pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
+            None,
+            None,
+            None
+        ]
+    )
 
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
         path = tmpfile.name
@@ -50,7 +61,8 @@ def h5_out():
     ('x_coordinate', (3,), 'float64'),
     ('y_coordinate', (3,), 'float64'),
     ('z_coordinate', (3,), 'float64'),
-    ('zoom_category', (3,), 'int32')
+    ('zoom_category', (3,), 'int32'),
+    ('code', (3,), '|S32'),  # added
 ])
 def test_write_nodes(h5_out, dataset, shape, dtype):
     assert h5_out["nodes"][dataset].shape == shape
@@ -90,7 +102,14 @@ def test_write_nodes(h5_out, dataset, shape, dtype):
     ('material', (5,), 'int32'),
     ('sewerage', (5,), 'int32'),
     ('sewerage_type', (5,), 'int32'),
-    ('zoom_category', (5,), 'int32')
+    ('zoom_category', (5,), 'int32'),
+    ('ds1d', (5,), 'float64'),  # added
+    ('dpumax', (5,), 'float64'),  # added
+    ('flod', (5,), 'float64'),  # added
+    ('flou', (5,), 'float64'),  # added
+    ('cross1', (5,), 'int32'),  # added
+    ('cross2', (5,), 'int32'),  # added
+    ('cross_weight', (5,), 'float64'),  # added
 ])
 def test_write_lines(h5_out, dataset, shape, dtype):
     assert h5_out["lines"][dataset].shape == shape

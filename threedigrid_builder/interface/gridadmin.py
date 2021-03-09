@@ -56,7 +56,7 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("calculation_type", data=nodes.calculation_type)
         group.create_dataset("coordinates", data=nodes.coordinates.T)
         group.create_dataset("cell_coords", data=nodes.bounds.T)
-        group.create_dataset("storage_area", data=nodes.storage_area)
+        group.create_dataset("storage_area", data=nodes.storage_area.astype("S32"))
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")
@@ -117,7 +117,6 @@ class GridAdminOut(OutputInterface):
 
         Notes:
             Some datasets were 64-bit integers, but now they are saved as 32-bit integers.
-            content_type is now saved as integer instead of string
             The following datasets were added: ds1d, dpumax, flod, flou, cross1, cross2,
             cross_weight
             For floats (double) we use NaN instead of -9999.0 to denote empty.
@@ -135,7 +134,13 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("calculation_type", data=lines.calculation_type)
         group.create_dataset("line", data=lines.line.T)
         group.create_dataset("ds1d", data=lines.ds1d)
-        group.create_dataset("content_type", data=lines.content_type)
+
+        content_type = np.full(len(lines), b"", dtype="S10")
+        for ind in np.where(lines.content_type != -9999)[0]:
+            content_type_name = ContentType(lines.content_type[ind]).name
+            content_type[ind] = content_type_name.lstrip("TYPE_").lower()[:10]
+
+        group.create_dataset("content_type", data=content_type)
         group.create_dataset("content_pk", data=lines.content_pk)
         group.create_dataset("dpumax", data=lines.dpumax)
         group.create_dataset("flod", data=lines.flod)
@@ -143,6 +148,7 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("cross1", data=lines.cross1)
         group.create_dataset("cross2", data=lines.cross2)
         group.create_dataset("cross_weight", data=lines.cross_weight)
+        group.create_dataset("line_coords", data=lines.line_coords.T)
 
         # Transform an array of linestrings to list of coordinate arrays (x,y,x,y,...)
         coords = pygeos.get_coordinates(lines.line_geometries)
@@ -150,7 +156,10 @@ class GridAdminOut(OutputInterface):
         start = np.roll(end, 1)
         start[0] = 0
         line_geometries = [coords[a:b].ravel() for a, b in zip(start, end)]
-        group.create_dataset("line_geometries", data=line_geometries)
+        # The dataset has a special "variable length" dtype
+        group.create_dataset(
+            "line_geometries", data=line_geometries, dtype=h5py.vlen_dtype(float)
+        )
 
         # can be collected from SQLite, but empty for now:
         group.create_dataset("connection_node_end_pk", len(lines), dtype="i4")
