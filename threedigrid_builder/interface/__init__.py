@@ -11,5 +11,5 @@ The interface layer depends on the domain layer only.
 
 from .db import *  # NOQA
 from .subgrid import *  # NOQA
-from .geopackage_out import *  # NOQA
-from .gridadmin_out import *  # NOQA
+from .geopackage import *  # NOQA
+from .gridadmin import *  # NOQA
