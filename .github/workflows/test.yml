@@ -30,6 +30,7 @@ jobs:
           # current
           - python: 3.9
             display_name: "latest"
+            pins: "numpy"
 
     steps:
       - uses: actions/checkout@v2
