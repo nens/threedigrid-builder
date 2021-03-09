@@ -54,8 +54,8 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
           pip install cython ${{ matrix.pins }}
-          pip install git+https://github.com/nens/threedi-modelchecker#egg=threedi-modelchecker
-          pip install -e .[test,gridadmin]
+          pip install git+https://github.com/nens/threedi-modelchecker#egg=threedi-modelchecker --no-build-isolation
+          pip install -e .[test,gridadmin] --no-build-isolation
           pip list
 
       - name: Run tests
