@@ -85,7 +85,7 @@ setup(
     author_email="martijn.siemerink@nelen-schuurmans.nl",
     packages=["threedigrid_builder"],
     install_requires=install_requires,
-    extras_require={"test": test_requires, "hdf5": ["h5py"]},
+    extras_require={"test": test_requires, "gridadmin": ["h5py"], "gpkg": ["geopandas"]},
     python_requires=">=3.6",
     include_package_data=True,
     ext_modules=ext_modules,
