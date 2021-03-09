@@ -1,7 +1,8 @@
 cdef extern:
 
-    void* f_set_2d_computational_nodes(
+    void* f_set_2d_computational_nodes_lines(
         double *origin,
+        int *lgrmin,
         int *kmax,
         int *mmax,
         int *nmax,
@@ -12,8 +13,14 @@ cdef extern:
         int *nodk,
         int *nodm,
         int *nodn,
-        int *quad_nod,
+        int *quad_idx,
         double *bounds,
         double *coords,
-        int *size_n
+        int *size_n,
+        int *area_mask,
+        int *size_a,
+        int *size_b,
+        int *line,
+        int *n_line_u,
+        int *n_line_v
     )

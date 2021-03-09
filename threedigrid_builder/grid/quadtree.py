@@ -1,9 +1,10 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import LineType
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_refinement
-from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes
+from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
 import numpy as np
 import pygeos
 import math
@@ -25,7 +26,7 @@ class QuadTree:
         self._nmax = np.empty((self.kmax,), dtype=np.int32, order='F')
         self._dx = np.empty((self.kmax,), dtype=np.float64, order='F')
 
-        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.uint8)
+        lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
 
         # Determine number of largest cells that fit over subgrid extent.
         max_pix_largest_cell = self.min_cell_pixels * lvl_multiplr[0]
@@ -46,26 +47,28 @@ class QuadTree:
         # Array with dimensions of smallest active grid level and contains
         # map of active grid level for each quadtree cell.
         self.lg = np.full(
-            (self.mmax[0], self.nmax[0]),
-            self.kmax,
-            dtype=np.int32,
-            order='F'
+            (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order='F'
         )
 
         if refinements:
             self._apply_refinements(refinements)
 
-        self.active_cells = create_quadtree(
+        self.quad_idx = np.empty(
+            (self.mmax[0], self.nmax[0]), dtype=np.int32, order='F'
+        )
+
+        self.n_cells, self.n_lines = create_quadtree(
             self.kmax,
             self.mmax,
             self.nmax,
             self.min_cell_pixels,
             subgrid_meta["area_mask"],
-            self.lg
+            self.quad_idx,
+            self.lg,
         )
 
     def __repr__(self):
-        return f"<Quadtree object with {self.kmax} refinement levels and {self.active_cells} active computational cells>" #NOQA
+        return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>" # NOQA
 
     @property
     def min_cell_pixels(self):
@@ -101,7 +104,7 @@ class QuadTree:
         return self._dx
 
     def _apply_refinements(self, refinements):
-        """Set active grid levels for based on refinement dict and 
+        """Set active grid levels for based on refinement dict and
         filling lg variable for refinement locations.
 
         Args:
@@ -111,15 +114,15 @@ class QuadTree:
           - id
 
         """
-        for i in range(len(refinements['id'])):
+        for i in range(len(refinements.id)):
             geom = np.asfortranarray(
-                pygeos.get_coordinates(refinements['the_geom'][i])
+                pygeos.get_coordinates(refinements.the_geom[i])
             )
             set_refinement(
-                id=refinements['id'][i],
+                id=refinements.id[i],
                 geom=geom,
-                level=refinements['refinement_level'][i],
-                type=pygeos.get_type_id(refinements['the_geom'][i]),
+                level=refinements.refinement_level[i],
+                type=pygeos.get_type_id(refinements.the_geom[i]),
                 bbox=self.bbox,
                 mmax=self.mmax,
                 nmax=self.nmax,
@@ -127,46 +130,65 @@ class QuadTree:
                 lg=self.lg
             )
 
-    def get_nodes(self):
-        """Compute 2D openwater Nodes based computed Quadtree
-
-        Args:
-          SubgridMeta object for passing active model_area to node computation.
+    def get_nodes_lines(self, area_mask):
+        """Compute 2D openwater Nodes based on computed Quadtree.
 
         Return:
           Nodes object
         """
 
-        # Create all arrays for filling in external Fortran routine.
-        id = np.arange(self.active_cells)
-        nodk = np.empty(len(id), dtype=np.int32, order='F')
-        nodm = np.empty(len(id), dtype=np.int32, order='F')
-        nodn = np.empty(len(id), dtype=np.int32, order='F')
-        quad_nod = np.empty(self.lg.shape, dtype=np.int32, order='F')
-        bounds = np.empty((len(id), 4), dtype=np.float64, order='F')
-        coords = np.empty((len(id), 2), dtype=np.float64, order='F')
+        # Create all node arrays for filling in external Fortran routine.
+        id_n = np.arange(self.n_cells)
+        nodk = np.empty((self.n_cells,), dtype=np.int32, order='F')
+        nodm = np.empty((self.n_cells,), dtype=np.int32, order='F')
+        nodn = np.empty((self.n_cells,), dtype=np.int32, order='F')
+        bounds = np.empty((self.n_cells, 4), dtype=np.float64, order='F')
+        coords = np.empty((self.n_cells, 2), dtype=np.float64, order='F')
 
-        set_2d_computational_nodes(
+        # Node type is always openwater at first init
+        node_type = np.full(
+            (len(id_n)), NodeType.NODE_2D_OPEN_WATER, dtype='O', order='F'
+        )
+
+        # Create all line array for filling in external Fortran routine
+        total_lines = self.n_lines[0] + self.n_lines[1]
+        id_l = np.arange(total_lines)
+        # Line type is always openwater at first init
+        line_type = np.full(
+            (total_lines,), LineType.LINE_2D, dtype='O', order='F'
+        )
+        line = np.empty((total_lines, 2), dtype=np.int32, order='F')
+
+        set_2d_computational_nodes_lines(
             np.array([self.bbox[0], self.bbox[1]]),
+            self.min_cell_pixels,
             self.kmax,
             self.mmax,
             self.nmax,
             self.dx,
             self.lg,
+            self.quad_idx,
+            area_mask,
             nodk,
             nodm,
             nodn,
-            quad_nod,
             bounds,
             coords,
+            line,
+            self.n_lines[0],
+            self.n_lines[1]
         )
 
-        return Nodes(
-            id=id,
-            node_type=NodeType.NODE_2D_OPEN_WATER,
+        nodes = Nodes(
+            id=id_n,
+            node_type=node_type,
             nodk=nodk,
             nodm=nodm,
             nodn=nodn,
             bounds=bounds,
             coordinates=coords
         )
+
+        lines = Lines(id=id_l, line_type=line_type, line=line)
+
+        return nodes, lines

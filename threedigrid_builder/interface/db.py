@@ -13,6 +13,7 @@ from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 
@@ -173,9 +174,9 @@ class SQLite:
             arr1 = (
                 session.query(
                     models.GridRefinement.the_geom,
-                    models.GridRefinement.display_name,
                     models.GridRefinement.id,
                     models.GridRefinement.code,
+                    models.GridRefinement.display_name,
                     models.GridRefinement.refinement_level,
                 )
                 .order_by(models.GridRefinement.id)
@@ -184,9 +185,9 @@ class SQLite:
             arr2 = (
                 session.query(
                     models.GridRefinementArea.the_geom,
-                    models.GridRefinementArea.display_name,
                     models.GridRefinementArea.id,
                     models.GridRefinementArea.code,
+                    models.GridRefinementArea.display_name,
                     models.GridRefinementArea.refinement_level,
                 )
                 .order_by(models.GridRefinementArea.id)
@@ -196,8 +197,9 @@ class SQLite:
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["id"] = np.arange(len(arr["refinement_level"]))
 
-        return {name: arr[name] for name in arr.dtype.names}
+        return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
 
 
 def _object_as_dict(obj):

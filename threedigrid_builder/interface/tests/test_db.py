@@ -86,16 +86,16 @@ def test_get_grid_refinements(db):
     grid_refinements = db.get_grid_refinements()
 
     # some test samples
-    assert len(grid_refinements["id"]) == 6
+    assert len(grid_refinements.id) == 6
     assert (
-        pygeos.to_wkt(grid_refinements["the_geom"][3])
+        pygeos.to_wkt(grid_refinements.the_geom[3])
         == "LINESTRING (110173 517604, 110327 517527, 110461 517809, 110249 517909, 110147 517700, 110304 517616, 110368 517765, 110280 517816, 110242 517726, 110300 517701, 110316 517749)"
     )
     assert (
-        pygeos.to_wkt(grid_refinements["the_geom"][4])
+        pygeos.to_wkt(grid_refinements.the_geom[4])
         == "POLYGON ((108334 517481, 108701 517460, 108686 517171, 108324 517197, 108334 517481))"
     )
-    assert grid_refinements["refinement_level"][1] == 1
-    assert grid_refinements["display_name"][3] == "riolering"
-    assert grid_refinements["display_name"][5] == "test_polygon2"
-    assert grid_refinements["code"][5] == "2"
+    assert grid_refinements.refinement_level[1] == 1
+    assert grid_refinements.display_name[3] == "riolering"
+    assert grid_refinements.display_name[5] == "test_polygon2"
+    assert grid_refinements.code[5] == "2"
