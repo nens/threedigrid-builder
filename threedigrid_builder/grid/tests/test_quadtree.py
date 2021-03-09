@@ -179,7 +179,6 @@ def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
 
 
 def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
-
     nodes, lines = quadtree_line_refinement.get_nodes_lines(
         subgrid_meta["area_mask"]
     )

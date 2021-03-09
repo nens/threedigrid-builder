@@ -106,7 +106,10 @@ def grid_to_gpkg(grid, out_path):
     line_data.pop("line_geometries")  # cannot export geometries
 
     # construct linestrings from nodes.coordinates and lines.line
+    line_data.update({"node_start": line_data["line"][:, 0]})
+    line_data.update({"node_end": line_data["line"][:, 1]})
     line_ids = line_data.pop("line")
+
     start = grid.nodes.coordinates[line_ids[:, 0]]
     end = grid.nodes.coordinates[line_ids[:, 1]]
     line_geometries = pygeos.linestrings(

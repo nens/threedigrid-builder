@@ -101,7 +101,7 @@ module m_quadtree
         integer(kind=c_int), intent(in) :: mmax(kmax) ! X Dimension of each refinement level
         integer(kind=c_int), intent(in) :: nmax(kmax) ! Y Dimension of each refinement level
         integer(kind=c_int), intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
-        integer(kind=c_int), intent(in) :: area_mask(n0,n1)
+        integer(kind=c_int), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
         integer(kind=c_int), intent(inout) :: lg(i0,i1) ! Array with all refinement levels.
         integer(kind=c_int), intent(inout) :: quad_idx(i0,i1) ! Array with idx of cell at lg refinement locations
         integer(kind=c_int), intent(inout) :: n_cells ! counter for active cells
@@ -191,7 +191,7 @@ module m_quadtree
 
     subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
     !!! Counting active cells and lines based on area_mask of active pixels.
-        use m_grid_utils, only : get_lg_corners, get_pix_corners
+        use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster
         use m_cells, only : set_2d_computational_lines
 
         integer, intent(in) :: kmax
@@ -218,13 +218,14 @@ module m_quadtree
             do m=1,mmax(k)
                 do n=1,nmax(k)
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1, i2, i3, j2, j3)
+                    call crop_pix_coords_to_raster(area_mask, i0, i1, j0, j1, i2, i3, j2, j3)
                     mn = get_lg_corners(k, m, n)
                     i1 = min(i1, size(area_mask, 1))
                     j1 = min(j1, size(area_mask, 2))
-                    if (all(area_mask(i0:i1, j0:j1) == 0)) then
-                        lg(mn(1):mn(3),mn(2):mn(4)) = -99
-                    else
-                        if (any(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
+                    if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
+                        if (all(area_mask(i0:i1, j0:j1) == 0)) then
+                            lg(mn(1):mn(3),mn(2):mn(4)) = -99
+                        else
                             n_cells = n_cells + 1
                             lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                             quad_idx(mn(1):mn(3),mn(2):mn(4)) = n_cells
