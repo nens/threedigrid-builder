@@ -74,7 +74,7 @@ class Channels:
         return nodes, segment_size
 
     def get_lines(
-        self, connection_nodes, nodes, segment_size=None, connection_node_offset=0
+        self, connection_nodes, nodes, line_id_counter, segment_size=None, connection_node_offset=0
     ):
         """Compute the grid (nodes + lines) for the channels.
 
@@ -111,7 +111,7 @@ class Channels:
         # start with the easy ones: channels that connect 2 connection nodes
         # without interpolated nodes in between
         lines = Lines(
-            id=range(len(self)),
+            id=itertools.islice(line_id_counter, len(self)),
             line=np.array([cn_start_idx, cn_end_idx]).T,
             content_pk=self.id,
             content_type=ContentType.TYPE_V2_CHANNEL,
@@ -142,7 +142,7 @@ class Channels:
         lines.line[start_idx, 1] = nodes.id[is_channel_start]
 
         lines += Lines(
-            id=range(len(lines), len(lines) + len(nodes)),
+            id=itertools.islice(line_id_counter, len(nodes)),
             line=line_ids.T,
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,

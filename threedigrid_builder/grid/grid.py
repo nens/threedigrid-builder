@@ -36,11 +36,17 @@ class Grid:
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
-    def from_quadtree(cls, quadtree, subgrid_meta):
+    def from_quadtree(
+        cls, quadtree, subgrid_meta, node_id_counter, line_id_counter
+    ):
         """Construct the 2D grid based on the quadtree object.
         """
 
-        nodes, lines = quadtree.get_nodes_lines(subgrid_meta["area_mask"])
+        nodes, lines = quadtree.get_nodes_lines(
+            subgrid_meta["area_mask"],
+            node_id_counter,
+            line_id_counter
+        )
 
         return cls(nodes=nodes, lines=lines)
 
@@ -69,7 +75,8 @@ class Grid:
 
     @classmethod
     def from_channels(
-        cls, connection_nodes, channels, global_dist_calc_points, node_id_counter
+        cls, connection_nodes, channels, global_dist_calc_points, node_id_counter,
+        line_id_counter
     ):
         """Construct a grid for the channels
 
@@ -94,7 +101,9 @@ class Grid:
         nodes, segment_size = channels.interpolate_nodes(
             node_id_counter, global_dist_calc_points
         )
-        lines = channels.get_lines(connection_nodes, nodes, segment_size=segment_size)
+        lines = channels.get_lines(
+            connection_nodes, nodes, line_id_counter, segment_size=segment_size
+        )
         return cls(nodes, lines)
 
     def set_channel_weights(self, locations, channels):

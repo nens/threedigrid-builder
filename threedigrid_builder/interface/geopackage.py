@@ -88,7 +88,7 @@ class GeopackageOut(OutputInterface):
         line_data["content_type"] = _enum_to_str(line_data["content_type"], ContentType)
 
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays
-        line_data["line_1"], line_data["line_2"] = line_data.pop("line").T
+        line_data["node_1"], line_data["node_2"] = line_data.pop("line").T
         line_data.pop("line_coords")
 
         # construct the geodataframe
