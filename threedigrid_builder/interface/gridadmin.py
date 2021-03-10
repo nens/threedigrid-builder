@@ -57,6 +57,9 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("calculation_type", data=nodes.calculation_type)
         group.create_dataset("coordinates", data=nodes.coordinates.T)
         group.create_dataset("cell_coords", data=nodes.bounds.T)
+        group.create_dataset("nodk", data=nodes.nodk)
+        group.create_dataset("nodm", data=nodes.nodm)
+        group.create_dataset("nodn", data=nodes.nodn)
         group.create_dataset("storage_area", data=nodes.storage_area.astype("S32"))
 
         # content pk is only set for connection nodes, otherwise 0
@@ -136,6 +139,9 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("calculation_type", data=lines.calculation_type)
         group.create_dataset("line", data=lines.line.T)
         group.create_dataset("ds1d", data=lines.ds1d)
+        group.create_dataset("lik", data=lines.lik)
+        group.create_dataset("lim", data=lines.lim)
+        group.create_dataset("lin", data=lines.lin)
 
         content_type = np.full(len(lines), b"", dtype="S10")
         for ind in np.where(lines.content_type != -9999)[0]:
@@ -178,7 +184,6 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("friction_value", shape, dtype=float)
         group.create_dataset("invert_level_end_point", shape, dtype=float)
         group.create_dataset("invert_level_start_point", shape, dtype=float)
-        group.create_dataset("lik", shape, dtype="i4")
         group.create_dataset("material", shape, dtype="i4")
         group.create_dataset("sewerage", shape, dtype="i4")
         group.create_dataset("sewerage_type", shape, dtype="i4")

@@ -89,6 +89,7 @@ class GeopackageOut(OutputInterface):
 
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays
         line_data["line_1"], line_data["line_2"] = line_data.pop("line").T
+        line_data.pop("line_coords")
 
         # construct the geodataframe
         df_lines = geopandas.GeoDataFrame(

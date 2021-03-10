@@ -179,6 +179,11 @@ class QuadTree:
             self.n_lines[1]
         )
 
+        idx = line[:, np.argmin(nodk[line[:, :]], axis=1)[0]]
+        lik = nodk[idx]
+        lim = nodm[idx]
+        lin = nodn[idx]
+
         nodes = Nodes(
             id=id_n,
             node_type=node_type,
@@ -189,6 +194,13 @@ class QuadTree:
             coordinates=coords
         )
 
-        lines = Lines(id=id_l, line_type=line_type, line=line)
+        lines = Lines(
+            id=id_l,
+            line_type=line_type,
+            line=line,
+            lik=lik,
+            lim=lim,
+            lin=lin
+        )
 
         return nodes, lines

@@ -18,6 +18,9 @@ class Line:
     line_type: LineType  # kcu
     calculation_type: CalculationType
     line: Tuple[int, int]
+    lik: int
+    lim: int
+    lin: int
     ds1d: float  # arclength
     line_geometries: pygeos.Geometry
     line_coords: Tuple[float, float, float, float]
