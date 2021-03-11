@@ -25,6 +25,28 @@ def grid():
     return Grid(nodes=Nodes(id=[]), lines=Lines(id=[]))
 
 
+def test_from_quadtree():
+
+    quadtree = mock.Mock()
+    area_mask = mock.Mock()
+    counter = mock.Mock()
+    nodes = Nodes(id=[])
+    lines = Lines(id=[])
+
+    quadtree.get_nodes_lines.return_value = nodes, lines
+
+    grid = Grid.from_quadtree(
+        quadtree=quadtree,
+        area_mask=area_mask,
+        node_id_counter=counter,
+        line_id_counter=counter,
+    )
+
+    assert isinstance(grid, Grid)
+    assert grid.nodes is nodes
+    assert grid.lines is lines
+
+
 def test_from_connection_nodes(connection_nodes):
     counter = itertools.count(start=2)
 
@@ -41,6 +63,7 @@ def test_from_channels():
     channels = mock.Mock()
     counter = mock.Mock()
     segment_size = mock.Mock()
+    connection_node_offset = mock.Mock()
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
@@ -51,6 +74,8 @@ def test_from_channels():
         channels,
         global_dist_calc_points=100.0,
         node_id_counter=counter,
+        line_id_counter=counter,
+        connection_node_offset=connection_node_offset,
     )
 
     assert isinstance(grid, Grid)
@@ -59,7 +84,11 @@ def test_from_channels():
 
     channels.interpolate_nodes.assert_called_with(counter, 100.0)
     channels.get_lines.assert_called_with(
-        connection_nodes, nodes, segment_size=segment_size
+        connection_nodes,
+        nodes,
+        counter,
+        segment_size=segment_size,
+        connection_node_offset=connection_node_offset,
     )
 
 

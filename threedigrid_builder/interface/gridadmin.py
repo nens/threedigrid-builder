@@ -42,7 +42,7 @@ class GridAdminOut(OutputInterface):
             pixel_size (float): the size of a pixel in projected units (mostly meters)
         """
         group = self._file.create_group("nodes")
-        shape = (len(nodes), )
+        shape = (len(nodes),)
 
         # Some convenient masks:
         is_mh = nodes.content_type == ContentType.TYPE_V2_MANHOLE
@@ -129,7 +129,7 @@ class GridAdminOut(OutputInterface):
             lines (Lines)
         """
         group = self._file.create_group("lines")
-        shape = (len(lines), )
+        shape = (len(lines),)
 
         # Datasets that match directly to a lines attribute:
         group.create_dataset("id", data=lines.id)

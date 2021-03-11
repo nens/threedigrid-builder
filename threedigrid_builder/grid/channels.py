@@ -74,7 +74,12 @@ class Channels:
         return nodes, segment_size
 
     def get_lines(
-        self, connection_nodes, nodes, line_id_counter, segment_size=None, connection_node_offset=0
+        self,
+        connection_nodes,
+        nodes,
+        line_id_counter,
+        segment_size=None,
+        connection_node_offset=0,
     ):
         """Compute the grid (nodes + lines) for the channels.
 
@@ -83,6 +88,7 @@ class Channels:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             nodes (Nodes): additional channel nodes (see interpolate_nodes)
+            line_id_counter (iterable): an iterable yielding integers
             segment_size (ndarray of float): the segment size of each channel
               (see interpolate_nodes)
             connection_node_offset (int): offset to give connection node
