@@ -1,6 +1,7 @@
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import LineType
 
 import numpy as np
 import pygeos
@@ -26,6 +27,82 @@ class GridAdminOut(OutputInterface):
 
     def __exit__(self, *args, **kwargs):
         self._file.close()
+
+    def write_meta(self, quadtree, nodes, lines):
+        """Write the "grid_coordinate_attributes" group in the gridadmin file.
+
+        Raises a ValueError if it exists already.
+        Args:
+            nodes (Nodes)
+            lines (Lines)
+        """
+        group = self._file.create_group("meta")
+
+        n1dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_NO_STORAGE)
+        n1dtot += np.count_nonzero(nodes.node_type == NodeType.NODE_1D_STORAGE)
+
+        line_types_1d = [
+            LineType.LINE_1D_EMBEDDED,
+            LineType.LINE_1D_ISOLATED,
+            LineType.LINE_1D_CONNECTED,
+            LineType.LINE_1D_LONG_CRESTED,
+            LineType.LINE_1D_SHORT_CRESTED,
+            LineType.LINE_1D_DOUBLE_CONNECTED,
+        ]
+        l1dtot = sum([np.count_nonzero(lines.line_type == x) for x in line_types_1d])
+
+        line_types_1d2d = [
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
+            LineType.LINE_1D2D_POSSIBLE_BREACH,
+            LineType.LINE_1D2D_ACTIVE_BREACH,
+        ]
+        infl1d = sum([np.count_nonzero(lines.line_type == x) for x in line_types_1d2d])
+
+        line_types_1d2d_gw = [
+            LineType.LINE_1D2D_GROUNDWATER_57,
+            LineType.LINE_1D2D_GROUNDWATER_58,
+        ]
+        ingrw1d = sum(
+            [np.count_nonzero(lines.line_type == x) for x in line_types_1d2d_gw]
+        )
+
+        group.create_dataset("n2dtot", data=quadtree.n_cells)
+        group.create_dataset("n2dobc", data=0)
+        group.create_dataset("ngr2bc", data=0)
+        group.create_dataset("n1dtot", data=n1dtot)
+        group.create_dataset("n1dobc", data=0)
+
+        group.create_dataset("liutot", data=quadtree.n_lines[0])
+        group.create_dataset("livtot", data=quadtree.n_lines[1])
+
+        group.create_dataset("lgutot", data=0)
+        group.create_dataset("lgvtot", data=0)
+
+        group.create_dataset("l1dtot", data=l1dtot)
+        group.create_dataset("infl1d", data=infl1d)
+        group.create_dataset("ingrw1d", data=ingrw1d)
+
+        group.create_dataset("jap1d", data=0)
+
+    def write_quadtree(self, quadtree):
+        """Write the "grid_coordinate_attributes" group in the gridadmin file.
+
+        Raises a ValueError if it exists already.
+        Args:
+            quadtree (QuadTree)
+        """
+
+        group = self._file.create_group("grid_coordinate_attributes")
+        group.create_dataset("lgrmin", data=quadtree.lgrmin)
+        group.create_dataset("dx", data=quadtree.dxp)
+        group.create_dataset("kmax", data=quadtree.kmax)
+        group.create_dataset("mmax", data=quadtree.mmax)
+        group.create_dataset("nmax", data=quadtree.nmax)
+        group.create_dataset("x0p", data=quadtree.bbox[0])
+        group.create_dataset("y0p", data=quadtree.bbox[1])
 
     def write_nodes(self, nodes, pixel_size, **kwargs):
         """Write the "nodes" group in the gridadmin file
@@ -111,7 +188,6 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("width", shape, dtype=float)  # but no length?
 
         # unknown
-        group.create_dataset("seq_id", data=nodes.id)
         group.create_dataset("sumax", shape, dtype=float)
 
     def write_lines(self, lines, **kwargs):
