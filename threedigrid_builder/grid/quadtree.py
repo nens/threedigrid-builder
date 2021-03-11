@@ -138,8 +138,13 @@ class QuadTree:
         # Create all line array for filling in external Fortran routine
         total_lines = self.n_lines[0] + self.n_lines[1]
         id_l = itertools.islice(line_id_counter, total_lines)
+
         # Line type is always openwater at first init
-        line_type = np.full((total_lines,), LineType.LINE_2D, dtype="O", order="F")
+        line_type = np.empty((total_lines,), dtype="O", order="F")
+        line_type[0:self.n_lines[0]] = LineType.LINE_2D_U
+        line_type[self.n_lines[0]:self.n_lines[0] + self.n_lines[1]] = LineType.LINE_2D_V
+
+        # Node connection array
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
 
         set_2d_computational_nodes_lines(

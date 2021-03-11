@@ -54,7 +54,6 @@ def h5_out():
         ("node_type", (3,), "int32"),
         ("pixel_coords", (4, 3), "int32"),
         ("pixel_width", (3,), "int32"),
-        ("seq_id", (3,), "int32"),
         ("shape", (3,), "|S4"),
         ("storage_area", (3,), "|S32"),
         ("sumax", (3,), "float64"),

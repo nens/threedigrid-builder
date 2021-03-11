@@ -40,6 +40,8 @@ class LineType(IntEnum):
     LINE_1D2D_ACTIVE_BREACH = 56
     LINE_1D2D_GROUNDWATER_57 = 57
     LINE_1D2D_GROUNDWATER_58 = 58  # diff to 57?
+    LINE_2D_U = 98
+    LINE_2D_V = 99
     LINE_2D = 100
     LINE_2D_OBSTACLE = 101  # levee
     LINE_2D_VERTICAL = 150
