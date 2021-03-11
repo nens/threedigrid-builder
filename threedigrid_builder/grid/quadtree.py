@@ -17,14 +17,26 @@ __all__ = ["QuadTree"]
 
 class QuadTree:
     """Defines active cell levels for computational grid."""
+    lgrmin: int
+    kmax: int
+    mmax: int
+    nmax: int
+    dx: float
+    bbox: float
+    lg: int
+    quad_idx: int
 
     def __init__(self, subgrid_meta, num_refine_levels, min_gridsize, refinements):
 
-        self._lgrmin = min_gridsize / subgrid_meta["pixel_size"]
-        self._kmax = num_refine_levels
-        self._mmax = np.empty((self.kmax,), dtype=np.int32, order="F")
-        self._nmax = np.empty((self.kmax,), dtype=np.int32, order="F")
-        self._dx = np.empty((self.kmax,), dtype=np.float64, order="F")
+        self.lgrmin = min_gridsize / subgrid_meta["pixel_size"]
+        # Maximum number of active grid levels in quadtree.
+        self.kmax = num_refine_levels
+        # Array with cell widths at every active grid level [0:kmax]
+        self.mmax = np.empty((self.kmax,), dtype=np.int32, order="F")
+        # Array with row dimensions of every active grid level [0:kmax].
+        self.nmax = np.empty((self.kmax,), dtype=np.int32, order="F")
+        # Array with cell widths at every active grid level [0:kmax].
+        self.dx = np.empty((self.kmax,), dtype=np.float64, order="F")
 
         lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
 
@@ -38,9 +50,9 @@ class QuadTree:
         )
 
         # Calculate grid level dimensions.
-        self._mmax[:] = max_large_cells_col * lvl_multiplr
-        self._nmax[:] = max_large_cells_row * lvl_multiplr
-        self._dx[:] = self._lgrmin * lvl_multiplr[::-1] * subgrid_meta["pixel_size"]
+        self.mmax[:] = max_large_cells_col * lvl_multiplr
+        self.nmax[:] = max_large_cells_row * lvl_multiplr
+        self.dx[:] = self.lgrmin * lvl_multiplr[::-1] * subgrid_meta["pixel_size"]
         self.bbox = np.array(subgrid_meta["bbox"])
 
         # Array with dimensions of smallest active grid level and contains
@@ -51,7 +63,8 @@ class QuadTree:
 
         if refinements is not None:
             self._apply_refinements(refinements)
-
+        # Array with dimensions of smallest active grid level and contains
+        # idx of active grid level for each quadtree cell.
         self.quad_idx = np.empty(
             (self.mmax[0], self.nmax[0]), dtype=np.int32, order="F"
         )
@@ -72,33 +85,7 @@ class QuadTree:
     @property
     def min_cell_pixels(self):
         """Returns minimum number of pixels in smallles computational_cell."""
-        return self._lgrmin
-
-    @property
-    def kmax(self):
-        """Returns maximum number of active grid levels in quadtree."""
-        return self._kmax
-
-    @property
-    def mmax(self):
-        """Returns array with column dimensions of every
-        active grid level [0:kmax].
-        """
-        return self._mmax
-
-    @property
-    def nmax(self):
-        """Returns array with row dimensions of every
-        active grid level [0:kmax].
-        """
-        return self._nmax
-
-    @property
-    def dx(self):
-        """Returns array with cell widths at every
-        active grid level [0:kmax].
-        """
-        return self._dx
+        return self.lgrmin
 
     def _apply_refinements(self, refinements):
         """Set active grid levels for based on refinement dict and
