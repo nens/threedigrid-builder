@@ -17,6 +17,7 @@ __all__ = ["QuadTree"]
 
 class QuadTree:
     """Defines active cell levels for computational grid."""
+
     lgrmin: int
     kmax: int
     mmax: int

@@ -53,13 +53,13 @@ class Grid:
             - nodes.bounds: node bounds
             - nodes.node_type: Node_type (initially NODE_2D_OPEN_WATER)
             - nodes.nodk: Grid refinement level of node
-            - nodes.nodm: x-coordinate of node at grid refimenent level nodk
-            - nodes.nodn: y-coordinate of node at grid refimenent level nodk
+            - nodes.nodm: horizontal index of node at grid refinement level nodk
+            - nodes.nodn: vertical index of node at grid refinement level nodk
             - lines.id: ids generated based on counter
             - lines.line: lines between connecting nodes.
             - lines.lik:  Grid refinement level of line (smallest at refinements.)
-            - lines.lim:  x-coordinate of line at grid refimenent level lik
-            - lines.lin:  y-coordinate of line at grid refimenent level lik
+            - lines.lim:  horizontal index of line at grid refimenent level lik
+            - lines.lin:  vertical index line at grid refimenent level lik
         """
 
         nodes, lines = quadtree.get_nodes_lines(

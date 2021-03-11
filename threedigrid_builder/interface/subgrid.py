@@ -61,7 +61,7 @@ class Subgrid:
         )
         self._height = window.height
         self._width = window.width
-        left = (dem.bounds.left + window.col_off * self.pixel_size,)
+        left = dem.bounds.left + window.col_off * self.pixel_size
         top = dem.bounds.top + window.row_off * -self.pixel_size
         self._bbox = (
             left,
