@@ -87,8 +87,9 @@ def test_get_lines(connection_nodes, two_channels):
     lines = two_channels.get_lines(
         connection_nodes,
         nodes,
-        connection_node_offset=100,
+        itertools.count(start=0),
         segment_size=np.array([23, 101]),
+        connection_node_offset=100,
     )
 
     expected_line = [(100, 10), (10, 103), (101, 11), (11, 12), (12, 102)]
@@ -110,7 +111,7 @@ def test_get_lines(connection_nodes, two_channels):
 )
 def test_get_lines_one_channel(channel_idx, expected, connection_nodes, one_channel):
     nodes = Nodes(id=range(4, 4 + len(channel_idx)), content_pk=channel_idx)
-    lines = one_channel.get_lines(connection_nodes, nodes)
+    lines = one_channel.get_lines(connection_nodes, nodes, itertools.count(start=0))
 
     assert_array_equal(lines.line, expected)
 
@@ -130,6 +131,6 @@ def test_get_lines_one_channel(channel_idx, expected, connection_nodes, one_chan
 def test_get_lines_two_channels(channel_idx, expected, connection_nodes, two_channels):
     nodes = Nodes(id=range(4, 4 + len(channel_idx)), content_pk=channel_idx)
 
-    lines = two_channels.get_lines(connection_nodes, nodes)
+    lines = two_channels.get_lines(connection_nodes, nodes, itertools.count(start=0))
 
     assert_array_equal(lines.line, expected)

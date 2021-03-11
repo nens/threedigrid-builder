@@ -61,13 +61,13 @@ class Subgrid:
         )
         self._height = window.height
         self._width = window.width
-        left = dem.bounds.left + window.col_off * self.pixel_size,
+        left = dem.bounds.left + window.col_off * self.pixel_size
         top = dem.bounds.top + window.row_off * -self.pixel_size
         self._bbox = (
             left,
             top + window.height * -self.pixel_size,
             left + window.width * self.pixel_size,
-            top
+            top,
         )
         self._i_off = window.col_off
         self._j_off = dem.height - window.row_off - window.height
@@ -94,8 +94,7 @@ class Subgrid:
         return data
 
     def get_meta(self):
-        """Return meta information of subgrid from raster.
-        """
+        """Return meta information of subgrid from raster."""
         return {
             "pixel_size": self.pixel_size,
             "width": self.width,

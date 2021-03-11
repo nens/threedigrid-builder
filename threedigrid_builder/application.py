@@ -15,17 +15,19 @@ from threedigrid_builder.interface import Subgrid
 import itertools
 
 
-def get_1d_grid(path):
+def get_1d_grid(path, node_id_start=0, line_id_start=0):
     """Compute interpolated channel nodes"""
     db = SQLite(path)
 
     # the offsets of the node ids are controlled from here
     # for now, we have ConnectionNodes - ChannelNodes:
     connection_nodes = db.get_connection_nodes()
-    counter = itertools.count()
+
+    node_id_counter = itertools.count(start=node_id_start)
+    line_id_counter = itertools.count(start=line_id_start)
 
     grid = Grid.from_connection_nodes(
-        connection_nodes=connection_nodes, node_id_counter=counter
+        connection_nodes=connection_nodes, node_id_counter=node_id_counter
     )
 
     channels = db.get_channels()
@@ -33,7 +35,9 @@ def get_1d_grid(path):
         connection_nodes=connection_nodes,
         channels=channels,
         global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_counter=counter,
+        node_id_counter=line_id_counter,
+        line_id_counter=line_id_counter,
+        connection_node_offset=grid.nodes.id[0],
     )
 
     cross_section_locations = db.get_cross_section_locations()
@@ -44,8 +48,10 @@ def get_1d_grid(path):
 
 
 def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
-    """Make 2D computational grid
-    """
+    """Make 2D computational grid"""
+
+    node_counter = itertools.count()
+    line_counter = itertools.count()
 
     subgrid = Subgrid(dem_path, model_area=model_area_path)
     subgrid_meta = subgrid.get_meta()
@@ -58,11 +64,17 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         db.global_settings["grid_space"],
         refinements,
     )
-    grid = Grid.from_quadtree(quadtree)
+    grid = Grid.from_quadtree(
+        quadtree=quadtree,
+        subgrid_meta=subgrid_meta["area_mask"],
+        node_id_counter=node_counter,
+        line_id_counter=line_counter,
+    )
 
     grid.finalize(
         epsg_code=db.global_settings["epsg_code"], pixel_size=subgrid_meta["pixel_size"]
     )
+
     return grid
 
 

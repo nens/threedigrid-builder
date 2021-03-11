@@ -36,11 +36,35 @@ class Grid:
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
-    def from_quadtree(cls, quadtree, subgrid_meta):
+    def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
         """Construct the 2D grid based on the quadtree object.
+
+        Args:
+            quadtree (QuadTree): grid of refinement levels and active cell idx
+              are used.
+            area_mask (numpy.ndarray) : Array with raster of active pixels.
+            node_id_counter (iterable): an iterable yielding integers
+            line_id_counter (iterable): an iterable yielding integers
+
+        Returns:
+            Grid with data in the following columns:
+            - nodes.id: ids generated based on counter
+            - nodes.coordinates: node coordinates
+            - nodes.bounds: node bounds
+            - nodes.node_type: Node_type (initially NODE_2D_OPEN_WATER)
+            - nodes.nodk: Grid refinement level of node
+            - nodes.nodm: horizontal index of node at grid refinement level nodk
+            - nodes.nodn: vertical index of node at grid refinement level nodk
+            - lines.id: ids generated based on counter
+            - lines.line: lines between connecting nodes.
+            - lines.lik:  Grid refinement level of line (smallest at refinements.)
+            - lines.lim:  horizontal index of line at grid refimenent level lik
+            - lines.lin:  vertical index line at grid refimenent level lik
         """
 
-        nodes, lines = quadtree.get_nodes_lines(subgrid_meta["area_mask"])
+        nodes, lines = quadtree.get_nodes_lines(
+            area_mask, node_id_counter, line_id_counter
+        )
 
         return cls(nodes=nodes, lines=lines)
 
@@ -69,7 +93,13 @@ class Grid:
 
     @classmethod
     def from_channels(
-        cls, connection_nodes, channels, global_dist_calc_points, node_id_counter
+        cls,
+        connection_nodes,
+        channels,
+        global_dist_calc_points,
+        node_id_counter,
+        line_id_counter,
+        connection_node_offset=0,
     ):
         """Construct a grid for the channels
 
@@ -78,6 +108,9 @@ class Grid:
             channels (Channels)
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
+            line_id_counter (iterable): an iterable yielding integers
+            connection_node_offset (int): offset to give connection node
+              indices in the returned lines.line. Default 0.
 
         Returns:
             Grid with data in the following columns:
@@ -86,7 +119,7 @@ class Grid:
             - nodes.content_type: ContentType.TYPE_V2_CHANNEL
             - nodes.content_pk: the id of the Channel from which this node originates
             - lines.id: 0-based counter generated here
-            - lines.line: lines between connetion nodes and added channel
+            - lines.line: lines between connection nodes and added channel
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
@@ -94,7 +127,13 @@ class Grid:
         nodes, segment_size = channels.interpolate_nodes(
             node_id_counter, global_dist_calc_points
         )
-        lines = channels.get_lines(connection_nodes, nodes, segment_size=segment_size)
+        lines = channels.get_lines(
+            connection_nodes,
+            nodes,
+            line_id_counter,
+            segment_size=segment_size,
+            connection_node_offset=connection_node_offset,
+        )
         return cls(nodes, lines)
 
     def set_channel_weights(self, locations, channels):

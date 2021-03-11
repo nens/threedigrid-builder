@@ -1,2 +1,2 @@
-from .quadtree import * #NOQA
-from .cells import * #NOQA
+from .quadtree import *  # NOQA
+from .cells import *  # NOQA
