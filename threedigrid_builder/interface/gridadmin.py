@@ -28,7 +28,7 @@ class GridAdminOut(OutputInterface):
     def __exit__(self, *args, **kwargs):
         self._file.close()
 
-    def write_attrs(self, attributes):
+    def write_attrs(self, nodes, lines, epsg_code):
         """Write the "attrs" of the gridadmin file.
 
         Raises a ValueError if it exists already.
@@ -36,8 +36,53 @@ class GridAdminOut(OutputInterface):
             attrs of grid. (dict)
         """
 
-        for k, v in attributes.items():
-            self._file.attrs.create(k, v)
+        self._file.attrs.create("epsg_code", epsg_code)
+
+        is_1d = (self.nodes.node_type == NodeType.NODE_1D_NO_STORAGE) + (
+            self.nodes.node_type == NodeType.NODE_1D_STORAGE
+        )
+        if is_1d.any():
+            extent_1d = np.array(
+                [
+                    np.amin(self.nodes.coordinates[is_1d, 0]),
+                    np.amin(self.nodes.coordinates[is_1d, 1]),
+                    np.amax(self.nodes.coordinates[is_1d, 0]),
+                    np.amax(self.nodes.coordinates[is_1d, 1]),
+                ]
+            )
+            self._file.attrs.create("extent_1d", extent_1d)
+            self._file.attrs.create("has_1d", 1)
+        else:
+            self._file.attrs.create(
+                "extent_1d", np.array([-9999.0, -9999.0, -9999.0, -9999.0])
+            )
+            self._file.attrs.create("has_1d", 0)
+
+        is_2d = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+        if is_2d.any:
+            extent_2d = np.array(
+                [
+                    np.amin(self.nodes.coordinates[is_2d, 0]),
+                    np.amin(self.nodes.coordinates[is_2d, 1]),
+                    np.amax(self.nodes.coordinates[is_2d, 0]),
+                    np.amax(self.nodes.coordinates[is_2d, 1]),
+                ]
+            )
+            self._file.attrs.create("extent_2d", extent_2d)
+            self._file.attrs.create("has_2d", 1)
+        else:
+            self._file.attrs.create(
+                "extent_2d", np.array([-9999.0, -9999.0, -9999.0, -9999.0])
+            )
+            self._file.attrs.create("has_2d", 0)
+        self._file.attrs.create("has_interception", 0)
+        self._file.attrs.create("has_pumpstations", 0)
+        self._file.attrs.create("has_simple_infiltration", 0)
+        self._file.attrs.create("model_name", "...")
+        self._file.attrs.create("model_slug", "...")
+        self._file.attrs.create("revision_hash", "...")
+        self._file.attrs.create("revision_nr", 0)
+        self._file.attrs.create("threedigrid_builder_version", 0)
 
     def write_meta(self, meta):
         """Write the "meta" group in the gridadmin file.
@@ -47,21 +92,61 @@ class GridAdminOut(OutputInterface):
             meta attribute of grid. (dict)
         """
         group = self._file.create_group("meta")
-
         NODATA_YET = 0
 
-        group.create_dataset("n2dtot", data=meta["n2dtot"], dtype="i4")
+        n2dtot = np.count_nonzero(self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
+        group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
         group.create_dataset("n2dobc", data=NODATA_YET, dtype="i4")
         group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
-        group.create_dataset("n1dtot", data=meta["n1dtot"], dtype="i4")
+
+        n1dtot = np.count_nonzero(
+            self.nodes.node_type == NodeType.NODE_1D_NO_STORAGE
+        ) + np.count_nonzero(self.nodes.node_type == NodeType.NODE_1D_STORAGE)
+        group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
         group.create_dataset("n1dobc", data=NODATA_YET, dtype="i4")
-        group.create_dataset("liutot", data=meta["liutot"], dtype="i4")
-        group.create_dataset("livtot", data=meta["livtot"], dtype="i4")
+
+        liutot = np.count_nonzero(self.lines.line_type == LineType.LINE_2D_U)
+        group.create_dataset("liutot", data=liutot, dtype="i4")
+        livtot = np.count_nonzero(self.lines.line_type == LineType.LINE_2D_V)
+        group.create_dataset("livtot", data=livtot, dtype="i4")
+
         group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
         group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
-        group.create_dataset("l1dtot", data=meta["l1dtot"], dtype="i4")
-        group.create_dataset("infl1d", data=meta["infl1d"], dtype="i4")
-        group.create_dataset("ingrw1d", data=meta["ingrw1d"], dtype="i4")
+
+        line_types_1d = [
+            LineType.LINE_1D_EMBEDDED,
+            LineType.LINE_1D_ISOLATED,
+            LineType.LINE_1D_CONNECTED,
+            LineType.LINE_1D_LONG_CRESTED,
+            LineType.LINE_1D_SHORT_CRESTED,
+            LineType.LINE_1D_DOUBLE_CONNECTED,
+        ]
+        l1dtot = sum(
+            [np.count_nonzero(self.lines.line_type == x) for x in line_types_1d]
+        )
+        group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
+
+        line_types_1d2d = [
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
+            LineType.LINE_1D2D_POSSIBLE_BREACH,
+            LineType.LINE_1D2D_ACTIVE_BREACH,
+        ]
+        infl1d = sum(
+            [np.count_nonzero(self.lines.line_type == x) for x in line_types_1d2d]
+        )
+        group.create_dataset("infl1d", data=infl1d, dtype="i4")
+
+        line_types_1d2d_gw = [
+            LineType.LINE_1D2D_GROUNDWATER_57,
+            LineType.LINE_1D2D_GROUNDWATER_58,
+        ]
+        ingrw1d = sum(
+            [np.count_nonzero(self.lines.line_type == x) for x in line_types_1d2d_gw]
+        )
+        group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
         group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
 
     def write_quadtree(self, quadtree):

@@ -21,10 +21,7 @@ class Grid:
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
         self.nodes = nodes
         self.lines = lines
-        self.meta = {}  # Grid has meta information based on nodes and lines.
-        self.attrs = (
-            {}
-        )  # Grid has attribute information based on attributes from input.
+        self.epsg_code = None  # Grid is aware of its epsg_code
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -153,102 +150,8 @@ class Grid:
         """
         cross_sections.compute_weights(self.lines, locations, channels)
 
-    def set_meta(self):
-        self.meta["n2dtot"] = np.count_nonzero(
-            self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-        )
-        self.meta["n1dtot"] = np.count_nonzero(
-            self.nodes.node_type == NodeType.NODE_1D_NO_STORAGE
-        ) + np.count_nonzero(self.nodes.node_type == NodeType.NODE_1D_STORAGE)
-
-        self.meta["liutot"] = np.count_nonzero(
-            self.lines.line_type == LineType.LINE_2D_U
-        )
-        self.meta["livtot"] = np.count_nonzero(
-            self.lines.line_type == LineType.LINE_2D_V
-        )
-
-        line_types_1d = [
-            LineType.LINE_1D_EMBEDDED,
-            LineType.LINE_1D_ISOLATED,
-            LineType.LINE_1D_CONNECTED,
-            LineType.LINE_1D_LONG_CRESTED,
-            LineType.LINE_1D_SHORT_CRESTED,
-            LineType.LINE_1D_DOUBLE_CONNECTED,
-        ]
-        self.meta["l1dtot"] = sum(
-            [np.count_nonzero(self.lines.line_type == x) for x in line_types_1d]
-        )
-
-        line_types_1d2d = [
-            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
-            LineType.LINE_1D2D_POSSIBLE_BREACH,
-            LineType.LINE_1D2D_ACTIVE_BREACH,
-        ]
-        self.meta["infl1d"] = sum(
-            [np.count_nonzero(self.lines.line_type == x) for x in line_types_1d2d]
-        )
-
-        line_types_1d2d_gw = [
-            LineType.LINE_1D2D_GROUNDWATER_57,
-            LineType.LINE_1D2D_GROUNDWATER_58,
-        ]
-        self.meta["ingrw1d"] = sum(
-            [np.count_nonzero(self.lines.line_type == x) for x in line_types_1d2d_gw]
-        )
-
-    def set_attributes(self, epsg_code=None):
-
-        self.attrs["epsg_code"] = epsg_code
-
-        is_1d = (self.nodes.node_type == NodeType.NODE_1D_NO_STORAGE) + (
-            self.nodes.node_type == NodeType.NODE_1D_STORAGE
-        )
-        if is_1d.any():
-            extent_1d = np.array(
-                [
-                    np.amin(self.nodes.coordinates[is_1d, 0]),
-                    np.amin(self.nodes.coordinates[is_1d, 1]),
-                    np.amax(self.nodes.coordinates[is_1d, 0]),
-                    np.amax(self.nodes.coordinates[is_1d, 1]),
-                ]
-            )
-            self.attrs["extent_1d"] = extent_1d
-            self.attrs["has_1d"] = 1
-        else:
-            self.attrs["extent_1d"] = np.array([-9999.0, -9999.0, -9999.0, -9999.0])
-            self.attrs["has_1d"] = 0
-
-        is_2d = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-        if is_2d.any:
-            extent_2d = np.array(
-                [
-                    np.amin(self.nodes.coordinates[is_2d, 0]),
-                    np.amin(self.nodes.coordinates[is_2d, 1]),
-                    np.amax(self.nodes.coordinates[is_2d, 0]),
-                    np.amax(self.nodes.coordinates[is_2d, 1]),
-                ]
-            )
-            self.attrs["extent_2d"] = extent_2d
-            self.attrs["has_2d"] = 1
-        else:
-            self.attrs["extent_2d"] = np.array([-9999.0, -9999.0, -9999.0, -9999.0])
-            self.attrs["has_2d"] = 0
-        self.attrs["has_interception"] = 0
-        self.attrs["has_pumpstations"] = 0
-        self.attrs["has_simple_infiltration"] = 0
-        self.attrs["model_name"] = "..."
-        self.attrs["model_slug"] = "..."
-        self.attrs["revision_hash"] = "..."
-        self.attrs["revision_nr"] = 0
-        self.attrs["threedigrid_builder_version"] = 0
-
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
-        self.set_meta()
-        self.set_attributes(epsg_code=epsg_code)
+        self.epsg_code = epsg_code
