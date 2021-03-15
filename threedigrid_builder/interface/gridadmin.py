@@ -28,64 +28,41 @@ class GridAdminOut(OutputInterface):
     def __exit__(self, *args, **kwargs):
         self._file.close()
 
-    def write_meta(self, nodes, lines):
-        """Write the "grid_coordinate_attributes" group in the gridadmin file.
+    def write_attrs(self, attributes):
+        """Write the "attrs" of the gridadmin file.
 
         Raises a ValueError if it exists already.
         Args:
-            nodes (Nodes)
-            lines (Lines)
+            attrs of grid. (dict)
+        """
+
+        for k, v in attributes.items():
+            self._file.attrs.create(k, v)
+
+    def write_meta(self, meta):
+        """Write the "meta" group in the gridadmin file.
+
+        Raises a ValueError if it exists already.
+        Args:
+            meta attribute of grid. (dict)
         """
         group = self._file.create_group("meta")
 
-        n2dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
-        n1dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_NO_STORAGE)
-        n1dtot += np.count_nonzero(nodes.node_type == NodeType.NODE_1D_STORAGE)
+        NODATA_YET = 0
 
-        liutot = np.count_nonzero(lines.line_type == LineType.LINE_2D_U)
-        livtot = np.count_nonzero(lines.line_type == LineType.LINE_2D_V)
-
-        line_types_1d = [
-            LineType.LINE_1D_EMBEDDED,
-            LineType.LINE_1D_ISOLATED,
-            LineType.LINE_1D_CONNECTED,
-            LineType.LINE_1D_LONG_CRESTED,
-            LineType.LINE_1D_SHORT_CRESTED,
-            LineType.LINE_1D_DOUBLE_CONNECTED,
-        ]
-        l1dtot = sum([np.count_nonzero(lines.line_type == x) for x in line_types_1d])
-
-        line_types_1d2d = [
-            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
-            LineType.LINE_1D2D_POSSIBLE_BREACH,
-            LineType.LINE_1D2D_ACTIVE_BREACH,
-        ]
-        infl1d = sum([np.count_nonzero(lines.line_type == x) for x in line_types_1d2d])
-
-        line_types_1d2d_gw = [
-            LineType.LINE_1D2D_GROUNDWATER_57,
-            LineType.LINE_1D2D_GROUNDWATER_58,
-        ]
-        ingrw1d = sum(
-            [np.count_nonzero(lines.line_type == x) for x in line_types_1d2d_gw]
-        )
-
-        group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
-        group.create_dataset("n2dobc", data=0, dtype="i4")
-        group.create_dataset("ngr2bc", data=0, dtype="i4")
-        group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
-        group.create_dataset("n1dobc", data=0, dtype="i4")
-        group.create_dataset("liutot", data=liutot, dtype="i4")
-        group.create_dataset("livtot", data=livtot, dtype="i4")
-        group.create_dataset("lgutot", data=0, dtype="i4")
-        group.create_dataset("lgvtot", data=0, dtype="i4")
-        group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
-        group.create_dataset("infl1d", data=infl1d, dtype="i4")
-        group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
-        group.create_dataset("jap1d", data=0, dtype="i4")
+        group.create_dataset("n2dtot", data=meta["n2dtot"], dtype="i4")
+        group.create_dataset("n2dobc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("n1dtot", data=meta["n1dtot"], dtype="i4")
+        group.create_dataset("n1dobc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("liutot", data=meta["liutot"], dtype="i4")
+        group.create_dataset("livtot", data=meta["livtot"], dtype="i4")
+        group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
+        group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
+        group.create_dataset("l1dtot", data=meta["l1dtot"], dtype="i4")
+        group.create_dataset("infl1d", data=meta["infl1d"], dtype="i4")
+        group.create_dataset("ingrw1d", data=meta["ingrw1d"], dtype="i4")
+        group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
 
     def write_quadtree(self, quadtree):
         """Write the "grid_coordinate_attributes" group in the gridadmin file.
@@ -246,7 +223,7 @@ class GridAdminOut(OutputInterface):
         line_geometries = [coords[a:b].ravel() for a, b in zip(start, end)]
         # The dataset has a special "variable length" dtype
         vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
-        #group.create_dataset("line_geometries", data=line_geometries, dtype=vlen_dtype)
+        group.create_dataset("line_geometries", data=line_geometries, dtype=vlen_dtype)
 
         # can be collected from SQLite, but empty for now:
         group.create_dataset("connection_node_end_pk", shape, dtype="i4")

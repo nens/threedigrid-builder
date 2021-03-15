@@ -71,9 +71,7 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         line_id_counter=line_counter,
     )
 
-    grid.finalize(
-        epsg_code=db.global_settings["epsg_code"], pixel_size=subgrid_meta["pixel_size"]
-    )
+    grid.finalize(epsg_code=db.global_settings["epsg_code"])
 
     return grid, quadtree
 
@@ -86,8 +84,9 @@ def grid_to_gpkg(grid, path):
 
 def grid_to_hdf5(grid, path, quadtree=None):
     with GridAdminOut(path) as out:
-        out.write_meta(grid.nodes, grid.lines)
+        out.write_attrs(grid.attrs)
+        out.write_meta(grid.meta)
         if quadtree is not None:
             out.write_quadtree(quadtree)
-        out.write_nodes(grid.nodes, pixel_size=grid.pixel_size)
-        out.write_lines(grid.lines, epsg_code=grid.epsg_code)
+        out.write_nodes(grid.nodes, pixel_size=0.5)
+        out.write_lines(grid.lines)

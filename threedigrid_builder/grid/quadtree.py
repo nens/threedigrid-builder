@@ -141,8 +141,10 @@ class QuadTree:
 
         # Line type is always openwater at first init
         line_type = np.empty((total_lines,), dtype="O", order="F")
-        line_type[0:self.n_lines[0]] = LineType.LINE_2D_U
-        line_type[self.n_lines[0]:self.n_lines[0] + self.n_lines[1]] = LineType.LINE_2D_V
+        line_type[0 : self.n_lines[0]] = LineType.LINE_2D_U
+        line_type[
+            self.n_lines[0] : self.n_lines[0] + self.n_lines[1]
+        ] = LineType.LINE_2D_V
 
         # Node connection array
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
