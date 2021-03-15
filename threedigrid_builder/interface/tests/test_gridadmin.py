@@ -157,9 +157,9 @@ def test_write_meta(h5_out, dataset, shape, dtype):
         ('has_interception', "i8"),
         ('has_pumpstations', "i8"),
         ('has_simple_infiltration', "i8"),
-        # ('model_name', "S"),  # For later concern.
-        # ('model_slug', "S"),  # For later concern.
-        # ('revision_hash', "S"),  # For later concern.
+        #('model_name', "S"),  # For later concern.
+        #('model_slug', "S"),  # For later concern.
+        #('revision_hash', "S"),  # For later concern.
         ('revision_nr', "i8"),
         ('threedigrid_builder_version', "i8"),
     ],

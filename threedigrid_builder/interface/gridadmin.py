@@ -78,9 +78,9 @@ class GridAdminOut(OutputInterface):
         self._file.attrs.create("has_interception", 0)
         self._file.attrs.create("has_pumpstations", 0)
         self._file.attrs.create("has_simple_infiltration", 0)
-        self._file.attrs.create("model_name", "...")
-        self._file.attrs.create("model_slug", "...")
-        self._file.attrs.create("revision_hash", "...")
+        self._file.attrs.create("model_name", b"...")
+        self._file.attrs.create("model_slug", b"...")
+        self._file.attrs.create("revision_hash", b"...")
         self._file.attrs.create("revision_nr", 0)
         self._file.attrs.create("threedigrid_builder_version", 0)
 
