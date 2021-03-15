@@ -139,7 +139,9 @@ class GridAdminOut(OutputInterface):
             LineType.LINE_1D2D_GROUNDWATER_57,
             LineType.LINE_1D2D_GROUNDWATER_58,
         ]
-        ingrw1d = sum([np.count_nonzero(lines.line_type == x) for x in line_types_1d2d_gw])
+        ingrw1d = sum(
+            [np.count_nonzero(lines.line_type == x) for x in line_types_1d2d_gw]
+        )
         group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
         group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
 
