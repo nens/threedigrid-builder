@@ -84,8 +84,8 @@ def grid_to_gpkg(grid, path):
 
 def grid_to_hdf5(grid, path, quadtree=None):
     with GridAdminOut(path) as out:
-        out.write_attrs(grid.attrs)
-        out.write_meta(grid.meta)
+        out.write_attrs(grid.nodes, grid.lines, epsg_code=grid.epsg_code)
+        out.write_meta(grid.nodes, grid.lines)
         if quadtree is not None:
             out.write_quadtree(quadtree)
         out.write_nodes(grid.nodes, pixel_size=0.5)
