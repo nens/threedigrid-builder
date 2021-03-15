@@ -29,6 +29,8 @@ def h5_out():
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
         path = tmpfile.name
         with GridAdminOut(path) as out:
+            out.write_attrs(nodes, lines, epsg_code=28992)
+            out.write_meta(nodes, lines)
             out.write_nodes(nodes, pixel_size=0.5)
             out.write_lines(lines)
 
@@ -121,3 +123,46 @@ def test_write_nodes(h5_out, dataset, shape, dtype):
 def test_write_lines(h5_out, dataset, shape, dtype):
     assert h5_out["lines"][dataset].shape == shape
     assert h5_out["lines"][dataset].dtype == np.dtype(dtype)
+
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ('infl1d', (), "i4"),
+        ('ingrw1d', (), "i4"),
+        ('jap1d', (), "i4"),
+        ('l1dtot', (), "i4"),
+        ('lgutot', (), "i4"),
+        ('lgvtot', (), "i4"),
+        ('liutot', (), "i4"),
+        ('livtot', (), "i4"),
+        ('n1dobc', (), "i4"),
+        ('n1dtot', (), "i4"),
+        ('n2dobc', (), "i4"),
+        ('n2dtot', (), "i4"),
+        ('ngr2bc', (), "i4"),
+    ],
+)
+def test_write_meta(h5_out, dataset, shape, dtype):
+    assert h5_out["meta"][dataset].shape == shape
+    assert h5_out["meta"][dataset].dtype == np.dtype(dtype)
+
+@pytest.mark.parametrize(
+    "attr,dtype",
+    [
+        ('epsg_code', "i8"),
+        ('has_1d', "i8"),
+        ('has_2d', "i8"),
+        ('extent_1d', "float64"),
+        ('extent_2d', "float64"),
+        ('has_interception', "i8"),
+        ('has_pumpstations', "i8"),
+        ('has_simple_infiltration', "i8"),
+        # ('model_name', "S"),  # For later concern.
+        # ('model_slug', "S"),  # For later concern.
+        # ('revision_hash', "S"),  # For later concern.
+        ('revision_nr', "i8"),
+        ('threedigrid_builder_version', "i8"),
+    ],
+)
+def test_write_attrs(h5_out, attr, dtype):
+    assert h5_out.attrs[attr].dtype == np.dtype(dtype)
