@@ -99,6 +99,7 @@ module m_cells
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3)+1, mn(2)) 
+                    ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ nod - 1, neighbour - 1/)
                 endif
             else
@@ -106,6 +107,7 @@ module m_cells
                     l_u = l_u + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(3)+1, mn(2)) 
+                        ! We substract 1 from index to comply with C/python indexing.
                         line(l_u,:) = (/ nod - 1, neighbour - 1 /)
                     endif
                 endif
@@ -113,6 +115,7 @@ module m_cells
                     l_u = l_u + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(3)+1,mn(4))
+                        ! We substract 1 from index to comply with C/python indexing.
                         line(l_u,:) = (/ nod - 1, neighbour - 1 /)
                     endif
                 endif
@@ -124,6 +127,7 @@ module m_cells
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1)-1, mn(2))
+                    ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ neighbour - 1, nod - 1 /)
                 endif
             endif
@@ -131,6 +135,7 @@ module m_cells
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1)-1, mn(4))
+                    ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ neighbour - 1, nod - 1 /)
                 endif
             endif
@@ -148,6 +153,7 @@ module m_cells
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(4)+1)
+                    ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ nod - 1, neighbour - 1 /)
                 endif
             else
@@ -155,6 +161,7 @@ module m_cells
                     l_v = l_v + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(1), mn(4)+1)
+                        ! We substract 1 from index to comply with C/python indexing.
                         line(l_v,:) = (/ nod - 1, neighbour - 1 /)
                     endif
                 endif
@@ -162,6 +169,7 @@ module m_cells
                     l_v = l_v + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(3), mn(4)+1)
+                        ! We substract 1 from index to comply with C/python indexing.
                         line(l_v,:) = (/ nod - 1, neighbour - 1 /)
                     endif
                 endif
@@ -173,6 +181,7 @@ module m_cells
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(2)-1)
+                    ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ neighbour - 1, nod - 1 /)
                 endif
             endif
@@ -180,6 +189,7 @@ module m_cells
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3), mn(2)-1)
+                    ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ neighbour - 1, nod - 1 /)
                 endif
             endif
