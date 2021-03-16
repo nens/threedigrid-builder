@@ -103,6 +103,7 @@ class SQLite:
             )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["calculation_type"] -= 100  # maps (100, 101, 102, 105) to (0, 1, 2, 5)
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
