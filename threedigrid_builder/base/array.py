@@ -116,6 +116,10 @@ class ArrayDataClass:
             setattr(self, name, arr)
 
         # call the init of the wrapped class
+        if len(kwargs) > 0:
+            raise TypeError(
+                f"{self.__class__.__name__} got unexpected arguments {list(kwargs)}"
+            )
         super().__init__(**kwargs)
 
     def __repr__(self):

@@ -52,6 +52,16 @@ def test_get_connection_nodes(db):
     assert connection_nodes.storage_area[39] == 0.64
     assert np.isnan(connection_nodes.storage_area[49])
     assert connection_nodes.code[494] == ""
+    # manhole fields
+    assert connection_nodes.manhole_id[10] == 11
+    assert connection_nodes.manhole_id[100] == -9999
+    assert connection_nodes.calculation_type[1] == 2
+    assert connection_nodes.manhole_indicator[6] == 1
+    assert connection_nodes.bottom_level[9] == -3.51
+    assert connection_nodes.drain_level[1] == -0.82
+    assert connection_nodes.surface_level[35] == -0.54
+    assert connection_nodes.manhole_shape[40] == "00"
+    assert connection_nodes.manhole_width[32] == 0.8
 
 
 def test_get_cross_section_definitions(db):

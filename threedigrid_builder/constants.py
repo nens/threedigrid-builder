@@ -85,3 +85,10 @@ class CrossSectionShape(IntEnum):
     EGG = 3
     TABULATED_RECTANGLE = 5
     TABULATED_TRAPEZIUM = 6
+
+
+@unique
+class ManholeIndicator(IntEnum):
+    INSPECTION = 0
+    OUTLET = 1
+    PUMP = 2
