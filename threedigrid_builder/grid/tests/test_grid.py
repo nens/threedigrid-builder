@@ -1,11 +1,9 @@
-from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
 
-import itertools
 import numpy as np
 import pygeos
 import pytest
@@ -47,15 +45,19 @@ def test_from_quadtree():
     assert grid.lines is lines
 
 
-def test_from_connection_nodes(connection_nodes):
-    counter = itertools.count(start=2)
+def test_from_connection_nodes():
+    connection_nodes = mock.Mock()
+    counter = mock.Mock()
+    nodes = Nodes(id=[])
+
+    connection_nodes.get_nodes.return_value = nodes
 
     grid = Grid.from_connection_nodes(connection_nodes, counter)
 
-    assert_array_equal(grid.nodes.id, [2, 3])
-    assert next(counter) == 4
-    assert_array_equal(grid.nodes.coordinates, [(0, 0), (10, 0)])
-    assert_array_equal(grid.nodes.content_pk, [1, 3])
+    connection_nodes.get_nodes.assert_called_with(counter)
+
+    assert grid.nodes is nodes
+    assert len(grid.lines) == 0
 
 
 def test_from_channels():

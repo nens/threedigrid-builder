@@ -1,13 +1,6 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import cross_sections
-
-import itertools
-import numpy as np
-import pygeos
 
 
 __all__ = ["Grid"]
@@ -94,16 +87,11 @@ class Grid:
             Grid with data in the following columns:
             - nodes.id: ids generated based on counter
             - nodes.coordinates: node coordinates (from self.the_geom)
-            - nodes.content_type: ContentType.TYPE_V2_CONNECTION_NODES
+            - nodes.content_type: TYPE_V2_CONNECTION_NODES
             - nodes.content_pk: the user-supplied id
+            - nodes.node_type: NODE_1D_NO_STORAGE / NODE_1D_STORAGE
         """
-        nodes = Nodes(
-            id=itertools.islice(node_id_counter, len(connection_nodes)),
-            coordinates=pygeos.get_coordinates(connection_nodes.the_geom),
-            content_type=ContentType.TYPE_V2_CONNECTION_NODES,
-            content_pk=connection_nodes.id,
-        )
-        return cls(nodes, Lines(id=[]))
+        return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
 
     @classmethod
     def from_channels(
@@ -132,6 +120,7 @@ class Grid:
             - nodes.coordinates
             - nodes.content_type: ContentType.TYPE_V2_CHANNEL
             - nodes.content_pk: the id of the Channel from which this node originates
+            - lines.node_type: NODE_1D_NO_STORAGE
             - lines.id: 0-based counter generated here
             - lines.line: lines between connection nodes and added channel
               nodes. The indices are offset using the respective parameters.
