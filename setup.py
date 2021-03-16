@@ -71,7 +71,7 @@ install_requires = [
     "pyproj",
     "condenser[geo]",
     "rasterio",
-    "sqlalchemy~=1.4",
+    "sqlalchemy~=1.4.*",
 ]
 
 test_requires = ["pytest"]
