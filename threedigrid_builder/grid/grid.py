@@ -70,8 +70,8 @@ class Grid:
         )
 
         quadtree_statistics = {
-            "lgrmin": np.array([quadtree.lgrmin]),
-            "kmax": np.array([quadtree.kmax]),
+            "lgrmin": quadtree.lgrmin,
+            "kmax": quadtree.kmax,
             "mmax": quadtree.mmax,
             "nmax": quadtree.nmax,
             "dx": quadtree.dx,
