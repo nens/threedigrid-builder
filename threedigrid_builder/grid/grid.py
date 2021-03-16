@@ -1,9 +1,12 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import cross_sections
 
 import itertools
+import numpy as np
 import pygeos
 
 
@@ -11,15 +14,15 @@ __all__ = ["Grid"]
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines):
+    def __init__(self, nodes: Nodes, lines: Lines, quadtree_statistics=None):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
         self.nodes = nodes
         self.lines = lines
-        self.epsg_code = None  # a Grid is aware of its projection
-        self.pixel_size = None  # a Grid is aware of the pixel size in the DEM
+        self.epsg_code = None  # Grid is aware of its epsg_code
+        self.quadtree_statistics = quadtree_statistics
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -66,7 +69,18 @@ class Grid:
             area_mask, node_id_counter, line_id_counter
         )
 
-        return cls(nodes=nodes, lines=lines)
+        quadtree_statistics = {
+            "lgrmin": quadtree.lgrmin,
+            "kmax": quadtree.kmax,
+            "mmax": quadtree.mmax,
+            "nmax": quadtree.nmax,
+            "dx": quadtree.dx,
+            "bbox": quadtree.bbox
+        }
+
+        return cls(
+            nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics
+        )
 
     @classmethod
     def from_connection_nodes(cls, connection_nodes, node_id_counter):
@@ -190,9 +204,8 @@ class Grid:
         - structures (TBD)
         """
 
-    def finalize(self, epsg_code=None, pixel_size=None):
+    def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.epsg_code = epsg_code
-        self.pixel_size = pixel_size
