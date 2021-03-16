@@ -29,7 +29,7 @@ class QuadTree:
 
     def __init__(self, subgrid_meta, num_refine_levels, min_gridsize, refinements):
 
-        self.lgrmin = min_gridsize / subgrid_meta["pixel_size"]
+        self.lgrmin = int(min_gridsize / subgrid_meta["pixel_size"])
         # Maximum number of active grid levels in quadtree.
         self.kmax = num_refine_levels
         # Array with cell widths at every active grid level [0:kmax]
@@ -38,6 +38,7 @@ class QuadTree:
         self.nmax = np.empty((self.kmax,), dtype=np.int32, order="F")
         # Array with cell widths at every active grid level [0:kmax].
         self.dx = np.empty((self.kmax,), dtype=np.float64, order="F")
+        self.pixel_size = subgrid_meta["pixel_size"]
 
         lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
 
@@ -140,8 +141,9 @@ class QuadTree:
         id_l = itertools.islice(line_id_counter, total_lines)
 
         # Line type is always openwater at first init
-        line_type = np.empty((total_lines,), dtype="O", order="F")
-        line_type[0 : self.n_lines[0]] = LineType.LINE_2D_U
+        line_type = np.full(
+            (total_lines,), LineType.LINE_2D_U, dtype="i4", order="F"
+        )
         line_type[
             self.n_lines[0] : self.n_lines[0] + self.n_lines[1]
         ] = LineType.LINE_2D_V

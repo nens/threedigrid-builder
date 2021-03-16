@@ -14,7 +14,7 @@ __all__ = ["Grid"]
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines):
+    def __init__(self, nodes: Nodes, lines: Lines, quadtree_statistics=None):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
@@ -22,6 +22,7 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.epsg_code = None  # Grid is aware of its epsg_code
+        self.quadtree_statistics = quadtree_statistics
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -68,7 +69,18 @@ class Grid:
             area_mask, node_id_counter, line_id_counter
         )
 
-        return cls(nodes=nodes, lines=lines)
+        quadtree_statistics = {
+            "lgrmin": np.array([quadtree.lgrmin]),
+            "kmax": np.array([quadtree.kmax]),
+            "mmax": quadtree.mmax,
+            "nmax": quadtree.nmax,
+            "dx": quadtree.dx,
+            "bbox": quadtree.bbox
+        }
+
+        return cls(
+            nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics
+        )
 
     @classmethod
     def from_connection_nodes(cls, connection_nodes, node_id_counter):
