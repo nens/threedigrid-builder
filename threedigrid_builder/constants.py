@@ -6,7 +6,7 @@ from enum import unique
 class CalculationType(IntEnum):
     BOUNDARY_NODE = -1
     EMBEDDED = 0
-    STANDALONE = 1
+    ISOLATED = 1
     CONNECTED = 2
     BROAD_CRESTED = 3  # only orifices + weirs, corresponds
     SHORT_CRESTED = 4  # only orifices + weirs

@@ -25,7 +25,7 @@ def one_channel():
         code=np.array(["one"]),
         connection_node_start_id=np.array([21]),
         connection_node_end_id=np.array([42]),
-        calculation_type=np.array([101]),
+        calculation_type=np.array([2]),
     )
 
 
@@ -40,7 +40,7 @@ def two_channels():
         code=np.array(["one", "two"]),
         connection_node_start_id=np.array([21, 25]),
         connection_node_end_id=np.array([42, 33]),
-        calculation_type=np.array([101, 102]),
+        calculation_type=np.array([2, 1]),
     )
 
 

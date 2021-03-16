@@ -3,6 +3,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import NodeType
 
 import itertools
 import numpy as np
@@ -69,6 +70,7 @@ class Channels:
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
+            node_type=NodeType.NODE_1D_NO_STORAGE,
             content_pk=self.index_to_id(idx),
         )
         return nodes, segment_size
