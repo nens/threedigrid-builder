@@ -41,6 +41,7 @@ class ConnectionNodes:
             - content_type: TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this node originates
             - node_type: NODE_1D_STORAGE or NODE_1D_NO_STORAGE depending on storage_area
+            - calculation_type
         """
         node_type = np.where(
             self.storage_area > 0,
@@ -53,5 +54,6 @@ class ConnectionNodes:
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             content_pk=self.id,
             node_type=node_type,
+            calculation_type=self.calculation_type,
         )
         return nodes

@@ -16,6 +16,7 @@ def connection_nodes():
         id=np.array([1, 3, 4, 9]),
         code=np.array(["one", "two", "", ""]),
         storage_area=np.array([-2, 0, 15, np.nan]),
+        calculation_type=np.array([1, 2, 5, 2]),
     )
 
 
@@ -38,3 +39,4 @@ def test_get_nodes(connection_nodes):
             NodeType.NODE_1D_NO_STORAGE,
         ],
     )
+    assert_array_equal(nodes.calculation_type, [1, 2, 5, 2])

@@ -1,6 +1,7 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType, NodeType
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 
@@ -66,6 +67,7 @@ def test_interpolate_nodes_one_channel(dist, size, expected, one_channel):
     assert_array_equal(nodes.coordinates, expected)
     assert_array_equal(nodes.content_pk, 1)
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
+    assert_array_equal(nodes.calculation_type, 2)
     assert_array_equal(segment_size, size)
 
 
@@ -80,6 +82,7 @@ def test_interpolate_nodes_two_channels(two_channels):
     assert_array_equal(nodes.coordinates, expected_points)
     assert_array_equal(nodes.content_pk, [1, 1, 1, 2, 2, 2])
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
+    assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
     assert_array_equal(segment_size, [5.0, 50.0])
 
 
@@ -100,6 +103,7 @@ def test_get_lines(connection_nodes, two_channels):
     assert_array_equal(lines.line, expected_line)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
+    assert_array_equal(lines.line_type, [2, 2, 1, 1, 1])
     assert_array_equal(lines.ds1d, [23, 23, 101, 101, 101])
 
 

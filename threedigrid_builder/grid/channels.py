@@ -73,6 +73,7 @@ class Channels:
             content_type=ContentType.TYPE_V2_CHANNEL,
             content_pk=self.index_to_id(idx),
             node_type=NodeType.NODE_1D_NO_STORAGE,
+            calculation_type=self.calculation_type[idx],
         )
         return nodes, segment_size
 
@@ -125,6 +126,7 @@ class Channels:
             content_pk=self.id,
             content_type=ContentType.TYPE_V2_CHANNEL,
             ds1d=segment_size,
+            line_type=self.calculation_type,
         )
 
         # if there are no interpolated nodes then we're done
@@ -156,6 +158,7 @@ class Channels:
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,
             ds1d=None if segment_size is None else segment_size[channel_idx],
+            line_type=self.calculation_type[channel_idx],
         )
 
         # Reorder the lines so that they are sorted by [channel_id, position]

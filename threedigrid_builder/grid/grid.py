@@ -1,6 +1,7 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.grid import cross_sections
+from threedigrid_builder.constants import ContentType
 
 
 __all__ = ["Grid"]
@@ -90,6 +91,7 @@ class Grid:
             - nodes.content_type: TYPE_V2_CONNECTION_NODES
             - nodes.content_pk: the user-supplied id
             - nodes.node_type: NODE_1D_NO_STORAGE / NODE_1D_STORAGE
+            - nodes.calculation_type: only if set on Manhole
         """
         return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
 
@@ -121,11 +123,13 @@ class Grid:
             - nodes.content_type: ContentType.TYPE_V2_CHANNEL
             - nodes.content_pk: the id of the Channel from which this node originates
             - nodes.node_type: NODE_1D_NO_STORAGE
+            - nodes.calculation_type: from the channel
             - lines.id: 0-based counter generated here
             - lines.line: lines between connection nodes and added channel
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
+            - lines.line_type: from the channel's calculation_type
         """
         nodes, segment_size = channels.interpolate_nodes(
             node_id_counter, global_dist_calc_points
@@ -151,29 +155,20 @@ class Grid:
         """
         cross_sections.compute_weights(self.lines, locations, channels)
 
-    def set_1d_types(self, connection_nodes, channels):
-        """Set the calculation types for 1D nodes and lines
+    def set_calculation_types(self, connection_nodes, channels):
+        """Set the calculation types for connection nodes that do not yet have one.
 
-        The types are based on:
-        1. line_type of channel lines
-          - channel.calculation_type
-        2. calculation_type of interpolated channel nodes
-          - channel.calculation_type
-        3. connection nodes, calculation_type
-          - connection_node.manhole.calculation_type
+        The calculation_type of a connection nodes is based on
+          - connection_node.manhole.calculation_type (set in ConnectionNode.get_nodes)
           - if not present, the calculation_type of adjacent lines is taken. if
             these are different the precedence is: 1 > 2 > 0
           - if not present, then isolated
-        4. connection nodes, node_type
-          - NODE_1D_STORAGE if storaga_area is nonzero, else NODE_1D_NO_STORAGE
-        5. interpolated channel nodes, node_type
-          - NODE_1D_NO_STORAGE
+        """
+        pass
 
-
-        - channel"""
 
     def set_bottom_levels(self, connection_nodes, channels):
-        """Set the bottom types for 1D nodes and lines
+        """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         The types are based on:
         1. channels: crosssection locations
@@ -182,15 +177,8 @@ class Grid:
           - if not present (from neighboring points? ?)
         3. pipes, interpolated nodes:
           - interpolate between invert level start & end
-        4. dpumax = greatest of 2 aangrenzende dmax
-           except for pipes with no interpolated nodes, then take pipe BOB
-        """
-
-    def set_discharge_coefficients(self):
-        """Set the discharge_coefficients_positive and discharge_coefficients_negative
-
-        These are 1.0 except for:
-        - structures (TBD)
+        4. dpumax = greatest of 2 neighboring nodes dmax
+           except for pipes with no interpolated nodes, then take pipe's own level
         """
 
     def finalize(self, epsg_code=None):

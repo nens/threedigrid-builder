@@ -328,9 +328,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "cross2", lines.cross2, fill=-9999)
         self.write_dataset(group, "cross_weight", lines.cross_weight, fill=-9999)
         self.write_dataset(group, "line_coords", lines.line_coords.T, fill=-9999)
-        self.write_dataset(group, "discharge_coefficient", lines.discharge_coefficient_negative)
-        self.write_dataset(group, "discharge_coefficient_negative", lines.discharge_coefficient_negative)
-        self.write_dataset(group, "discharge_coefficient_positive", lines.discharge_coefficient_positive)
+        self.write_dataset(group, "discharge_coefficient", lines.discharge_coefficient_negative, fill=-9999)
+        self.write_dataset(group, "discharge_coefficient_negative", lines.discharge_coefficient_negative, fill=-9999)
+        self.write_dataset(group, "discharge_coefficient_positive", lines.discharge_coefficient_positive, fill=-9999)
 
         # Transform an array of linestrings to list of coordinate arrays (x,y,x,y,...)
         coords = pygeos.get_coordinates(lines.line_geometries)
