@@ -120,7 +120,7 @@ class Grid:
             - nodes.coordinates
             - nodes.content_type: ContentType.TYPE_V2_CHANNEL
             - nodes.content_pk: the id of the Channel from which this node originates
-            - lines.node_type: NODE_1D_NO_STORAGE
+            - nodes.node_type: NODE_1D_NO_STORAGE
             - lines.id: 0-based counter generated here
             - lines.line: lines between connection nodes and added channel
               nodes. The indices are offset using the respective parameters.
