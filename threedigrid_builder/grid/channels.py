@@ -41,6 +41,7 @@ class Channels:
             - coordinates
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this node originates
+            - node_type: NodeType.NODE_1D_NO_STORAGE
         """
         # load data
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -70,8 +71,8 @@ class Channels:
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
-            node_type=NodeType.NODE_1D_NO_STORAGE,
             content_pk=self.index_to_id(idx),
+            node_type=NodeType.NODE_1D_NO_STORAGE,
         )
         return nodes, segment_size
 
