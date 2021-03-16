@@ -85,3 +85,15 @@ class CrossSectionShape(IntEnum):
     EGG = 3
     TABULATED_RECTANGLE = 5
     TABULATED_TRAPEZIUM = 6
+
+
+@unique
+class SewerageType(IntEnum):
+    COMBINED = 0
+    STORMWATER = 1
+    WASTEWATER = 2
+    TRANSPORT = 3
+    OVERFLOW = 4
+    SINKER = 5
+    STORAGE = 6
+    STORAGE_SETTLING_TANK = 7

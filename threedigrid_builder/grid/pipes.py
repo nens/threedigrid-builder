@@ -1,0 +1,24 @@
+from threedigrid_builder.base import array_of
+from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import FrictionType
+from threedigrid_builder.constants import SewerageType
+
+
+class Pipe:
+    id: int
+    code: str
+    dist_calc_points: float
+    calculation_type: CalculationType
+    connection_node_start_id: int
+    connection_node_end_id: int
+    cross_section_definition_id: int
+    invert_level_start_point: float
+    invert_level_end_point: float
+    sewerage_type: SewerageType
+    friction_type: FrictionType
+    friction_value: float
+
+
+@array_of(Pipe)
+class Pipes:
+    pass
