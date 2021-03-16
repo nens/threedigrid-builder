@@ -17,6 +17,11 @@ class Pipe:
     sewerage_type: SewerageType
     friction_type: FrictionType
     friction_value: float
+    # zoom_category
+    # display_name
+    # profile_num
+    # original_length
+    # material
 
 
 @array_of(Pipe)
