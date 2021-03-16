@@ -32,7 +32,7 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.epsg_code = None  # Grid is aware of its epsg_code
-        self.quadtree_statistics = quadtree_statistics
+        self.quadtree_statistics = quadtree_statistics or {}
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""

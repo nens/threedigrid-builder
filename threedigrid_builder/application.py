@@ -35,15 +35,16 @@ def get_1d_grid(path, node_id_start=0, line_id_start=0):
         connection_nodes=connection_nodes,
         channels=channels,
         global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_counter=line_id_counter,
+        node_id_counter=node_id_counter,
         line_id_counter=line_id_counter,
         connection_node_offset=grid.nodes.id[0],
     )
 
     cross_section_locations = db.get_cross_section_locations()
     grid.set_channel_weights(cross_section_locations, channels)
+    grid.set_calculation_types()
 
-    grid.finalize(epsg_code=db.global_settings["epsg_code"], pixel_size=None)
+    grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid
 
 
