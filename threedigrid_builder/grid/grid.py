@@ -1,10 +1,26 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.grid import cross_sections
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import LineType
+from threedigrid_builder.grid import cross_sections
+
+import numpy as np
 
 
 __all__ = ["Grid"]
+
+# For assigning calculation types to connection nodes:
+LINE_TYPE_PRECEDENCE = (
+    LineType.LINE_1D_ISOLATED,
+    LineType.LINE_1D_CONNECTED,
+    LineType.LINE_1D_EMBEDDED,
+)
+LINE_TYPE_MAPPING = {
+    LineType.LINE_1D_ISOLATED: CalculationType.ISOLATED,
+    LineType.LINE_1D_CONNECTED: CalculationType.CONNECTED,
+    LineType.LINE_1D_EMBEDDED: CalculationType.EMBEDDED,
+}
 
 
 class Grid:
@@ -69,12 +85,10 @@ class Grid:
             "mmax": quadtree.mmax,
             "nmax": quadtree.nmax,
             "dx": quadtree.dx,
-            "bbox": quadtree.bbox
+            "bbox": quadtree.bbox,
         }
 
-        return cls(
-            nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics
-        )
+        return cls(nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics)
 
     @classmethod
     def from_connection_nodes(cls, connection_nodes, node_id_counter):
@@ -155,7 +169,7 @@ class Grid:
         """
         cross_sections.compute_weights(self.lines, locations, channels)
 
-    def set_calculation_types(self, connection_nodes, channels):
+    def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
 
         The calculation_type of a connection nodes is based on
@@ -164,8 +178,29 @@ class Grid:
             these are different the precedence is: 1 > 2 > 0
           - if not present, then isolated
         """
-        pass
+        node_mask = (
+            self.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        ) & (self.nodes.calculation_type == -9999)
+        line_mask = (self.lines.content_type == ContentType.TYPE_V2_CHANNEL) | (
+            self.lines.content_type == ContentType.TYPE_V2_PIPE
+        )
+        lines_line = self.lines.line[line_mask]
+        lines_line_type = self.lines.line_type[line_mask]
 
+        for node_idx in np.where(node_mask)[0]:
+            node_id = self.nodes.id[node_idx]
+            # fine the lines that connect to this node
+            line_idx = np.where(lines_line == node_id)[0]
+            # fine the corresponding types and convert to a set
+            line_types = set(lines_line_type[line_idx])
+            # set the node's line type if there is any line with a type
+            for line_type in LINE_TYPE_PRECEDENCE:
+                if line_type in line_types:
+                    self.nodes.calculation_type[node_idx] = LINE_TYPE_MAPPING[line_type]
+                    break
+            else:
+                # if there was no line with a type; set ISOLATED
+                self.nodes.calculation_type[node_idx] = CalculationType.ISOLATED
 
     def set_bottom_levels(self, connection_nodes, channels):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines

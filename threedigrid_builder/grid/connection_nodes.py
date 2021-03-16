@@ -1,10 +1,14 @@
-from threedigrid_builder.base import array_of, Nodes
+from threedigrid_builder.base import array_of
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ManholeIndicator, ContentType, NodeType
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import ManholeIndicator
+from threedigrid_builder.constants import NodeType
 
+import itertools
 import numpy as np
 import pygeos
-import itertools
+
 
 __all__ = ["ConnectionNodes"]
 

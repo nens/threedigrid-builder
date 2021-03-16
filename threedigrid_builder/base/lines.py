@@ -40,9 +40,14 @@ class Line:
 @array_of(Line)
 class Lines:
     """Line between two calculation nodes (a.k.a. velocity point)."""
+
     def set_discharge_coefficients(self):
         """Set discharge coefficients to 1.0 where unset."""
-        for arr in (self.discharge_coefficient, self.discharge_coefficient_positive, self.discharge_coefficient_negative):
+        for arr in (
+            self.discharge_coefficient,
+            self.discharge_coefficient_positive,
+            self.discharge_coefficient_negative,
+        ):
             arr[np.isnan(arr)] = 1.0
             arr[np.isnan(arr)] = 1.0
 

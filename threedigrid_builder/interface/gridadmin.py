@@ -1,10 +1,11 @@
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import NodeType
 from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
 
 import numpy as np
 import pygeos
+
 
 try:
     import h5py
@@ -117,7 +118,7 @@ class GridAdminOut(OutputInterface):
         Args:
             nodes (Nodes)
             lines (Lines)
-        
+
         Raises:
             ValueError if it exists already.
         """
@@ -328,9 +329,24 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "cross2", lines.cross2, fill=-9999)
         self.write_dataset(group, "cross_weight", lines.cross_weight, fill=-9999)
         self.write_dataset(group, "line_coords", lines.line_coords.T, fill=-9999)
-        self.write_dataset(group, "discharge_coefficient", lines.discharge_coefficient_negative, fill=-9999)
-        self.write_dataset(group, "discharge_coefficient_negative", lines.discharge_coefficient_negative, fill=-9999)
-        self.write_dataset(group, "discharge_coefficient_positive", lines.discharge_coefficient_positive, fill=-9999)
+        self.write_dataset(
+            group,
+            "discharge_coefficient",
+            lines.discharge_coefficient_negative,
+            fill=-9999,
+        )
+        self.write_dataset(
+            group,
+            "discharge_coefficient_negative",
+            lines.discharge_coefficient_negative,
+            fill=-9999,
+        )
+        self.write_dataset(
+            group,
+            "discharge_coefficient_positive",
+            lines.discharge_coefficient_positive,
+            fill=-9999,
+        )
 
         # Transform an array of linestrings to list of coordinate arrays (x,y,x,y,...)
         coords = pygeos.get_coordinates(lines.line_geometries)
@@ -391,8 +407,8 @@ class GridAdminOut(OutputInterface):
 def get_dtype(value):
     """Return a numpy dtype based on input value.
 
-        Args:
-            value (ndarray, int, float, bool)
+    Args:
+        value (ndarray, int, float, bool)
     """
     elem_type = type(value)
     if elem_type is np.ndarray:
