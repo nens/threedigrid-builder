@@ -55,7 +55,6 @@ class QuadTree:
         self.mmax[:] = max_large_cells_col * lvl_multiplr
         self.nmax[:] = max_large_cells_row * lvl_multiplr
         self.dx[:] = self.lgrmin * lvl_multiplr[::-1] * subgrid_meta["pixel_size"]
-        self.bbox = np.array(subgrid_meta["bbox"])
 
         # Array with dimensions of smallest active grid level and contains
         # map of active grid level for each quadtree cell.
@@ -64,7 +63,7 @@ class QuadTree:
         )
 
         if refinements is not None:
-            self._apply_refinements(refinements)
+            self._apply_refinements(np.array(subgrid_meta["bbox"]), refinements)
         # Array with dimensions of smallest active grid level and contains
         # idx of active grid level for each quadtree cell.
         self.quad_idx = np.empty(
@@ -89,7 +88,7 @@ class QuadTree:
         """Returns minimum number of pixels in smallles computational_cell."""
         return self.lgrmin
 
-    def _apply_refinements(self, refinements):
+    def _apply_refinements(self, bbox, refinements):
         """Set active grid levels for based on refinement dict and
         filling lg variable for refinement locations.
 
@@ -107,7 +106,7 @@ class QuadTree:
                 geom=geom,
                 level=refinements.refinement_level[i],
                 type=pygeos.get_type_id(refinements.the_geom[i]),
-                bbox=self.bbox,
+                bbox=bbox,
                 mmax=self.mmax,
                 nmax=self.nmax,
                 dx=self.dx,
@@ -130,6 +129,7 @@ class QuadTree:
         nodn = np.empty((self.n_cells,), dtype=np.int32, order="F")
         bounds = np.empty((self.n_cells, 4), dtype=np.float64, order="F")
         coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
+        pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
 
         # Node type is always openwater at first init
         node_type = np.full(
@@ -166,9 +166,20 @@ class QuadTree:
             nodn,
             bounds,
             coords,
+            pixel_coords,
             line,
             self.n_lines[0],
             self.n_lines[1],
+        )
+
+        self.bbox = np.array(
+            [np.amin(bounds[:, 0]),
+             np.amin(bounds[:, 1]),
+             np.amax(bounds[:, 2]),
+             np.amax(bounds[:, 3])]
+        )
+        self.transform = np.array(
+            [self.pixel_size, 0.0, self.bbox[0], 0.0, -self.pixel_size, self.bbox[3]]
         )
 
         idx = line[np.arange(total_lines), np.argmin(nodk[line[:, :]], axis=1)]
@@ -184,6 +195,7 @@ class QuadTree:
             nodn=nodn,
             bounds=bounds,
             coordinates=coords,
+            pixel_coords=pixel_coords,
         )
 
         lines = Lines(

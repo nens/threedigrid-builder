@@ -5,10 +5,10 @@ module m_cells
     contains
 
     subroutine set_2d_computational_nodes_lines(origin, lgrmin, kmax, mmax, nmax, dx,&
-        lg, size_i, size_j, nodk, nodm, nodn, quad_idx, bounds, coords, size_n,&
+        lg, size_i, size_j, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords, size_n,&
         area_mask, size_a, size_b, line, n_line_u, n_line_v) bind(c, name="f_set_2d_computational_nodes_lines")
         !!! Entry point for setting nodes and lines and there necessary attributes.
-        use m_grid_utils, only : get_lg_corners, get_cell_bbox
+        use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners
 
         integer(kind=c_int), intent(in) :: size_a
         integer(kind=c_int), intent(in) :: size_b
@@ -28,12 +28,14 @@ module m_cells
         integer(kind=c_int), intent(inout) :: quad_idx(size_i,size_j) ! Array with idx of cell at lg refinement locations
         real(kind=c_double), intent(inout) :: bounds(size_n, 4) ! Bbox of comp cell
         real(kind=c_double), intent(inout) :: coords(size_n, 2) ! Cell center coordinates
+        integer(kind=c_int), intent(inout) :: pixel_coords(size_n, 4) ! pixel bbox of comp cell
         integer(kind=c_int), intent(inout) :: area_mask(size_a,size_b) ! Array with active pixels of model.
         integer(kind=c_int), intent(in) :: n_line_u ! Number of active u-dir lines.
         integer(kind=c_int), intent(in) :: n_line_v  ! Number of active v-dir lines.
         integer(kind=c_int), intent(inout) :: line(n_line_u+n_line_v, 2) ! Array with connecting nodes of line.
         integer :: nod
         integer :: k
+        integer :: i0, i1, j0, j1
         integer :: l_u, l_v
         integer :: m, n
         integer :: mn(4)
@@ -53,6 +55,8 @@ module m_cells
                         nodn(nod) = n
                         bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
                         coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
+                        call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
+                        pixel_coords(nod, :) = (/ i0, j1, i1, j0 /) ! We inverse the y-axis for pixel_coords to comply with geotiffs in future use.
                         call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line)
                         nod = nod + 1
                     else

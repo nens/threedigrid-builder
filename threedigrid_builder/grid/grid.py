@@ -75,7 +75,8 @@ class Grid:
             "mmax": quadtree.mmax,
             "nmax": quadtree.nmax,
             "dx": quadtree.dx,
-            "bbox": quadtree.bbox
+            "bbox": quadtree.bbox,
+            "pixel_geotransform": quadtree.transform,
         }
 
         return cls(
