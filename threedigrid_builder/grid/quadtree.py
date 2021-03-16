@@ -38,6 +38,7 @@ class QuadTree:
         self.nmax = np.empty((self.kmax,), dtype=np.int32, order="F")
         # Array with cell widths at every active grid level [0:kmax].
         self.dx = np.empty((self.kmax,), dtype=np.float64, order="F")
+        self.origin = (subgrid_meta["bbox"][0], subgrid_meta["bbox"][1])
         self.pixel_size = subgrid_meta["pixel_size"]
 
         lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
@@ -78,6 +79,19 @@ class QuadTree:
             subgrid_meta["area_mask"],
             self.quad_idx,
             self.lg,
+        )
+
+        # Find the top row of quad_idx that is filled with active cells to base geotransfrom on.
+        max_idx = np.max(self.quad_idx.nonzero()[1])
+        self.transform = np.array(
+            [
+                self.pixel_size,
+                0.0,
+                self.origin[0],
+                0.0,
+                -self.pixel_size,
+                self.origin[1] + max_idx * self.dx[0],
+            ]
         )
 
     def __repr__(self):
@@ -141,9 +155,7 @@ class QuadTree:
         id_l = itertools.islice(line_id_counter, total_lines)
 
         # Line type is always openwater at first init
-        line_type = np.full(
-            (total_lines,), LineType.LINE_2D_U, dtype="i4", order="F"
-        )
+        line_type = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
         line_type[
             self.n_lines[0] : self.n_lines[0] + self.n_lines[1]
         ] = LineType.LINE_2D_V
@@ -152,7 +164,7 @@ class QuadTree:
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
 
         set_2d_computational_nodes_lines(
-            np.array([self.bbox[0], self.bbox[1]]),
+            np.array([self.origin[0], self.origin[1]]),
             self.min_cell_pixels,
             self.kmax,
             self.mmax,
@@ -170,16 +182,6 @@ class QuadTree:
             line,
             self.n_lines[0],
             self.n_lines[1],
-        )
-
-        self.bbox = np.array(
-            [np.amin(bounds[:, 0]),
-             np.amin(bounds[:, 1]),
-             np.amax(bounds[:, 2]),
-             np.amax(bounds[:, 3])]
-        )
-        self.transform = np.array(
-            [self.pixel_size, 0.0, self.bbox[0], 0.0, -self.pixel_size, self.bbox[3]]
         )
 
         idx = line[np.arange(total_lines), np.argmin(nodk[line[:, :]], axis=1)]

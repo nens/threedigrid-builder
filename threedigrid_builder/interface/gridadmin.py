@@ -117,7 +117,7 @@ class GridAdminOut(OutputInterface):
         Args:
             nodes (Nodes)
             lines (Lines)
-        
+
         Raises:
             ValueError if it exists already.
         """
@@ -143,15 +143,15 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
         group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
 
-        l1dtot = sum([np.count_nonzero(lines.line_type == x) for x in LINE_TYPES_1D])
+        l1dtot = np.count_nonzero(np.in1d(lines.line_type, LINE_TYPES_1D))
+
         group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
 
-        infl1d = sum([np.count_nonzero(lines.line_type == x) for x in LINE_TYPES_1D2D])
+        infl1d = np.count_nonzero(np.in1d(lines.line_type, LINE_TYPES_1D2D))
         group.create_dataset("infl1d", data=infl1d, dtype="i4")
 
-        ingrw1d = sum(
-            [np.count_nonzero(lines.line_type == x) for x in LINE_TYPES_1D2D_GW]
-        )
+        ingrw1d = np.count_nonzero(np.in1d(lines.line_type, LINE_TYPES_1D2D_GW))
+
         group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
         group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
 
@@ -169,7 +169,7 @@ class GridAdminOut(OutputInterface):
         for k, v in quadtree_statistics.items():
             group.create_dataset(k, data=v, dtype=get_dtype(v))
 
-    def write_nodes(self, nodes, pixel_size, **kwargs):
+    def write_nodes(self, nodes, **kwargs):
         """Write the "nodes" group in the gridadmin file
 
         Raises a ValueError if it exists already.
@@ -181,7 +181,6 @@ class GridAdminOut(OutputInterface):
 
         Args:
             nodes (Nodes)
-            pixel_size (float): the size of a pixel in projected units (mostly meters)
         """
         group = self._file.create_group("nodes")
         shape = (len(nodes),)
@@ -192,87 +191,72 @@ class GridAdminOut(OutputInterface):
         is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
 
         # Datasets that match directly to a nodes attribute:
-        self.write_dataset(group, "id", nodes.id + 1, fill=-9999)
+        self.write_dataset(group, "id", nodes.id + 1)
         self.write_dataset(group, "code", nodes.code.astype("S32"), fill=b"")
         self.write_dataset(group, "display_name", nodes.code.astype("S64"), fill=b"")
-        self.write_dataset(group, "node_type", nodes.node_type, fill=-9999)
+        self.write_dataset(group, "node_type", nodes.node_type)
         self.write_dataset(
-            group, "calculation_type", nodes.calculation_type, fill=-9999
+            group, "calculation_type", nodes.calculation_type
         )
-        self.write_dataset(group, "coordinates", nodes.coordinates.T, fill=-9999)
-        self.write_dataset(group, "cell_coords", nodes.bounds.T, fill=-9999)
-        self.write_dataset(group, "nodk", nodes.nodk, fill=-9999)
-        self.write_dataset(group, "nodm", nodes.nodm, fill=-9999)
-        self.write_dataset(group, "nodn", nodes.nodn, fill=-9999)
-        self.write_dataset(group, "storage_area", nodes.storage_area, fill=-9999)
+        self.write_dataset(group, "coordinates", nodes.coordinates.T)
+        self.write_dataset(group, "cell_coords", nodes.bounds.T)
+        self.write_dataset(group, "nodk", nodes.nodk)
+        self.write_dataset(group, "nodm", nodes.nodm)
+        self.write_dataset(group, "nodn", nodes.nodn)
+        self.write_dataset(group, "storage_area", nodes.storage_area)
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")
         content_pk[is_cn] = nodes.content_pk[is_cn]
-        self.write_dataset(group, "content_pk", content_pk, fill=-9999)
+        self.write_dataset(group, "content_pk", content_pk)
         # is_manhole is 1 for manholes, otherwise -9999
         is_manhole = is_mh.astype("i4")
         is_manhole[~is_mh] = -9999
-        self.write_dataset(group, "is_manhole", is_manhole, fill=-9999)
+        self.write_dataset(group, "is_manhole", is_manhole)
 
         # unclear what is the difference: seems bottom_level is for 1D, and z_coordinate
         # for 2D, but some nodes have both sets (then they are equal)
         # missing in gridadmin: dimp (bottom level groundwater)
-        self.write_dataset(group, "bottom_level", nodes.dmax, fill=-9999)
-        self.write_dataset(group, "z_coordinate", nodes.dmax, fill=-9999)
+        self.write_dataset(group, "bottom_level", nodes.dmax)
+        self.write_dataset(group, "z_coordinate", nodes.dmax)
 
         # 2D stuff that is derived from 'bounds'
-        x_coordinate = np.full(len(nodes), np.nan, dtype=float)
-        y_coordinate = np.full(len(nodes), np.nan, dtype=float)
-        pixel_coords = np.full((4, len(nodes)), -9999, dtype="i4")
         pixel_width = np.full(len(nodes), -9999, dtype="i4")
         if is_2d.any():
-            x_coordinate[is_2d] = (nodes.bounds[is_2d, 0] + nodes.bounds[is_2d, 2]) / 2
-            y_coordinate[is_2d] = (nodes.bounds[is_2d, 1] + nodes.bounds[is_2d, 3]) / 2
-            origin = tuple(nodes.bounds[is_2d, :2].min(axis=0))
-            pixel_coords[:, is_2d] = np.round(
-                (nodes.bounds[is_2d] - (origin * 2)).T / pixel_size
-            )
-            pixel_width[is_2d] = pixel_coords[2] - pixel_coords[0]
+            pixel_width[is_2d] = nodes.pixel_coords[2] - nodes.pixel_coords[0]
 
-        self.write_dataset(group, "x_coordinate", x_coordinate, fill=-9999)
-        self.write_dataset(group, "y_coordinate", y_coordinate, fill=-9999)
-        self.write_dataset(group, "pixel_coords", pixel_coords, fill=-9999)
-        self.write_dataset(group, "pixel_width", pixel_width, fill=-9999)
+        self.write_dataset(group, "x_coordinate", nodes.coordinates[:, 0])
+        self.write_dataset(group, "y_coordinate", nodes.coordinates[:, 1])
+        self.write_dataset(group, "pixel_coords", nodes.pixel_coords.T)
+        self.write_dataset(group, "pixel_width", pixel_width)
 
         # can be collected from SQLite, but empty for now:
         self.write_dataset(
-            group, "zoom_category", np.full(len(nodes), -9999, dtype="i4"), fill=-9999
+            group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
         )
         self.write_dataset(
-            group,
-            "initial_waterlevel",
-            np.full(shape, -9999, dtype=np.float64),
-            fill=-9999,
+            group, "initial_waterlevel", np.full(shape, -9999, dtype=np.float64)
         )
         # (manhole specific:)
         self.write_dataset(
-            group,
-            "manhole_indicator",
-            np.full(len(nodes), -9999, dtype="i4"),
-            fill=-9999,
+            group, "manhole_indicator", np.full(len(nodes), -9999, dtype="i4")
         )
         self.write_dataset(
             group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
         )
         self.write_dataset(
-            group, "drain_level", np.full(shape, -9999, dtype=np.float64), fill=-9999
+            group, "drain_level", np.full(shape, -9999, dtype=np.float64)
         )
         self.write_dataset(
-            group, "surface_level", np.full(shape, -9999, dtype=np.float64), fill=-9999
+            group, "surface_level", np.full(shape, -9999, dtype=np.float64)
         )
         self.write_dataset(
-            group, "width", np.full(shape, -9999, dtype=np.float64), fill=-9999
+            group, "width", np.full(shape, -9999, dtype=np.float64)
         )
 
         # unknown
         self.write_dataset(
-            group, "sumax", np.full(shape, -9999, dtype=np.float64), fill=-9999
+            group, "sumax", np.full(shape, -9999, dtype=np.float64)
         )
 
     def write_lines(self, lines, **kwargs):
@@ -297,22 +281,22 @@ class GridAdminOut(OutputInterface):
         l2d = lines.line_type == LineType.LINE_2D_U
         l2d += lines.line_type == LineType.LINE_2D_V
         # Datasets that match directly to a lines attribute:
-        self.write_dataset(group, "id", lines.id + 1, fill=-9999)
+        self.write_dataset(group, "id", lines.id + 1)
         self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
         self.write_dataset(
             group, "display_name", lines.display_name.astype("S64"), fill=b""
         )
 
         lines.line_type[l2d] = LineType.LINE_2D
-        self.write_dataset(group, "kcu", lines.line_type, fill=-9999)
+        self.write_dataset(group, "kcu", lines.line_type)
         self.write_dataset(
-            group, "calculation_type", lines.calculation_type, fill=-9999
+            group, "calculation_type", lines.calculation_type
         )
-        self.write_dataset(group, "line", lines.line.T + 1, fill=-9999)
-        self.write_dataset(group, "ds1d", lines.ds1d, fill=-9999)
-        self.write_dataset(group, "lik", lines.lik, fill=-9999)
-        self.write_dataset(group, "lim", lines.lim, fill=-9999)
-        self.write_dataset(group, "lin", lines.lin, fill=-9999)
+        self.write_dataset(group, "line", lines.line.T + 1)
+        self.write_dataset(group, "ds1d", lines.ds1d)
+        self.write_dataset(group, "lik", lines.lik)
+        self.write_dataset(group, "lim", lines.lim)
+        self.write_dataset(group, "lin", lines.lin)
 
         content_type = np.full(len(lines), b"", dtype="S10")
         for ind in np.where(lines.content_type != -9999)[0]:
@@ -320,14 +304,14 @@ class GridAdminOut(OutputInterface):
             content_type[ind] = content_type_name.lstrip("TYPE_").lower()[:10]
 
         self.write_dataset(group, "content_type", content_type, fill=b"")
-        self.write_dataset(group, "content_pk", lines.content_pk, fill=-9999)
-        self.write_dataset(group, "dpumax", lines.dpumax, fill=-9999)
-        self.write_dataset(group, "flod", lines.flod, fill=-9999)
-        self.write_dataset(group, "flou", lines.flou, fill=-9999)
-        self.write_dataset(group, "cross1", lines.cross1, fill=-9999)
-        self.write_dataset(group, "cross2", lines.cross2, fill=-9999)
-        self.write_dataset(group, "cross_weight", lines.cross_weight, fill=-9999)
-        self.write_dataset(group, "line_coords", lines.line_coords.T, fill=-9999)
+        self.write_dataset(group, "content_pk", lines.content_pk)
+        self.write_dataset(group, "dpumax", lines.dpumax)
+        self.write_dataset(group, "flod", lines.flod)
+        self.write_dataset(group, "flou", lines.flou)
+        self.write_dataset(group, "cross1", lines.cross1)
+        self.write_dataset(group, "cross2", lines.cross2)
+        self.write_dataset(group, "cross_weight", lines.cross_weight)
+        self.write_dataset(group, "line_coords", lines.line_coords.T)
 
         # Transform an array of linestrings to list of coordinate arrays (x,y,x,y,...)
         coords = pygeos.get_coordinates(lines.line_geometries)
@@ -341,31 +325,31 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("line_geometries", data=line_geometries, dtype=vlen_dtype)
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "connection_node_end_pk", fill_int, fill=-9999)
-        self.write_dataset(group, "connection_node_start_pk", fill_int, fill=-9999)
-        self.write_dataset(group, "crest_level", fill_float, fill=-9999)
-        self.write_dataset(group, "crest_type", fill_int, fill=-9999)
-        self.write_dataset(group, "cross_section_height", fill_int, fill=-9999)
-        self.write_dataset(group, "cross_section_shape", fill_int, fill=-9999)
-        self.write_dataset(group, "cross_section_width", fill_float, fill=-9999)
-        self.write_dataset(group, "discharge_coefficient", fill_float, fill=-9999)
+        self.write_dataset(group, "connection_node_end_pk", fill_int)
+        self.write_dataset(group, "connection_node_start_pk", fill_int)
+        self.write_dataset(group, "crest_level", fill_float)
+        self.write_dataset(group, "crest_type", fill_int)
+        self.write_dataset(group, "cross_section_height", fill_int)
+        self.write_dataset(group, "cross_section_shape", fill_int)
+        self.write_dataset(group, "cross_section_width", fill_float)
+        self.write_dataset(group, "discharge_coefficient", fill_float)
         self.write_dataset(
-            group, "discharge_coefficient_negative", fill_float, fill=-9999
+            group, "discharge_coefficient_negative", fill_float
         )
         self.write_dataset(
-            group, "discharge_coefficient_positive", fill_float, fill=-9999
+            group, "discharge_coefficient_positive", fill_float
         )
-        self.write_dataset(group, "dist_calc_points", fill_float, fill=-9999)
-        self.write_dataset(group, "friction_type", fill_int, fill=-9999)
-        self.write_dataset(group, "friction_value", fill_float, fill=-9999)
-        self.write_dataset(group, "invert_level_end_point", fill_float, fill=-9999)
-        self.write_dataset(group, "invert_level_start_point", fill_float, fill=-9999)
-        self.write_dataset(group, "material", fill_int, fill=-9999)
-        self.write_dataset(group, "sewerage", fill_int, fill=-9999)
-        self.write_dataset(group, "sewerage_type", fill_int, fill=-9999)
-        self.write_dataset(group, "zoom_category", fill_int, fill=-9999)
+        self.write_dataset(group, "dist_calc_points", fill_float)
+        self.write_dataset(group, "friction_type", fill_int)
+        self.write_dataset(group, "friction_value", fill_float)
+        self.write_dataset(group, "invert_level_end_point", fill_float)
+        self.write_dataset(group, "invert_level_start_point", fill_float)
+        self.write_dataset(group, "material", fill_int)
+        self.write_dataset(group, "sewerage", fill_int)
+        self.write_dataset(group, "sewerage_type", fill_int)
+        self.write_dataset(group, "zoom_category", fill_int)
 
-    def write_dataset(self, group, name, values, fill):
+    def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.
 
@@ -395,8 +379,8 @@ class GridAdminOut(OutputInterface):
 def get_dtype(value):
     """Return a numpy dtype based on input value.
 
-        Args:
-            value (ndarray, int, float, bool)
+    Args:
+        value (ndarray, int, float, bool)
     """
     elem_type = type(value)
     if elem_type is np.ndarray:

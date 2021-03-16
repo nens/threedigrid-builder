@@ -31,7 +31,7 @@ def h5_out():
         with GridAdminOut(path) as out:
             out.write_grid_characteristics(nodes, lines, 28992)
             out.write_grid_counts(nodes, lines)
-            out.write_nodes(nodes, pixel_size=0.5)
+            out.write_nodes(nodes)
             out.write_lines(lines)
 
         with h5py.File(path, "r") as f:
@@ -124,22 +124,24 @@ def test_write_lines(h5_out, dataset, shape, dtype):
     assert h5_out["lines"][dataset].shape == shape
     assert h5_out["lines"][dataset].dtype == np.dtype(dtype)
 
+
 # @pytest.mark.parametrize(
-    # "dataset,shape,dtype",
-    # [
-        # ("calculation_type", (6,), "int32"),
-# 
-        # ("lgrmin", (), "int32")
-        # ("kmax", (), "int32")
-        # ("mmax", (3,), "int32")
-        # ("nmax", (3,), "int32")
-        # ("dx", (3,), "float64")
-        # ("bbox", (4,), "float64")
-    # ],
+# "dataset,shape,dtype",
+# [
+# ("calculation_type", (6,), "int32"),
+#
+# ("lgrmin", (), "int32")
+# ("kmax", (), "int32")
+# ("mmax", (3,), "int32")
+# ("nmax", (3,), "int32")
+# ("dx", (3,), "float64")
+# ("bbox", (4,), "float64")
+# ],
 # )
 # def test_write_quadtree(h5_out, dataset, shape, dtype):
-    # assert h5_out["grid_coordinate_attributes"][dataset].shape == shape
-    # assert h5_out["grid_coordinate_attributes"][dataset].dtype == np.dtype(dtype)
+# assert h5_out["grid_coordinate_attributes"][dataset].shape == shape
+# assert h5_out["grid_coordinate_attributes"][dataset].dtype == np.dtype(dtype)
+
 
 @pytest.mark.parametrize(
     "dataset,shape,dtype",

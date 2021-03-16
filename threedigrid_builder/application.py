@@ -84,10 +84,8 @@ def grid_to_gpkg(grid, path):
 
 def grid_to_hdf5(grid, path):
     with GridAdminOut(path) as out:
-        out.write_grid_characteristics(
-            grid.nodes, grid.lines, epsg_code=grid.epsg_code
-        )
+        out.write_grid_characteristics(grid.nodes, grid.lines, epsg_code=grid.epsg_code)
         out.write_grid_counts(grid.nodes, grid.lines)
         out.write_quadtree(grid.quadtree_statistics)
-        out.write_nodes(grid.nodes, pixel_size=0.5)
+        out.write_nodes(grid.nodes)
         out.write_lines(grid.lines)

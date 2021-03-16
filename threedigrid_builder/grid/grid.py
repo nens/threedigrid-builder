@@ -79,9 +79,7 @@ class Grid:
             "pixel_geotransform": quadtree.transform,
         }
 
-        return cls(
-            nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics
-        )
+        return cls(nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics)
 
     @classmethod
     def from_connection_nodes(cls, connection_nodes, node_id_counter):
