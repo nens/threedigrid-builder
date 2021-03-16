@@ -166,12 +166,8 @@ class GridAdminOut(OutputInterface):
         """
 
         group = self._file.create_group("grid_coordinate_attributes")
-
         for k, v in quadtree_statistics.items():
-            if type(v) is np.ndarray:
-                group.create_dataset(k, data=v, dtype=v.dtype)
-            else:
-                group.create_dataset(k, data=v, dtype=type_to_dtype(type(v)))
+            group.create_dataset(k, data=v, dtype=get_dtype(v))
 
     def write_nodes(self, nodes, pixel_size, **kwargs):
         """Write the "nodes" group in the gridadmin file
@@ -396,8 +392,16 @@ class GridAdminOut(OutputInterface):
             ValueError("Too many dimensions for values.")
 
 
-def type_to_dtype(elem_type):
-    if elem_type is int:
+def get_dtype(value):
+    """Return a numpy dtype based on input value.
+
+        Args:
+            value (ndarray, int, float, bool)
+    """
+    elem_type = type(value)
+    if elem_type is np.ndarray:
+        dtype = value.dtype
+    elif elem_type is int:
         dtype = np.int32
     elif elem_type is float:
         dtype = np.float64
@@ -405,5 +409,4 @@ def type_to_dtype(elem_type):
         dtype = bool
     else:
         dtype = object
-
     return dtype
