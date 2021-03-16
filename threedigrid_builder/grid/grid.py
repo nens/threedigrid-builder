@@ -208,4 +208,5 @@ class Grid:
         """Finalize the Grid, computing and setting derived attributes"""
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
+        self.lines.set_discharge_coefficients()
         self.epsg_code = epsg_code
