@@ -67,10 +67,16 @@ def _to_ndarray(value, elem_type, expected_length):
     if value is None:
         return np.full(expected_shape, null_value, dtype=dtype, order="F")
     elif np.isscalar(value) or isinstance(value, IntEnum):
-        return np.full(expected_shape, value, dtype=dtype, order="F")
+        arr = np.full(expected_shape, value, dtype=dtype, order="F")
+    else:
+        arr = np.asarray(value, dtype=dtype, order="F")
 
-    arr = np.asarray(value, dtype=dtype, order="F")
-
+    if _is_int_enum(elem_type):
+        allowed = list(elem_type) + [-9999]
+        if not np.isin(arr, allowed).all():
+            raise ValueError(
+                f"{set(value) - set(allowed)} is not a valid {elem_type.__name__}"
+            )
     if arr.shape != expected_shape:
         raise ValueError(
             f"Expected an array with shape {expected_shape}, got {arr.shape}."

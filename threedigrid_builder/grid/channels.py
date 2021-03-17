@@ -105,6 +105,7 @@ class Channels:
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this line originates
             - ds1d: the arclength of the line (if segment_size is supplied)
+            - line_type: the calculation_type of the Channel
             The lines are ordered by content_pk and then by position on the
             channel.
         """
