@@ -71,77 +71,8 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         line_id_counter=line_counter,
     )
 
-    quadtree_stats = {
-        "lgrmin": quadtree.lgrmin,
-        "kmax": quadtree.kmax,
-        "mmax": quadtree.mmax,
-        "nmax": quadtree.nmax,
-        "dx": quadtree.dx,
-        "pixel_geotransform": quadtree.transform,
-    }
-
     grid.finalize(
-        epsg_code=db.global_settings["epsg_code"], quadtree_stats=quadtree_stats)
-
-    return grid
-
-
-def get_1d2d_grid(sqlite_path, dem_path, model_area_path=None):
-    """Make 2D computational grid"""
-
-    node_counter = itertools.count()
-    line_counter = itertools.count()
-
-    subgrid = Subgrid(dem_path, model_area=model_area_path)
-    subgrid_meta = subgrid.get_meta()
-
-    db = SQLite(sqlite_path)
-    refinements = db.get_grid_refinements()
-    quadtree = QuadTree(
-        subgrid_meta,
-        db.global_settings["kmax"],
-        db.global_settings["grid_space"],
-        refinements,
-    )
-    grid = Grid.from_quadtree(
-        quadtree=quadtree,
-        area_mask=subgrid_meta["area_mask"],
-        node_id_counter=node_counter,
-        line_id_counter=line_counter,
-    )
-
-    quadtree_stats = {
-        "lgrmin": quadtree.lgrmin,
-        "kmax": quadtree.kmax,
-        "mmax": quadtree.mmax,
-        "nmax": quadtree.nmax,
-        "dx": quadtree.dx,
-        "pixel_geotransform": quadtree.transform,
-    }
-    connection_node_offset = grid.nodes.id.size
-
-    connection_nodes = db.get_connection_nodes()
-    grid += Grid.from_connection_nodes(
-        connection_nodes=connection_nodes,
-        node_id_counter=node_counter,
-        connection_node_offset=connection_node_offset
-    )
-
-    channels = db.get_channels()
-    grid += Grid.from_channels(
-        connection_nodes=connection_nodes,
-        channels=channels,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_counter=node_counter,
-        line_id_counter=line_counter,
-        connection_node_offset=connection_node_offset,
-    )
-
-    cross_section_locations = db.get_cross_section_locations()
-    grid.set_channel_weights(cross_section_locations, channels)
-
-    grid.finalize(
-        epsg_code=db.global_settings["epsg_code"], quadtree_stats=quadtree_stats)
+        epsg_code=db.global_settings["epsg_code"])
 
     return grid
 
