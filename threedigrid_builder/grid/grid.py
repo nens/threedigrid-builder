@@ -162,10 +162,10 @@ class Grid:
 
         The calculation_type of a connection nodes is based on
           - connection_node.manhole.calculation_type (set in ConnectionNode.get_nodes)
-          - if not present, the calculation_type of adjacent lines is taken. if
-            these are different, the precedence is:
+          - if not present, the calculation_type of adjacent channels or pipes are taken
+            if these are different, the precedence is:
               ISOLATED > DOUBLE_CONNECTED > CONNECTED > EMBEDDED
-          - if not present, then isolated
+          - if not present, then the calculation type becomes ISOLATED
         """
         # Get the indices of the relevant nodes and lines
         node_idx = np.where(
@@ -196,10 +196,10 @@ class Grid:
         # Remaining nodes get ISOLATED
         self.nodes.calculation_type[node_idx] = CalculationType.ISOLATED
 
-    def set_bottom_levels(self, connection_nodes, channels):
+    def set_bottom_levels(self, cs):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
-        The types are based on:
+        The levels are based on:
         1. channels: crosssection locations
         2. pipes, connection nodes:
           - from the manhole.bottom_level
@@ -209,6 +209,18 @@ class Grid:
         4. dpumax = greatest of 2 neighboring nodes dmax
            except for pipes with no interpolated nodes, then take pipe's own level
         """
+        # channel lines interpolate between cross section locations
+        is_ch_line = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
+        cross1 = self.lines.cross1[is_ch_line]
+        cross2 = self.lines.cross2[is_ch_line]
+        weight = self.lines.cross_weight[is_ch_line]
+        if np.any((cross1 == -9999) | (cross1 == -9999) | np.isnan(weight)):
+            raise ValueError(
+                "Cannot set channel bottom levels without the channel weights."
+            )
+        level1 = cs.reference_level[cs.id_to_index(cross1)]
+        level2 = cs.reference_level[cs.id_to_index(cross2)]
+        self.lines.dpumax[is_ch_line] = weight * level1 + (1 - weight) * level2
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
