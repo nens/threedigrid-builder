@@ -10,18 +10,6 @@ import numpy as np
 
 __all__ = ["Grid"]
 
-# For assigning calculation types to connection nodes:
-LINE_TYPE_PRECEDENCE = (
-    LineType.LINE_1D_ISOLATED,
-    LineType.LINE_1D_CONNECTED,
-    LineType.LINE_1D_EMBEDDED,
-)
-LINE_TYPE_MAPPING = {
-    LineType.LINE_1D_ISOLATED: CalculationType.ISOLATED,
-    LineType.LINE_1D_CONNECTED: CalculationType.CONNECTED,
-    LineType.LINE_1D_EMBEDDED: CalculationType.EMBEDDED,
-}
-
 
 class Grid:
     def __init__(self, nodes: Nodes, lines: Lines, quadtree_statistics=None):
@@ -175,32 +163,38 @@ class Grid:
         The calculation_type of a connection nodes is based on
           - connection_node.manhole.calculation_type (set in ConnectionNode.get_nodes)
           - if not present, the calculation_type of adjacent lines is taken. if
-            these are different the precedence is: 1 > 2 > 0
+            these are different, the precedence is:
+              ISOLATED > DOUBLE_CONNECTED > CONNECTED > EMBEDDED
           - if not present, then isolated
         """
-        node_mask = (
-            self.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-        ) & (self.nodes.calculation_type == -9999)
-        line_mask = (self.lines.content_type == ContentType.TYPE_V2_CHANNEL) | (
-            self.lines.content_type == ContentType.TYPE_V2_PIPE
-        )
-        lines_line = self.lines.line[line_mask]
-        lines_line_type = self.lines.line_type[line_mask]
+        # Get the indices of the relevant nodes and lines
+        node_idx = np.where(
+            (self.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
+            & (self.nodes.calculation_type == -9999)
+        )[0]
+        line_idx = np.where(
+            (self.lines.content_type == ContentType.TYPE_V2_CHANNEL)
+            | (self.lines.content_type == ContentType.TYPE_V2_PIPE)
+        )[0]
 
-        for node_idx in np.where(node_mask)[0]:
-            node_id = self.nodes.id[node_idx]
-            # fine the lines that connect to this node
-            line_idx = np.where(lines_line == node_id)[0]
-            # fine the corresponding types and convert to a set
-            line_types = set(lines_line_type[line_idx])
-            # set the node's line type if there is any line with a type
-            for line_type in LINE_TYPE_PRECEDENCE:
-                if line_type in line_types:
-                    self.nodes.calculation_type[node_idx] = LINE_TYPE_MAPPING[line_type]
-                    break
-            else:
-                # if there was no line with a type; set ISOLATED
-                self.nodes.calculation_type[node_idx] = CalculationType.ISOLATED
+        for _type in (
+            LineType.LINE_1D_ISOLATED,
+            LineType.LINE_1D_DOUBLE_CONNECTED,
+            LineType.LINE_1D_CONNECTED,
+            LineType.LINE_1D_EMBEDDED,
+        ):
+            # Do the nodes have a line with this _type?
+            has_this_type = np.isin(
+                self.nodes.index_to_id(node_idx),
+                self.lines.line[line_idx[self.lines.line_type[line_idx] == _type]],
+            )
+            # set the type (note: LineType and CalculationType have equal enum values)
+            self.nodes.calculation_type[node_idx[has_this_type]] = _type
+            # these nodes are 'done', skip them in the next loop
+            node_idx = node_idx[~has_this_type]
+
+        # Remaining nodes get ISOLATED
+        self.nodes.calculation_type[node_idx] = CalculationType.ISOLATED
 
     def set_bottom_levels(self, connection_nodes, channels):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
