@@ -14,7 +14,7 @@ __all__ = ["Grid"]
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines, quadtree_statistics=None):
+    def __init__(self, nodes: Nodes, lines: Lines):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
@@ -22,7 +22,7 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.epsg_code = None  # Grid is aware of its epsg_code
-        self.quadtree_statistics = quadtree_statistics
+        self.quadtree_stats = None
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -69,20 +69,12 @@ class Grid:
             area_mask, node_id_counter, line_id_counter
         )
 
-        quadtree_statistics = {
-            "lgrmin": quadtree.lgrmin,
-            "kmax": quadtree.kmax,
-            "mmax": quadtree.mmax,
-            "nmax": quadtree.nmax,
-            "dx": quadtree.dx,
-            "bbox": quadtree.bbox,
-            "pixel_geotransform": quadtree.transform,
-        }
-
-        return cls(nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics)
+        return cls(nodes=nodes, lines=lines)
 
     @classmethod
-    def from_connection_nodes(cls, connection_nodes, node_id_counter):
+    def from_connection_nodes(
+        cls, connection_nodes, node_id_counter, connection_node_offset=0
+    ):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
@@ -161,8 +153,9 @@ class Grid:
         """
         cross_sections.compute_weights(self.lines, locations, channels)
 
-    def finalize(self, epsg_code=None):
+    def finalize(self, epsg_code=None, quadtree_stats=None):
         """Finalize the Grid, computing and setting derived attributes"""
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.epsg_code = epsg_code
+        self.quadtree_stats = quadtree_stats

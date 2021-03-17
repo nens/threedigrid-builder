@@ -63,6 +63,9 @@ class GeopackageOut(OutputInterface):
             node_data["calculation_type"], CalculationType
         )
 
+        # Attribute data must only be 1D
+        node_data.pop("pixel_coords")
+        
         # construct the geodataframes
         df_nodes = geopandas.GeoDataFrame(
             node_data, geometry=node_geometries, crs=epsg_code

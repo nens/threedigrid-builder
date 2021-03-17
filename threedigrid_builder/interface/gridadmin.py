@@ -195,9 +195,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "code", nodes.code.astype("S32"), fill=b"")
         self.write_dataset(group, "display_name", nodes.code.astype("S64"), fill=b"")
         self.write_dataset(group, "node_type", nodes.node_type)
-        self.write_dataset(
-            group, "calculation_type", nodes.calculation_type
-        )
+        self.write_dataset(group, "calculation_type", nodes.calculation_type)
         self.write_dataset(group, "coordinates", nodes.coordinates.T)
         self.write_dataset(group, "cell_coords", nodes.bounds.T)
         self.write_dataset(group, "nodk", nodes.nodk)
@@ -223,7 +221,9 @@ class GridAdminOut(OutputInterface):
         # 2D stuff that is derived from 'bounds'
         pixel_width = np.full(len(nodes), -9999, dtype="i4")
         if is_2d.any():
-            pixel_width[is_2d] = nodes.pixel_coords[2] - nodes.pixel_coords[0]
+            pixel_width[is_2d] = (
+                nodes.pixel_coords[is_2d, 2] - nodes.pixel_coords[is_2d, 0]
+            )
 
         self.write_dataset(group, "x_coordinate", nodes.coordinates[:, 0])
         self.write_dataset(group, "y_coordinate", nodes.coordinates[:, 1])
@@ -250,14 +250,10 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "surface_level", np.full(shape, -9999, dtype=np.float64)
         )
-        self.write_dataset(
-            group, "width", np.full(shape, -9999, dtype=np.float64)
-        )
+        self.write_dataset(group, "width", np.full(shape, -9999, dtype=np.float64))
 
         # unknown
-        self.write_dataset(
-            group, "sumax", np.full(shape, -9999, dtype=np.float64)
-        )
+        self.write_dataset(group, "sumax", np.full(shape, -9999, dtype=np.float64))
 
     def write_lines(self, lines, **kwargs):
         """Write the "lines" group in the gridadmin file
@@ -289,9 +285,7 @@ class GridAdminOut(OutputInterface):
 
         lines.line_type[l2d] = LineType.LINE_2D
         self.write_dataset(group, "kcu", lines.line_type)
-        self.write_dataset(
-            group, "calculation_type", lines.calculation_type
-        )
+        self.write_dataset(group, "calculation_type", lines.calculation_type)
         self.write_dataset(group, "line", lines.line.T + 1)
         self.write_dataset(group, "ds1d", lines.ds1d)
         self.write_dataset(group, "lik", lines.lik)
@@ -333,12 +327,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "cross_section_shape", fill_int)
         self.write_dataset(group, "cross_section_width", fill_float)
         self.write_dataset(group, "discharge_coefficient", fill_float)
-        self.write_dataset(
-            group, "discharge_coefficient_negative", fill_float
-        )
-        self.write_dataset(
-            group, "discharge_coefficient_positive", fill_float
-        )
+        self.write_dataset(group, "discharge_coefficient_negative", fill_float)
+        self.write_dataset(group, "discharge_coefficient_positive", fill_float)
         self.write_dataset(group, "dist_calc_points", fill_float)
         self.write_dataset(group, "friction_type", fill_int)
         self.write_dataset(group, "friction_value", fill_float)

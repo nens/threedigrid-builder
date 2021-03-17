@@ -19,13 +19,15 @@ class QuadTree:
     """Defines active cell levels for computational grid."""
 
     lgrmin: int
+    pixel_size: float
+    origin: float
     kmax: int
     mmax: int
     nmax: int
     dx: float
-    bbox: float
     lg: int
     quad_idx: int
+    transform: float
 
     def __init__(self, subgrid_meta, num_refine_levels, min_gridsize, refinements):
 
