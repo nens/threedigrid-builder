@@ -17,6 +17,7 @@ def connection_nodes():
         code=np.array(["one", "two", "", ""]),
         storage_area=np.array([-2, 0, 15, np.nan]),
         calculation_type=np.array([1, 2, 5, 2]),
+        bottom_level=np.array([2.1, 5.2, np.nan, np.nan]),
     )
 
 
@@ -39,4 +40,5 @@ def test_get_nodes(connection_nodes):
             NodeType.NODE_1D_NO_STORAGE,
         ],
     )
-    assert_array_equal(nodes.calculation_type, [1, 2, 5, 2])
+    assert_array_equal(nodes.calculation_type, connection_nodes.calculation_type)
+    assert_array_equal(nodes.dmax, connection_nodes.bottom_level)
