@@ -74,6 +74,8 @@ class Grid:
         nodes, lines = quadtree.get_nodes_lines(
             area_mask, node_id_counter, line_id_counter
         )
+
+        # Some general quadtree grid statistics we need in the .h5 later on.
         quadtree_stats = {
             "lgrmin": quadtree.lgrmin,
             "kmax": quadtree.kmax,

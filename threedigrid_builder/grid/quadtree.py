@@ -104,7 +104,7 @@ class QuadTree:
         """Returns minimum number of pixels in smallles computational_cell."""
         return self.lgrmin
 
-    def _apply_refinements(self, bbox, refinements):
+    def _apply_refinements(self, subgrid_bbox, refinements):
         """Set active grid levels for based on refinement dict and
         filling lg variable for refinement locations.
 
@@ -122,7 +122,7 @@ class QuadTree:
                 geom=geom,
                 level=refinements.refinement_level[i],
                 type=pygeos.get_type_id(refinements.the_geom[i]),
-                bbox=bbox,
+                bbox=subgrid_bbox,
                 mmax=self.mmax,
                 nmax=self.nmax,
                 dx=self.dx,
