@@ -35,11 +35,13 @@ module m_cells
         integer(kind=c_int), intent(inout) :: line(n_line_u+n_line_v, 2) ! Array with connecting nodes of line.
         integer :: nod
         integer :: k
+        integer :: max_pix
         integer :: i0, i1, j0, j1
         integer :: l_u, l_v
         integer :: m, n
         integer :: mn(4)
 
+        max_pix = (lgrmin * nmax(1)) * 2 ** (k-1) + 1 ! Add 1 because we start indexing at 1 
         write(*,*) '** INFO: Start setting 2D calculation cells.'
         nod = 1
         l_u = 0
@@ -56,7 +58,7 @@ module m_cells
                         bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
                         coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
                         call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
-                        pixel_coords(nod, :) = (/ i0, j1, i1, j0 /) ! We inverse the y-axis for pixel_coords to comply with geotiffs in future use.
+                        pixel_coords(nod, :) = (/ i0, max_pix - j1, i1, max_pix - j0 /) ! We inverse the y-axis for pixel_coords to comply with geotiffs in future use.
                         call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line)
                         nod = nod + 1
                     else
