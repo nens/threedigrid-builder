@@ -15,8 +15,7 @@ class Line:
     id: int
     code: str
     display_name: str
-    line_type: LineType  # kcu
-    calculation_type: CalculationType
+    kcu: LineType  # calculation type of the line
     line: Tuple[int, int]
     lik: int
     lim: int

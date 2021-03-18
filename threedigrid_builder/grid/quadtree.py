@@ -141,10 +141,10 @@ class QuadTree:
         id_l = itertools.islice(line_id_counter, total_lines)
 
         # Line type is always openwater at first init
-        line_type = np.full(
+        kcu = np.full(
             (total_lines,), LineType.LINE_2D_U, dtype="i4", order="F"
         )
-        line_type[
+        kcu[
             self.n_lines[0] : self.n_lines[0] + self.n_lines[1]
         ] = LineType.LINE_2D_V
 
@@ -187,7 +187,7 @@ class QuadTree:
         )
 
         lines = Lines(
-            id=id_l, line_type=line_type, line=line, lik=lik, lim=lim, lin=lin
+            id=id_l, kcu=kcu, line=line, lik=lik, lim=lim, lin=lin
         )
 
         return nodes, lines

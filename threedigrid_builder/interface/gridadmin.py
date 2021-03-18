@@ -15,6 +15,8 @@ except ImportError:
 __all__ = ["GridAdminOut"]
 
 
+NODE_TYPES_1D = (NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE)
+
 LINE_TYPES_1D = (
     LineType.LINE_1D_EMBEDDED,
     LineType.LINE_1D_ISOLATED,
@@ -66,9 +68,7 @@ class GridAdminOut(OutputInterface):
 
         self._file.attrs.create("epsg_code", epsg_code, dtype="i4")
 
-        is_1d = (nodes.node_type == NodeType.NODE_1D_NO_STORAGE) | (
-            nodes.node_type == NodeType.NODE_1D_STORAGE
-        )
+        is_1d = np.isin(nodes.node_type, NODE_TYPES_1D)
         if is_1d.any():
             extent_1d = np.array(
                 [
@@ -130,29 +130,25 @@ class GridAdminOut(OutputInterface):
         group.create_dataset("n2dobc", data=NODATA_YET, dtype="i4")
         group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
 
-        n1dtot = np.count_nonzero(
-            nodes.node_type == NodeType.NODE_1D_NO_STORAGE
-        ) + np.count_nonzero(nodes.node_type == NodeType.NODE_1D_STORAGE)
+        n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
         group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
         group.create_dataset("n1dobc", data=NODATA_YET, dtype="i4")
 
-        liutot = np.count_nonzero(lines.line_type == LineType.LINE_2D_U)
+        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U)
         group.create_dataset("liutot", data=liutot, dtype="i4")
-        livtot = np.count_nonzero(lines.line_type == LineType.LINE_2D_V)
+        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V)
         group.create_dataset("livtot", data=livtot, dtype="i4")
 
         group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
         group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
 
-        l1dtot = sum([np.count_nonzero(lines.line_type == x) for x in LINE_TYPES_1D])
+        l1dtot = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D))
         group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
 
-        infl1d = sum([np.count_nonzero(lines.line_type == x) for x in LINE_TYPES_1D2D])
+        infl1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D))
         group.create_dataset("infl1d", data=infl1d, dtype="i4")
 
-        ingrw1d = sum(
-            [np.count_nonzero(lines.line_type == x) for x in LINE_TYPES_1D2D_GW]
-        )
+        ingrw1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D_GW))
         group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
         group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
 
@@ -294,9 +290,9 @@ class GridAdminOut(OutputInterface):
         shape = (len(lines),)
         fill_int = np.full(shape, -9999, dtype="i4")
         fill_float = np.full(shape, -9999, dtype=float)
+        is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
-        l2d = lines.line_type == LineType.LINE_2D_U
-        l2d += lines.line_type == LineType.LINE_2D_V
+        l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", lines.id + 1, fill=-9999)
         self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
@@ -304,10 +300,12 @@ class GridAdminOut(OutputInterface):
             group, "display_name", lines.display_name.astype("S64"), fill=b""
         )
 
-        lines.line_type[l2d] = LineType.LINE_2D
-        self.write_dataset(group, "kcu", lines.line_type, fill=-9999)
+        lines.kcu[l2d] = LineType.LINE_2D
+        self.write_dataset(group, "kcu", lines.kcu, fill=-9999)
+        calculation_type = fill_int.copy()
+        calculation_type[is_channel] = lines.kcu[is_channel] + 100
         self.write_dataset(
-            group, "calculation_type", lines.calculation_type, fill=-9999
+            group, "calculation_type", calculation_type, fill=-9999
         )
         self.write_dataset(group, "line", lines.line.T + 1, fill=-9999)
         self.write_dataset(group, "ds1d", lines.ds1d, fill=-9999)

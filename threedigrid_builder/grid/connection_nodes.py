@@ -100,7 +100,7 @@ def set_calculation_types(nodes, lines):
         # Do the nodes have a line with this _type?
         has_this_type = np.isin(
             nodes.index_to_id(node_idx),
-            lines.line[line_idx[lines.line_type[line_idx] == _type]],
+            lines.line[line_idx[lines.kcu[line_idx] == _type]],
         )
         # set the type (note: LineType and CalculationType have equal enum values)
         nodes.calculation_type[node_idx[has_this_type]] = _type

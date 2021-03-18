@@ -130,7 +130,7 @@ class Grid:
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
-            - lines.line_type: from the channel's calculation_type
+            - lines.kcu: from the channel's calculation_type
         """
         nodes, segment_size = channels.interpolate_nodes(
             node_id_counter, global_dist_calc_points

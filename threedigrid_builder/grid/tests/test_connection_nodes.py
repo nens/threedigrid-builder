@@ -50,7 +50,7 @@ def test_get_nodes(connection_nodes):
 
 
 @pytest.mark.parametrize(
-    "line_types,expected",
+    "kcu,expected",
     [
         ([-9999], CalculationType.ISOLATED),
         ([-9999, -9999], CalculationType.ISOLATED),
@@ -69,13 +69,13 @@ def test_get_nodes(connection_nodes):
         ),
     ],
 )
-def test_set_calculation_types_single_node(line_types, expected):
+def test_set_calculation_types_single_node(kcu, expected):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
-        id=range(len(line_types)),
+        id=range(len(kcu)),
         content_type=ContentType.TYPE_V2_CHANNEL,
-        line=[(1, 9999)] * len(line_types),
-        line_type=line_types,
+        line=[(1, 9999)] * len(kcu),
+        kcu=kcu,
     )
 
     set_calculation_types(nodes, lines)
@@ -93,7 +93,7 @@ def test_set_calculation_types_two_nodes():
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CHANNEL,
         line=[(1, 2), (2, 9999), (9999, 1)],
-        line_type=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
+        kcu=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
     )
 
     set_calculation_types(nodes, lines)

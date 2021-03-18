@@ -103,7 +103,7 @@ def test_get_lines(connection_nodes, two_channels):
     assert_array_equal(lines.line, expected_line)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
-    assert_array_equal(lines.line_type, [2, 2, 1, 1, 1])
+    assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
     assert_array_equal(lines.ds1d, [23, 23, 101, 101, 101])
 
 

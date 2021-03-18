@@ -105,7 +105,7 @@ class Channels:
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this line originates
             - ds1d: the arclength of the line (if segment_size is supplied)
-            - line_type: the calculation_type of the Channel
+            - kcu: the calculation_type of the Channel
             The lines are ordered by content_pk and then by position on the
             channel.
         """
@@ -127,7 +127,7 @@ class Channels:
             content_pk=self.id,
             content_type=ContentType.TYPE_V2_CHANNEL,
             ds1d=segment_size,
-            line_type=self.calculation_type,
+            kcu=self.calculation_type,
         )
 
         # if there are no interpolated nodes then we're done
@@ -159,7 +159,7 @@ class Channels:
             content_pk=nodes.content_pk,
             content_type=ContentType.TYPE_V2_CHANNEL,
             ds1d=None if segment_size is None else segment_size[channel_idx],
-            line_type=self.calculation_type[channel_idx],
+            kcu=self.calculation_type[channel_idx],
         )
 
         # Reorder the lines so that they are sorted by [channel_id, position]
