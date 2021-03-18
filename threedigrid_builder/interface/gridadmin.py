@@ -330,7 +330,11 @@ class GridAdminOut(OutputInterface):
         line_geometries.insert(0, np.array([-9999.0, -9999.0]))
         # The dataset has a special "variable length" dtype. This one is special specific write method.
         vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
-        group.create_dataset("line_geometries", data=line_geometries, dtype=vlen_dtype)
+        group.create_dataset(
+            "line_geometries",
+            data=np.array(line_geometries, dtype=object),
+            dtype=vlen_dtype,
+        )
 
         # can be collected from SQLite, but empty for now:
         self.write_dataset(group, "connection_node_end_pk", fill_int)

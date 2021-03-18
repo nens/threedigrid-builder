@@ -87,7 +87,7 @@ class GeopackageOut(OutputInterface):
         line_data = lines.to_dict()
 
         # convert enums to strings
-        line_data["line_type"] = _enum_to_str(line_data["line_type"], LineType)
+        line_data["kcu"] = _enum_to_str(line_data["kcu"], LineType)
         line_data["content_type"] = _enum_to_str(line_data["content_type"], ContentType)
 
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays

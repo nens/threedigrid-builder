@@ -189,18 +189,6 @@ class Grid:
           - except for channels with no interpolated nodes: take reference level, but
             only if that is higher than the two neighboring nodes.
         """
-        # channel lines interpolate between cross section locations
-        is_ch_line = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1 = self.lines.cross1[is_ch_line]
-        cross2 = self.lines.cross2[is_ch_line]
-        weight = self.lines.cross_weight[is_ch_line]
-        if np.any((cross1 == -9999) | (cross1 == -9999) | np.isnan(weight)):
-            raise ValueError(
-                "Cannot set channel bottom levels without the channel weights."
-            )
-        level1 = cs.reference_level[cs.id_to_index(cross1)]
-        level2 = cs.reference_level[cs.id_to_index(cross2)]
-        self.lines.dpumax[is_ch_line] = weight * level1 + (1 - weight) * level2
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
