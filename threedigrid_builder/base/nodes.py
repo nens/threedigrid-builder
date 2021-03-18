@@ -18,6 +18,7 @@ class Node:
     content_pk: int
     coordinates: Tuple[float, float]
     bounds: Tuple[float, float, float, float]  # cell_coords in gridadmin
+    pixel_coords: Tuple[int, int, int, int]  # pixel_coords in gridadmin
     dmax: float  # bottom_level or z_coordinate (?) in gridadmin
     dimp: float  # bottom level groundwater
     nodk: int  # quadtree grid coordinate z

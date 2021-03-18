@@ -11,15 +11,17 @@ __all__ = ["Grid"]
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines, quadtree_statistics=None):
+    def __init__(
+        self, nodes: Nodes, lines: Lines, epsg_code=None, quadtree_stats=None
+    ):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
         self.nodes = nodes
         self.lines = lines
-        self.epsg_code = None  # Grid is aware of its epsg_code
-        self.quadtree_statistics = quadtree_statistics or {}
+        self.epsg_code = epsg_code  # Grid is aware of its epsg_code
+        self.quadtree_stats = quadtree_stats
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -28,9 +30,13 @@ class Grid:
                 "Cannot concatenate {self} with {other} as they are not of "
                 "equal types."
             )
-        return self.__class__(
-            nodes=self.nodes + other.nodes, lines=self.lines + other.lines
-        )
+        new_attrs = {}
+        for k, v in other.__dict__.items():
+            if isinstance(v, Nodes) or isinstance(v, Lines):
+                new_attrs[k] = getattr(self, k) + v
+            else:
+                new_attrs[k] = v if v is not None else getattr(self, k)
+        return self.__class__(**new_attrs)
 
     def __repr__(self):
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
@@ -66,19 +72,22 @@ class Grid:
             area_mask, node_id_counter, line_id_counter
         )
 
-        quadtree_statistics = {
+        # Some general quadtree grid statistics we need in the .h5 later on.
+        quadtree_stats = {
             "lgrmin": quadtree.lgrmin,
             "kmax": quadtree.kmax,
             "mmax": quadtree.mmax,
             "nmax": quadtree.nmax,
             "dx": quadtree.dx,
-            "bbox": quadtree.bbox,
+            "pixel_geotransform": quadtree.transform,
         }
 
-        return cls(nodes=nodes, lines=lines, quadtree_statistics=quadtree_statistics)
+        return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
-    def from_connection_nodes(cls, connection_nodes, node_id_counter):
+    def from_connection_nodes(
+        cls, connection_nodes, node_id_counter, connection_node_offset=0
+    ):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
