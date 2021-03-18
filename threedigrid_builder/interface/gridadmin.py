@@ -332,7 +332,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group,
             "discharge_coefficient",
-            lines.discharge_coefficient_negative,
+            lines.discharge_coefficient_positive,
             fill=-9999,
         )
         self.write_dataset(

@@ -4,6 +4,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import LineType
 
 import itertools
 import numpy as np
@@ -63,3 +64,48 @@ class ConnectionNodes:
             dmax=self.bottom_level,
         )
         return nodes
+
+
+def set_calculation_types(nodes, lines):
+    """Set the calculation types for connection nodes that do not yet have one.
+
+    The calculation_type of a connection nodes is based on
+      - connection_node.manhole.calculation_type (set in ConnectionNode.get_nodes)
+      - if not present, the calculation_type of adjacent channels or pipes are taken
+        if these are different, the precedence is:
+          ISOLATED > DOUBLE_CONNECTED > CONNECTED > EMBEDDED
+      - if not present, then the calculation type becomes ISOLATED
+
+    Args:
+        nodes (Nodes): the nodes, those with content_type == TYPE_V2_CONNECTION_NODES
+          and without a calculation_type will get a new calculation_type
+        lines (Lines): the lines, including channels and pipes
+    """
+    # Get the indices of the relevant nodes and lines
+    node_idx = np.where(
+        (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
+        & (nodes.calculation_type == -9999)
+    )[0]
+    line_idx = np.where(
+        (lines.content_type == ContentType.TYPE_V2_CHANNEL)
+        | (lines.content_type == ContentType.TYPE_V2_PIPE)
+    )[0]
+
+    for _type in (
+        LineType.LINE_1D_ISOLATED,
+        LineType.LINE_1D_DOUBLE_CONNECTED,
+        LineType.LINE_1D_CONNECTED,
+        LineType.LINE_1D_EMBEDDED,
+    ):
+        # Do the nodes have a line with this _type?
+        has_this_type = np.isin(
+            nodes.index_to_id(node_idx),
+            lines.line[line_idx[lines.line_type[line_idx] == _type]],
+        )
+        # set the type (note: LineType and CalculationType have equal enum values)
+        nodes.calculation_type[node_idx[has_this_type]] = _type
+        # these nodes are 'done', skip them in the next loop
+        node_idx = node_idx[~has_this_type]
+
+    # Remaining nodes get ISOLATED
+    nodes.calculation_type[node_idx] = CalculationType.ISOLATED

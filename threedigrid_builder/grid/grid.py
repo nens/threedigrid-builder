@@ -1,9 +1,8 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.grid import cross_sections
+from threedigrid_builder.grid.connection_nodes import set_calculation_types
+from threedigrid_builder.grid.cross_sections import compute_weights
 
 import numpy as np
 
@@ -155,59 +154,33 @@ class Grid:
             locations (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
-        cross_sections.compute_weights(self.lines, locations, channels)
+        compute_weights(self.lines, locations, channels)
 
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
 
-        The calculation_type of a connection nodes is based on
-          - connection_node.manhole.calculation_type (set in ConnectionNode.get_nodes)
-          - if not present, the calculation_type of adjacent channels or pipes are taken
-            if these are different, the precedence is:
-              ISOLATED > DOUBLE_CONNECTED > CONNECTED > EMBEDDED
-          - if not present, then the calculation type becomes ISOLATED
+        ConnectionNodes, Channels and Pipes should be present in the grid.
         """
-        # Get the indices of the relevant nodes and lines
-        node_idx = np.where(
-            (self.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
-            & (self.nodes.calculation_type == -9999)
-        )[0]
-        line_idx = np.where(
-            (self.lines.content_type == ContentType.TYPE_V2_CHANNEL)
-            | (self.lines.content_type == ContentType.TYPE_V2_PIPE)
-        )[0]
-
-        for _type in (
-            LineType.LINE_1D_ISOLATED,
-            LineType.LINE_1D_DOUBLE_CONNECTED,
-            LineType.LINE_1D_CONNECTED,
-            LineType.LINE_1D_EMBEDDED,
-        ):
-            # Do the nodes have a line with this _type?
-            has_this_type = np.isin(
-                self.nodes.index_to_id(node_idx),
-                self.lines.line[line_idx[self.lines.line_type[line_idx] == _type]],
-            )
-            # set the type (note: LineType and CalculationType have equal enum values)
-            self.nodes.calculation_type[node_idx[has_this_type]] = _type
-            # these nodes are 'done', skip them in the next loop
-            node_idx = node_idx[~has_this_type]
-
-        # Remaining nodes get ISOLATED
-        self.nodes.calculation_type[node_idx] = CalculationType.ISOLATED
+        set_calculation_types(self.nodes, self.lines)
 
     def set_bottom_levels(self, cs):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         The levels are based on:
-        1. channels: crosssection locations
+        1. channel nodes: interpolate between crosssection locations
         2. pipes, connection nodes:
           - from the manhole.bottom_level
-          - if not present (from neighboring points? ?)
+          - if not present: the lowest of all neigboring objects
+             - channel: interpolate for channels (like channel node)
+             - pipe: invert level (if no storage & invert levels differ by more
+               than cross section height: error)
+             - weir: crest level
+             - culvert: invert level
         3. pipes, interpolated nodes:
           - interpolate between invert level start & end
-        4. dpumax = greatest of 2 neighboring nodes dmax
-           except for pipes with no interpolated nodes, then take pipe's own level
+        4. lines: dpumax = greatest of the two neighboring nodes dmax
+          - except for channels with no interpolated nodes: take reference level, but
+            only if that is higher than the two neighboring nodes.
         """
         # channel lines interpolate between cross section locations
         is_ch_line = self.lines.content_type == ContentType.TYPE_V2_CHANNEL

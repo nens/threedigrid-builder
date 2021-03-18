@@ -1,8 +1,5 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
@@ -97,7 +94,7 @@ def test_from_channels():
     )
 
 
-@mock.patch("threedigrid_builder.grid.grid.cross_sections.compute_weights")
+@mock.patch("threedigrid_builder.grid.grid.compute_weights")
 def test_set_channel_weights(compute_weights, grid):
     locations = mock.Mock()
     channels = mock.Mock()
@@ -107,59 +104,7 @@ def test_set_channel_weights(compute_weights, grid):
     compute_weights.assert_called_with(grid.lines, locations, channels)
 
 
-@pytest.mark.parametrize(
-    "line_types,expected",
-    [
-        ([-9999], CalculationType.ISOLATED),
-        ([-9999, -9999], CalculationType.ISOLATED),
-        ([LineType.LINE_1D_CONNECTED], CalculationType.CONNECTED),
-        ([LineType.LINE_1D_EMBEDDED], CalculationType.EMBEDDED),
-        ([LineType.LINE_1D_ISOLATED], CalculationType.ISOLATED),
-        ([LineType.LINE_1D_CONNECTED, -9999], CalculationType.CONNECTED),
-        ([-9999, LineType.LINE_1D_EMBEDDED], CalculationType.EMBEDDED),
-        (
-            [LineType.LINE_1D_ISOLATED, LineType.LINE_1D_CONNECTED],
-            CalculationType.ISOLATED,
-        ),
-        (
-            [LineType.LINE_1D_CONNECTED, LineType.LINE_1D_EMBEDDED],
-            CalculationType.CONNECTED,
-        ),
-    ],
-)
-def test_set_calculation_types_single_node(line_types, expected):
-    grid = Grid(
-        Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES),
-        Lines(
-            id=range(len(line_types)),
-            content_type=ContentType.TYPE_V2_CHANNEL,
-            line=[(1, 9999)] * len(line_types),
-            line_type=line_types,
-        ),
-    )
-
+@mock.patch("threedigrid_builder.grid.grid.set_calculation_types")
+def test_set_calculation_types(set_calculation_types, grid):
     grid.set_calculation_types()
-
-    assert grid.nodes.calculation_type[0] == expected
-
-
-def test_set_calculation_types_two_nodes():
-    grid = Grid(
-        Nodes(
-            id=[1, 2, 3],
-            content_type=ContentType.TYPE_V2_CONNECTION_NODES,
-            calculation_type=[-9999, -9999, CalculationType.EMBEDDED],
-        ),
-        Lines(
-            id=[1, 2, 3],
-            content_type=ContentType.TYPE_V2_CHANNEL,
-            line=[(1, 2), (2, 9999), (9999, 1)],
-            line_type=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
-        ),
-    )
-
-    grid.set_calculation_types()
-
-    assert grid.nodes.calculation_type[0] == CalculationType.ISOLATED
-    assert grid.nodes.calculation_type[1] == CalculationType.CONNECTED
-    assert grid.nodes.calculation_type[2] == CalculationType.EMBEDDED
+    set_calculation_types.assert_called_with(grid.nodes, grid.lines)

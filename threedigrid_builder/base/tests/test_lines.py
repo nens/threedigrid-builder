@@ -44,6 +44,5 @@ def test_set_discharge_coefficients(lines):
     lines.discharge_coefficient_negative[0] = 3.0
     lines.set_discharge_coefficients()
 
-    assert_equal(lines.discharge_coefficient, [1.0, 1.0, 1.0])
     assert_equal(lines.discharge_coefficient_positive, [2.0, 2.0, 2.0])
     assert_equal(lines.discharge_coefficient_negative, [3.0, 1.0, 1.0])

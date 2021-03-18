@@ -32,7 +32,6 @@ class Line:
     cross1: int  # the id of the cross section location
     cross2: int  # the id of the cross section location
     cross_weight: float
-    discharge_coefficient: float  # maybe superfluous?
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
 
@@ -44,11 +43,9 @@ class Lines:
     def set_discharge_coefficients(self):
         """Set discharge coefficients to 1.0 where unset."""
         for arr in (
-            self.discharge_coefficient,
             self.discharge_coefficient_positive,
             self.discharge_coefficient_negative,
         ):
-            arr[np.isnan(arr)] = 1.0
             arr[np.isnan(arr)] = 1.0
 
     def set_line_coords(self, nodes):
