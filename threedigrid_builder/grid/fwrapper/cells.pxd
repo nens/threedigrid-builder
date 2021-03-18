@@ -16,6 +16,7 @@ cdef extern:
         int *quad_idx,
         double *bounds,
         double *coords,
+        int *pixel_coords,
         int *size_n,
         int *area_mask,
         int *size_a,
