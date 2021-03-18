@@ -1,15 +1,15 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import NodeType
 from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid.fwrapper import create_quadtree
-from threedigrid_builder.grid.fwrapper import set_refinement
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
+from threedigrid_builder.grid.fwrapper import set_refinement
 
-import numpy as np
 import itertools
-import pygeos
 import math
+import numpy as np
+import pygeos
 
 
 __all__ = ["QuadTree"]
@@ -157,10 +157,8 @@ class QuadTree:
         id_l = itertools.islice(line_id_counter, total_lines)
 
         # Line type is always openwater at first init
-        line_type = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
-        line_type[
-            self.n_lines[0] : self.n_lines[0] + self.n_lines[1]
-        ] = LineType.LINE_2D_V
+        kcu = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
+        kcu[self.n_lines[0] : self.n_lines[0] + self.n_lines[1]] = LineType.LINE_2D_V
 
         # Node connection array
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
@@ -202,8 +200,6 @@ class QuadTree:
             pixel_coords=pixel_coords,
         )
 
-        lines = Lines(
-            id=id_l, line_type=line_type, line=line, lik=lik, lim=lim, lin=lin
-        )
+        lines = Lines(id=id_l, kcu=kcu, line=line, lik=lik, lim=lim, lin=lin)
 
         return nodes, lines

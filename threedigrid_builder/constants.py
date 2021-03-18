@@ -6,7 +6,7 @@ from enum import unique
 class CalculationType(IntEnum):
     BOUNDARY_NODE = -1
     EMBEDDED = 0
-    STANDALONE = 1
+    ISOLATED = 1
     CONNECTED = 2
     BROAD_CRESTED = 3  # only orifices + weirs, corresponds
     SHORT_CRESTED = 4  # only orifices + weirs
@@ -25,13 +25,13 @@ class NodeType(IntEnum):
 
 
 @unique
-class LineType(IntEnum):
-    LINE_1D_EMBEDDED = 0
-    LINE_1D_ISOLATED = 1
-    LINE_1D_CONNECTED = 2
-    LINE_1D_LONG_CRESTED = 3
-    LINE_1D_SHORT_CRESTED = 4
-    LINE_1D_DOUBLE_CONNECTED = 5
+class LineType(IntEnum):  # for kcu (calculation_type of a line)
+    LINE_1D_EMBEDDED = int(CalculationType.EMBEDDED)
+    LINE_1D_ISOLATED = int(CalculationType.ISOLATED)
+    LINE_1D_CONNECTED = int(CalculationType.CONNECTED)
+    LINE_1D_LONG_CRESTED = int(CalculationType.BROAD_CRESTED)
+    LINE_1D_SHORT_CRESTED = int(CalculationType.SHORT_CRESTED)
+    LINE_1D_DOUBLE_CONNECTED = int(CalculationType.DOUBLE_CONNECTED)
     LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE = 51
     LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE = 52
     LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE = 53
@@ -87,3 +87,10 @@ class CrossSectionShape(IntEnum):
     EGG = 3
     TABULATED_RECTANGLE = 5
     TABULATED_TRAPEZIUM = 6
+
+
+@unique
+class ManholeIndicator(IntEnum):
+    INSPECTION = 0
+    OUTLET = 1
+    PUMP = 2

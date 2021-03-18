@@ -42,6 +42,7 @@ def get_1d_grid(path, node_id_start=0, line_id_start=0):
 
     cross_section_locations = db.get_cross_section_locations()
     grid.set_channel_weights(cross_section_locations, channels)
+    grid.set_calculation_types()
 
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid
@@ -71,8 +72,7 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         line_id_counter=line_counter,
     )
 
-    grid.finalize(
-        epsg_code=db.global_settings["epsg_code"])
+    grid.finalize(epsg_code=db.global_settings["epsg_code"])
 
     return grid
 
@@ -87,6 +87,7 @@ def grid_to_hdf5(grid, path):
     with GridAdminOut(path) as out:
         out.write_grid_characteristics(grid.nodes, grid.lines, epsg_code=grid.epsg_code)
         out.write_grid_counts(grid.nodes, grid.lines)
-        out.write_quadtree(grid.quadtree_stats)
+        if grid.quadtree_stats is not None:
+            out.write_quadtree(grid.quadtree_stats)
         out.write_nodes(grid.nodes)
         out.write_lines(grid.lines)

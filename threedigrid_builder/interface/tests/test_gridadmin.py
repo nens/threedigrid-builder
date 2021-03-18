@@ -1,12 +1,12 @@
-import h5py
-import pytest
-import numpy as np
-import tempfile
-import pygeos
-
-from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.interface import GridAdminOut
+
+import h5py
+import numpy as np
+import pygeos
+import pytest
+import tempfile
 
 
 @pytest.fixture(scope="session")
@@ -30,7 +30,7 @@ def h5_out():
         "kmax": 2,
         "mmax": np.array([2, 4], dtype=np.int32),
         "nmax": np.array([3, 5], dtype=np.int32),
-        "dx": np.array([1., 2.], dtype=np.float64),
+        "dx": np.array([1.0, 2.0], dtype=np.float64),
         "pixel_geotransform": np.array(
             [1.0, 0.0, 5.0, 0.0, -1.0, 5.0], dtype=np.float64
         ),

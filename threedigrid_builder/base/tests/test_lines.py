@@ -37,3 +37,12 @@ def test_fix_line_geometries(nodes, lines):
     assert pygeos.equals(lines.line_geometries[0], pygeos.linestrings([(1, 1), (2, 2)]))
     assert pygeos.equals(lines.line_geometries[1], pygeos.linestrings([(5, 5), (6, 6)]))
     assert pygeos.equals(lines.line_geometries[2], pygeos.linestrings([(1, 1), (3, 3)]))
+
+
+def test_set_discharge_coefficients(lines):
+    lines.discharge_coefficient_positive[:] = 2.0
+    lines.discharge_coefficient_negative[0] = 3.0
+    lines.set_discharge_coefficients()
+
+    assert_equal(lines.discharge_coefficient_positive, [2.0, 2.0, 2.0])
+    assert_equal(lines.discharge_coefficient_negative, [3.0, 1.0, 1.0])
