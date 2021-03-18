@@ -84,7 +84,7 @@ class QuadTree:
         )
 
         # Find the top row of quad_idx that is filled with active cells to base geotransfrom on.
-        max_idx = np.max(self.quad_idx.nonzero()[1])
+        max_idx = np.max(self.quad_idx.nonzero()[1]) + 1
         self.transform = np.array(
             [
                 self.pixel_size,

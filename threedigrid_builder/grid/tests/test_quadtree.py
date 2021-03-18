@@ -103,6 +103,10 @@ def test_quadtree_line_refinement(quadtree_line_refinement):
     assert quadtree_line_refinement.nmax[2] == 2
     assert quadtree_line_refinement.dx[0] == 1.0
     assert_array_equal(
+        quadtree_line_refinement.transform,
+        np.array([0.5, 0.0, 10.0, 0.0, -0.5, 18.0])
+    )
+    assert_array_equal(
         quadtree_line_refinement.lg,
         np.array(
             [
@@ -185,7 +189,19 @@ def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
             [17.5, 17.5],
         ]
     )
+
+    pixel_coords_check = np.array(
+        [
+            [0, 8, 7, 15],
+            [0, 0, 3, 3],
+            [12, 12, 15, 15],
+            [14, 0, 15, 1]
+        ]
+    )
     assert_array_equal(nodes.coordinates, coordinates)
+    assert_array_equal(
+        nodes.pixel_coords[(0, 2, 8, 21), :], pixel_coords_check
+    )
 
 
 def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
