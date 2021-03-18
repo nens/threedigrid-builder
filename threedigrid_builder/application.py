@@ -72,8 +72,7 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
         line_id_counter=line_counter,
     )
 
-    grid.finalize(
-        epsg_code=db.global_settings["epsg_code"])
+    grid.finalize(epsg_code=db.global_settings["epsg_code"])
 
     return grid
 

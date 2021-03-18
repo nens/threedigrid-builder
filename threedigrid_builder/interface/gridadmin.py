@@ -350,7 +350,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "sewerage_type", fill_int)
         self.write_dataset(group, "zoom_category", fill_int)
 
-    def write_dataset(self, group, name, values, fill):
+    def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.
 

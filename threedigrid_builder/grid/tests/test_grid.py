@@ -1,3 +1,4 @@
+from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.grid import ConnectionNodes
@@ -30,8 +31,8 @@ def grid2d():
         "kmax": 1,
         "mmax": np.array([1]),
         "nmax": np.array([1]),
-        "dx": np.array([2.]),
-        "pixel_geotransform": np.array([0., 1., 0., 0. - 1., 0.]),
+        "dx": np.array([2.0]),
+        "pixel_geotransform": np.array([0.0, 1.0, 0.0, 0.0 - 1.0, 0.0]),
     }
     return Grid(
         nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats

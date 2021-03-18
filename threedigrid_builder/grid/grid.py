@@ -11,9 +11,7 @@ __all__ = ["Grid"]
 
 
 class Grid:
-    def __init__(
-        self, nodes: Nodes, lines: Lines, epsg_code=None, quadtree_stats=None
-    ):
+    def __init__(self, nodes: Nodes, lines: Lines, epsg_code=None, quadtree_stats=None):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
