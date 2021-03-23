@@ -189,7 +189,7 @@ def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
     )
 
     pixel_coords_check = np.array(
-        [[0, 8, 7, 15], [0, 0, 3, 3], [12, 12, 15, 15], [14, 0, 15, 1]]
+        [[0, 8, 8, 16], [0, 0, 4, 4], [12, 12, 16, 16], [14, 0, 16, 2]]
     )
     assert_array_equal(nodes.coordinates, coordinates)
     assert_array_equal(nodes.pixel_coords[(0, 2, 8, 21), :], pixel_coords_check)

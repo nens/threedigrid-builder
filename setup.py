@@ -81,7 +81,7 @@ setup(
     version=version,
     description="3Di Grid Generator",
     long_description=long_description,
-    url="https://github.com/nens/grid3di",
+    url="https://github.com/nens/threedigrid-builder",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
     packages=["threedigrid_builder"],
