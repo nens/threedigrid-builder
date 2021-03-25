@@ -31,9 +31,9 @@ def h5_out():
         "mmax": np.array([2, 4], dtype=np.int32),
         "nmax": np.array([3, 5], dtype=np.int32),
         "dx": np.array([1.0, 2.0], dtype=np.float64),
-        "pixel_geotransform": np.array(
-            [1.0, 0.0, 5.0, 0.0, -1.0, 5.0], dtype=np.float64
-        ),
+        "dxp": 0.5,
+        "x0p": 10.,
+        "y0p": 10.,
     }
 
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
@@ -144,7 +144,9 @@ def test_write_lines(h5_out, dataset, shape, dtype):
         ("mmax", (2,), "int32"),
         ("nmax", (2,), "int32"),
         ("dx", (2,), "float64"),
-        ("pixel_geotransform", (6,), "float64"),
+        ("dxp", (), "float64"),
+        ("x0p", (), "float64"),
+        ("y0p", (), "float64"),
     ],
 )
 def test_write_quadtree(h5_out, dataset, shape, dtype):
