@@ -288,3 +288,8 @@ docker-compose.override.yml
 
 # Pytest
 .pytest_cache
+
+# Dockerfile development
+Dockerfile-dev
+requirements_dev.txt
+docker-compose.devcontainer.yml
