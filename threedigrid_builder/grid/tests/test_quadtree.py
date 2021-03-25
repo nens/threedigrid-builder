@@ -101,6 +101,9 @@ def test_quadtree_line_refinement(quadtree_line_refinement):
     assert quadtree_line_refinement.mmax[2] == 3
     assert quadtree_line_refinement.nmax[2] == 2
     assert quadtree_line_refinement.dx[0] == 1.0
+    assert quadtree_line_refinement.pixel_size == 0.5
+    assert quadtree_line_refinement.x0p == 10.0
+    assert quadtree_line_refinement.y0p == 10.0
 
     assert_array_equal(
         quadtree_line_refinement.lg,

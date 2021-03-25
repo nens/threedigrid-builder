@@ -27,6 +27,7 @@ class QuadTree:
     dx: float
     lg: int
     quad_idx: int
+    transform: float
 
     def __init__(self, subgrid_meta, num_refine_levels, min_gridsize, refinements):
 

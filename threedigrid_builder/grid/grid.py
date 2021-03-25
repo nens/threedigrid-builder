@@ -77,6 +77,9 @@ class Grid:
             "mmax": quadtree.mmax,
             "nmax": quadtree.nmax,
             "dx": quadtree.dx,
+            "dxp": quadtree.pixel_size,
+            "x0p": quadtree.origin[0],
+            "y0p": quadtree.origin[0],
         }
 
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
