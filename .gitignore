@@ -293,3 +293,4 @@ docker-compose.override.yml
 Dockerfile-dev
 requirements_dev.txt
 docker-compose.devcontainer.yml
+.devcontainer.json
