@@ -32,7 +32,9 @@ def grid2d():
         "mmax": np.array([1]),
         "nmax": np.array([1]),
         "dx": np.array([2.0]),
-        "pixel_geotransform": np.array([0.0, 1.0, 0.0, 0.0 - 1.0, 0.0]),
+        "dxp": 0.5,
+        "x0p": 10.,
+        "y0p": 10.,
     }
     return Grid(
         nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats
@@ -52,6 +54,7 @@ def test_from_quadtree():
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
+    quadtree.origin = (0., 0.)
     quadtree.get_nodes_lines.return_value = nodes, lines
 
     grid = Grid.from_quadtree(

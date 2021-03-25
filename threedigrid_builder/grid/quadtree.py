@@ -83,19 +83,6 @@ class QuadTree:
             self.lg,
         )
 
-        # Find the top row of quad_idx that is filled with active cells to base geotransfrom on.
-        max_idx = np.max(self.quad_idx.nonzero()[1]) + 1
-        self.transform = np.array(
-            [
-                self.pixel_size,
-                0.0,
-                self.origin[0],
-                0.0,
-                -self.pixel_size,
-                self.origin[1] + max_idx * self.dx[0],
-            ]
-        )
-
     def __repr__(self):
         return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>"  # NOQA
 
