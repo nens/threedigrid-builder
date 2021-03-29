@@ -6,7 +6,7 @@ module m_cells
 
     subroutine set_2d_computational_nodes_lines(origin, lgrmin, kmax, mmax, nmax, dx,&
         lg, size_i, size_j, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords, size_n,&
-        area_mask, size_a, size_b, line, n_line_u, n_line_v) bind(c, name="f_set_2d_computational_nodes_lines")
+        area_mask, size_a, size_b, line, cross_pix_coords, n_line_u, n_line_v) bind(c, name="f_set_2d_computational_nodes_lines")
         !!! Entry point for setting nodes and lines and there necessary attributes.
         use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners
 
@@ -33,6 +33,7 @@ module m_cells
         integer(kind=c_int), intent(in) :: n_line_u ! Number of active u-dir lines.
         integer(kind=c_int), intent(in) :: n_line_v  ! Number of active v-dir lines.
         integer(kind=c_int), intent(inout) :: line(n_line_u+n_line_v, 2) ! Array with connecting nodes of line.
+        integer(kind=c_int), intent(inout) :: cross_pix_coords(n_line_u+n_line_v, 4) ! Array pixel indices of line interface
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -59,7 +60,7 @@ module m_cells
                         ! We inverse the y-axis for pixel_coords to comply with geotiffs in future use.
                         ! And do some index fiddling because python starts indexing at 0 and has open end indexing.
                         pixel_coords(nod, :) = (/ i0 - 1, j0 - 1, i1, j1 /)
-                        call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line)
+                        call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line, cross_pix_coords)
                         nod = nod + 1
                     else
                         continue
@@ -73,7 +74,7 @@ module m_cells
 
     end subroutine set_2d_computational_nodes_lines
 
-    subroutine set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line)
+    subroutine set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line, cross_pix_coords)
 
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster
 
@@ -89,6 +90,7 @@ module m_cells
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)
+        integer, intent(inout), optional :: cross_pix_coords(:,:)
         integer :: i0,i1,j0,j1,i2,i3,j2,j3
         integer :: neighbour
 
@@ -107,6 +109,7 @@ module m_cells
                     neighbour = quad_idx(mn(3)+1, mn(2)) 
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ nod - 1, neighbour - 1/)
+                    cross_pix_coords(l_u,:) = (/ i1, j0 - 1, i1, j1 /) ! Python indexing so -1 at start slice
                 endif
             else
                 if (lg(mn(3)+1, mn(2)) == k-1 .and. any(minval(area_mask(i1:i1+1,j0:j2), 1) > 0)) then
@@ -115,6 +118,7 @@ module m_cells
                         neighbour = quad_idx(mn(3)+1, mn(2)) 
                         ! We substract 1 from index to comply with C/python indexing.
                         line(l_u,:) = (/ nod - 1, neighbour - 1 /)
+                        cross_pix_coords(l_u,:) = (/ i1, j0 - 1, i1, j2 /) ! Python indexing so -1 at start slice
                     endif
                 endif
                 if (lg(mn(3)+1, mn(4)) == k-1 .and. any(minval(area_mask(i1:i1+1,j3:j1), 1) > 0)) then
@@ -123,6 +127,7 @@ module m_cells
                         neighbour = quad_idx(mn(3)+1,mn(4))
                         ! We substract 1 from index to comply with C/python indexing.
                         line(l_u,:) = (/ nod - 1, neighbour - 1 /)
+                        cross_pix_coords(l_u,:) = (/ i1, j3 - 1, i1, j1 /) ! Python indexing so -1 at start slice
                     endif
                 endif
             endif
@@ -135,6 +140,7 @@ module m_cells
                     neighbour = quad_idx(mn(1)-1, mn(2))
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ neighbour - 1, nod - 1 /)
+                    cross_pix_coords(l_u,:) = (/ i0, j0 - 1, i0, j2 /)
                 endif
             endif
             if(lg(mn(1)-1, mn(4)) == k-1 .and. any(minval(area_mask(i0-1:i0,j3:j1), 1) > 0)) then
@@ -143,6 +149,7 @@ module m_cells
                     neighbour = quad_idx(mn(1)-1, mn(4))
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ neighbour - 1, nod - 1 /)
+                    cross_pix_coords(l_u,:) = (/ i0, j3 - 1, i0, j1 /)
                 endif
             endif
         endif
@@ -161,6 +168,7 @@ module m_cells
                     neighbour = quad_idx(mn(1), mn(4)+1)
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ nod - 1, neighbour - 1 /)
+                    cross_pix_coords(l_v,:) = (/ i0 - 1, j1, i1, j1 /) ! Python indexing so -1 at start slice
                 endif
             else
                 if (lg(mn(1), mn(4)+1) == k-1 .and. any(minval(area_mask(i0:i2,j1:j1+1), 2) > 0)) then
@@ -169,6 +177,7 @@ module m_cells
                         neighbour = quad_idx(mn(1), mn(4)+1)
                         ! We substract 1 from index to comply with C/python indexing.
                         line(l_v,:) = (/ nod - 1, neighbour - 1 /)
+                        cross_pix_coords(l_v,:) = (/ i0 - 1, j1, i2, j1 /) ! Python indexing so -1 at start slice
                     endif
                 endif
                 if (lg(mn(3), mn(4)+1) == k-1 .and. any(minval(area_mask(i3:i1,j1:j1+1), 2) > 0)) then
@@ -177,6 +186,7 @@ module m_cells
                         neighbour = quad_idx(mn(3), mn(4)+1)
                         ! We substract 1 from index to comply with C/python indexing.
                         line(l_v,:) = (/ nod - 1, neighbour - 1 /)
+                        cross_pix_coords(l_v,:) = (/ i3 - 1, j1, i1, j1 /) ! Python indexing so -1 at start slice
                     endif
                 endif
             endif
@@ -189,6 +199,7 @@ module m_cells
                     neighbour = quad_idx(mn(1), mn(2)-1)
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ neighbour - 1, nod - 1 /)
+                    cross_pix_coords(l_v,:) = (/ i0 - 1, j0, i2, j0 /) ! Python indexing so -1 at start slice
                 endif
             endif
             if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i3:i1,max(1,j0-1):j0), 2) > 0)) then
@@ -197,6 +208,7 @@ module m_cells
                     neighbour = quad_idx(mn(3), mn(2)-1)
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ neighbour - 1, nod - 1 /)
+                    cross_pix_coords(l_v,:) = (/ i3 - 1, j0, i1, j0 /) ! Python indexing so -1 at start slice
                 endif
             endif
         endif

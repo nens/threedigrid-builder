@@ -254,7 +254,19 @@ def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
     )
     # fmt: on
 
+    cross_pix_coords = np.array(
+        [[8, 0, 8, 4],
+         [8, 4, 8, 8],
+         [4, 8, 4, 12],
+         [4, 12, 4, 16],
+         [14, 8, 16, 8],
+         [14, 10, 16, 10]],
+        dtype=np.int32)
+
     assert_array_equal(lines.line, line)
     assert_array_equal(lines.lik, lik)
     assert_array_equal(lines.lim, lim)
     assert_array_equal(lines.lin, lin)
+    assert_array_equal(
+        lines.cross_pix_coords[(0, 1, 2, 3, 29, 35), :], cross_pix_coords
+    )

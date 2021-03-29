@@ -16,6 +16,7 @@ class Line:
     display_name: str
     kcu: LineType  # calculation type of the line
     line: Tuple[int, int]
+    cross_pix_coords: Tuple[int, int, int, int]
     lik: int
     lim: int
     lin: int

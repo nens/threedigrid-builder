@@ -149,6 +149,7 @@ class QuadTree:
 
         # Node connection array
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
+        cross_pix_coords = np.empty((total_lines, 4), dtype=np.int32, order="F")
 
         set_2d_computational_nodes_lines(
             np.array([self.origin[0], self.origin[1]]),
@@ -167,6 +168,7 @@ class QuadTree:
             coords,
             pixel_coords,
             line,
+            cross_pix_coords,
             self.n_lines[0],
             self.n_lines[1],
         )
@@ -187,6 +189,14 @@ class QuadTree:
             pixel_coords=pixel_coords,
         )
 
-        lines = Lines(id=id_l, kcu=kcu, line=line, lik=lik, lim=lim, lin=lin)
+        lines = Lines(
+            id=id_l,
+            kcu=kcu,
+            line=line,
+            lik=lik,
+            lim=lim,
+            lin=lin,
+            cross_pix_coords=cross_pix_coords
+        )
 
         return nodes, lines
