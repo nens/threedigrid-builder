@@ -82,12 +82,12 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     assert_almost_equal(cross_weights, expected_weight)
 
 
-def test_compute_dmax(cross_section_locations):
-    cross1 = np.array([1, 5, 3, 3, 3, 6, 6])
-    cross2 = np.array([1, 5, 2, 2, 2, 6, 6])
-    weight = np.array([1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0])
-
-    actual = compute_dmax(cross_section_locations, cross1, cross2, weight)
+def test_compute_dmax(cross_section_locations, channels, channel_lines):
+    """Same setup as test_compute_weights, but now testing the derived dmax"""
     expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
 
-    assert_equal(actual, expected)
+    actual = compute_dmax(
+        channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
+    )
+
+    assert_almost_equal(actual, expected)

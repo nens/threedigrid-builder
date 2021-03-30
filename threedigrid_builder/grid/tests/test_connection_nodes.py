@@ -1,3 +1,4 @@
+from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
@@ -5,8 +6,11 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import ConnectionNodes, Channels
+from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid.connection_nodes import set_bottom_level
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
+from unittest import mock
 
 import itertools
 import numpy as np
@@ -83,7 +87,7 @@ def test_set_calculation_types_single_node(kcu, expected):
     assert nodes.calculation_type[0] == expected
 
 
-def test_set_calculation_types_two_nodes():
+def test_set_calculation_types_multiple_nodes():
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -103,22 +107,42 @@ def test_set_calculation_types_two_nodes():
     assert nodes.calculation_type[2] == CalculationType.EMBEDDED
 
 
-def test_set_bottom_levels_two_nodes():
+@mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
+def test_set_bottom_level_multiple_nodes(compute_dmax):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
-        calculation_type=[-9999, -9999, CalculationType.EMBEDDED],
+        dmax=[np.nan, np.nan, 24.0],
     )
     lines = Lines(
-        id=[1, 2, 3],
-        content_type=ContentType.TYPE_V2_CHANNEL,
-        line=[(1, 2), (2, 9999), (9999, 1)],
-        bottom_level=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
+        id=[1, 2],
+        content_type=[ContentType.TYPE_V2_CHANNEL, -9999],
+        content_pk=[2, -9999],
+        line=[(1, 2), (1, 2)],
     )
-    channels = Channels()
+    channels = Channels(
+        id=[2],
+        the_geom=[pygeos.linestrings([[0, 0], [0, 10]])],
+    )
+    locations = mock.Mock()
+    pipes = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
 
-    set_calculation_types(nodes, lines)
+    compute_dmax.side_effect = (np.array([3.0]), np.array([8.0]))
+    set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts)
 
-    assert nodes.calculation_type[0] == CalculationType.ISOLATED
-    assert nodes.calculation_type[1] == CalculationType.CONNECTED
-    assert nodes.calculation_type[2] == CalculationType.EMBEDDED
+    # assert the correct call to compute_dmax
+    assert compute_dmax.call_count == 2
+    (first_call, _), (second_call, _) = compute_dmax.call_args_list
+    assert_array_equal(first_call[0], [2])  # channel ids for channel starts
+    assert_array_equal(first_call[1], [0.0])  # ds for channel starts
+    assert first_call[2] is locations
+    assert first_call[3] is channels
+    assert_array_equal(second_call[0], [2])  # channel ids for channel endings
+    assert_array_equal(second_call[1], [10.0])  # ds for channel endings (= length)
+    assert second_call[2] is locations
+    assert second_call[3] is channels
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, [3.0, 9.0, 24.0])

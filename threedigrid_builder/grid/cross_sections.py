@@ -148,22 +148,23 @@ def compute_weights(channel_id, ds, cs, channels):
     return cross1, cross2, weights
 
 
-def compute_dmax(locations, cross1, cross2, weights):
+def compute_dmax(channel_id, ds, cs, channels):
     """Compute the dmax by interpolating/extrapolating between cross sections
 
     Args:
-        locations (CrossSectionLocations): the reference_level is taken
-        cross1 (ndarray of int): indexes into ``values``, see compute_weights
-        cross2 (ndarray of int): indexes into ``values``, see compute_weights
-        weights (ndarray of float): see compute_weights
+        channel_id (ndarray of int): see compute_weights
+        ds (ndarray of float): see compute_weights
+        cs (CrossSectionLocations): the reference_level is inter/extrapolated
+        channels (Channels): see compute_weights
 
     Returns:
-        an array of the same shape as cross1 containing the interpolated values
+        an array of the same shape as channel_id containing the interpolated values
 
     See also:
         compute_weights: computes the interpolation weights
     """
-    values = locations.reference_level
-    left = values.take(locations.id_to_index(cross1))
-    right = values.take(locations.id_to_index(cross2))
+    cross1, cross2, weights = compute_weights(channel_id, ds, cs, channels)
+    values = cs.reference_level
+    left = values.take(cs.id_to_index(cross1))
+    right = values.take(cs.id_to_index(cross2))
     return weights * left + (1 - weights) * right

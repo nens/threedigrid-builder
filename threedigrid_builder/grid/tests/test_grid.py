@@ -162,9 +162,8 @@ def test_set_calculation_types(set_calculation_types, grid):
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.grid.compute_weights")
 @mock.patch("threedigrid_builder.grid.grid.compute_dmax")
-def test_set_bottom_levels(compute_dmax, compute_weights):
+def test_set_bottom_levels(compute_dmax):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
         id=[1, 2, 3],
@@ -173,7 +172,6 @@ def test_set_bottom_levels(compute_dmax, compute_weights):
         ds1d=[2.0, 12.0, 21.0],
         dmax=[np.nan, 12.0, np.nan],
     )
-    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # cross1, cross2, weights
     compute_dmax.return_value = [42.0, 43.0]
     grid = Grid(nodes=nodes, lines=Lines(id=[]))
     locations = mock.Mock()
@@ -181,19 +179,12 @@ def test_set_bottom_levels(compute_dmax, compute_weights):
 
     grid.set_bottom_levels(locations, channels)
 
-    # compute_weights was called correctly
-    args, kwargs = compute_weights.call_args
+    # compute_dmax was called correctly
+    args, kwargs = compute_dmax.call_args
     assert_array_equal(args[0], [1, 3])  # channel_id
     assert_array_equal(args[1], [2.0, 21.0])  # ds
     assert args[2] is locations
     assert args[3] is channels
-
-    # compute_dmax was called correctly
-    args, kwargs = compute_dmax.call_args
-    assert args[0] is locations
-    assert_array_equal(args[1], [0, 1])  # cross1
-    assert_array_equal(args[2], [1, 2])  # cross2
-    assert_array_equal(args[3], [0.2, 0.4])  # weights
 
     # node attribute dmax is adapted correctly
     assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0])

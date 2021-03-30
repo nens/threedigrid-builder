@@ -5,8 +5,6 @@ from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from threedigrid_builder.grid.cross_sections import compute_dmax
 from threedigrid_builder.grid.cross_sections import compute_weights
 
-import numpy as np
-
 
 __all__ = ["Grid"]
 
@@ -204,10 +202,9 @@ class Grid:
         """
         ## Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        weight_tpl = compute_weights(
+        self.nodes.dmax[mask] = compute_dmax(
             self.nodes.content_pk[mask], self.nodes.ds1d[mask], locations, channels
         )
-        self.nodes.dmax[mask] = compute_dmax(locations, *weight_tpl)
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
