@@ -7,7 +7,6 @@ from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid.cross_sections import compute_dmax
 from threedigrid_builder.grid.cross_sections import compute_weights
 
-import numpy as np
 import pygeos
 import pytest
 

@@ -107,6 +107,45 @@ def test_set_calculation_types_multiple_nodes():
     assert nodes.calculation_type[2] == CalculationType.EMBEDDED
 
 
+@pytest.mark.parametrize(
+    "line,dmax_mock,expected",
+    [
+        (np.empty((0, 2), dtype=int), (), np.nan),  # no line at all
+        ([(2, 3)], (), np.nan),  # no line to the specific node
+        ([(1, 2)], (3.0,), 3.0),  # starting point
+        ([(2, 1)], (3.0,), 3.0),  # end point
+        ([(1, 1)], (3.0, 4.0), 3.0),  # both end and start; start is lower
+        ([(1, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
+    ],
+)
+@mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
+def test_set_bottom_level_single_node(compute_dmax, line, dmax_mock, expected):
+    nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
+    lines = Lines(
+        id=range(len(line)),
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=2,
+        line=line,
+    )
+    channels = Channels(
+        id=[2],
+        the_geom=[pygeos.linestrings([[0, 0], [0, 10]])],
+    )
+    locations = mock.Mock()
+    pipes = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    compute_dmax.side_effect = [np.array([x]) for x in dmax_mock]
+    set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts)
+
+    # assert the correct call to compute_dmax
+    assert compute_dmax.call_count == len(dmax_mock)
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, expected)
+
+
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
 def test_set_bottom_level_multiple_nodes(compute_dmax):
     nodes = Nodes(
@@ -145,4 +184,4 @@ def test_set_bottom_level_multiple_nodes(compute_dmax):
     assert second_call[3] is channels
 
     # assert the resulting value of dmax
-    assert_almost_equal(nodes.dmax, [3.0, 9.0, 24.0])
+    assert_almost_equal(nodes.dmax, [3.0, 8.0, 24.0])

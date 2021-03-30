@@ -10,6 +10,7 @@ from threedigrid_builder.constants import NodeType
 import itertools
 import numpy as np
 import pygeos
+import warnings
 
 
 __all__ = ["ConnectionNodes"]
@@ -114,7 +115,7 @@ def set_calculation_types(nodes, lines):
 
 def _put_if_less(a, ind, v):
     """Replaces specified elements of an array with given values if they are less."""
-    is_less = v < a[ind]
+    is_less = ~(v > a[ind])  # same as v < a, except for how NaN is handled
     if is_less.any():
         np.put(a, ind[is_less], v[is_less])
 
@@ -150,38 +151,46 @@ def set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts):
     )[0]
     node_id = nodes.index_to_id(node_idx)
 
-    # Connection node that are channel start / endpoints:
-    line_mask = lines.content_type == ContentType.TYPE_V2_CHANNEL
-    ch_start = node_idx[np.isin(node_id, lines.line[line_mask, 0])]
-    ch_end = node_idx[np.isin(node_id, lines.line[line_mask, 1])]
-    if ch_start.size > 0:
-        channel_ids = nodes.content_pk[ch_start]
-        channel_ds = 0
-        dmax = compute_dmax(channel_ids, channel_ds, locations, channels)
-        _put_if_less(nodes.dmax, ch_start, dmax)
-    if ch_end.size > 0:
-        channel_ids = nodes.content_pk[ch_end]
-        channel_ds = pygeos.length(channels.the_geom[channels.id_to_index(channel_ids)])
-        dmax = compute_dmax(channel_ids, channel_ds, locations, channels)
-        _put_if_less(nodes.dmax, ch_end, dmax)
+    # line_idx: channel lines that are connected to one of the relevant nodes
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
+    # line_idx_1: channel lines for which the connection node is the start
+    line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
+    if line_idx_1.size > 0:
+        # get dmax by interpolating along the line's channel at ds=0 (start)
+        channel_id = lines.content_pk[line_idx_1]
+        channel_ds = np.zeros(len(channel_id))
+        dmax = compute_dmax(channel_id, channel_ds, locations, channels)
+        # find the nodes that match to these channel lines and put the dmax
+        _node_idx = nodes.id_to_index(lines.line[line_idx, 0])
+        _put_if_less(nodes.dmax, _node_idx, dmax)
+    # line_idx_2: channel lines for which the connection node is the end
+    line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
+    if line_idx_2.size > 0:
+        # get dmax by interpolating along the line's channel at ds=length(channel)
+        channel_id = lines.content_pk[line_idx_2]
+        channel_ds = pygeos.length(channels.the_geom[channels.id_to_index(channel_id)])
+        dmax = compute_dmax(channel_id, channel_ds, locations, channels)
+        # find the nodes that match to these channel lines and put the dmax
+        _node_idx = nodes.id_to_index(lines.line[line_idx, 1])
+        _put_if_less(nodes.dmax, _node_idx, dmax)
 
     # pipes
-    line_mask = lines.content_type == ContentType.TYPE_V2_PIPE
-    pipe_start = node_idx[np.isin(node_id, lines.line[line_mask, 0])]
-    pipe_end = node_idx[np.isin(node_id, lines.line[line_mask, 1])]
-    if pipe_start.size > 0:
-        raise NotImplementedError()
-    if pipe_end.size > 0:
-        raise NotImplementedError()
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_PIPE)[0]
+    line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
+    line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
+    if line_idx_1.size > 0 or line_idx_2.size > 0:
+        warnings.warn("Ignoring pipe invert levels while setting connection node dmax")
 
     # weirs
-    line_mask = lines.content_type == ContentType.TYPE_V2_WEIR
-    has_weir = node_idx[np.isin(node_id, lines.line[line_mask, :])]
-    if has_weir.size > 0:
-        raise NotImplementedError()
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_WEIR)[0]
+    line_idx = line_idx[np.isin(lines.line[line_idx, :], node_id).any(axis=1)]
+    if line_idx.size > 0:
+        warnings.warn("Ignoring weir crest level while setting connection node dmax")
 
     # culverts
-    line_mask = lines.content_type == ContentType.TYPE_V2_CULVERT
-    has_culvert = node_idx[np.isin(node_id, lines.line[line_mask, :])]
-    if has_culvert.size > 0:
-        raise NotImplementedError()
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CULVERT)[0]
+    line_idx = line_idx[np.isin(lines.line[line_idx, :], node_id).any(axis=1)]
+    if line_idx.size > 0:
+        warnings.warn(
+            "Ignoring culvert invert level while setting connection node dmax"
+        )
