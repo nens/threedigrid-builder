@@ -8,7 +8,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid.connection_nodes import set_bottom_level
+from threedigrid_builder.grid.connection_nodes import set_bottom_levels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from unittest import mock
 
@@ -119,7 +119,7 @@ def test_set_calculation_types_multiple_nodes():
     ],
 )
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
-def test_set_bottom_level_single_node(compute_dmax, line, dmax_mock, expected):
+def test_set_bottom_levels_single_node(compute_dmax, line, dmax_mock, expected):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(line)),
@@ -137,7 +137,7 @@ def test_set_bottom_level_single_node(compute_dmax, line, dmax_mock, expected):
     weirs = mock.Mock()
 
     compute_dmax.side_effect = [np.array([x]) for x in dmax_mock]
-    set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts)
+    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     # assert the correct call to compute_dmax
     assert compute_dmax.call_count == len(dmax_mock)
@@ -147,7 +147,7 @@ def test_set_bottom_level_single_node(compute_dmax, line, dmax_mock, expected):
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
-def test_set_bottom_level_multiple_nodes(compute_dmax):
+def test_set_bottom_levels_multiple_nodes(compute_dmax):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -169,7 +169,7 @@ def test_set_bottom_level_multiple_nodes(compute_dmax):
     weirs = mock.Mock()
 
     compute_dmax.side_effect = (np.array([3.0]), np.array([8.0]))
-    set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts)
+    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     # assert the correct call to compute_dmax
     assert compute_dmax.call_count == 2

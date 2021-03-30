@@ -126,7 +126,7 @@ def test_from_channels():
     )
 
 
-@mock.patch("threedigrid_builder.grid.grid.compute_weights")
+@mock.patch("threedigrid_builder.grid.cross_sections.compute_weights")
 def test_set_channel_weights(compute_weights):
     # set an input grid and mock the compute_weights return value
     lines = Lines(
@@ -156,14 +156,15 @@ def test_set_channel_weights(compute_weights):
     assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
 
 
-@mock.patch("threedigrid_builder.grid.grid.set_calculation_types")
+@mock.patch("threedigrid_builder.grid.connection_nodes.set_calculation_types")
 def test_set_calculation_types(set_calculation_types, grid):
     grid.set_calculation_types()
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.grid.compute_dmax")
-def test_set_bottom_levels(compute_dmax):
+@mock.patch("threedigrid_builder.grid.cross_sections.compute_dmax")
+@mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
+def test_set_bottom_levels(cn_compute, cs_compute):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
         id=[1, 2, 3],
@@ -172,15 +173,18 @@ def test_set_bottom_levels(compute_dmax):
         ds1d=[2.0, 12.0, 21.0],
         dmax=[np.nan, 12.0, np.nan],
     )
-    compute_dmax.return_value = [42.0, 43.0]
+    cs_compute.return_value = [42.0, 43.0]
     grid = Grid(nodes=nodes, lines=Lines(id=[]))
     locations = mock.Mock()
     channels = mock.Mock()
+    pipes = mock.Mock()
+    weirs = mock.Mock()
+    culverts = mock.Mock()
 
-    grid.set_bottom_levels(locations, channels)
+    grid.set_bottom_levels(locations, channels, pipes, weirs, culverts)
 
-    # compute_dmax was called correctly
-    args, kwargs = compute_dmax.call_args
+    # cross section compute_dmax was called correctly
+    args, kwargs = cs_compute.call_args
     assert_array_equal(args[0], [1, 3])  # channel_id
     assert_array_equal(args[1], [2.0, 21.0])  # ds
     assert args[2] is locations
@@ -188,3 +192,6 @@ def test_set_bottom_levels(compute_dmax):
 
     # node attribute dmax is adapted correctly
     assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0])
+
+    # connection node set_bottom_levels was called correctly
+    cn_compute.assert_called_with(grid.nodes, grid.lines, locations, channels, pipes, weirs, culverts)

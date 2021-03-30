@@ -43,7 +43,7 @@ def get_1d_grid(path, node_id_start=0, line_id_start=0):
     cross_section_locations = db.get_cross_section_locations()
     grid.set_channel_weights(cross_section_locations, channels)
     grid.set_calculation_types()
-    grid.set_bottom_levels(cross_section_locations, channels)
+    grid.set_bottom_levels(cross_section_locations, channels, None, None, None)
 
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid

@@ -1,9 +1,8 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid.connection_nodes import set_calculation_types
-from threedigrid_builder.grid.cross_sections import compute_dmax
-from threedigrid_builder.grid.cross_sections import compute_weights
+from . import connection_nodes
+from . import cross_sections
 
 
 __all__ = ["Grid"]
@@ -164,7 +163,7 @@ class Grid:
         """
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = compute_weights(
+        cross1, cross2, cross_weight = cross_sections.compute_weights(
             self.lines.content_pk[line_mask],
             self.lines.ds1d[line_mask],
             locations,
@@ -179,21 +178,14 @@ class Grid:
 
         ConnectionNodes, Channels and Pipes should be present in the grid.
         """
-        set_calculation_types(self.nodes, self.lines)
+        connection_nodes.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(self, locations, channels):
+    def set_bottom_levels(self, locations, channels, pipes, weirs, culverts):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
-        2. connection nodes:
-          - from the manhole.bottom_level
-          - if not present: the lowest of all neigboring objects
-             - channel: interpolate for channels (like channel node)
-             - pipe: invert level (if no storage & invert levels differ by more
-               than cross section height: error)
-             - weir: crest level
-             - culvert: invert level
+        2. connection nodes: see connection_nodes.set_bottom_levels
         3. pipes, interpolated nodes:
           - interpolate between invert level start & end
         4. lines: dpumax = greatest of the two neighboring nodes dmax
@@ -202,8 +194,13 @@ class Grid:
         """
         ## Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = compute_dmax(
+        self.nodes.dmax[mask] = cross_sections.compute_dmax(
             self.nodes.content_pk[mask], self.nodes.ds1d[mask], locations, channels
+        )
+
+        ## Connection nodes: complex logic based on the connected objects
+        connection_nodes.set_bottom_levels(
+            self.nodes, self.lines, locations, channels, pipes, weirs, culverts
         )
 
     def finalize(self, epsg_code=None):

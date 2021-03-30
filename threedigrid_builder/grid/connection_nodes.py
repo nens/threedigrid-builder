@@ -120,7 +120,7 @@ def _put_if_less(a, ind, v):
         np.put(a, ind[is_less], v[is_less])
 
 
-def set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts):
+def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts):
     """Set the bottom level (dmax) for connection nodes that do not yet have one.
 
     Lines are assumed to have the same direction as the channels and pipes.
@@ -151,7 +151,7 @@ def set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts):
     )[0]
     node_id = nodes.index_to_id(node_idx)
 
-    # line_idx: channel lines that are connected to one of the relevant nodes
+    # line_idx: channel lines
     line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
     # line_idx_1: channel lines for which the connection node is the start
     line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
@@ -161,7 +161,7 @@ def set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts):
         channel_ds = np.zeros(len(channel_id))
         dmax = compute_dmax(channel_id, channel_ds, locations, channels)
         # find the nodes that match to these channel lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx, 0])
+        _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
         _put_if_less(nodes.dmax, _node_idx, dmax)
     # line_idx_2: channel lines for which the connection node is the end
     line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
@@ -171,7 +171,7 @@ def set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts):
         channel_ds = pygeos.length(channels.the_geom[channels.id_to_index(channel_id)])
         dmax = compute_dmax(channel_id, channel_ds, locations, channels)
         # find the nodes that match to these channel lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx, 1])
+        _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
         _put_if_less(nodes.dmax, _node_idx, dmax)
 
     # pipes
