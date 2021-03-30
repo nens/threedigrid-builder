@@ -129,10 +129,10 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
       - from the manhole.bottom_level
       - if not present: the lowest of all neigboring objects
         - channel: interpolate for channels (like channel node)
-        - pipe: invert level (if no storage & invert levels differ by more
-          than cross section height: error)
-        - weir: crest level
-        - culvert: invert level
+        - (not implemented) pipe: invert level (if no storage & invert levels differ
+          by more than cross section height: error)
+        - (not implemented) weir: crest level
+        - (not implemented) culvert: invert level
 
     Args:
         nodes (Nodes): the nodes, those with content_type == TYPE_V2_CONNECTION_NODES
