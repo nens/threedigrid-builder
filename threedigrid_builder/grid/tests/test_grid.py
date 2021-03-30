@@ -1,6 +1,7 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
@@ -33,8 +34,8 @@ def grid2d():
         "nmax": np.array([1]),
         "dx": np.array([2.0]),
         "dxp": 0.5,
-        "x0p": 10.,
-        "y0p": 10.,
+        "x0p": 10.0,
+        "y0p": 10.0,
     }
     return Grid(
         nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats
@@ -54,7 +55,7 @@ def test_from_quadtree():
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    quadtree.origin = (0., 0.)
+    quadtree.origin = (0.0, 0.0)
     quadtree.get_nodes_lines.return_value = nodes, lines
 
     grid = Grid.from_quadtree(
@@ -126,13 +127,33 @@ def test_from_channels():
 
 
 @mock.patch("threedigrid_builder.grid.grid.compute_weights")
-def test_set_channel_weights(compute_weights, grid):
+def test_set_channel_weights(compute_weights):
+    # set a dummy input grid and mock the compute_weights return value
+    lines = Lines(
+        id=[1, 2, 3],
+        content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
+        content_pk=[1, 1, 3],
+        ds1d=[2.0, 12.0, 21.0],
+    )
+    grid = Grid(nodes=Nodes(id=[]), lines=lines)
+    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # cross1, cross2, weights
     locations = mock.Mock()
     channels = mock.Mock()
 
+    # execute the method
     grid.set_channel_weights(locations, channels)
 
-    compute_weights.assert_called_with(grid.lines, locations, channels)
+    # compute_weights wass called correctly
+    args, kwargs = compute_weights.call_args
+    assert_array_equal(args[0], [1, 3])  # channel_id
+    assert_array_equal(args[1], [2.0, 21.0])  # ds
+    assert args[2] is locations
+    assert args[3] is channels
+
+    # line attributes cross1, cross2, cross_weight are adapted correctly
+    assert_array_equal(lines.cross1, [0, -9999, 1])
+    assert_array_equal(lines.cross2, [1, -9999, 2])
+    assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
 
 
 @mock.patch("threedigrid_builder.grid.grid.set_calculation_types")

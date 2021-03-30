@@ -70,8 +70,10 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     expected_cross2 = [1, 5, 2, 2, 2, 6, 6]
     expected_weight = [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
 
-    compute_weights(channel_lines, cross_section_locations, channels)
+    cross1, cross2, cross_weights = compute_weights(
+        channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
+    )
 
-    assert_equal(channel_lines.cross1, expected_cross1)
-    assert_equal(channel_lines.cross2, expected_cross2)
-    assert_almost_equal(channel_lines.cross_weight, expected_weight)
+    assert_equal(cross1, expected_cross1)
+    assert_equal(cross2, expected_cross2)
+    assert_almost_equal(cross_weights, expected_weight)

@@ -1,5 +1,4 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 
@@ -40,18 +39,24 @@ class CrossSectionDefinitions:
     pass
 
 
-def compute_weights(lines, cs, channels):
-    """Compute cross section weights for channel lines.
+def compute_weights(channel_id, ds, cs, channels):
+    """Compute cross section weights for points on channels.
+
+    Points on channels are specified with their channel id and the distance along that
+    channel id.
 
     Args:
-        lines (Lines): Lines for which to compute cross1, cross2, and
-            cross_weight. The attributes will be changed in place. Only
-            lines of type Channel will be included. Those lines MUST be
-            ordered by channel_id and then by position on channel. If this
-            is not the case, the computed weights will be bogus.
-            Required attributes: content_type, content_pk, and ds1d.
+        channel_id (ndarray of int): The channel ids for which to compute weights. Each
+            id may occur multiple times, if there are multiple points on that channel
+            to compute the weights on. This array must be in ascending order.
+        ds (ndarray of float): The location of the points to compute the weights for,
+            measured as a distance along the channel. Array must be the same size as
+            channel_id and ordered (per channel) in ascending order.
         cs (CrossSectionLocations)
         channels (Channels): Used to lookup the channel geometry
+
+    Returns:
+        tuple of cross1, cross2, cross_weights
 
     See also:
         Channels.get_lines: computes the lines in the correct order
@@ -59,9 +64,6 @@ def compute_weights(lines, cs, channels):
     if not np.in1d(channels.id, cs.channel_id).all():
         missing = set(channels.id) - set(cs.channel_id)
         raise ValueError(f"Channels {missing} have no cross section location set.")
-
-    # Mask the lines to only the Channel lines
-    line_mask = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
     # Make an array that sorts the cross section (cs) locations by channel_id
     cs_sorter = np.argsort(cs.channel_id)
@@ -86,7 +88,7 @@ def compute_weights(lines, cs, channels):
     cs_sorter = cs_sorter[_cs_ds_sorter]
 
     # Compute the ds of the line midpoints, cumulative over all channels
-    _cumulative = np.cumsum(lines.ds1d[line_mask])
+    _cumulative = np.cumsum(ds)
     midpoint_ds = (_cumulative + np.roll(_cumulative, 1)) / 2
     midpoint_ds[0] = _cumulative[0] / 2
 
@@ -109,7 +111,7 @@ def compute_weights(lines, cs, channels):
 
     # Create two matching channel id arrays
     cs_ch_id = cs.channel_id[cs_sorter]
-    line_ch_id = lines.content_pk[line_mask]
+    line_ch_id = channel_id
 
     # Fix situations where cs_idx_1 is incorrect
     extrapolate = (cs_ch_id[cs_idx_1] != line_ch_id) | out_of_bounds_1
@@ -125,9 +127,9 @@ def compute_weights(lines, cs, channels):
     equalize = extrapolate & (cs_ch_id[cs_idx_1] != line_ch_id)
     cs_idx_1[equalize] += 1
 
-    # Map index to id and set on the (masked) lines
-    lines.cross1[line_mask] = cs.id[cs_sorter][cs_idx_1]
-    lines.cross2[line_mask] = cs.id[cs_sorter][cs_idx_2]
+    # Map index to id and create the array that matches the input channel_id and ds
+    cross1 = cs.id[cs_sorter][cs_idx_1]
+    cross2 = cs.id[cs_sorter][cs_idx_2]
 
     # Compute the weights. For each line, we have 3 times ds:
     # 1. the ds of the CrossSectionLocation before it (ds_1)
@@ -143,4 +145,4 @@ def compute_weights(lines, cs, channels):
         weights = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
     weights[~np.isfinite(weights)] = 1.0
 
-    lines.cross_weight[line_mask] = weights
+    return cross1, cross2, weights

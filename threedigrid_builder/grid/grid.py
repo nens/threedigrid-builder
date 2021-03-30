@@ -4,8 +4,6 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from threedigrid_builder.grid.cross_sections import compute_weights
 
-import numpy as np
-
 
 __all__ = ["Grid"]
 
@@ -163,7 +161,17 @@ class Grid:
             locations (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
-        compute_weights(self.lines, locations, channels)
+        # Mask the lines to only the Channel lines
+        line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
+        cross1, cross2, cross_weight = compute_weights(
+            self.lines.content_pk[line_mask],
+            self.lines.ds1d[line_mask],
+            locations,
+            channels,
+        )
+        self.lines.cross1[line_mask] = cross1
+        self.lines.cross2[line_mask] = cross2
+        self.lines.cross_weight[line_mask] = cross_weight
 
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
