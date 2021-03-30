@@ -68,6 +68,7 @@ def test_interpolate_nodes_one_channel(dist, size, expected, one_channel):
     assert_array_equal(nodes.content_pk, 1)
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, 2)
+    assert_array_equal(nodes.ds1d, np.arange(1, len(expected) + 1) * size)
     assert_array_equal(segment_size, size)
 
 

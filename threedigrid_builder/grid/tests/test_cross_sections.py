@@ -4,8 +4,10 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import CrossSectionLocations
+from threedigrid_builder.grid.cross_sections import compute_dmax
 from threedigrid_builder.grid.cross_sections import compute_weights
 
+import numpy as np
 import pygeos
 import pytest
 
@@ -40,6 +42,7 @@ def cross_section_locations():
         id=[1, 2, 3, 5, 6],
         the_geom=pygeos.points([(1, 0), (26, 1), (16, 1), (59, 3), (49, 2)]),
         channel_id=[51, 53, 53, 52, 54],
+        reference_level=[1.0, 2.0, 3.0, 5.0, 6.0],
     )
 
 
@@ -77,3 +80,14 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     assert_equal(cross1, expected_cross1)
     assert_equal(cross2, expected_cross2)
     assert_almost_equal(cross_weights, expected_weight)
+
+
+def test_compute_dmax(cross_section_locations):
+    cross1 = np.array([1, 5, 3, 3, 3, 6, 6])
+    cross2 = np.array([1, 5, 2, 2, 2, 6, 6])
+    weight = np.array([1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0])
+
+    actual = compute_dmax(cross_section_locations, cross1, cross2, weight)
+    expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
+
+    assert_equal(actual, expected)

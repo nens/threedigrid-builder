@@ -19,7 +19,7 @@ class Line:
     lik: int
     lim: int
     lin: int
-    ds1d: float  # arclength
+    ds1d: float  # position (arclength) along a 1D element
     line_geometries: pygeos.Geometry
     line_coords: Tuple[float, float, float, float]
     content_type: ContentType
