@@ -5,7 +5,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import ConnectionNodes, Channels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 
 import itertools
@@ -95,6 +95,27 @@ def test_set_calculation_types_two_nodes():
         line=[(1, 2), (2, 9999), (9999, 1)],
         kcu=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
     )
+
+    set_calculation_types(nodes, lines)
+
+    assert nodes.calculation_type[0] == CalculationType.ISOLATED
+    assert nodes.calculation_type[1] == CalculationType.CONNECTED
+    assert nodes.calculation_type[2] == CalculationType.EMBEDDED
+
+
+def test_set_bottom_levels_two_nodes():
+    nodes = Nodes(
+        id=[1, 2, 3],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        calculation_type=[-9999, -9999, CalculationType.EMBEDDED],
+    )
+    lines = Lines(
+        id=[1, 2, 3],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        line=[(1, 2), (2, 9999), (9999, 1)],
+        bottom_level=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
+    )
+    channels = Channels()
 
     set_calculation_types(nodes, lines)
 

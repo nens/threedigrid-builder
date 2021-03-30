@@ -6,6 +6,8 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import NodeType
 
+from .cross_sections import compute_weights, compute_dmax
+
 import itertools
 import numpy as np
 import pygeos
@@ -109,3 +111,61 @@ def set_calculation_types(nodes, lines):
 
     # Remaining nodes get ISOLATED
     nodes.calculation_type[node_idx] = CalculationType.ISOLATED
+
+
+def _set_if_lower(arr, values):
+    arr[:] = np.nanmin(arr, values)
+
+
+def set_bottom_level(nodes, lines, locations, channels, pipes, weirs, culverts):
+    """Set the bottom level (dmax) for connection nodes that do not yet have one.
+
+    Lines are assumed to have the same direction as the channels and pipes.
+
+    The bottom level (dmax) of a connection nodes is based on:
+      - from the manhole.bottom_level
+      - if not present: the lowest of all neigboring objects
+        - channel: interpolate for channels (like channel node)
+        - pipe: invert level (if no storage & invert levels differ by more
+          than cross section height: error)
+        - weir: crest level
+        - culvert: invert level
+    """
+    # Get the indices of the relevant nodes and lines
+    node_idx = np.where(nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES) & (np.isnan(nodes.dmax)))[0]
+
+    # Connection node that are channel start / endpoints:
+    line_mask = lines.content_type == ContentType.TYPE_V2_CHANNEL
+    ch_start = node_idx[np.isin(nodes.id[node_idx], lines.line[line_mask, 0])]
+    ch_end = node_idx[np.isin(nodes.id[node_idx], lines.line[line_mask, 1])]
+    if ch_start.size > 0:
+        channel_ids = nodes.content_pk[ch_start]
+        channel_ds = 0
+        weights_tpl = compute_weights(channel_ids, channel_ds, locations, channels)
+        _set_if_lower(nodes[ch_start], compute_dmax(locations, *weights_tpl))
+    if ch_end.size > 0:
+        channel_ids = nodes.content_pk[ch_end]
+        channel_ds = pygeos.length(channels.geometry[channels.id_to_index(channel_ids)])
+        weights_tpl = compute_weights(channel_ids, channel_ds, locations, channels)
+        _set_if_lower(nodes[ch_end], compute_dmax(locations, *weights_tpl))
+
+    # pipes
+    line_mask = lines.content_type == ContentType.TYPE_V2_PIPE
+    pipe_start = node_idx[np.isin(nodes.id[node_idx], lines.line[line_mask, 0])]
+    pipe_end = node_idx[np.isin(nodes.id[node_idx], lines.line[line_mask, 1])]
+    if pipe_start.size > 0:
+        raise NotImplementedError()
+    if pipe_end.size > 0:
+        raise NotImplementedError()
+
+    # weirs
+    line_mask = lines.content_type == ContentType.TYPE_V2_WEIR
+    has_weir = node_idx[np.isin(nodes.id[node_idx], lines.line[line_mask, :])]
+    if has_weir.size > 0:
+        raise NotImplementedError()
+
+    # culverts
+    line_mask = lines.content_type == ContentType.TYPE_V2_CULVERT
+    has_culvert = node_idx[np.isin(nodes.id[node_idx], lines.line[line_mask, :])]
+    if has_culvert.size > 0:
+        raise NotImplementedError()

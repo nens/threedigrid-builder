@@ -32,8 +32,8 @@ def h5_out():
         "nmax": np.array([3, 5], dtype=np.int32),
         "dx": np.array([1.0, 2.0], dtype=np.float64),
         "dxp": 0.5,
-        "x0p": 10.,
-        "y0p": 10.,
+        "x0p": 10.0,
+        "y0p": 10.0,
     }
 
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
