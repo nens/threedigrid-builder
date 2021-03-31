@@ -18,6 +18,7 @@ def set_2d_computational_nodes_lines(
     double[::1,:] coords,
     int[::1,:] pixel_coords,
     int[::1,:] line,
+    int[::1,:] cross_pix_coords,
     int n_line_u,
     int n_line_v
 ):
@@ -50,6 +51,7 @@ def set_2d_computational_nodes_lines(
         size_a=&size_a,
         size_b=&size_b,
         line=&line[0, 0],
+        cross_pix_coords=&cross_pix_coords[0, 0],
         n_line_u=&n_line_u,
         n_line_v=&n_line_v
     )

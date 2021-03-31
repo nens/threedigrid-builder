@@ -22,6 +22,7 @@ cdef extern:
         int *size_a,
         int *size_b,
         int *line,
+        int *cross_pix_coords,
         int *n_line_u,
         int *n_line_v
     )
