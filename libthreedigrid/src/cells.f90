@@ -140,7 +140,7 @@ module m_cells
                     neighbour = quad_idx(mn(1)-1, mn(2))
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ neighbour - 1, nod - 1 /)
-                    cross_pix_coords(l_u,:) = (/ i0, j0 - 1, i0, j2 /)
+                    cross_pix_coords(l_u,:) = (/ i0 - 1, j0 - 1, i0 - 1, j2 /)
                 endif
             endif
             if(lg(mn(1)-1, mn(4)) == k-1 .and. any(minval(area_mask(i0-1:i0,j3:j1), 1) > 0)) then
@@ -149,7 +149,7 @@ module m_cells
                     neighbour = quad_idx(mn(1)-1, mn(4))
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_u,:) = (/ neighbour - 1, nod - 1 /)
-                    cross_pix_coords(l_u,:) = (/ i0, j3 - 1, i0, j1 /)
+                    cross_pix_coords(l_u,:) = (/ i0 - 1, j3 - 1, i0 - 1, j1 /)
                 endif
             endif
         endif
@@ -199,7 +199,7 @@ module m_cells
                     neighbour = quad_idx(mn(1), mn(2)-1)
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ neighbour - 1, nod - 1 /)
-                    cross_pix_coords(l_v,:) = (/ i0 - 1, j0, i2, j0 /) ! Python indexing so -1 at start slice
+                    cross_pix_coords(l_v,:) = (/ i0 - 1, j0 - 1, i2, j0 - 1/) ! Python indexing so -1 at start slice
                 endif
             endif
             if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i3:i1,max(1,j0-1):j0), 2) > 0)) then
@@ -208,7 +208,7 @@ module m_cells
                     neighbour = quad_idx(mn(3), mn(2)-1)
                     ! We substract 1 from index to comply with C/python indexing.
                     line(l_v,:) = (/ neighbour - 1, nod - 1 /)
-                    cross_pix_coords(l_v,:) = (/ i3 - 1, j0, i1, j0 /) ! Python indexing so -1 at start slice
+                    cross_pix_coords(l_v,:) = (/ i3 - 1, j0 - 1, i1, j0 - 1 /) ! Python indexing so -1 at start slice
                 endif
             endif
         endif
