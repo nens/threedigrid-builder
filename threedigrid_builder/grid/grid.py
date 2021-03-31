@@ -1,8 +1,8 @@
+from . import connection_nodes
+from . import cross_sections
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
-from . import connection_nodes
-from . import cross_sections
 
 
 __all__ = ["Grid"]
@@ -192,16 +192,22 @@ class Grid:
           - except for channels with no interpolated nodes: take reference level, but
             only if that is higher than the two neighboring nodes.
         """
-        ## Channels, interpolated nodes
+        # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
         self.nodes.dmax[mask] = cross_sections.compute_dmax(
             self.nodes.content_pk[mask], self.nodes.ds1d[mask], locations, channels
         )
 
-        ## Connection nodes: complex logic based on the connected objects
+        # Connection nodes: complex logic based on the connected objects
         connection_nodes.set_bottom_levels(
             self.nodes, self.lines, locations, channels, pipes, weirs, culverts
         )
+
+        # Lines: based on the nodes
+        self.lines.set_bottom_levels(self.nodes)
+
+        # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
+        cross_sections.fix_dpumax(self.lines, self.nodes, locations)
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""

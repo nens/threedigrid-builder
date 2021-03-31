@@ -54,6 +54,16 @@ class Lines:
         self.line_coords[:, :2] = start
         self.line_coords[:, 2:] = end
 
+    def set_bottom_levels(self, nodes):
+        """Set bottom levels (dpumax) for lines.
+
+        The bottom level for a line is the largest of the bottom level (dmax) of the
+        two nodes the line is attached to.
+
+        If any of the two nodes has no dmax, dpumax will be nan.
+        """
+        self.dpumax[:] = np.max(nodes.dmax.take(nodes.id_to_index(self.line)), axis=1)
+
     def fix_line_geometries(self):
         """Construct line_geometries from line_coords, where necessary"""
         to_fix = pygeos.is_missing(self.line_geometries)

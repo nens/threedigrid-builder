@@ -164,7 +164,9 @@ def test_set_calculation_types(set_calculation_types, grid):
 
 @mock.patch("threedigrid_builder.grid.cross_sections.compute_dmax")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
-def test_set_bottom_levels(cn_compute, cs_compute):
+@mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
+@mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
+def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
         id=[1, 2, 3],
@@ -173,8 +175,9 @@ def test_set_bottom_levels(cn_compute, cs_compute):
         ds1d=[2.0, 12.0, 21.0],
         dmax=[np.nan, 12.0, np.nan],
     )
+    lines = Lines(id=[])
     cs_compute.return_value = [42.0, 43.0]
-    grid = Grid(nodes=nodes, lines=Lines(id=[]))
+    grid = Grid(nodes=nodes, lines=lines)
     locations = mock.Mock()
     channels = mock.Mock()
     pipes = mock.Mock()
@@ -194,4 +197,12 @@ def test_set_bottom_levels(cn_compute, cs_compute):
     assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0])
 
     # connection node set_bottom_levels was called correctly
-    cn_compute.assert_called_with(grid.nodes, grid.lines, locations, channels, pipes, weirs, culverts)
+    cn_compute.assert_called_with(
+        grid.nodes, grid.lines, locations, channels, pipes, weirs, culverts
+    )
+
+    # lines set_bottom_levels was called correctly
+    lines.set_bottom_levels.assert_called_with(grid.nodes)
+
+    # fix_dpumax was called correctly
+    fix_dpumax.assert_called_with(grid.lines, grid.nodes, locations)

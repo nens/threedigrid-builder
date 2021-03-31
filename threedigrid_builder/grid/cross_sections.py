@@ -1,4 +1,5 @@
 from threedigrid_builder.base import array_of
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 
@@ -168,3 +169,39 @@ def compute_dmax(channel_id, ds, cs, channels):
     left = values.take(cs.id_to_index(cross1))
     right = values.take(cs.id_to_index(cross2))
     return weights * left + (1 - weights) * right
+
+
+def fix_dpumax(lines, nodes, cs):
+    """Fix the line bottom levels (dpumax) for channels that have no added nodes.
+
+    The new value is the reference_level of the channel's cross section location
+    *only* if that is higher than the already present dpumax. If the channel has
+    multiple cs locations, inter/extrapolate on the line midpoint.
+
+    This should be called *after* assigning dpumax to all lines and *after* computing
+    the cross section weights.
+
+    Args:
+        nodes (Nodes)
+        lines (Lines): the dpumax is adjusted where necessary. needs the cross1, cross2
+            and cross_weight attributes (see compute_weights)
+        cs (CrossSectionLocations): the reference_level is taken
+    """
+    # find the channel lines that connect 2 connection nodes
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
+    node_idx = nodes.id_to_index(lines.line[line_idx])
+    line_idx = line_idx[
+        (nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES).all(
+            axis=1
+        )
+    ]
+
+    # collect the associated crosssection reference_levels and interpolate
+    left = cs.reference_level.take(cs.id_to_index(lines.cross1[line_idx]))
+    right = cs.reference_level.take(cs.id_to_index(lines.cross2[line_idx]))
+    weights = lines.cross_weight[line_idx]
+    new_dpumax = weights * left + (1 - weights) * right
+
+    # set the new dpumax, including only the lines that have a lower dpumax
+    mask = (lines.dpumax[line_idx] < new_dpumax) | (np.isnan(lines.dpumax[line_idx]))
+    lines.dpumax[line_idx[mask]] = new_dpumax[mask]

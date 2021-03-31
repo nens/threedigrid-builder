@@ -196,7 +196,7 @@ class QuadTree:
             lik=lik,
             lim=lim,
             lin=lin,
-            cross_pix_coords=cross_pix_coords
+            cross_pix_coords=cross_pix_coords,
         )
 
         return nodes, lines
