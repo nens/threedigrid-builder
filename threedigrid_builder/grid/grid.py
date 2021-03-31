@@ -188,7 +188,7 @@ class Grid:
         2. connection nodes: see connection_nodes.set_bottom_levels
         3. (not implemented) pipes, interpolated nodes:
           - interpolate between invert level start & end
-        4. (not implemented) lines: dpumax = greatest of the two neighboring nodes dmax
+        4. lines: dpumax = greatest of the two neighboring nodes dmax
           - except for channels with no interpolated nodes: take reference level, but
             only if that is higher than the two neighboring nodes.
         """
