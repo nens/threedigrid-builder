@@ -49,26 +49,11 @@ def quadtree_line_refinement(subgrid_meta):
 
 
 @pytest.fixture
-def quadtree_line_refinement_bottomleft(subgrid_meta):
-    refinement = GridRefinements(
-        id=np.array([1]),
-        refinement_level=np.array([2]),
-        the_geom=pygeos.linestrings([[[10.0, 10.5], [11, 11]]]),
-    )
-    return QuadTree(
-        subgrid_meta=subgrid_meta,
-        num_refine_levels=3,
-        min_gridsize=1.0,
-        refinements=refinement,
-    )
-
-
-@pytest.fixture
 def quadtree_poly_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
         refinement_level=np.array([2]),
-        the_geom=np.array([pygeos.box(15.0, 17.5, 17.5, 14.5)]),
+        the_geom=np.array([pygeos.box(12.5, 11.5, 14.0, 13.5)]),
     )
     return QuadTree(
         subgrid_meta=subgrid_meta,
@@ -132,35 +117,6 @@ def test_quadtree_line_refinement(quadtree_line_refinement):
     assert_array_equal(quadtree_line_refinement.lg, expected_lg[::-1])
 
 
-def test_quadtree_line_refinement_2(quadtree_line_refinement_bottomleft):
-
-    assert quadtree_line_refinement_bottomleft.kmax == 3
-    assert np.size(quadtree_line_refinement_bottomleft.mmax) == 3
-    assert quadtree_line_refinement_bottomleft.mmax[2] == 3
-    assert quadtree_line_refinement_bottomleft.nmax[2] == 2
-    assert quadtree_line_refinement_bottomleft.dx[0] == 1.0
-
-    expected_lg = np.array(
-        [
-            [-99, -99, -99, -99, -99, -99, -99, -99],
-            [-99, -99, -99, -99, -99, -99, -99, -99],
-            [-99, -99, -99, -99, -99, -99, -99, -99],
-            [-99, -99, -99, -99, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3],
-            [3, 3, 3, 3, 3, 3, 3, 3],
-            [3, 3, 3, 3, 3, 3, 3, 3],
-            [3, 3, 3, 3, 3, 3, 3, 3],
-            [2, 2, 2, 2, 3, 3, 3, 3],
-            [2, 2, 2, 2, 3, 3, 3, 3],
-            [2, 2, 2, 2, 3, 3, 3, 3],
-            [2, 2, 2, 2, 3, 3, 3, 3],
-        ],
-        dtype=np.int32,
-    )
-
-    assert_array_equal(quadtree_line_refinement_bottomleft.lg, expected_lg[::-1])
-
-
 def test_quadtree_poly_refinement(quadtree_poly_refinement):
 
     assert quadtree_poly_refinement.kmax == 3
@@ -174,21 +130,21 @@ def test_quadtree_poly_refinement(quadtree_poly_refinement):
             [-99, -99, -99, -99, -99, -99, -99, -99],
             [-99, -99, -99, -99, -99, -99, -99, -99],
             [-99, -99, -99, -99, -99, -99, -99, -99],
-            [3, 3, 3, 3, 2, 2, 2, 2],
-            [3, 3, 3, 3, 2, 2, 2, 2],
-            [3, 3, 3, 3, 2, 2, 2, 2],
-            [3, 3, 3, 3, 2, 2, 2, 2],
             [3, 3, 3, 3, 3, 3, 3, 3],
             [3, 3, 3, 3, 3, 3, 3, 3],
             [3, 3, 3, 3, 3, 3, 3, 3],
             [3, 3, 3, 3, 3, 3, 3, 3],
+            [2, 2, 2, 2, 3, 3, 3, 3],
+            [2, 2, 2, 2, 3, 3, 3, 3],
+            [2, 2, 2, 2, 3, 3, 3, 3],
+            [2, 2, 2, 2, 3, 3, 3, 3],
         ],
         dtype=np.int32,
     )
     assert_array_equal(quadtree_poly_refinement.lg, expected_lg[::-1])
 
 
-def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
+def test_nodes_from_quadtree_line(quadtree_line_refinement, subgrid_meta):
     nodes, lines = quadtree_line_refinement.get_nodes_lines(
         subgrid_meta["area_mask"], itertools.count(start=0), itertools.count(start=0)
     )
@@ -226,7 +182,7 @@ def test_nodes_from_quadtree(quadtree_line_refinement, subgrid_meta):
     assert_array_equal(nodes.pixel_coords[(0, 2, 8, 21), :], pixel_coords_check)
 
 
-def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
+def test_lines_from_quadtree_line(quadtree_line_refinement, subgrid_meta):
     nodes, lines = quadtree_line_refinement.get_nodes_lines(
         subgrid_meta["area_mask"], itertools.count(start=0), itertools.count(start=0)
     )
@@ -308,8 +264,8 @@ def test_lines_from_quadtree(quadtree_line_refinement, subgrid_meta):
     )
 
 
-def test_nodes_from_quadtree_2(quadtree_line_refinement_bottomleft, subgrid_meta):
-    nodes, lines = quadtree_line_refinement_bottomleft.get_nodes_lines(
+def test_nodes_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
+    nodes, lines = quadtree_poly_refinement.get_nodes_lines(
         subgrid_meta["area_mask"], itertools.count(start=0), itertools.count(start=0)
     )
     expected_coordinates = [
@@ -335,8 +291,8 @@ def test_nodes_from_quadtree_2(quadtree_line_refinement_bottomleft, subgrid_meta
     assert_array_equal(nodes.pixel_coords, expected_pixel_coords)
 
 
-def test_lines_from_quadtree_2(quadtree_line_refinement_bottomleft, subgrid_meta):
-    nodes, lines = quadtree_line_refinement_bottomleft.get_nodes_lines(
+def test_lines_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
+    nodes, lines = quadtree_poly_refinement.get_nodes_lines(
         subgrid_meta["area_mask"], itertools.count(start=0), itertools.count(start=0)
     )
     line = [
