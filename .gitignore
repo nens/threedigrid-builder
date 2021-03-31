@@ -276,6 +276,7 @@ __pycache__/
 *.so
 *.dylib
 *.dll
+*.mod
 build/
 dist/
 lib/

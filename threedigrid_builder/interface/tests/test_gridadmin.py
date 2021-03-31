@@ -116,6 +116,7 @@ def test_write_nodes(h5_out, dataset, shape, dtype):
         ("kcu", (6,), "int32"),
         ("lik", (6,), "int32"),
         ("line", (2, 6), "int32"),
+        ("cross_pix_coords", (4, 6), "int32"),
         ("line_coords", (4, 6), "float64"),
         ("line_geometries", (6,), "object"),
         ("material", (6,), "int32"),

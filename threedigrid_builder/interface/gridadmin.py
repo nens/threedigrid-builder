@@ -286,6 +286,7 @@ class GridAdminOut(OutputInterface):
         calculation_type[is_channel] = lines.kcu[is_channel] + 100
         self.write_dataset(group, "calculation_type", calculation_type)
         self.write_dataset(group, "line", lines.line.T + 1)
+        self.write_dataset(group, "cross_pix_coords", lines.cross_pix_coords.T)
         self.write_dataset(group, "ds1d", lines.ds1d)
         self.write_dataset(group, "lik", lines.lik)
         self.write_dataset(group, "lim", lines.lim)

@@ -16,9 +16,10 @@ class Line:
     display_name: str
     kcu: LineType  # calculation type of the line
     line: Tuple[int, int]
-    lik: int
-    lim: int
-    lin: int
+    cross_pix_coords: Tuple[int, int, int, int]
+    lik: int  # quadtree grid coordinate z of the line start
+    lim: int  # quadtree grid coordinate x of the line start
+    lin: int  # quadtree grid coordinate y of the line start
     ds1d: float  # arclength
     line_geometries: pygeos.Geometry
     line_coords: Tuple[float, float, float, float]
