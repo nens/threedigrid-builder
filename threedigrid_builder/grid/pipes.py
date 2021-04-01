@@ -79,7 +79,7 @@ class Pipes:
         geometries = pygeos.linestrings(coordinates)
 
         # compute number of nodes to add per pipe
-        points, segment_size, index = segmentize(geometries, dists)
+        _, points, _, index, segment_size = segmentize(geometries, dists)
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),

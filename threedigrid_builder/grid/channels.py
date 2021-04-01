@@ -50,7 +50,7 @@ class Channels:
         dists[dists <= 0] = global_dist_calc_points
 
         # compute number of nodes to add per channel
-        points, segment_size, index = segmentize(self.the_geom, dists)
+        _, points, _, index, segment_size = segmentize(self.the_geom, dists)
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
