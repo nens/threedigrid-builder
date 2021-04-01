@@ -234,6 +234,9 @@ class SQLite:
                 .as_structarray()
             )
 
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
 

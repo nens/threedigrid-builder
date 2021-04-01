@@ -2,6 +2,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import ManholeIndicator
+from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -124,12 +125,12 @@ def test_get_pipes(db):
     assert len(pipes.id) == 42
     assert pipes.id[1] == 2
     assert pipes.code[2] == "71022_71023"
-    assert pipes.calculation_type[3] == 1
+    assert pipes.calculation_type[3] == CalculationType.ISOLATED
     assert pipes.connection_node_start_id[4] == 37
     assert pipes.connection_node_end_id[5] == 35
     assert pipes.cross_section_definition_id[9] == 7
     assert pipes.invert_level_start_point[16] == -3.91
     assert pipes.invert_level_end_point[19] == -3.62
-    assert pipes.sewerage_type[24] == 2
-    assert pipes.friction_type[28] == 4
+    assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
+    assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145

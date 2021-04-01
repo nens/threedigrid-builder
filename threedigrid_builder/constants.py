@@ -4,6 +4,7 @@ from enum import unique
 
 @unique
 class CalculationType(IntEnum):
+    # channels have +100 in the calculation type, this is mapped on read
     BOUNDARY_NODE = -1
     EMBEDDED = 0
     ISOLATED = 1
@@ -76,7 +77,7 @@ class ContentType(IntEnum):
 @unique
 class FrictionType(IntEnum):
     CHEZY = 1
-    MANNING = 2
+    MANNING = 2  # pipes have 4 here in the input, but this is mapped to 2 on read
 
 
 @unique

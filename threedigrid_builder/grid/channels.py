@@ -4,6 +4,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.geo_utils import segmentize
 
 import itertools
 import numpy as np
@@ -43,37 +44,21 @@ class Channels:
             - content_pk: the id of the Channel from which this node originates
             - node_type: NodeType.NODE_1D_NO_STORAGE
         """
-        # load data
-        dists = self.dist_calc_points.copy()  # copy because of inplace edits
-
         # insert default dist_calc_points where necessary
+        dists = self.dist_calc_points.copy()  # copy because of inplace edits
         dists[~np.isfinite(dists)] = global_dist_calc_points
         dists[dists <= 0] = global_dist_calc_points
 
         # compute number of nodes to add per channel
-        length = pygeos.length(self.the_geom)
-        n_segments = np.maximum(np.round(length / dists).astype(int), 1)
-        segment_size = length / n_segments
-        n_nodes = n_segments - 1
-        idx = np.repeat(np.arange(self.the_geom.size), n_nodes)
-
-        # some numpy juggling to get the distance to the start of each channel
-        dist_to_start = np.arange(idx.size)
-        dist_to_start[n_nodes[0] :] -= np.repeat(np.cumsum(n_nodes)[:-1], n_nodes[1:])
-        dist_to_start = (dist_to_start + 1) * segment_size[idx]
-
-        points = pygeos.line_interpolate_point(
-            self.the_geom[idx],
-            dist_to_start,  # note: this only copies geometry pointers
-        )
+        points, segment_size, index = segmentize(self.the_geom, dists)
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=ContentType.TYPE_V2_CHANNEL,
-            content_pk=self.index_to_id(idx),
+            content_pk=self.index_to_id(index),
             node_type=NodeType.NODE_1D_NO_STORAGE,
-            calculation_type=self.calculation_type[idx],
+            calculation_type=self.calculation_type[index],
         )
         return nodes, segment_size
 
@@ -85,7 +70,7 @@ class Channels:
         segment_size=None,
         connection_node_offset=0,
     ):
-        """Compute the grid (nodes + lines) for the channels.
+        """Compute the grid lines for the channels.
 
         Fields connection_node_start_id and connection_node_end_id are used.
 
