@@ -1,5 +1,4 @@
 from .array import array_of
-from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from typing import Tuple
@@ -15,12 +14,12 @@ class Line:
     id: int
     code: str
     display_name: str
-    line_type: LineType  # kcu
-    calculation_type: CalculationType
+    kcu: LineType  # calculation type of the line
     line: Tuple[int, int]
-    lik: int
-    lim: int
-    lin: int
+    cross_pix_coords: Tuple[int, int, int, int]
+    lik: int  # quadtree grid coordinate z of the line start
+    lim: int  # quadtree grid coordinate x of the line start
+    lin: int  # quadtree grid coordinate y of the line start
     ds1d: float  # arclength
     line_geometries: pygeos.Geometry
     line_coords: Tuple[float, float, float, float]
@@ -32,11 +31,21 @@ class Line:
     cross1: int  # the id of the cross section location
     cross2: int  # the id of the cross section location
     cross_weight: float
+    discharge_coefficient_positive: float
+    discharge_coefficient_negative: float
 
 
 @array_of(Line)
 class Lines:
     """Line between two calculation nodes (a.k.a. velocity point)."""
+
+    def set_discharge_coefficients(self):
+        """Set discharge coefficients to 1.0 where unset."""
+        for arr in (
+            self.discharge_coefficient_positive,
+            self.discharge_coefficient_negative,
+        ):
+            arr[np.isnan(arr)] = 1.0
 
     def set_line_coords(self, nodes):
         """Set line_coords from the node coordinates"""

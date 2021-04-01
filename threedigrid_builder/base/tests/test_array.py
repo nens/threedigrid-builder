@@ -41,7 +41,7 @@ def test_arrays_from_lists():
         number=[5, 7],
         yesno=[True, False],
         name=["a", "b"],
-        animal=[Animal.ANT, Animal.DOG],
+        animal=[Animal.ANT, -9999],
         xyz=[[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]],
     )
 
@@ -49,7 +49,7 @@ def test_arrays_from_lists():
     assert_equal(records.number, np.array([5.0, 7.0], dtype=np.float64))
     assert_equal(records.yesno, np.array([True, False], dtype=bool))
     assert_equal(records.name, np.array(["a", "b"], dtype=object))
-    assert_equal(records.animal, np.array([1, 4], dtype=np.int32))
+    assert_equal(records.animal, np.array([1, -9999], dtype=np.int32))
     assert_equal(
         records.xyz,
         np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]], dtype=np.float64, order="F"),
@@ -122,6 +122,11 @@ def test_fortran_order(xyz):
 
     assert records.xyz.flags["F_CONTIGUOUS"]
     assert records.xyz.shape == (2, 3)
+
+
+def test_enum_invalid():
+    with pytest.raises(ValueError):
+        Records(id=range(5), animal=[1, 2, 3, 4, 5])
 
 
 def test_python_attrs():

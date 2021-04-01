@@ -5,7 +5,6 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
 
-import itertools
 import numpy as np
 import pygeos
 import pytest
@@ -25,6 +24,28 @@ def grid():
     return Grid(nodes=Nodes(id=[]), lines=Lines(id=[]))
 
 
+@pytest.fixture
+def grid2d():
+    quadtree_stats = {
+        "lgrmin": 2,
+        "kmax": 1,
+        "mmax": np.array([1]),
+        "nmax": np.array([1]),
+        "dx": np.array([2.0]),
+        "dxp": 0.5,
+        "x0p": 10.,
+        "y0p": 10.,
+    }
+    return Grid(
+        nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats
+    )
+
+
+@pytest.fixture
+def grid1d():
+    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), epsg_code=4326)
+
+
 def test_from_quadtree():
 
     quadtree = mock.Mock()
@@ -33,6 +54,7 @@ def test_from_quadtree():
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
+    quadtree.origin = (0., 0.)
     quadtree.get_nodes_lines.return_value = nodes, lines
 
     grid = Grid.from_quadtree(
@@ -47,15 +69,26 @@ def test_from_quadtree():
     assert grid.lines is lines
 
 
-def test_from_connection_nodes(connection_nodes):
-    counter = itertools.count(start=2)
+def test_from_connection_nodes():
+    connection_nodes = mock.Mock()
+    counter = mock.Mock()
+    nodes = Nodes(id=[])
 
+    connection_nodes.get_nodes.return_value = nodes
     grid = Grid.from_connection_nodes(connection_nodes, counter)
 
-    assert_array_equal(grid.nodes.id, [2, 3])
-    assert next(counter) == 4
-    assert_array_equal(grid.nodes.coordinates, [(0, 0), (10, 0)])
-    assert_array_equal(grid.nodes.content_pk, [1, 3])
+    connection_nodes.get_nodes.assert_called_with(counter)
+
+    assert grid.nodes is nodes
+    assert len(grid.lines) == 0
+
+
+def test_concatenate_grid(grid2d, grid1d):
+    grid = grid2d + grid1d
+    assert grid.epsg_code == grid1d.epsg_code
+    assert grid.quadtree_stats == grid2d.quadtree_stats
+    assert_array_equal(grid.nodes.id[0:2], grid2d.nodes.id)
+    assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)
 
 
 def test_from_channels():
@@ -92,7 +125,7 @@ def test_from_channels():
     )
 
 
-@mock.patch("threedigrid_builder.grid.grid.cross_sections.compute_weights")
+@mock.patch("threedigrid_builder.grid.grid.compute_weights")
 def test_set_channel_weights(compute_weights, grid):
     locations = mock.Mock()
     channels = mock.Mock()
@@ -100,3 +133,9 @@ def test_set_channel_weights(compute_weights, grid):
     grid.set_channel_weights(locations, channels)
 
     compute_weights.assert_called_with(grid.lines, locations, channels)
+
+
+@mock.patch("threedigrid_builder.grid.grid.set_calculation_types")
+def test_set_calculation_types(set_calculation_types, grid):
+    grid.set_calculation_types()
+    set_calculation_types.assert_called_with(grid.nodes, grid.lines)

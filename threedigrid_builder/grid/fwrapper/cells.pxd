@@ -16,11 +16,13 @@ cdef extern:
         int *quad_idx,
         double *bounds,
         double *coords,
+        int *pixel_coords,
         int *size_n,
         int *area_mask,
         int *size_a,
         int *size_b,
         int *line,
+        int *cross_pix_coords,
         int *n_line_u,
         int *n_line_v
     )

@@ -29,10 +29,10 @@ __all__ = ["SQLite"]
 SOURCE_EPSG = 4326
 
 # put some global defaults on datatypes
-NumpyQuery.default_numpy_settings[Integer]["dtype"] = np.int32
+NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
 NumpyQuery.default_numpy_settings[IntegerEnum] = {
+    **NumpyQuery.default_numpy_settings[Integer],
     "sql_cast": lambda x: cast(x, Integer),
-    "dtype": np.int32,
 }
 
 
@@ -104,12 +104,13 @@ class SQLite:
             )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["calculation_type"] -= 100  # maps (100, 101, 102, 105) to (0, 1, 2, 5)
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
     def get_connection_nodes(self):
-        """Return ConnectionNodes"""
+        """Return ConnectionNodes (which are enriched using the manhole table)"""
         with self.get_session() as session:
             arr = (
                 session.query(
@@ -117,14 +118,23 @@ class SQLite:
                     models.ConnectionNode.id,
                     models.ConnectionNode.code,
                     models.ConnectionNode.storage_area,
+                    models.Manhole.id.label("manhole_id"),
+                    models.Manhole.calculation_type,
+                    models.Manhole.bottom_level,
+                    models.Manhole.drain_level,
+                    models.Manhole.manhole_indicator,
+                    models.Manhole.surface_level,
+                    models.Manhole.shape.label("manhole_shape"),
+                    models.Manhole.width.label("manhole_width"),
                 )
+                .join(models.ConnectionNode.manholes, isouter=True)
+                .distinct(models.ConnectionNode.id)
                 .order_by(models.ConnectionNode.id)
                 .as_structarray()
             )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        # transform to a ConnectionNodes object
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
     def get_cross_section_definitions(self):

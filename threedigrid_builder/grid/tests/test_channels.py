@@ -1,6 +1,7 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 
@@ -25,7 +26,7 @@ def one_channel():
         code=np.array(["one"]),
         connection_node_start_id=np.array([21]),
         connection_node_end_id=np.array([42]),
-        calculation_type=np.array([101]),
+        calculation_type=np.array([2]),
     )
 
 
@@ -40,7 +41,7 @@ def two_channels():
         code=np.array(["one", "two"]),
         connection_node_start_id=np.array([21, 25]),
         connection_node_end_id=np.array([42, 33]),
-        calculation_type=np.array([101, 102]),
+        calculation_type=np.array([2, 1]),
     )
 
 
@@ -65,6 +66,8 @@ def test_interpolate_nodes_one_channel(dist, size, expected, one_channel):
     assert_array_equal(nodes.id, range(2, 2 + len(expected)))
     assert_array_equal(nodes.coordinates, expected)
     assert_array_equal(nodes.content_pk, 1)
+    assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
+    assert_array_equal(nodes.calculation_type, 2)
     assert_array_equal(segment_size, size)
 
 
@@ -78,6 +81,8 @@ def test_interpolate_nodes_two_channels(two_channels):
     assert_array_equal(nodes.id, range(2, 8))
     assert_array_equal(nodes.coordinates, expected_points)
     assert_array_equal(nodes.content_pk, [1, 1, 1, 2, 2, 2])
+    assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
+    assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
     assert_array_equal(segment_size, [5.0, 50.0])
 
 
@@ -98,6 +103,7 @@ def test_get_lines(connection_nodes, two_channels):
     assert_array_equal(lines.line, expected_line)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
+    assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
     assert_array_equal(lines.ds1d, [23, 23, 101, 101, 101])
 
 

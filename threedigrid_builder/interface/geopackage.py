@@ -63,6 +63,9 @@ class GeopackageOut(OutputInterface):
             node_data["calculation_type"], CalculationType
         )
 
+        # Attribute data must only be 1D
+        node_data.pop("pixel_coords")
+
         # construct the geodataframes
         df_nodes = geopandas.GeoDataFrame(
             node_data, geometry=node_geometries, crs=epsg_code
@@ -84,7 +87,7 @@ class GeopackageOut(OutputInterface):
         line_data = lines.to_dict()
 
         # convert enums to strings
-        line_data["line_type"] = _enum_to_str(line_data["line_type"], LineType)
+        line_data["kcu"] = _enum_to_str(line_data["kcu"], LineType)
         line_data["content_type"] = _enum_to_str(line_data["content_type"], ContentType)
 
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays

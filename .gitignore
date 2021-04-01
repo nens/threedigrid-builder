@@ -276,6 +276,7 @@ __pycache__/
 *.so
 *.dylib
 *.dll
+*.mod
 build/
 dist/
 lib/
@@ -288,3 +289,9 @@ docker-compose.override.yml
 
 # Pytest
 .pytest_cache
+
+# Dockerfile development
+Dockerfile-dev
+requirements_dev.txt
+docker-compose.devcontainer.yml
+.devcontainer.json

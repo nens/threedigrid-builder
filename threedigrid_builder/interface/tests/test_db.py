@@ -1,3 +1,7 @@
+from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import CrossSectionShape
+from threedigrid_builder.constants import FrictionType
+from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -35,7 +39,7 @@ def test_get_channels(db):
     )
     assert channels.id[11] == 12
     assert channels.code[42] == "151"
-    assert channels.calculation_type[494] == 102
+    assert channels.calculation_type[494] == CalculationType.CONNECTED
     assert channels.dist_calc_points[580] == 100.0
     assert channels.connection_node_start_id[536] == 1377
     assert channels.connection_node_end_id[1163] == 1056
@@ -53,6 +57,16 @@ def test_get_connection_nodes(db):
     assert connection_nodes.storage_area[39] == 0.64
     assert np.isnan(connection_nodes.storage_area[49])
     assert connection_nodes.code[494] == ""
+    # manhole fields
+    assert connection_nodes.manhole_id[10] == 11
+    assert connection_nodes.manhole_id[100] == -9999
+    assert connection_nodes.calculation_type[1] == CalculationType.CONNECTED
+    assert connection_nodes.manhole_indicator[6] == ManholeIndicator.OUTLET
+    assert connection_nodes.bottom_level[9] == -3.51
+    assert connection_nodes.drain_level[1] == -0.82
+    assert connection_nodes.surface_level[35] == -0.54
+    assert connection_nodes.manhole_shape[40] == "00"
+    assert connection_nodes.manhole_width[32] == 0.8
 
 
 def test_get_cross_section_definitions(db):
@@ -62,7 +76,7 @@ def test_get_cross_section_definitions(db):
     # some test samples
     assert len(definitions.id) == 11
     assert definitions.id[8] == 97
-    assert definitions.shape[7] == 1
+    assert definitions.shape[7] == CrossSectionShape.RECTANGLE
     assert definitions.height[10] == 0.4
     assert definitions.width[2] == 0.315
 
@@ -79,7 +93,7 @@ def test_get_cross_section_locations(db):
     assert locations.channel_id[448] == 452
     assert locations.reference_level[691] == -3.0
     assert locations.bank_level[995] == -1.7
-    assert locations.friction_type[1103] == 2
+    assert locations.friction_type[1103] == FrictionType.MANNING
     assert locations.friction_value[1103] == 0.03
 
 

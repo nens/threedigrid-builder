@@ -16,7 +16,9 @@ def set_2d_computational_nodes_lines(
     int[:] nodn,
     double[::1,:] bounds,
     double[::1,:] coords,
+    int[::1,:] pixel_coords,
     int[::1,:] line,
+    int[::1,:] cross_pix_coords,
     int n_line_u,
     int n_line_v
 ):
@@ -43,11 +45,13 @@ def set_2d_computational_nodes_lines(
         quad_idx=&quad_idx[0, 0],
         bounds=&bounds[0, 0],
         coords=&coords[0, 0],
+        pixel_coords=&pixel_coords[0, 0],
         size_n=&size_n,
         area_mask=&area_mask[0, 0],
         size_a=&size_a,
         size_b=&size_b,
         line=&line[0, 0],
+        cross_pix_coords=&cross_pix_coords[0, 0],
         n_line_u=&n_line_u,
         n_line_v=&n_line_v
     )
