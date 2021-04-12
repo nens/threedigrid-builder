@@ -62,7 +62,8 @@ class Lines:
 
         If any of the two nodes has no dmax, dpumax will be nan.
         """
-        self.dpumax[:] = np.max(nodes.dmax.take(nodes.id_to_index(self.line)), axis=1)
+        with np.errstate(invalid="ignore"):  # suppress warnings on max(nan, nan)
+            self.dpumax[:] = np.max(nodes.dmax.take(nodes.id_to_index(self.line)), axis=1)
 
     def fix_line_geometries(self):
         """Construct line_geometries from line_coords, where necessary"""
