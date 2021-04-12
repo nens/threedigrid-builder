@@ -1,4 +1,4 @@
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_almost_equal
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
@@ -64,11 +64,11 @@ def test_interpolate_nodes_one_channel(dist, size, expected, one_channel):
     )
 
     assert_array_equal(nodes.id, range(2, 2 + len(expected)))
-    assert_array_equal(nodes.coordinates, expected)
+    assert_almost_equal(nodes.coordinates, expected, decimal=7)
     assert_array_equal(nodes.content_pk, 1)
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, 2)
-    assert_array_equal(segment_size, size)
+    assert_almost_equal(segment_size, size, decimal=7)
 
 
 def test_interpolate_nodes_two_channels(two_channels):
