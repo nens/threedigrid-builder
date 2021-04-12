@@ -1,4 +1,5 @@
-from numpy.testing import assert_array_equal, assert_almost_equal
+from numpy.testing import assert_almost_equal
+from numpy.testing import assert_array_equal
 from threedigrid_builder.grid import segmentize
 
 import numpy as np
@@ -33,17 +34,17 @@ def random_lines():
 )
 def test_segmentize_one_line(segment_size, expected_size, expected_nodes):
     line = pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]])
-    lines, nodes, line_idx, node_idx, actual_size = segmentize(line, segment_size)
+    nodes, node_idx, actual_size, segments, segment_idx = segmentize(line, segment_size)
 
-    assert_array_equal(expected_nodes, pygeos.get_coordinates(nodes))
+    assert_almost_equal(expected_nodes, pygeos.get_coordinates(nodes), decimal=7)
     # assert_array_equal(expected_lines, pygeos.get_coordinates(lines))
-    assert_array_equal(line_idx, 0)
+    assert_array_equal(segment_idx, 0)
     assert_array_equal(node_idx, 0)
-    assert_array_equal(actual_size, expected_size)
+    assert_almost_equal(actual_size, expected_size, decimal=7)
 
 
 def test_segmentize_many(random_lines):
-    lines, nodes, line_idx, node_idx, actual_size = segmentize(random_lines, 1.0)
+    nodes, node_idx, actual_size, segments, segment_idx = segmentize(random_lines, 1.0)
 
     # the node coordinates should match line start & end coordinates
     idx_prev = -1
@@ -53,16 +54,18 @@ def test_segmentize_many(random_lines):
             line_cur += 1
             idx_prev = _idx
         node_coord = [pygeos.get_x(_node), pygeos.get_y(_node)]
-        line_before = pygeos.get_coordinates(lines[line_cur])
-        line_after = pygeos.get_coordinates(lines[line_cur + 1])
+        line_before = pygeos.get_coordinates(segments[line_cur])
+        line_after = pygeos.get_coordinates(segments[line_cur + 1])
         assert_almost_equal(node_coord, line_before[-1])
         assert_almost_equal(node_coord, line_after[0])
         line_cur += 1
 
     # the lengths of each line segments should equal the reported size
-    for _idx, _line in zip(line_idx, lines):
+    for _idx, _line in zip(segment_idx, segments):
         assert pygeos.length(_line) == pytest.approx(actual_size[_idx])
 
     # the number of segments times the reported size should equal the input line's size
-    actual_size_total = np.bincount(line_idx, minlength=len(random_lines)) * actual_size
-    assert_almost_equal(actual_size_total, pygeos.length(random_lines))
+    actual_size_total = (
+        np.bincount(segment_idx, minlength=len(random_lines)) * actual_size
+    )
+    assert_almost_equal(actual_size_total, pygeos.length(random_lines), decimal=7)
