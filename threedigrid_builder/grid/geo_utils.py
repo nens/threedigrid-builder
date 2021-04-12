@@ -1,6 +1,8 @@
 import numpy as np
 import pygeos
 
+__all__ = ["segmentize"]
+
 
 def segmentize(linestrings, segment_size):
     """Divide linestrings into segments of equal length.
@@ -12,7 +14,8 @@ def segmentize(linestrings, segment_size):
 
     Returns:
         linestrings (ndarray of pygeos.Geometry): the segments (linestrings)
-        points (ndarray of pygeos.Geometry): the points that divide the input linestrings
+        points (ndarray of pygeos.Geometry): the points where segments connect.
+          this excludes the start and end of the input linestrings.
         linestring_index (ndarray of int): indices mapping segments to input linestrings
         point_index (ndarray of int): indices mapping points to input linestrings
         segment_size (ndarray of float): the actual length of the segments

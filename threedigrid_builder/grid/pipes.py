@@ -5,7 +5,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.constants import SewerageType
-from threedigrid_builder.geo_utils import segmentize
+from .geo_utils import segmentize
 
 import itertools
 import numpy as np

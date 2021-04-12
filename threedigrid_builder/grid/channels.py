@@ -4,7 +4,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.geo_utils import segmentize
+from .geo_utils import segmentize
 
 import itertools
 import numpy as np
