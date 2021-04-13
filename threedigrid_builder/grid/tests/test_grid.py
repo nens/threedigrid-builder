@@ -162,7 +162,7 @@ def test_set_calculation_types(set_calculation_types, grid):
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.cross_sections.compute_dmax")
+@mock.patch("threedigrid_builder.grid.cross_sections.compute_bottom_level")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
 @mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
@@ -186,7 +186,7 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute):
 
     grid.set_bottom_levels(locations, channels, pipes, weirs, culverts)
 
-    # cross section compute_dmax was called correctly
+    # cross section compute_bottom_level was called correctly
     args, kwargs = cs_compute.call_args
     assert_array_equal(args[0], [1, 3])  # channel_id
     assert_array_equal(args[1], [2.0, 21.0])  # ds
@@ -202,7 +202,7 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute):
     )
 
     # lines set_bottom_levels was called correctly
-    lines.set_bottom_levels.assert_called_with(grid.nodes)
+    lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=False)
 
     # fix_dpumax was called correctly
     fix_dpumax.assert_called_with(grid.lines, grid.nodes, locations)

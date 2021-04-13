@@ -1,4 +1,4 @@
-from .cross_sections import compute_dmax
+from .cross_sections import compute_bottom_level
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
@@ -165,7 +165,7 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         # get dmax by interpolating along the line's channel at ds=0 (start)
         channel_id = lines.content_pk[line_idx_1]
         channel_ds = np.zeros(len(channel_id))
-        dmax = compute_dmax(channel_id, channel_ds, locations, channels)
+        dmax = compute_bottom_level(channel_id, channel_ds, locations, channels)
         # find the nodes that match to these channel lines and put the dmax
         _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
         _put_if_less(nodes.dmax, _node_idx, dmax)
@@ -175,7 +175,7 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         # get dmax by interpolating along the line's channel at ds=length(channel)
         channel_id = lines.content_pk[line_idx_2]
         channel_ds = pygeos.length(channels.the_geom[channels.id_to_index(channel_id)])
-        dmax = compute_dmax(channel_id, channel_ds, locations, channels)
+        dmax = compute_bottom_level(channel_id, channel_ds, locations, channels)
         # find the nodes that match to these channel lines and put the dmax
         _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
         _put_if_less(nodes.dmax, _node_idx, dmax)

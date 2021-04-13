@@ -116,12 +116,12 @@ def test_set_calculation_types_multiple_nodes():
         ([(2, 1)], (3.0,), 3.0),  # end point
         ([(1, 2), (2, 1)], (3.0, 4.0), 3.0),  # both end and start; start is lower
         ([(1, 2), (2, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
-        ([(1, 2), (1, 3)], ([3.0, 4.0], ), 3.0),  # two lines; first is lower
-        ([(1, 2), (1, 3)], ([4.0, 3.0], ), 3.0),  # two lines; last is lower
+        ([(1, 2), (1, 3)], ([3.0, 4.0],), 3.0),  # two lines; first is lower
+        ([(1, 2), (1, 3)], ([4.0, 3.0],), 3.0),  # two lines; last is lower
     ],
 )
-@mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
-def test_set_bottom_levels_single_node(compute_dmax, line, dmax_mock, expected):
+@mock.patch("threedigrid_builder.grid.connection_nodes.compute_bottom_level")
+def test_set_bottom_levels_single_node(compute_bottom_level, line, dmax_mock, expected):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(line)),
@@ -138,46 +138,49 @@ def test_set_bottom_levels_single_node(compute_dmax, line, dmax_mock, expected):
     culverts = mock.Mock()
     weirs = mock.Mock()
 
-    compute_dmax.side_effect = [np.atleast_1d(x) for x in dmax_mock]
+    compute_bottom_level.side_effect = [np.atleast_1d(x) for x in dmax_mock]
     set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
-    # assert the correct call to compute_dmax
-    assert compute_dmax.call_count == len(dmax_mock)
+    # assert the correct call to compute_bottom_level
+    assert compute_bottom_level.call_count == len(dmax_mock)
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, expected)
 
 
-@mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
-def test_set_bottom_levels_multiple_nodes(compute_dmax):
+@mock.patch("threedigrid_builder.grid.connection_nodes.compute_bottom_level")
+def test_set_bottom_levels_multiple_nodes(compute_bottom_level):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         dmax=[np.nan, np.nan, 24.0],
     )
     lines = Lines(
-        id=[1, 2],
-        content_type=[ContentType.TYPE_V2_CHANNEL, -9999],
-        content_pk=[2, -9999],
-        line=[(1, 2), (1, 2)],
+        id=[1, 2, 3],
+        content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
+        content_pk=[2, -9999, 3],
+        line=[(1, 2), (1, 2), (1, 3)],
     )
     channels = Channels(
-        id=[2],
-        the_geom=[pygeos.linestrings([[0, 0], [0, 10]])],
+        id=[2, 3],
+        the_geom=[
+            pygeos.linestrings([[0, 0], [0, 10]]),
+            pygeos.linestrings([[0, 0], [0, 2]]),
+        ],
     )
     locations = mock.Mock()
     pipes = mock.Mock()
     culverts = mock.Mock()
     weirs = mock.Mock()
 
-    compute_dmax.side_effect = (np.array([3.0]), np.array([8.0]))
+    compute_bottom_level.side_effect = (np.array([3.0, 4.0]), np.array([8.0]))
     set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     # assert the correct call to compute_dmax
-    assert compute_dmax.call_count == 2
-    (first_call, _), (second_call, _) = compute_dmax.call_args_list
-    assert_array_equal(first_call[0], [2])  # channel ids for channel starts
-    assert_array_equal(first_call[1], [0.0])  # ds for channel starts
+    assert compute_bottom_level.call_count == 2
+    (first_call, _), (second_call, _) = compute_bottom_level.call_args_list
+    assert_array_equal(first_call[0], [2, 3])  # channel ids for channel starts
+    assert_array_equal(first_call[1], [0.0, 0.0])  # ds for channel starts
     assert first_call[2] is locations
     assert first_call[3] is channels
     assert_array_equal(second_call[0], [2])  # channel ids for channel endings

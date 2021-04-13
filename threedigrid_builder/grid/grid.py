@@ -196,7 +196,7 @@ class Grid:
         """
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = cross_sections.compute_dmax(
+        self.nodes.dmax[mask] = cross_sections.compute_bottom_level(
             self.nodes.content_pk[mask], self.nodes.ds1d[mask], locations, channels
         )
 

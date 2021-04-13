@@ -5,7 +5,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid.cross_sections import compute_dmax
+from threedigrid_builder.grid.cross_sections import compute_bottom_level
 from threedigrid_builder.grid.cross_sections import compute_weights
 from threedigrid_builder.grid.cross_sections import fix_dpumax
 
@@ -96,11 +96,11 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     assert_almost_equal(cross_weights, expected_weight)
 
 
-def test_compute_dmax(cross_section_locations, channels, channel_lines):
-    """Same setup as test_compute_weights, but now testing the derived dmax"""
+def test_compute_bottom_level(cross_section_locations, channels, channel_lines):
+    """Same setup as test_compute_weights, but now testing the derived bottom levels"""
     expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
 
-    actual = compute_dmax(
+    actual = compute_bottom_level(
         channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
     )
 

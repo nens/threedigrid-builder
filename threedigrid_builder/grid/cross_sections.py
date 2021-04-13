@@ -149,8 +149,10 @@ def compute_weights(channel_id, ds, cs, channels):
     return cross1, cross2, weights
 
 
-def compute_dmax(channel_id, ds, cs, channels):
-    """Compute the dmax by interpolating/extrapolating between cross sections
+def compute_bottom_level(channel_id, ds, cs, channels):
+    """Compute the bottom level by interpolating/extrapolating between cross sections
+
+    This can be used at nodes (for dmax) or at line centres (for dpumax).
 
     Args:
         channel_id (ndarray of int): see compute_weights
@@ -171,7 +173,7 @@ def compute_dmax(channel_id, ds, cs, channels):
     return weights * left + (1 - weights) * right
 
 
-def fix_dpumax(lines, nodes, cs):
+def fix_dpumax(lines, nodes, cs, allow_nan=False):
     """Fix the line bottom levels (dpumax) for channels that have no added nodes.
 
     The new value is the reference_level of the channel's cross section location
@@ -200,5 +202,5 @@ def fix_dpumax(lines, nodes, cs):
     new_dpumax = weights * left + (1 - weights) * right
 
     # set the new dpumax, including only the lines that have a lower dpumax
-    mask = (lines.dpumax[line_idx] < new_dpumax) | (np.isnan(lines.dpumax[line_idx]))
+    mask = lines.dpumax[line_idx] < new_dpumax
     lines.dpumax[line_idx[mask]] = new_dpumax[mask]
