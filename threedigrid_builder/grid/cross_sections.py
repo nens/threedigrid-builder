@@ -190,11 +190,8 @@ def fix_dpumax(lines, nodes, cs):
     # find the channel lines that connect 2 connection nodes
     line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
     node_idx = nodes.id_to_index(lines.line[line_idx])
-    line_idx = line_idx[
-        (nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES).all(
-            axis=1
-        )
-    ]
+    is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+    line_idx = line_idx[is_cn.all(axis=1)]
 
     # collect the associated crosssection reference_levels and interpolate
     left = cs.reference_level.take(cs.id_to_index(lines.cross1[line_idx]))

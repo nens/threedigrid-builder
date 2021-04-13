@@ -183,6 +183,8 @@ class Grid:
     def set_bottom_levels(self, locations, channels, pipes, weirs, culverts):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
+        Note that there should not be 2D nodes & lines in the grid yet.
+
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
         2. connection nodes: see connection_nodes.set_bottom_levels
@@ -204,7 +206,7 @@ class Grid:
         )
 
         # Lines: based on the nodes
-        self.lines.set_bottom_levels(self.nodes)
+        self.lines.set_bottom_levels(self.nodes, allow_nan=False)
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections.fix_dpumax(self.lines, self.nodes, locations)

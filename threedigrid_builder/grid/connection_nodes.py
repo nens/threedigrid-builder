@@ -114,8 +114,14 @@ def set_calculation_types(nodes, lines):
 
 
 def _put_if_less(a, ind, v):
-    """Replaces specified elements of an array with given values if they are less."""
-    is_less = ~(v > a[ind])  # same as v < a, except for how NaN is handled
+    """Replaces specified elements of an array with given values if  they are less."""
+    # values can occur multiple times for the same index. sort descending by value so
+    # that the lowest (latest) one will take precedence
+    sorter = np.argsort(-v)
+    v = v[sorter]
+    ind = ind[sorter]
+    # same as v < a, except for how NaN is handled:
+    is_less = ~(v > a[ind])
     if is_less.any():
         np.put(a, ind[is_less], v[is_less])
 

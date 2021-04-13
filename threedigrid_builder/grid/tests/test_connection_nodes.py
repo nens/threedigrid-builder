@@ -114,8 +114,10 @@ def test_set_calculation_types_multiple_nodes():
         ([(2, 3)], (), np.nan),  # no line to the specific node
         ([(1, 2)], (3.0,), 3.0),  # starting point
         ([(2, 1)], (3.0,), 3.0),  # end point
-        ([(1, 1)], (3.0, 4.0), 3.0),  # both end and start; start is lower
-        ([(1, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
+        ([(1, 2), (2, 1)], (3.0, 4.0), 3.0),  # both end and start; start is lower
+        ([(1, 2), (2, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
+        ([(1, 2), (1, 3)], ([3.0, 4.0], ), 3.0),  # two lines; first is lower
+        ([(1, 2), (1, 3)], ([4.0, 3.0], ), 3.0),  # two lines; last is lower
     ],
 )
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_dmax")
@@ -136,7 +138,7 @@ def test_set_bottom_levels_single_node(compute_dmax, line, dmax_mock, expected):
     culverts = mock.Mock()
     weirs = mock.Mock()
 
-    compute_dmax.side_effect = [np.array([x]) for x in dmax_mock]
+    compute_dmax.side_effect = [np.atleast_1d(x) for x in dmax_mock]
     set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     # assert the correct call to compute_dmax

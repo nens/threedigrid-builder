@@ -57,6 +57,13 @@ def test_set_discharge_coefficients(lines):
 )
 def test_set_bottom_levels(nodes, lines, nodes_dmax, expected):
     nodes.dmax[:] = nodes_dmax
-    lines.set_bottom_levels(nodes)
+    lines.set_bottom_levels(nodes, allow_nan=True)
 
     assert_equal(lines.dpumax, expected)
+
+
+def test_set_bottom_levels_nan_check(nodes, lines):
+    nodes.dmax[:] = [1.0, 2.0, np.nan]
+
+    with pytest.raises(ValueError):
+        lines.set_bottom_levels(nodes)
