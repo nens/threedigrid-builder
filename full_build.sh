@@ -9,5 +9,5 @@ else
 	echo $BUILD_TYPE
 fi
 
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE --clean-first . -B/tmp/build
-cmake --build /tmp/build --target install
+cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE . -B/tmp/build
+cmake --build /tmp/build --clean-first --target install
