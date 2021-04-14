@@ -42,6 +42,8 @@ class Channels:
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this node originates
             - node_type: NodeType.NODE_1D_NO_STORAGE
+            The nodes are ordered by content_pk and then by position on the
+            channel.
         """
         # load data
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -74,6 +76,7 @@ class Channels:
             content_pk=self.index_to_id(idx),
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[idx],
+            ds1d=dist_to_start,
         )
         return nodes, segment_size
 

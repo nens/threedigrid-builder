@@ -1,10 +1,8 @@
+from . import connection_nodes
+from . import cross_sections
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid.connection_nodes import set_calculation_types
-from threedigrid_builder.grid.cross_sections import compute_weights
-
-import numpy as np
 
 
 __all__ = ["Grid"]
@@ -163,34 +161,55 @@ class Grid:
             locations (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
-        compute_weights(self.lines, locations, channels)
+        # Mask the lines to only the Channel lines
+        line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
+        cross1, cross2, cross_weight = cross_sections.compute_weights(
+            self.lines.content_pk[line_mask],
+            self.lines.ds1d[line_mask],
+            locations,
+            channels,
+        )
+        self.lines.cross1[line_mask] = cross1
+        self.lines.cross2[line_mask] = cross2
+        self.lines.cross_weight[line_mask] = cross_weight
 
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
 
         ConnectionNodes, Channels and Pipes should be present in the grid.
         """
-        set_calculation_types(self.nodes, self.lines)
+        connection_nodes.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(self, cs):
+    def set_bottom_levels(self, locations, channels, pipes, weirs, culverts):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
+
+        Note that there should not be 2D nodes & lines in the grid yet.
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
-        2. pipes, connection nodes:
-          - from the manhole.bottom_level
-          - if not present: the lowest of all neigboring objects
-             - channel: interpolate for channels (like channel node)
-             - pipe: invert level (if no storage & invert levels differ by more
-               than cross section height: error)
-             - weir: crest level
-             - culvert: invert level
-        3. pipes, interpolated nodes:
+        2. connection nodes: see connection_nodes.set_bottom_levels
+        3. (not implemented) pipes, interpolated nodes:
           - interpolate between invert level start & end
         4. lines: dpumax = greatest of the two neighboring nodes dmax
           - except for channels with no interpolated nodes: take reference level, but
             only if that is higher than the two neighboring nodes.
         """
+        # Channels, interpolated nodes
+        mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
+        self.nodes.dmax[mask] = cross_sections.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask], locations, channels
+        )
+
+        # Connection nodes: complex logic based on the connected objects
+        connection_nodes.set_bottom_levels(
+            self.nodes, self.lines, locations, channels, pipes, weirs, culverts
+        )
+
+        # Lines: based on the nodes
+        self.lines.set_bottom_levels(self.nodes, allow_nan=False)
+
+        # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
+        cross_sections.fix_dpumax(self.lines, self.nodes, locations)
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
