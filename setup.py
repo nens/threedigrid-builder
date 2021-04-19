@@ -88,7 +88,11 @@ setup(
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
     packages=find_packages(
-        include=("threedigrid_builder.*",), exclude=("threedigrid_builder.tests")
+        include=(
+            "threedigrid_builder",
+            "threedigrid_builder.*",
+        ),
+        exclude=("threedigrid_builder.tests"),
     ),
     install_requires=install_requires,
     extras_require={

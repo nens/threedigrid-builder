@@ -11,6 +11,7 @@ from unittest import mock
 
 import numpy as np
 import pygeos
+import pytest
 
 
 def test_init():
@@ -26,6 +27,7 @@ def test_init():
     assert sqlite.db is db.return_value
 
 
+@pytest.mark.spatialite
 def test_get_channels(db):
     channels = db.get_channels()
     assert isinstance(channels, Channels)
@@ -45,6 +47,7 @@ def test_get_channels(db):
     assert channels.id[1174] == 666668899
 
 
+@pytest.mark.spatialite
 def test_get_connection_nodes(db):
     connection_nodes = db.get_connection_nodes()
     assert isinstance(connection_nodes, ConnectionNodes)
@@ -68,6 +71,7 @@ def test_get_connection_nodes(db):
     assert connection_nodes.manhole_width[32] == 0.8
 
 
+@pytest.mark.spatialite
 def test_get_cross_section_definitions(db):
     definitions = db.get_cross_section_definitions()
     assert isinstance(definitions, CrossSectionDefinitions)
@@ -80,6 +84,7 @@ def test_get_cross_section_definitions(db):
     assert definitions.width[2] == 0.315
 
 
+@pytest.mark.spatialite
 def test_get_cross_section_locations(db):
     locations = db.get_cross_section_locations()
     assert isinstance(locations, CrossSectionLocations)
@@ -96,6 +101,7 @@ def test_get_cross_section_locations(db):
     assert locations.friction_value[1103] == 0.03
 
 
+@pytest.mark.spatialite
 def test_get_grid_refinements(db):
     grid_refinements = db.get_grid_refinements()
 
