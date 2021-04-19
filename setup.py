@@ -69,7 +69,7 @@ version = open("VERSION.rst").read()
 
 install_requires = [
     "numpy>=1.13",
-    "threedi-modelchecker",
+    "threedi-modelchecker>=0.12",
     "pygeos",
     "pyproj",
     "condenser[geo]",
@@ -87,7 +87,9 @@ setup(
     url="https://github.com/nens/threedigrid-builder",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
-    packages=find_packages(include=("threedigrid_builder.*",), exclude=("*.tests",)),
+    packages=find_packages(
+        include=("threedigrid_builder.*",), exclude=("threedigrid_builder.tests")
+    ),
     install_requires=install_requires,
     extras_require={
         "test": test_requires,
