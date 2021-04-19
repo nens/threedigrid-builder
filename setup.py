@@ -1,4 +1,5 @@
 from setuptools import Extension
+from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -55,7 +56,9 @@ elif "sdist" not in sys.argv:
     )
 
     cython_modules = [
-        Extension("*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts)
+        Extension(
+            "*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts
+        )
     ]
 
     ext_modules += cythonize(cython_modules, language_level=3)
@@ -84,9 +87,13 @@ setup(
     url="https://github.com/nens/threedigrid-builder",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
-    packages=["threedigrid_builder"],
+    packages=find_packages(include=("threedigrid_builder.*",), exclude=("*.tests",)),
     install_requires=install_requires,
-    extras_require={"test": test_requires, "gridadmin": ["h5py>=2.7"], "gpkg": ["geopandas"]},
+    extras_require={
+        "test": test_requires,
+        "gridadmin": ["h5py>=2.7"],
+        "gpkg": ["geopandas"],
+    },
     python_requires=">=3.6",
     include_package_data=True,
     ext_modules=ext_modules,
@@ -103,5 +110,5 @@ setup(
     ],
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
-    package_data={"threedigrid_builder.lib": ["../libthreedigrid/lib/*"]}
+    package_data={"threedigrid_builder.lib": ["../libthreedigrid/lib/*"]},
 )
