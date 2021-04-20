@@ -1,8 +1,6 @@
 threedigrid-builder
 ===================
 
-Generate threedi simulation grids from a model schematisation.
-
 .. image:: https://github.com/nens/threedigrid-builder/actions/workflows/test.yml/badge.svg
 	:alt: Github Actions status
 	:target: https://github.com/nens/threedigrid-builder/actions/workflows/test.yml
@@ -10,6 +8,9 @@ Generate threedi simulation grids from a model schematisation.
 .. image:: https://img.shields.io/pypi/v/threedigrid-builder.svg
 	:alt: PyPI
 	:target: https://pypi.org/project/threedigrid-builder/
+
+
+Generate a 3Di simulation grid ("threedimodel") from a model schematisation.
 
 
 Installation

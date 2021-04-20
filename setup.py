@@ -82,7 +82,7 @@ test_requires = ["pytest"]
 setup(
     name="threedigrid-builder",
     version=version,
-    description="3Di Grid Generator",
+    description="Generate a 3Di simulation grid (""threedimodel"") from a model schematisation.",
     long_description=long_description,
     url="https://github.com/nens/threedigrid-builder",
     author="Martijn Siemerink",
