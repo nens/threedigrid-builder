@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.1.1 (unreleased)
+0.1.1 (2021-04-20)
 ------------------
 
 - Fixed automatic PyPI upload.
