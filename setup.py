@@ -42,8 +42,8 @@ if "clean" in sys.argv:
         for filename in p.glob("**/" + pattern):
             print("removing '{}'".format(filename))
             filename.unlink()
-elif all(x not in sys.argv for x in {"--version", "--help-commands", "egg_info", "sdist"}):
-    # Cython is required
+elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
+    # Cython is required (except for sdist or the commands used by zest.releaser)
     if not cythonize:
         sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
 
