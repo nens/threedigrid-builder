@@ -26,11 +26,10 @@ jobs:
         # to supply options, put them in 'env', like:
         env:
           CIBW_SKIP: pp*  # skips pypy
-          CIBW_ARCHS: auto64  # only 64-bit
           # Use the oldest manylinux docker (with fortran compiler version GNU 4.8.2)
           # So that libquadmath and libz are not dynamically linked.
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
-          CIBW_MANYLINUX_I686_IMAGE: manylinux1  # 32-bit currently not used
+          CIBW_MANYLINUX_I686_IMAGE: manylinux1
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
@@ -38,8 +37,9 @@ jobs:
             ./full_build.sh &&
             cp -rv /project/libthreedigrid/lib/libthreedigrid*.so* /usr/local/lib/ &&
             cat WHEEL_LICENSE_LINUX >> LICENSE
-          # The tests require extra requirements (see extras_require in setup.py)
-          CIBW_TEST_EXTRAS: test,gridadmin
+          # The tests can't be done always as some dependencies (rasterio, pyproj)
+          # cannot be installed inside the manylinux1 docker.
+          # CIBW_TEST_EXTRAS: test,gridadmin
           # The pytest command has two custom things:
           # - --import-mode=importlib so that pytest does not mess up the PATH.
           #   If you do not do that, the (uncompiled) contents of
@@ -47,7 +47,7 @@ jobs:
           #   installed contents of the wheel that was built.
           # - We skip tests marked with 'spatialite' because we do not have the spatialite
           #   extension installed inside the manylinux docker.
-          CIBW_TEST_COMMAND: "pytest --import-mode=importlib -m 'not spatialite' {package}/threedigrid_builder/tests"
+          # CIBW_TEST_COMMAND: "pytest --import-mode=importlib -m 'not spatialite' {package}/threedigrid_builder/tests"
 
       - uses: actions/upload-artifact@v2
         with:
