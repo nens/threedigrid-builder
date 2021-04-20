@@ -5,12 +5,14 @@ Use cases orchestrate the flow of data to and from the domain entities.
 This layer depends on the interfaces as well as on the domain layer.
 """
 
+from pathlib import Path
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import SQLite
 from threedigrid_builder.interface import Subgrid
+from typing import Optional
 
 import itertools
 
@@ -98,32 +100,41 @@ def _grid_to_hdf5(grid, path):
 
 
 def make_grid(
-    sqlite_path,
-    dem_path,
-    out_path,
-    model_area_path=None,
+    sqlite_path: Path,
+    dem_path: Path,
+    out_path: Path,
+    model_area_path: Optional[Path] = None,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
     The SQLite is expected to be validated already with threedi-modelchecker.
 
     Args:
-        sqlite_path (str): The path to the input schematisation (SQLite) file
-        dem_path (str): The path of the input DEM file (GeoTIFF)
-        out_path (str): The path of the (to be created) output file. Allowed extensions
+        sqlite_path: The path to the input schematisation (SQLite) file
+        dem_path: The path of the input DEM file (GeoTIFF)
+        out_path: The path of the (to be created) output file. Allowed extensions
             are: .h5 (HDF5) and .gpkg (Geopackage)
-        model_area_path (str)
+        model_area_path
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
             the input schematisation (SQLite) file.
     """
-    if out_path.lower().endswith(".h5"):
+    if isinstance(sqlite_path, str):
+        sqlite_path = Path(sqlite_path)
+    if isinstance(dem_path, str):
+        dem_path = Path(dem_path)
+    if isinstance(out_path, str):
+        out_path = Path(out_path)
+    if isinstance(model_area_path, str):
+        model_area_path = Path(model_area_path)
+    extension = out_path.suffix.lower()
+    if extension == ".h5":
         writer = _grid_to_hdf5
-    elif out_path.lower().endswith(".gpkg"):
+    elif extension:
         writer = _grid_to_gpkg
     else:
-        raise ValueError("Unsupported output format 'out'")
+        raise ValueError(f"Unsupported output format '{extension}'")
 
     grid = _get_2d_grid(sqlite_path, dem_path, model_area_path)
 

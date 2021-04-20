@@ -17,8 +17,8 @@ Usage
 -----
 
 This library converts a model schematisation to a 3Di simulation grid. This can be done
-using a single function that reads data from an SQLite and TIFF and outputs into
-Geopackage or HDF5:
+using a single function that reads data from an SQLite and TIFF and then outputs the
+generated grid into a Geopackage or HDF5 file:
 
 .. code:: python
 

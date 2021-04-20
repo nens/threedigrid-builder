@@ -25,7 +25,7 @@ class GeopackageOut(OutputInterface):
     def __init__(self, path):
         if geopandas is None:
             raise ImportError("Cannot write to GPKG if geopandas is not available.")
-        if not path.lower().endswith(".gpkg"):
+        if not path.suffix.lower() == ".gpkg":
             raise ValueError("Extension should be .gpkg")
         super().__init__(path)
 
