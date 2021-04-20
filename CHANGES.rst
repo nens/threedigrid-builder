@@ -1,8 +1,8 @@
 Changelog of threedigrid-builder
 ================================
 
-0.1 (2021-04-20)
-----------------
+0.1.0 (2021-04-20)
+------------------
 
 - Partially ported functionality from inpy (generate 3di files, makegrid): 1D channel
   grid (including calculation_type and bottom_level), and 2D open water grid.
