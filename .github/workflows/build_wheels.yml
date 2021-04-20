@@ -36,7 +36,8 @@ jobs:
           CIBW_BEFORE_ALL: |
             pip install cmake &&
             ./full_build.sh &&
-            cp -rv /project/libthreedigrid/lib/libthreedigrid*.so* /usr/local/lib/
+            cp -rv /project/libthreedigrid/lib/libthreedigrid*.so* /usr/local/lib/ &&
+            cat WHEEL_LICENSE_LINUX >> LICENSE
           # The tests require extra requirements (see extras_require in setup.py)
           CIBW_TEST_EXTRAS: test,gridadmin
           # The pytest command has two custom things:

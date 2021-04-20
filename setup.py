@@ -87,6 +87,7 @@ setup(
     url="https://github.com/nens/threedigrid-builder",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
+    license="Proprietary",
     packages=find_packages(
         include=(
             "threedigrid_builder",
@@ -113,6 +114,7 @@ setup(
         "Operating System :: Unix",
         "Operating System :: MacOS",
         "Operating System :: Microsoft :: Windows",
+        "License :: Other/Proprietary License",
     ],
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
