@@ -10,7 +10,7 @@ threedigrid-builder
 	:target: https://pypi.org/project/threedigrid-builder/
 
 
-Generate a 3Di simulation grid ("threedimodel") from a model schematisation.
+Generate a 3Di simulation grid from a model schematisation.
 
 
 Installation
