@@ -54,3 +54,19 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
           retention-days: 5
+
+upload_pypi:
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    # upload to PyPI on every tag
+    if: github.event_name == 'push' && github.event.ref_type == 'tag'
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_token }}
