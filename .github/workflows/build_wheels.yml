@@ -27,6 +27,10 @@ jobs:
         env:
           CIBW_SKIP: pp*  # skips pypy
           CIBW_ARCHS: auto64  # only 64-bit
+          # Use the oldest manylinux docker (with fortran compiler version GNU 4.8.2)
+          # So that libquadmath and libz are not dynamically linked.
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
+          CIBW_MANYLINUX_I686_IMAGE: manylinux1  # 32-bit currently not used
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
