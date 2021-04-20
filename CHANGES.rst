@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.1 (unreleased)
+0.1 (2021-04-20)
 ----------------
 
 - Partially ported functionality from inpy (generate 3di files, makegrid): 1D channel
