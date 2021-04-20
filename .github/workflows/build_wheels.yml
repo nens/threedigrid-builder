@@ -2,9 +2,8 @@ name: Build
 
 on:
   push:
-    branches:
-      - master
-  pull_request:
+    tags:
+      - '*'
 
 jobs:
   build_wheels:
@@ -58,7 +57,8 @@ jobs:
   upload_pypi:
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    # upload to PyPI on every tag
+    # Extra protection in case this github action is triggered on a PR (e.g. when
+    # debugging the wheelbuilder. Only upload to PyPI on an actual tag.
     if: github.event_name == 'push' && github.event.ref_type == 'tag'
     steps:
       - uses: actions/download-artifact@v2
