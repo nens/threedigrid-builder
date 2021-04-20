@@ -98,18 +98,25 @@ def _grid_to_hdf5(grid, path):
 
 
 def make_grid(
-    sqlite_path, dem_path, out_path, model_area_path=None,
+    sqlite_path,
+    dem_path,
+    out_path,
+    model_area_path=None,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
     The SQLite is expected to be validated already with threedi-modelchecker.
 
     Args:
-        sqlite_path (str): The path of the input SQLite file
+        sqlite_path (str): The path to the input schematisation (SQLite) file
         dem_path (str): The path of the input DEM file (GeoTIFF)
         out_path (str): The path of the (to be created) output file. Allowed extensions
             are: .h5 (HDF5) and .gpkg (Geopackage)
         model_area_path (str)
+
+    Raises:
+        threedigrid_builder.SchematisationError: if there is something wrong with
+            the input schematisation (SQLite) file.
     """
     if out_path.lower().endswith(".h5"):
         writer = _grid_to_hdf5
