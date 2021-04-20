@@ -84,7 +84,7 @@ setup(
     version=version,
     description="Generate a 3Di simulation grid from a model schematisation.",
     long_description=long_description,
-    url="https://github.com/nens/threedigrid-builder",
+    url="https://docs.3di.lizard.net/",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
     license="Proprietary",
