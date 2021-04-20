@@ -13,6 +13,22 @@ threedigrid-builder
 Generate a 3Di simulation grid from a model schematisation.
 
 
+Usage
+-----
+
+This library converts a model schematisation to a 3Di simulation grid. This can be done
+using a single function that reads data from an SQLite and TIFF and outputs into
+Geopackage or HDF5:
+
+.. code:: python
+
+  >>> from threedigrid_builder import make_grid
+  >>> sqlite_path = "/path/to/model.sqlite"
+  >>> dem_path = "/path/to/dem.tiff"
+  >>> out_path = "grid.gpkg"  # or "something.h5" for HDF5 output
+  >>> make_grid(sqlite_path, dem_path, out_path)
+
+
 Installation
 ------------
 
@@ -34,9 +50,3 @@ For output into a file for the 3Di calculationcore, enable gridadmin output::
 For output into Geopackage for display in e.g. QGis, enable gpkg output::
 
   $ pip install threedigrid-builder[gpkg]
-
-
-Usage
------
-
-The public API of threedigrid_builder can be found in ``threedigrid_builder.application``.

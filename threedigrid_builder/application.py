@@ -15,7 +15,10 @@ from threedigrid_builder.interface import Subgrid
 import itertools
 
 
-def get_1d_grid(path, node_id_start=0, line_id_start=0):
+__all__ = ["make_grid"]
+
+
+def _get_1d_grid(path, node_id_start=0, line_id_start=0):
     """Compute interpolated channel nodes"""
     db = SQLite(path)
 
@@ -49,7 +52,7 @@ def get_1d_grid(path, node_id_start=0, line_id_start=0):
     return grid
 
 
-def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
+def _get_2d_grid(sqlite_path, dem_path, model_area_path=None):
     """Make 2D computational grid"""
 
     node_counter = itertools.count()
@@ -78,13 +81,13 @@ def get_2d_grid(sqlite_path, dem_path, model_area_path=None):
     return grid
 
 
-def grid_to_gpkg(grid, path):
+def _grid_to_gpkg(grid, path):
     with GeopackageOut(path) as out:
         out.write_nodes(grid.nodes, epsg_code=grid.epsg_code)
         out.write_lines(grid.lines, epsg_code=grid.epsg_code)
 
 
-def grid_to_hdf5(grid, path):
+def _grid_to_hdf5(grid, path):
     with GridAdminOut(path) as out:
         out.write_grid_characteristics(grid.nodes, grid.lines, epsg_code=grid.epsg_code)
         out.write_grid_counts(grid.nodes, grid.lines)
@@ -92,3 +95,35 @@ def grid_to_hdf5(grid, path):
             out.write_quadtree(grid.quadtree_stats)
         out.write_nodes(grid.nodes)
         out.write_lines(grid.lines)
+
+
+def make_grid(
+    sqlite_path, dem_path, out_path, model_area_path=None,
+):
+    """Create a Grid instance from sqlite and DEM paths
+
+    The SQLite is expected to be validated already with threedi-modelchecker.
+
+    Args:
+        sqlite_path (str): The path of the input SQLite file
+        dem_path (str): The path of the input DEM file (GeoTIFF)
+        out_path (str): The path of the (to be created) output file. Allowed extensions
+            are: .h5 (HDF5) and .gpkg (Geopackage)
+        model_area_path (str)
+    """
+    if out_path.lower().endswith(".h5"):
+        writer = _grid_to_hdf5
+    elif out_path.lower().endswith(".gpkg"):
+        writer = _grid_to_gpkg
+    else:
+        raise ValueError("Unsupported output format 'out'")
+
+    grid = _get_2d_grid(sqlite_path, dem_path, model_area_path)
+
+    node_id_start = grid.nodes.id[-1] + 1 if len(grid.nodes) > 0 else 0
+    line_id_start = grid.lines.id[-1] + 1 if len(grid.lines) > 0 else 0
+    grid += _get_1d_grid(
+        sqlite_path, node_id_start=node_id_start, line_id_start=line_id_start
+    )
+
+    writer(grid, out_path)
