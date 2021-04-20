@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     # Extra protection in case this github action is triggered on a PR (e.g. when
     # debugging the wheelbuilder. Only upload to PyPI on an actual tag.
-    if: github.event_name == 'push' && github.event.ref_type == 'tag'
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
     steps:
       - uses: actions/download-artifact@v2
         with:
