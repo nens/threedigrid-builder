@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.1.2 (unreleased)
+0.1.2 (2021-04-28)
 ------------------
 
 - Added public API with 1 function: `threedigrid_builder.make_grid`.
