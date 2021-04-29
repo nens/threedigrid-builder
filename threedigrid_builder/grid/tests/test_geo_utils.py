@@ -1,6 +1,6 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
-from threedigrid_builder.grid import segmentize
+from threedigrid_builder.grid.geo_utils import segmentize, segmentize_and_substring2, segmentize_and_substring
 
 import numpy as np
 import pygeos
@@ -34,7 +34,7 @@ def random_lines():
 )
 def test_segmentize_one_line(segment_size, expected_size, expected_nodes):
     line = pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]])
-    nodes, node_idx, actual_size, segments, segment_idx = segmentize(line, segment_size)
+    nodes, node_idx, actual_size, segments, segment_idx = segmentize_and_substring(line, segment_size)
 
     assert_almost_equal(expected_nodes, pygeos.get_coordinates(nodes), decimal=7)
     # assert_array_equal(expected_lines, pygeos.get_coordinates(lines))
@@ -44,7 +44,7 @@ def test_segmentize_one_line(segment_size, expected_size, expected_nodes):
 
 
 def test_segmentize_many(random_lines):
-    nodes, node_idx, actual_size, segments, segment_idx = segmentize(random_lines, 1.0)
+    nodes, node_idx, actual_size, segments, segment_idx = segmentize_and_substring(random_lines, 1.0)
 
     # the node coordinates should match line start & end coordinates
     idx_prev = -1

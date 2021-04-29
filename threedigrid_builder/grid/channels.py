@@ -25,7 +25,7 @@ class Channel:
 
 
 @array_of(Channel)
-class Channels:
+class Channels:   
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute interpolated channel nodes
 
@@ -50,7 +50,7 @@ class Channels:
         dists[dists <= 0] = global_dist_calc_points
 
         # compute number of nodes to add per channel
-        points, index, segment_size = segmentize(self.the_geom, dists, return_segments=False)
+        points, index, segment_size = segmentize(self.the_geom, dists)
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
