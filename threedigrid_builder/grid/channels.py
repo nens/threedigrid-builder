@@ -1,4 +1,4 @@
-from .geo_utils import segmentize
+from . import geo_utils
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
@@ -25,7 +25,7 @@ class Channel:
 
 
 @array_of(Channel)
-class Channels:   
+class Channels:
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute interpolated channel nodes
 
@@ -50,7 +50,7 @@ class Channels:
         dists[dists <= 0] = global_dist_calc_points
 
         # compute number of nodes to add per channel
-        points, index, segment_size = segmentize(self.the_geom, dists)
+        points, index = geo_utils.segmentize(self.the_geom, dists)
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
@@ -60,7 +60,7 @@ class Channels:
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[index],
         )
-        return nodes, segment_size
+        return nodes
 
     def get_lines(
         self,
@@ -94,59 +94,44 @@ class Channels:
             The lines are ordered by content_pk and then by position on the
             channel.
         """
-        # convert connection_node_start_id / connection_node_end_id to index
-        cn_start_idx = (
+        n_lines, = self.the_geom.shape
+        node_line_idx = self.id_to_index(nodes.content_pk)
+        segment_counts = np.bincount(node_line_idx, minlength=n_lines) + 1
+        segment_first_line_idx, segment_end_line_idx = geo_utils.counts_to_ranges(segment_counts)
+
+        start_s, end_s, segment_idx = geo_utils.segment_start_end(
+            self.the_geom, segment_counts
+        )
+        segments = geo_utils.line_substring(self.the_geom, start_s, end_s, segment_idx)
+
+        # collect the node indexes for the lines.line attribute
+        line = np.full((len(segments), 2), -9999, dtype=np.int32)
+
+        # convert connection_node_start_id to index and put it at every segment start
+        line[segment_first_line_idx, 0] = (
             connection_nodes.id_to_index(self.connection_node_start_id)
             + connection_node_offset
         )
-        cn_end_idx = (
+        # convert connection_node_end_id to index and put it at every segment end
+        line[segment_end_line_idx - 1, 1] = (
             connection_nodes.id_to_index(self.connection_node_end_id)
             + connection_node_offset
         )
+        # add interpolated nodes to line start where line start is not a conn. node
+        mask = np.ones(len(segments), dtype=bool)
+        mask[segment_first_line_idx] = False
+        line[mask, 0] = nodes.id
+        # add interpolated nodes to line end where line end is not a conn. node
+        mask = np.ones(len(segments), dtype=bool)
+        mask[segment_end_line_idx - 1] = False
+        line[mask, 1] = nodes.id
 
-        # start with the easy ones: channels that connect 2 connection nodes
-        # without interpolated nodes in between
-        lines = Lines(
+        # construct the result
+        return Lines(
             id=itertools.islice(line_id_counter, len(self)),
-            line=np.array([cn_start_idx, cn_end_idx]).T,
-            content_pk=self.id,
+            line=line,
+            content_pk=np.repeat(self.id, segment_counts),
             content_type=ContentType.TYPE_V2_CHANNEL,
-            ds1d=segment_size,
-            kcu=self.calculation_type,
+            ds1d=end_s - start_s,
+            kcu=np.repeat(self.calculation_type, segment_counts),
         )
-
-        # if there are no interpolated nodes then we're done
-        if len(nodes) == 0:
-            return lines
-
-        # generate the lines that interconnect interpolated nodes
-        line_ids = np.array([nodes.id, np.roll(nodes.id, -1)])
-
-        # map channel ids to channel index
-        channel_idx = self.id_to_index(nodes.content_pk)
-
-        # connect the last line of each channel to the corresponding
-        # connection_node_end_id (instead of the next channel)
-        is_channel_end = nodes.content_pk != np.roll(nodes.content_pk, -1)
-        is_channel_end[-1] = True
-        end_idx = channel_idx[is_channel_end]
-        line_ids[1][is_channel_end] = cn_end_idx[end_idx]
-
-        # connect the line endings in CN-CN lines to a first interpolated
-        # node (if there are any)
-        is_channel_start = np.roll(is_channel_end, 1)
-        start_idx = channel_idx[is_channel_start]
-        lines.line[start_idx, 1] = nodes.id[is_channel_start]
-
-        lines += Lines(
-            id=itertools.islice(line_id_counter, len(nodes)),
-            line=line_ids.T,
-            content_pk=nodes.content_pk,
-            content_type=ContentType.TYPE_V2_CHANNEL,
-            ds1d=None if segment_size is None else segment_size[channel_idx],
-            kcu=self.calculation_type[channel_idx],
-        )
-
-        # Reorder the lines so that they are sorted by [channel_id, position]
-        lines.reorder_by(np.argsort(lines.content_pk))
-        return lines
