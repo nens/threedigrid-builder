@@ -283,6 +283,7 @@ lib/
 include/
 *.egg-info/
 var/
+wheelhouse/
 
 # Docker-compose
 docker-compose.override.yml

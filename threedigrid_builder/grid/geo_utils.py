@@ -88,9 +88,6 @@ def segmentize(linestrings, desired_segment_size):
         line_idx: indices mapping nodes to input linestrings
         segment_size: the actual length of the segments per input linestring
     """
-    assert linestrings.ndim == desired_segment_size.ndim == 1
-    assert linestrings.shape == desired_segment_size.shape
-
     # compute number of nodes to add per channel
     length = pygeos.length(linestrings)
     n_segments = np.maximum(np.round(length / desired_segment_size).astype(int), 1)
@@ -112,6 +109,9 @@ def segmentize(linestrings, desired_segment_size):
 def line_substring(linestrings, start, end, index=None):
     """Divide linestrings into segments given [start, end] measured along the line.
 
+    Note that there is no bound check done on start and end. Expect bogus results or
+    errors if start is negative or if end is larger than the linestring length.
+
     Args:
         linestrings (ndarray of pygeos.Geometry): Linestrings to segmentize
         start (ndarray of float): The start of the segment, measured along the line.
@@ -125,11 +125,9 @@ def line_substring(linestrings, start, end, index=None):
     (n_lines,) = linestrings.shape
     if index is None:
         n_segments = n_lines
-        assert start.shape == end.shape == (n_lines,)
         index = np.arange(n_lines)
     else:
         (n_segments,) = index.shape
-        assert start.shape == end.shape == (n_segments,)
 
     coords, coord_line_idx = pygeos.get_coordinates(linestrings, return_index=True)
     line_n_coords = pygeos.get_num_coordinates(linestrings)
@@ -143,8 +141,8 @@ def line_substring(linestrings, start, end, index=None):
     end_s = end + coord_s[line_first_coord_idx][index]
 
     ## interpolate the start & end points along the linestrings
-    start_insert_at = np.searchsorted(coord_s, start_s - 1e-15)
-    end_insert_at = np.searchsorted(coord_s, end_s - 1e-15)
+    start_insert_at = np.searchsorted(coord_s, start_s - COORD_EQUAL_ATOL)
+    end_insert_at = np.searchsorted(coord_s, end_s - COORD_EQUAL_ATOL)
     # find points that would be located exactly at an existing coordinate
     start_eq_coord = np.abs(coord_s[start_insert_at] - start_s) < COORD_EQUAL_ATOL
     end_eq_coord = np.abs(coord_s[end_insert_at] - end_s) < COORD_EQUAL_ATOL
@@ -204,8 +202,6 @@ def segment_start_end(linestrings, segment_counts):
         - segment_end (ndarray of float): The segment end, measured along the line.
         - segment_index (ndarray of int): Indices mapping segments to input linestrings.
     """
-    assert linestrings.ndim == segment_counts.ndim == 1
-    assert linestrings.shape == segment_counts.shape
     i = counts_to_row_index(segment_counts)  # e.g. [0, 0, 0, 1, 1, 3]
     j = counts_to_column_index(segment_counts)  # e.g. [0, 1, 2, 0, 1, 0]
 

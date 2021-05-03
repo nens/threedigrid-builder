@@ -1,10 +1,7 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from threedigrid_builder.grid.cross_sections import compute_weights
-
-import numpy as np
 
 
 __all__ = ["Grid"]
@@ -141,14 +138,11 @@ class Grid:
             - lines.content_pk: the id of the Channel from which this line originates
             - lines.kcu: from the channel's calculation_type
         """
-        nodes, segment_size = channels.interpolate_nodes(
-            node_id_counter, global_dist_calc_points
-        )
+        nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = channels.get_lines(
             connection_nodes,
             nodes,
             line_id_counter,
-            segment_size=segment_size,
             connection_node_offset=connection_node_offset,
         )
         return cls(nodes, lines)

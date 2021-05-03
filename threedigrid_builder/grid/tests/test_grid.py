@@ -33,8 +33,8 @@ def grid2d():
         "nmax": np.array([1]),
         "dx": np.array([2.0]),
         "dxp": 0.5,
-        "x0p": 10.,
-        "y0p": 10.,
+        "x0p": 10.0,
+        "y0p": 10.0,
     }
     return Grid(
         nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats
@@ -54,7 +54,7 @@ def test_from_quadtree():
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    quadtree.origin = (0., 0.)
+    quadtree.origin = (0.0, 0.0)
     quadtree.get_nodes_lines.return_value = nodes, lines
 
     grid = Grid.from_quadtree(
@@ -95,12 +95,11 @@ def test_from_channels():
     connection_nodes = mock.Mock()
     channels = mock.Mock()
     counter = mock.Mock()
-    segment_size = mock.Mock()
     connection_node_offset = mock.Mock()
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    channels.interpolate_nodes.return_value = nodes, segment_size
+    channels.interpolate_nodes.return_value = nodes
     channels.get_lines.return_value = lines
     grid = Grid.from_channels(
         connection_nodes,
@@ -120,7 +119,6 @@ def test_from_channels():
         connection_nodes,
         nodes,
         counter,
-        segment_size=segment_size,
         connection_node_offset=connection_node_offset,
     )
 
