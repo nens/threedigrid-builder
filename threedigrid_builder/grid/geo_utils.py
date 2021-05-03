@@ -9,29 +9,78 @@ COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered e
 
 
 def counts_to_ranges(counts):
-    """Convert a list of counts to ranges.
+    """Convert an array of list-of-lists counts to ranges.
+
+    ``counts`` define lengths of lists that are concatenated into a 1D array.
+    The output ranges index into that array. For example, ``arr[start[i]:stop[i]]`` will
+    give all values belonging to list `i`.
+
+    Args:
+        counts (ndarray of int): list lengths
 
     Returns:
-        tuple of first (ndarray of int), last (ndarray of int)
+        tuple of start (ndarray of int), stop (ndarray of int)
 
     Example:
-    >>> idx_to_counts([3, 2, 0, 1, 0], minlength=5)
+    >>> counts_to_ranges([3, 2, 0, 1, 0])
     (array([0, 3, 5, 5, 6]), array([3, 5, 5, 6, 6]))
     """
-    end = np.cumsum(counts)
-    start = np.roll(end, 1)
+    stop = np.cumsum(counts)
+    start = np.roll(stop, 1)
     start[0] = 0
-    return start, end
+    return start, stop
 
 
-def segmentize(linestrings, line_segment_size):
+def counts_to_row_index(counts):
+    """Convert an array of list-of-lists counts into row indices into a 2D array.
+
+    ``counts`` define lengths of lists that are concatenated into a 1D array. The output
+    of this function assigns a row index to every element in the 1D array. The row index
+    is counting over the outer list.
+
+    Args:
+        counts (ndarray of int): list lengths
+
+    Returns:
+        row index (ndarray of int)
+
+    Example:
+    >>> counts_to_row_index([3, 2, 0, 1, 0])
+    array([0, 0, 0, 1, 1, 3])
+    """
+    (n,) = counts.shape
+    return np.repeat(np.arange(n), counts)
+
+
+def counts_to_column_index(counts):
+    """Convert an array of list-of-lists counts into row indices into a 2D array.
+
+    ``counts`` define lengths of lists that are concatenated into a 1D array. The output
+    of this function assigns a column index to every element in the 1D array. The column
+    index is counting over elements in a single list.
+
+    Args:
+        counts (ndarray of int): list lengths
+
+    Returns:
+        column index (ndarray of int)
+
+    Example:
+    >>> counts_to_indices([3, 2, 0, 1, 0])
+    array([0, 1, 2, 0, 1, 0])
+    """
+    start, stop = counts_to_ranges(counts)
+    return np.arange(stop[-1]) - np.repeat(start, counts)
+
+
+def segmentize(linestrings, desired_segment_size):
     """Return points that divide linestrings into segments of equal length.
 
     Args:
         linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
-        line_segment_size (ndarray of float): the desired size of the segments; the
-           actual size will depend on the linestring length. ``length / size`` is
-           rounded to the nearest integer.
+        desired_segment_size (ndarray of float): the desired size of the segments; the
+           actual size will depend on the linestring length and is computed by rounding
+           ``line length / size`` to the nearest integer.
 
     Returns:
         nodes: the points where segments connect.
@@ -39,48 +88,48 @@ def segmentize(linestrings, line_segment_size):
         line_idx: indices mapping nodes to input linestrings
         segment_size: the actual length of the segments per input linestring
     """
-    n_linestrings = linestrings.size
+    assert linestrings.ndim == desired_segment_size.ndim == 1
+    assert linestrings.shape == desired_segment_size.shape
 
     # compute number of nodes to add per channel
     length = pygeos.length(linestrings)
-    n_segments = np.maximum(np.round(length / line_segment_size).astype(int), 1)
+    n_segments = np.maximum(np.round(length / desired_segment_size).astype(int), 1)
     segment_size = length / n_segments
     n_nodes = n_segments - 1
-    line_idx = np.repeat(np.arange(n_linestrings), n_nodes)
 
-    # some numpy juggling to get the distance to the start of each channel
-    dist_to_start = np.arange(line_idx.size)
-    dist_to_start[n_nodes[0] :] -= np.repeat(np.cumsum(n_nodes)[:-1], n_nodes[1:])
-    dist_to_start = (dist_to_start + 1) * segment_size[line_idx]
+    # get the distance to the start of each channel
+    i = counts_to_row_index(n_nodes)  # e.g. [0, 0, 0, 1, 1, 3]
+    j = counts_to_column_index(n_nodes)  # e.g. [0, 1, 2, 0, 1, 0]
+    dist_to_start = (j + 1) * segment_size[i]
 
     nodes = pygeos.line_interpolate_point(
-        linestrings[line_idx],
+        linestrings[i],
         dist_to_start,  # note: this only copies geometry pointers
     )
-    return nodes, line_idx, segment_size
+    return nodes, i
 
 
 def line_substring(linestrings, start, end, index=None):
-    """Divide linestrings into segments.
+    """Divide linestrings into segments given [start, end] measured along the line.
 
     Args:
         linestrings (ndarray of pygeos.Geometry): Linestrings to segmentize
         start (ndarray of float): The start of the segment, measured along the line.
         end (ndarray of float): The end of the segment, measured along the line.
         index (ndarray of int, optional): An optional linestring index per start/end.
-           If not given, then linestrings, start, and end should be equal sized.
+           If not given, then all input arrays should be equal sized.
 
     Returns:
         segments: the segments (sublinestrings of the input linestrings)
     """
-    n_lines, = linestrings.shape
+    (n_lines,) = linestrings.shape
     if index is None:
         n_segments = n_lines
-        assert start.shape == end.shape == (n_lines, )
+        assert start.shape == end.shape == (n_lines,)
         index = np.arange(n_lines)
     else:
-        n_segments, = index.shape
-        assert start.shape == end.shape == (n_segments, )
+        (n_segments,) = index.shape
+        assert start.shape == end.shape == (n_segments,)
 
     coords, coord_line_idx = pygeos.get_coordinates(linestrings, return_index=True)
     line_n_coords = pygeos.get_num_coordinates(linestrings)
@@ -88,14 +137,14 @@ def line_substring(linestrings, start, end, index=None):
     ## compute the length of each vertex-vertex distance
     coord_ds = np.sqrt(np.sum((coords - np.roll(coords, 1, axis=0)) ** 2, axis=1))
     coord_s = np.cumsum(coord_ds)
-
+    # compute corresponding length of each given start and end
     line_first_coord_idx, line_end_coord_idx = counts_to_ranges(line_n_coords)
     start_s = start + coord_s[line_first_coord_idx][index]
-    end_s = end + coord_s[line_end_coord_idx - 1][index]
+    end_s = end + coord_s[line_first_coord_idx][index]
 
     ## interpolate the start & end points along the linestrings
-    start_insert_at = np.searchsorted(coord_s, start_s - COORD_EQUAL_ATOL)
-    end_insert_at = np.searchsorted(coord_s, end_s - COORD_EQUAL_ATOL)
+    start_insert_at = np.searchsorted(coord_s, start_s - 1e-15)
+    end_insert_at = np.searchsorted(coord_s, end_s - 1e-15)
     # find points that would be located exactly at an existing coordinate
     start_eq_coord = np.abs(coord_s[start_insert_at] - start_s) < COORD_EQUAL_ATOL
     end_eq_coord = np.abs(coord_s[end_insert_at] - end_s) < COORD_EQUAL_ATOL
@@ -112,7 +161,8 @@ def line_substring(linestrings, start, end, index=None):
             end_s[~end_eq_coord], coord_s, coords[:, i]
         )
 
-    # the coordinates per segment are:
+    ## fill an array of coordinates for the segmetns
+    # the number of coordinates per segment are:
     # + 2 (line start and end)
     # + coordinates in between (end_insert_at - start_insert_at)
     # + correction where start_eq_coord (then there is 1 less "in between")
@@ -120,17 +170,14 @@ def line_substring(linestrings, start, end, index=None):
     segment_n_coords = 2 + end_insert_at - start_insert_at - start_eq_coord
     segment_first_coord_idx, segment_end_coord_idx = counts_to_ranges(segment_n_coords)
 
+    # fill in the start & end coords
     segment_coords = np.empty((segment_n_coords.sum(), 2))
     segment_coords[segment_first_coord_idx] = start_coords
     segment_coords[segment_end_coord_idx - 1] = end_coords
 
-    # generate indices with i = segment idx and j = coord within segment idx
-    # e.g. i=[0, 0, 0, 0, 1, 2, 2]; j=[0, 1, 2, 3, 0, 0, 1] for counts = [4, 1, 2]
-    _first_idx, _last_idx = counts_to_ranges(segment_n_coords - 2)
-    i = np.repeat(np.arange(n_segments), segment_n_coords - 2)
-    j = np.arange(_last_idx[-1]) - np.repeat(_first_idx, segment_n_coords - 2)
-
     # fill the remaining segment coordinates with original coordinates
+    i = counts_to_row_index(segment_n_coords - 2)  # e.g. [0, 0, 0, 1, 1, 3]
+    j = counts_to_column_index(segment_n_coords - 2)  # e.g. [0, 1, 2, 0, 1, 0]
     segment_coords_to_fill = segment_first_coord_idx[i] + j + 1
     coords_to_fill_with = start_insert_at[i] + start_eq_coord[i] + j
     segment_coords[segment_coords_to_fill] = coords[coords_to_fill_with]
@@ -138,7 +185,7 @@ def line_substring(linestrings, start, end, index=None):
     # construct the segments
     segments = pygeos.linestrings(
         segment_coords,
-        indices=np.repeat(np.arange(n_segments), segment_n_coords),
+        indices=counts_to_row_index(segment_n_coords),
     )
 
     return segments
@@ -149,26 +196,22 @@ def segment_start_end(linestrings, segment_counts):
 
     Args:
         linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
-        counts (ndarray of int): the number of segments per linestring
+        segment_counts (ndarray of int): the number of segments per linestring
 
     Returns:
-        segments_start (ndarray of float): The start of the segment, measured along the
-          line
-        segments_end (ndarray of float): The end of the segment, measured along the
-          line
-        segment_index (ndarray of int): indices mapping segments to input linestrings
+        tuple of:
+        - segment_start (ndarray of float): The segment start, measured along the line.
+        - segment_end (ndarray of float): The segment end, measured along the line.
+        - segment_index (ndarray of int): Indices mapping segments to input linestrings.
     """
-    n_lines, = linestrings.shape
-    segment_line_idx = np.repeat(np.arange(n_lines), segment_counts)
+    assert linestrings.ndim == segment_counts.ndim == 1
+    assert linestrings.shape == segment_counts.shape
+    i = counts_to_row_index(segment_counts)  # e.g. [0, 0, 0, 1, 1, 3]
+    j = counts_to_column_index(segment_counts)  # e.g. [0, 1, 2, 0, 1, 0]
+
     lengths = pygeos.length(linestrings)
     segment_size = lengths / segment_counts
-
-    # generate an array of indices that increase within every linestring
-    # e.g. [0, 1, 2, 3, 0, 1, 0, 1, 2, 3, 4, 5] for segment_counts = [4, 2, 6]
-    first_idx = np.roll(np.cumsum(segment_counts), 1)
-    total, first_idx[0] = first_idx[0], 0
-    line_segment_idx = np.arange(total) - np.repeat(first_idx, segment_counts)
-
-    segment_start = line_segment_idx * segment_size[segment_line_idx]
-    segment_end = segment_start + segment_size[segment_line_idx]
-    return segment_start, segment_end, segment_line_idx
+    mapped_segment_size = (segment_size)[i]
+    start = j * mapped_segment_size
+    end = start + mapped_segment_size
+    return start, end, i

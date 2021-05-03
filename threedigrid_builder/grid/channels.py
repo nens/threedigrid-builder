@@ -49,9 +49,10 @@ class Channels:
         dists[~np.isfinite(dists)] = global_dist_calc_points
         dists[dists <= 0] = global_dist_calc_points
 
-        # compute number of nodes to add per channel
+        # interpolate the node geometries
         points, index = geo_utils.segmentize(self.the_geom, dists)
 
+        # construct the nodes with available attributes
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
@@ -67,7 +68,6 @@ class Channels:
         connection_nodes,
         nodes,
         line_id_counter,
-        segment_size=None,
         connection_node_offset=0,
     ):
         """Compute the grid lines for the channels.
@@ -78,8 +78,6 @@ class Channels:
             connection_nodes (ConnectionNodes): used to map ids to indices
             nodes (Nodes): additional channel nodes (see interpolate_nodes)
             line_id_counter (iterable): an iterable yielding integers
-            segment_size (ndarray of float): the segment size of each channel
-              (see interpolate_nodes)
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
 
@@ -94,44 +92,48 @@ class Channels:
             The lines are ordered by content_pk and then by position on the
             channel.
         """
-        n_lines, = self.the_geom.shape
+        # count the number of segments per channel
+        (n_lines,) = self.the_geom.shape
         node_line_idx = self.id_to_index(nodes.content_pk)
         segment_counts = np.bincount(node_line_idx, minlength=n_lines) + 1
-        segment_first_line_idx, segment_end_line_idx = geo_utils.counts_to_ranges(segment_counts)
 
+        # cut the channel geometries into segment geometries
         start_s, end_s, segment_idx = geo_utils.segment_start_end(
             self.the_geom, segment_counts
         )
         segments = geo_utils.line_substring(self.the_geom, start_s, end_s, segment_idx)
 
-        # collect the node indexes for the lines.line attribute
+        # set the right node indices for each segment
+        first_idx, last_idx = geo_utils.counts_to_ranges(segment_counts)
+        last_idx -= 1  # convert slice end into last index
         line = np.full((len(segments), 2), -9999, dtype=np.int32)
 
-        # convert connection_node_start_id to index and put it at every segment start
-        line[segment_first_line_idx, 0] = (
+        # convert connection_node_start_id to index and put it at first segments' start
+        line[first_idx, 0] = (
             connection_nodes.id_to_index(self.connection_node_start_id)
             + connection_node_offset
         )
-        # convert connection_node_end_id to index and put it at every segment end
-        line[segment_end_line_idx - 1, 1] = (
+        # convert connection_node_end_id to index and put it at last segments' end
+        line[last_idx, 1] = (
             connection_nodes.id_to_index(self.connection_node_end_id)
             + connection_node_offset
         )
-        # add interpolated nodes to line start where line start is not a conn. node
+        # set node indices to line start where segment start is not a conn. node
         mask = np.ones(len(segments), dtype=bool)
-        mask[segment_first_line_idx] = False
+        mask[first_idx] = False
         line[mask, 0] = nodes.id
-        # add interpolated nodes to line end where line end is not a conn. node
+        # set node indices to line end where segment end is not a conn. node
         mask = np.ones(len(segments), dtype=bool)
-        mask[segment_end_line_idx - 1] = False
+        mask[last_idx] = False
         line[mask, 1] = nodes.id
 
         # construct the result
         return Lines(
-            id=itertools.islice(line_id_counter, len(self)),
+            id=itertools.islice(line_id_counter, len(segments)),
+            line_geometries=segments,
             line=line,
-            content_pk=np.repeat(self.id, segment_counts),
+            content_pk=self.id[segment_idx],
             content_type=ContentType.TYPE_V2_CHANNEL,
             ds1d=end_s - start_s,
-            kcu=np.repeat(self.calculation_type, segment_counts),
+            kcu=self.calculation_type[segment_idx],
         )
