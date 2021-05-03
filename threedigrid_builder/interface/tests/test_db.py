@@ -2,12 +2,10 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import ManholeIndicator
-from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid import Pipes
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
@@ -115,22 +113,3 @@ def test_get_grid_refinements(db):
     assert grid_refinements.display_name[3] == "riolering"
     assert grid_refinements.display_name[5] == "test_polygon2"
     assert grid_refinements.code[5] == "2"
-
-
-def test_get_pipes(db):
-    pipes = db.get_pipes()
-    assert isinstance(pipes, Pipes)
-
-    # some test samples
-    assert len(pipes.id) == 42
-    assert pipes.id[1] == 2
-    assert pipes.code[2] == "71022_71023"
-    assert pipes.calculation_type[3] == CalculationType.ISOLATED
-    assert pipes.connection_node_start_id[4] == 37
-    assert pipes.connection_node_end_id[5] == 35
-    assert pipes.cross_section_definition_id[9] == 7
-    assert pipes.invert_level_start_point[16] == -3.91
-    assert pipes.invert_level_end_point[19] == -3.62
-    assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
-    assert pipes.friction_type[28] == FrictionType.MANNING
-    assert pipes.friction_value[36] == 0.0145
