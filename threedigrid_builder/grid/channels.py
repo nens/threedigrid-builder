@@ -43,6 +43,8 @@ class Channels:
             - content_type: ContentType.TYPE_V2_CHANNEL
             - content_pk: the id of the Channel from which this node originates
             - node_type: NodeType.NODE_1D_NO_STORAGE
+            The nodes are ordered by content_pk and then by position on the
+            channel.
         """
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -50,7 +52,7 @@ class Channels:
         dists[dists <= 0] = global_dist_calc_points
 
         # interpolate the node geometries
-        points, index = geo_utils.segmentize(self.the_geom, dists)
+        points, index, dist_to_start = geo_utils.segmentize(self.the_geom, dists)
 
         # construct the nodes with available attributes
         nodes = Nodes(
@@ -60,6 +62,7 @@ class Channels:
             content_pk=self.index_to_id(index),
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[index],
+            ds1d=dist_to_start,
         )
         return nodes
 

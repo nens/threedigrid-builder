@@ -132,7 +132,6 @@ def test_enum_invalid():
 def test_python_attrs():
     assert Records.__name__ == Records.__qualname__ == "Records"
     assert Records.__doc__ == "Records docstring."
-    assert Records.__module__ == "threedigrid_builder.base.tests.test_array"
 
 
 def test_init():

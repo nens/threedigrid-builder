@@ -46,3 +46,24 @@ def test_set_discharge_coefficients(lines):
 
     assert_equal(lines.discharge_coefficient_positive, [2.0, 2.0, 2.0])
     assert_equal(lines.discharge_coefficient_negative, [3.0, 1.0, 1.0])
+
+
+@pytest.mark.parametrize(
+    "nodes_dmax,expected",
+    [
+        ([1.0, 2.0, 3.0], [2.0, 3.0, 3.0]),
+        ([1.0, 2.0, np.nan], [2.0, np.nan, np.nan]),  # nan propagates
+    ],
+)
+def test_set_bottom_levels(nodes, lines, nodes_dmax, expected):
+    nodes.dmax[:] = nodes_dmax
+    lines.set_bottom_levels(nodes, allow_nan=True)
+
+    assert_equal(lines.dpumax, expected)
+
+
+def test_set_bottom_levels_nan_check(nodes, lines):
+    nodes.dmax[:] = [1.0, 2.0, np.nan]
+
+    with pytest.raises(ValueError):
+        lines.set_bottom_levels(nodes)

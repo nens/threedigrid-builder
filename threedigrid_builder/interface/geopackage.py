@@ -25,7 +25,7 @@ class GeopackageOut(OutputInterface):
     def __init__(self, path):
         if geopandas is None:
             raise ImportError("Cannot write to GPKG if geopandas is not available.")
-        if not path.lower().endswith(".gpkg"):
+        if not path.suffix.lower() == ".gpkg":
             raise ValueError("Extension should be .gpkg")
         super().__init__(path)
 
@@ -93,6 +93,7 @@ class GeopackageOut(OutputInterface):
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays
         line_data["node_1"], line_data["node_2"] = line_data.pop("line").T
         line_data.pop("line_coords")
+        line_data.pop("cross_pix_coords")
 
         # construct the geodataframe
         df_lines = geopandas.GeoDataFrame(

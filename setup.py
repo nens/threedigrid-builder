@@ -1,4 +1,5 @@
 from setuptools import Extension
+from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -41,8 +42,8 @@ if "clean" in sys.argv:
         for filename in p.glob("**/" + pattern):
             print("removing '{}'".format(filename))
             filename.unlink()
-elif "sdist" not in sys.argv:
-    # Cython is required
+elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
+    # Cython is required (except for sdist or the commands used by zest.releaser)
     if not cythonize:
         sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
 
@@ -55,7 +56,9 @@ elif "sdist" not in sys.argv:
     )
 
     cython_modules = [
-        Extension("*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts)
+        Extension(
+            "*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts
+        )
     ]
 
     ext_modules += cythonize(cython_modules, language_level=3)
@@ -66,7 +69,7 @@ version = open("VERSION.rst").read()
 
 install_requires = [
     "numpy>=1.13",
-    "threedi-modelchecker",
+    "threedi-modelchecker>=0.12",
     "pygeos",
     "pyproj",
     "condenser[geo]",
@@ -79,14 +82,25 @@ test_requires = ["pytest"]
 setup(
     name="threedigrid-builder",
     version=version,
-    description="3Di Grid Generator",
+    description="Generate a 3Di simulation grid from a model schematisation.",
     long_description=long_description,
-    url="https://github.com/nens/threedigrid-builder",
+    url="https://docs.3di.lizard.net/",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
-    packages=["threedigrid_builder"],
+    license="Proprietary",
+    packages=find_packages(
+        include=(
+            "threedigrid_builder",
+            "threedigrid_builder.*",
+        ),
+        exclude=("threedigrid_builder.tests"),
+    ),
     install_requires=install_requires,
-    extras_require={"test": test_requires, "gridadmin": ["h5py>=2.7"], "gpkg": ["geopandas"]},
+    extras_require={
+        "test": test_requires,
+        "gridadmin": ["h5py>=2.7"],
+        "gpkg": ["geopandas"],
+    },
     python_requires=">=3.6",
     include_package_data=True,
     ext_modules=ext_modules,
@@ -100,8 +114,9 @@ setup(
         "Operating System :: Unix",
         "Operating System :: MacOS",
         "Operating System :: Microsoft :: Windows",
+        "License :: Other/Proprietary License",
     ],
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
-    package_data={"threedigrid_builder.lib": ["../libthreedigrid/lib/*"]}
+    package_data={"threedigrid_builder.lib": ["../libthreedigrid/lib/*"]},
 )

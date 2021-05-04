@@ -2,6 +2,7 @@ from .lines import Lines
 from .nodes import Nodes
 from abc import ABC
 from abc import abstractmethod
+from pathlib import Path
 
 
 __all__ = ["OutputInterface"]
@@ -10,7 +11,7 @@ __all__ = ["OutputInterface"]
 class OutputInterface(ABC):
     """The metaclass (class template) for data output"""
 
-    def __init__(self, path: str):
+    def __init__(self, path: Path):
         self.path = path
         super().__init__()
 

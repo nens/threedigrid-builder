@@ -101,16 +101,16 @@ set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
 ###############################################################
 IF (Fortran_COMPILER_NAME MATCHES "gfortran*")
   # gfortran
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3 -ffast-math -fopenmp")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -ffast-math -fopenmp -Wconversion -Wmaybe-uninitialized")
+  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
+  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
 ELSEIF (Fortran_COMPILER_NAME MATCHES "ifort*")
   # ifort (UNFINISHED)
   # TODO
 ELSE (Fortran_COMPILER_NAME MATCHES "gfortran*")
   message (STATUS "Fortran compiler: " ${Fortran_COMPILER_NAME})
   message (STATUS "No optimized Fortran compiler flags are known, we just try something...")
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -O3 -ffast-math -fopenmp")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -g -Og -ffast-math")
+  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -O3")
+  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -g -Og")
 ENDIF (Fortran_COMPILER_NAME MATCHES "gfortran*")
 
 IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
@@ -128,36 +128,3 @@ ENDIF()
 ##CMAKE PATHS                                                ##
 ###############################################################
 add_subdirectory(${CMAKE_SOURCE_DIR}/libthreedigrid) # here we use core_makegrid/CMakeLists.txt
-
-
-###############################################################
-##PACKAGING                                                  ##
-###############################################################
-if (WIN32)
-    if (USE_WIX_TOOLSET)
-        set(CPACK_GENERATOR "WIX") # this need WiX Tooset installed and a path to candle.exe
-    else ()
-        set(CPACK_GENERATOR "NSIS") # this needs NSIS installed, and available
-    endif ()
-    set(CPACK_SOURCE_GENERATOR "ZIP")
-elseif(UNIX)
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_SOURCE_GENERATOR "TGZ")
-else(WIN32)
-	MESSAGE(SEND_ERROR "No Platform found for package generation")
-endif(WIN32)
-
-set(CPACK_PACKAGE_NAME "3digrid")
-set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Martijn Siemerink") #required
-set(CPACK_PACKAGING_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
-set(CPACK_PACKAGE_VERSION "${3di_VERSION}")
-set(CPACK_PACKAGE_VERSION_MAJOR "${3di_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${3di_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${3di_VERSION_PATCH}")
-
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/CHANGES.rst")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.rst")
-set(CPACK_SOURCE_IGNORE_FILES "${CMAKE_SOURCE_DIR}/build/;${CMAKE_SOURCE_DIR}/.git/")
-
-include(CPack)
