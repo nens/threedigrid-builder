@@ -1,4 +1,4 @@
-from . import geo_utils
+from threedigrid_builder.grid import geo_utils
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
@@ -96,9 +96,8 @@ class Channels:
             channel.
         """
         # count the number of segments per channel
-        (n_lines,) = self.the_geom.shape
         node_line_idx = self.id_to_index(nodes.content_pk)
-        segment_counts = np.bincount(node_line_idx, minlength=n_lines) + 1
+        segment_counts = np.bincount(node_line_idx, minlength=len(self)) + 1
 
         # cut the channel geometries into segment geometries
         start_s, end_s, segment_idx = geo_utils.segment_start_end(

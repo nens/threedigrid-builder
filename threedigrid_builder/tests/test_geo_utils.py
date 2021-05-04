@@ -119,9 +119,6 @@ def test_line_substring_many(random_lines):
     for segment, idx in zip(segments, segment_idx):
         assert pygeos.length(segment) == pytest.approx(expected_sizes[idx])
 
-    # the segments should intersect with their corresponding linestrings
-    assert pygeos.intersects(segments, random_lines[segment_idx]).all()
-
     # check the start (resp. end) coordinate of the first (resp. last) segment per line
     segment_start_idx, segment_last_idx = geo_utils.counts_to_ranges(segment_counts)
     segment_last_idx -= 1
@@ -131,7 +128,7 @@ def test_line_substring_many(random_lines):
         assert_almost_equal(pygeos.get_coordinates(segments[last])[-1], line_coords[-1])
     # check the remaining segment start/end with the nodes
     node_idx = 0
-    for idx, (line_idx, segment) in enumerate(zip(segment_idx, segments)):
+    for idx, segment in enumerate(segments):
         segment_coords = pygeos.get_coordinates(segment)
         if idx not in segment_start_idx:
             assert_almost_equal(
@@ -142,3 +139,11 @@ def test_line_substring_many(random_lines):
             assert_almost_equal(
                 segment_coords[-1], pygeos.get_coordinates(nodes[node_idx])[0]
             )
+    # check the segment mid-coordinates with the linestrings
+    node_idx = 0
+    for line_idx, segment in zip(segment_idx, segments):
+        segment_coords = pygeos.get_coordinates(segment)
+        line_coords = pygeos.get_coordinates(random_lines[line_idx])
+        for coord in segment_coords[1:-1]:
+            # segment mid coord should match 1 line coord
+            assert np.isclose(coord, line_coords).all(axis=1).any()
