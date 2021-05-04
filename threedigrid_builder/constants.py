@@ -4,6 +4,7 @@ from enum import unique
 
 @unique
 class CalculationType(IntEnum):
+    # channels have +100 in the calculation type, this is mapped on read
     BOUNDARY_NODE = -1
     EMBEDDED = 0
     ISOLATED = 1
@@ -76,7 +77,7 @@ class ContentType(IntEnum):
 @unique
 class FrictionType(IntEnum):
     CHEZY = 1
-    MANNING = 2
+    MANNING = 2  # pipes have 4 here in the input, but this is mapped to 2 on read
 
 
 @unique
@@ -94,3 +95,15 @@ class ManholeIndicator(IntEnum):
     INSPECTION = 0
     OUTLET = 1
     PUMP = 2
+
+
+@unique
+class SewerageType(IntEnum):
+    COMBINED = 0
+    STORMWATER = 1
+    WASTEWATER = 2
+    TRANSPORT = 3
+    OVERFLOW = 4
+    SINKER = 5
+    STORAGE = 6
+    STORAGE_SETTLING_TANK = 7
