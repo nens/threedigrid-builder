@@ -11,6 +11,7 @@ import pytest
 def random_lines():
     n_lines = 10  # approximate value
     n_coords = 100
+    np.random.seed(0)
     indices = np.sort(np.random.randint(0, n_lines, n_coords))
     # discard lines with fewer than 2 coordinates
     indices = indices[~np.isin(indices, np.where(np.bincount(indices) < 2)[0])]
