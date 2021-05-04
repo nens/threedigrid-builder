@@ -16,6 +16,7 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import GridRefinements
+from threedigrid_builder.grid import Pipes
 
 import numpy as np
 import pygeos
@@ -210,6 +211,34 @@ class SQLite:
         arr["id"] = np.arange(len(arr["refinement_level"]))
 
         return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_pipes(self):
+        """Return Pipes"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Pipe.id,
+                    models.Pipe.code,
+                    models.Pipe.sewerage_type,
+                    models.Pipe.calculation_type,
+                    models.Pipe.invert_level_start_point,
+                    models.Pipe.invert_level_end_point,
+                    models.Pipe.friction_type,
+                    models.Pipe.friction_value,
+                    models.Pipe.dist_calc_points,
+                    models.Pipe.connection_node_start_id,
+                    models.Pipe.connection_node_end_id,
+                    models.Pipe.cross_section_definition_id,
+                )
+                .order_by(models.Pipe.id)
+                .as_structarray()
+            )
+
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        # transform to a Pipes object
+        return Pipes(**{name: arr[name] for name in arr.dtype.names})
 
 
 def _object_as_dict(obj):
