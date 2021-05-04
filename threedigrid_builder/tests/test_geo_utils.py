@@ -44,24 +44,26 @@ def two_lines():
 )
 def test_segmentize_one(segment_size, expected_size, expected_nodes):
     line = pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]])
-    nodes, node_idx = geo_utils.segmentize(line, segment_size)
+    nodes, node_idx, s = geo_utils.segmentize(line, segment_size)
 
     assert_almost_equal(expected_nodes, pygeos.get_coordinates(nodes), decimal=7)
     assert_array_equal(node_idx, 0)
+    assert_almost_equal(s, expected_size * (np.arange(len(expected_nodes)) + 1))
 
 
 def test_segmentize_two(two_lines):
-    nodes, node_idx = geo_utils.segmentize(two_lines, 5.0)
+    nodes, node_idx, s = geo_utils.segmentize(two_lines, 5.0)
 
     assert_almost_equal(
         [[5.0, 10.0], [6.0, 0.0]], pygeos.get_coordinates(nodes), decimal=7
     )
     assert_array_equal(node_idx, [0, 1])
+    assert_almost_equal(s, [5.0, 6.0])
 
 
 def test_segmentize_many(random_lines):
     d = 1.0
-    nodes, node_idx = geo_utils.segmentize(random_lines, d)
+    nodes, node_idx, s = geo_utils.segmentize(random_lines, d)
 
     assert nodes.shape == node_idx.shape
 
@@ -106,7 +108,7 @@ def test_line_substring_two(two_lines):
 
 
 def test_line_substring_many(random_lines):
-    nodes, node_idx = geo_utils.segmentize(random_lines, 1.0)
+    nodes, node_idx, _ = geo_utils.segmentize(random_lines, 1.0)
     segment_counts = np.bincount(node_idx, minlength=len(random_lines)) + 1
     start, end, segment_idx = geo_utils.segment_start_end(random_lines, segment_counts)
     segments = geo_utils.line_substring(random_lines, start, end, segment_idx)

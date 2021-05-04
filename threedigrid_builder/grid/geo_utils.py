@@ -86,7 +86,7 @@ def segmentize(linestrings, desired_segment_size):
         nodes: the points where segments connect.
           this excludes the start and end of the input linestrings.
         line_idx: indices mapping nodes to input linestrings
-        segment_size: the actual length of the segments per input linestring
+        dist_to_start: the location of the node measured along the linestring
     """
     # compute number of nodes to add per channel
     length = pygeos.length(linestrings)
@@ -103,7 +103,7 @@ def segmentize(linestrings, desired_segment_size):
         linestrings[i],
         dist_to_start,  # note: this only copies geometry pointers
     )
-    return nodes, i
+    return nodes, i, dist_to_start
 
 
 def line_substring(linestrings, start, end, index=None):
