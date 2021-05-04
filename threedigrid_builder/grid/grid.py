@@ -2,8 +2,6 @@ from . import connection_nodes
 from . import cross_sections
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.grid.connection_nodes import set_calculation_types
-from threedigrid_builder.grid.cross_sections import compute_weights
 from threedigrid_builder.constants import ContentType
 
 

@@ -12,4 +12,3 @@ from .quadtree import *  # NOQA
 from .grid import *  # NOQA
 from .grid_refinement import *  # NOQA
 from .quadtree import *  # NOQA
-from .geo_utils import *  # NOQA

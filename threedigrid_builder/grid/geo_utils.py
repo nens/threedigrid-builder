@@ -2,9 +2,6 @@ import numpy as np
 import pygeos
 
 
-__all__ = ["segmentize", "line_substring"]
-
-
 COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
 
 
