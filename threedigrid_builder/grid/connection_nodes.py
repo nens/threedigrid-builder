@@ -133,10 +133,12 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     The bottom level (dmax) of a connection nodes is based on:
       - from the manhole.bottom_level
+        - (not implemented) must be lower than the invert level of pipes (if not: error)
       - if not present: the lowest of all neigboring objects
         - channel: interpolate for channels (like channel node)
-        - (not implemented) pipe: invert level (if no storage & invert levels differ
-          by more than cross section height: error)
+        - pipe: invert level start or end
+           - (not implemented) if no storage: invert levels should not differ more than
+             cross section height! -> check this in threedi-modelchecker
         - (not implemented) weir: crest level
         - (not implemented) culvert: invert level
 
@@ -183,9 +185,21 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
     # pipes
     line_idx = np.where(lines.content_type == ContentType.TYPE_V2_PIPE)[0]
     line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
+    if line_idx_1.size > 0:
+        # get the dmax from the invert_level_start
+        pipe_id = lines.content_pk[line_idx_1]
+        dmax = pipes.invert_level_start_point[pipes.id_to_index(pipe_id)]
+        # find the nodes that match to these pipe lines and put the dmax
+        _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
+        _put_if_less(nodes.dmax, _node_idx, dmax)
     line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
-    if line_idx_1.size > 0 or line_idx_2.size > 0:
-        warnings.warn("Ignoring pipe invert levels while setting connection node dmax")
+    if line_idx_2.size > 0:
+        # get the dmax from the invert_level_end
+        pipe_id = lines.content_pk[line_idx_2]
+        dmax = pipes.invert_level_end_point[pipes.id_to_index(pipe_id)]
+        # find the nodes that match to these pipe lines and put the dmax
+        _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
+        _put_if_less(nodes.dmax, _node_idx, dmax)
 
     # weirs
     line_idx = np.where(lines.content_type == ContentType.TYPE_V2_WEIR)[0]

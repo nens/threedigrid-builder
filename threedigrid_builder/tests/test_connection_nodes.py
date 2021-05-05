@@ -8,6 +8,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid.connection_nodes import set_bottom_levels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from unittest import mock
@@ -127,7 +128,9 @@ def test_set_calculation_types_multiple_nodes(content_type):
     ],
 )
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_bottom_level")
-def test_set_bottom_levels_single_node(compute_bottom_level, line, dmax_mock, expected):
+def test_set_bottom_levels_single_node_channels(
+    compute_bottom_level, line, dmax_mock, expected
+):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(line)),
@@ -155,7 +158,7 @@ def test_set_bottom_levels_single_node(compute_bottom_level, line, dmax_mock, ex
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_bottom_level")
-def test_set_bottom_levels_multiple_nodes(compute_bottom_level):
+def test_set_bottom_levels_multiple_nodes_channels(compute_bottom_level):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -196,3 +199,66 @@ def test_set_bottom_levels_multiple_nodes(compute_bottom_level):
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, [3.0, 8.0, 24.0])
+
+
+@pytest.mark.parametrize(
+    "line,invert_levels,expected",
+    [
+        (np.empty((0, 2), dtype=int), (3.0, 4.0), np.nan),  # no line at all
+        ([(2, 3)], (3.0, 4.0), np.nan),  # no line to the specific node
+        ([(1, 2)], (3.0, 4.0), 3.0),  # starting point
+        ([(2, 1)], (3.0, 4.0), 4.0),  # end point
+        ([(1, 2), (2, 1)], (3.0, 4.0), 3.0),  # both end and start; start is lower
+        ([(1, 2), (2, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
+    ],
+)
+def test_set_bottom_levels_single_node_pipes(line, invert_levels, expected):
+    nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
+    lines = Lines(
+        id=range(len(line)),
+        content_type=ContentType.TYPE_V2_PIPE,
+        content_pk=2,
+        line=line,
+    )
+    pipes = Pipes(
+        id=[2],
+        invert_level_start_point=[invert_levels[0]],
+        invert_level_end_point=[invert_levels[1]],
+    )
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, expected)
+
+
+def test_set_bottom_levels_multiple_nodes_pipes():
+    nodes = Nodes(
+        id=[1, 2, 3],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        dmax=[np.nan, np.nan, 24.0],
+    )
+    lines = Lines(
+        id=[1, 2, 3],
+        content_type=[ContentType.TYPE_V2_PIPE, -9999, ContentType.TYPE_V2_PIPE],
+        content_pk=[2, -9999, 3],
+        line=[(1, 2), (1, 2), (1, 3)],
+    )
+    pipes = Pipes(
+        id=[2, 3],
+        invert_level_start_point=[3.0, 4.0],
+        invert_level_end_point=[8.0, 8.0],
+    )
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, [3.0, np.nan, 24.0])
