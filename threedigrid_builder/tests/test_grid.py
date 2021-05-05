@@ -96,12 +96,11 @@ def test_from_channels():
     connection_nodes = mock.Mock()
     channels = mock.Mock()
     counter = mock.Mock()
-    segment_size = mock.Mock()
     connection_node_offset = mock.Mock()
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    channels.interpolate_nodes.return_value = nodes, segment_size
+    channels.interpolate_nodes.return_value = nodes
     channels.get_lines.return_value = lines
     grid = Grid.from_channels(
         connection_nodes,
@@ -121,7 +120,6 @@ def test_from_channels():
         connection_nodes,
         nodes,
         counter,
-        segment_size=segment_size,
         connection_node_offset=connection_node_offset,
     )
 

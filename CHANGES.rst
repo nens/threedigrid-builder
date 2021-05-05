@@ -4,7 +4,10 @@ Changelog of threedigrid-builder
 0.1.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added threedigrid_builder.grid.geo_utils with segmentize and line_substring functions.
+  These are used to compute the Lines.line_geometries for channel lines.
+
+- Fixed a bug in the refinement areas code (Fortran) on Ubuntu 20.04.
 
 
 0.1.2 (2021-04-28)

@@ -290,6 +290,8 @@ module m_grid_utils
         double precision :: s1_x, s1_y, s2_x, s2_y
         double precision :: s, t, det, eps
 
+        intersect = .FALSE.
+
         if ((geom2(4).eq.geom2(2)).and.(geom1(2).gt.geom2(2)).and.(geom1(4).gt.geom2(2))) return
         if ((geom2(3).eq.geom2(1)).and.(geom1(1).gt.geom2(1)).and.(geom1(3).gt.geom2(1))) return
         if ((geom2(4).eq.geom2(2)).and.(geom1(2).lt.geom2(2)).and.(geom1(4).lt.geom2(2))) return
@@ -309,7 +311,6 @@ module m_grid_utils
 
         det = -s2_x * s1_y + s1_x * s2_y
         if(det<=eps.and.det>=-eps) then !! Lines are linear
-            intersect = .FALSE. 
             return
         endif
         s = (-s1_y * (geom1(1) - geom2(1)) + s1_x * (geom1(2) - geom2(2))) / det
@@ -324,7 +325,6 @@ module m_grid_utils
             intersect = .TRUE.
             return
         endif
-        intersect = .FALSE.
         
     end subroutine get_line_intersection
 
