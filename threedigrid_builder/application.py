@@ -24,8 +24,6 @@ def _get_1d_grid(path, node_id_start=0, line_id_start=0):
     """Compute interpolated channel nodes"""
     db = SQLite(path)
 
-    # the offsets of the node ids are controlled from here
-    # for now, we have ConnectionNodes - ChannelNodes:
     connection_nodes = db.get_connection_nodes()
 
     node_id_counter = itertools.count(start=node_id_start)
@@ -34,6 +32,7 @@ def _get_1d_grid(path, node_id_start=0, line_id_start=0):
     grid = Grid.from_connection_nodes(
         connection_nodes=connection_nodes, node_id_counter=node_id_counter
     )
+    connection_node_first_id = grid.nodes.id[0]
 
     channels = db.get_channels()
     grid += Grid.from_channels(
@@ -42,11 +41,22 @@ def _get_1d_grid(path, node_id_start=0, line_id_start=0):
         global_dist_calc_points=db.global_settings["dist_calc_points"],
         node_id_counter=node_id_counter,
         line_id_counter=line_id_counter,
-        connection_node_offset=grid.nodes.id[0],
+        connection_node_offset=connection_node_first_id,
     )
 
     cross_section_locations = db.get_cross_section_locations()
     grid.set_channel_weights(cross_section_locations, channels)
+
+    pipes = db.get_pipes()
+    grid += Grid.from_pipes(
+        connection_nodes=connection_nodes,
+        pipes=pipes,
+        global_dist_calc_points=db.global_settings["dist_calc_points"],
+        node_id_counter=node_id_counter,
+        line_id_counter=line_id_counter,
+        connection_node_offset=connection_node_first_id,
+    )
+
     grid.set_calculation_types()
     grid.set_bottom_levels(cross_section_locations, channels, None, None, None)
 

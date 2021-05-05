@@ -1,10 +1,10 @@
-from threedigrid_builder.grid import geo_utils
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import geo_utils
 
 import itertools
 import numpy as np
@@ -45,6 +45,9 @@ class Channels:
             - node_type: NodeType.NODE_1D_NO_STORAGE
             The nodes are ordered by content_pk and then by position on the
             channel.
+
+        Note:
+            this method is also used by Pipes
         """
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
@@ -94,6 +97,9 @@ class Channels:
             - kcu: the calculation_type of the Channel
             The lines are ordered by content_pk and then by position on the
             channel.
+
+        Note:
+            this method is also used by Pipes
         """
         # count the number of segments per channel
         node_line_idx = self.id_to_index(nodes.content_pk)
