@@ -73,11 +73,14 @@ def test_get_nodes(connection_nodes):
         ),
     ],
 )
-def test_set_calculation_types_single_node(kcu, expected):
+@pytest.mark.parametrize(
+    "content_type", [ContentType.TYPE_V2_CHANNEL, ContentType.TYPE_V2_PIPE]
+)
+def test_set_calculation_types_single_node(kcu, expected, content_type):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(kcu)),
-        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_type=content_type,
         line=[(1, 9999)] * len(kcu),
         kcu=kcu,
     )
@@ -87,7 +90,10 @@ def test_set_calculation_types_single_node(kcu, expected):
     assert nodes.calculation_type[0] == expected
 
 
-def test_set_calculation_types_multiple_nodes():
+@pytest.mark.parametrize(
+    "content_type", [ContentType.TYPE_V2_CHANNEL, ContentType.TYPE_V2_PIPE]
+)
+def test_set_calculation_types_multiple_nodes(content_type):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -95,7 +101,7 @@ def test_set_calculation_types_multiple_nodes():
     )
     lines = Lines(
         id=[1, 2, 3],
-        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_type=content_type,
         line=[(1, 2), (2, 9999), (9999, 1)],
         kcu=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
     )
