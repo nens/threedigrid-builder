@@ -11,6 +11,8 @@ import itertools
 import numpy as np
 import pygeos
 
+__all__ = ["Pipes"]
+
 
 class Pipe:
     id: int
@@ -52,7 +54,7 @@ class Pipes:
         self.the_geom = pygeos.linestrings(coordinates)
 
     def interpolate_nodes(
-        self, node_id_counter, global_dist_calc_points, connection_nodes
+        self, node_id_counter, global_dist_calc_points,
     ):
         """Compute interpolated nodes for pipes.
 
@@ -63,7 +65,6 @@ class Pipes:
         Args:
             node_id_counter (iterable): an iterable yielding integers
             global_dist_calc_points (float): Default node interdistance.
-            connection_nodes (ConnectionNodes)
 
         Returns:
             tuple of nodes (Nodes), segment_size (ndarray)
@@ -83,7 +84,7 @@ class Pipes:
         dists[dists <= 0] = global_dist_calc_points
 
         # compute number of nodes to add per pipe
-        points, index = geo_utils.segmentize(self.the_geom, dists)
+        points, index, dist_to_start = geo_utils.segmentize(self.the_geom, dists)
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
@@ -92,6 +93,7 @@ class Pipes:
             content_pk=self.index_to_id(index),
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[index],
+            ds1d=dist_to_start,
         )
         return nodes
 
@@ -126,9 +128,8 @@ class Pipes:
             channel.
         """
         # count the number of segments per channel
-        n_pipes = len(self)
         node_line_idx = self.id_to_index(nodes.content_pk)
-        segment_counts = np.bincount(node_line_idx, minlength=n_pipes) + 1
+        segment_counts = np.bincount(node_line_idx, minlength=len(self)) + 1
 
         # cut the pipe geometries into segment geometries
         start_s, end_s, segment_idx = geo_utils.segment_start_end(

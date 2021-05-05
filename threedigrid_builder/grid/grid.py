@@ -138,6 +138,7 @@ class Grid:
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
             - lines.kcu: from the channel's calculation_type
+            - lines.line_geometries: a segment of the channel geometry
         """
         nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = channels.get_lines(
@@ -169,6 +170,53 @@ class Grid:
         self.lines.cross1[line_mask] = cross1
         self.lines.cross2[line_mask] = cross2
         self.lines.cross_weight[line_mask] = cross_weight
+
+    @classmethod
+    def from_pipes(
+        cls,
+        connection_nodes,
+        pipes,
+        global_dist_calc_points,
+        node_id_counter,
+        line_id_counter,
+        connection_node_offset=0,
+    ):
+        """Construct a grid for the channels
+
+        Args:
+            connection_nodes (ConnectionNodes): used to map ids to indices
+            pipes (Pipes)
+            global_dist_calc_points (float): Default node interdistance.
+            node_id_counter (iterable): an iterable yielding integers
+            line_id_counter (iterable): an iterable yielding integers
+            connection_node_offset (int): offset to give connection node
+              indices in the returned lines.line. Default 0.
+
+        Returns:
+            Grid with data in the following columns:
+            - nodes.id: counter generated here starting from node_id_offset
+            - nodes.coordinates
+            - nodes.content_type: ContentType.TYPE_V2_PIPE
+            - nodes.content_pk: the id of the Pipe from which this node originates
+            - nodes.node_type: NODE_1D_NO_STORAGE
+            - nodes.calculation_type: from the pipe
+            - lines.id: 0-based counter generated here
+            - lines.line: lines between connection nodes and added channel
+              nodes. The indices are offset using the respective parameters.
+            - lines.content_type: ContentType.TYPE_V2_PIPE
+            - lines.content_pk: the id of the Pipe from which this line originates
+            - lines.kcu: from the pipe's calculation_type
+            - lines.line_geometries: a segment of the pipe geometry
+        """
+        pipes.set_geometries(connection_nodes)
+        nodes = pipes.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = pipes.get_lines(
+            connection_nodes,
+            nodes,
+            line_id_counter,
+            connection_node_offset=connection_node_offset,
+        )
+        return cls(nodes, lines)
 
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
