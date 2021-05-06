@@ -182,7 +182,7 @@ class Grid:
         line_id_counter,
         connection_node_offset=0,
     ):
-        """Construct a grid for the channels
+        """Construct a grid for the pipes
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
@@ -202,7 +202,7 @@ class Grid:
             - nodes.node_type: NODE_1D_NO_STORAGE
             - nodes.calculation_type: from the pipe
             - lines.id: 0-based counter generated here
-            - lines.line: lines between connection nodes and added channel
+            - lines.line: lines between connection nodes and added pipe
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_PIPE
             - lines.content_pk: the id of the Pipe from which this line originates
