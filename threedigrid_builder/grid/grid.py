@@ -1,5 +1,6 @@
-from . import connection_nodes
-from . import cross_sections
+from . import connection_nodes as connection_nodes_module
+from . import cross_sections as cross_sections_module
+from . import pipes as pipes_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
@@ -138,6 +139,7 @@ class Grid:
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
             - lines.content_pk: the id of the Channel from which this line originates
             - lines.kcu: from the channel's calculation_type
+            - lines.line_geometries: a segment of the channel geometry
         """
         nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = channels.get_lines(
@@ -148,65 +150,117 @@ class Grid:
         )
         return cls(nodes, lines)
 
-    def set_channel_weights(self, locations, channels):
+    def set_channel_weights(self, cross_sections, channels):
         """Set cross section weights to channel lines.
 
         The attributes lines.cross1, lines.cross2, lines.cross_weight are
         changed in place for lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
-            locations (CrossSectionLocations)
+            cross_sections (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = cross_sections.compute_weights(
+        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
             self.lines.content_pk[line_mask],
             self.lines.ds1d[line_mask],
-            locations,
+            cross_sections,
             channels,
         )
         self.lines.cross1[line_mask] = cross1
         self.lines.cross2[line_mask] = cross2
         self.lines.cross_weight[line_mask] = cross_weight
 
+    @classmethod
+    def from_pipes(
+        cls,
+        connection_nodes,
+        pipes,
+        global_dist_calc_points,
+        node_id_counter,
+        line_id_counter,
+        connection_node_offset=0,
+    ):
+        """Construct a grid for the pipes
+
+        Args:
+            connection_nodes (ConnectionNodes): used to map ids to indices
+            pipes (Pipes)
+            global_dist_calc_points (float): Default node interdistance.
+            node_id_counter (iterable): an iterable yielding integers
+            line_id_counter (iterable): an iterable yielding integers
+            connection_node_offset (int): offset to give connection node
+              indices in the returned lines.line. Default 0.
+
+        Returns:
+            Grid with data in the following columns:
+            - nodes.id: counter generated here starting from node_id_offset
+            - nodes.coordinates
+            - nodes.content_type: ContentType.TYPE_V2_PIPE
+            - nodes.content_pk: the id of the Pipe from which this node originates
+            - nodes.node_type: NODE_1D_NO_STORAGE
+            - nodes.calculation_type: from the pipe
+            - lines.id: 0-based counter generated here
+            - lines.line: lines between connection nodes and added pipe
+              nodes. The indices are offset using the respective parameters.
+            - lines.content_type: ContentType.TYPE_V2_PIPE
+            - lines.content_pk: the id of the Pipe from which this line originates
+            - lines.kcu: from the pipe's calculation_type
+            - lines.line_geometries: a segment of the pipe geometry
+        """
+        pipes.set_geometries(connection_nodes)
+        nodes = pipes.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = pipes.get_lines(
+            connection_nodes,
+            nodes,
+            line_id_counter,
+            connection_node_offset=connection_node_offset,
+        )
+        return cls(nodes, lines)
+
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
 
         ConnectionNodes, Channels and Pipes should be present in the grid.
         """
-        connection_nodes.set_calculation_types(self.nodes, self.lines)
+        connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(self, locations, channels, pipes, weirs, culverts):
+    def set_bottom_levels(self, cross_sections, channels, pipes, weirs, culverts):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         Note that there should not be 2D nodes & lines in the grid yet.
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
-        2. connection nodes: see connection_nodes.set_bottom_levels
-        3. (not implemented) pipes, interpolated nodes:
-          - interpolate between invert level start & end
+        2. pipe nodes: interpolate between invert level start & end
+        3. connection nodes: see connection_nodes.set_bottom_levels
         4. lines: dpumax = greatest of the two neighboring nodes dmax
           - except for channels with no interpolated nodes: take reference level, but
             only if that is higher than the two neighboring nodes.
         """
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = cross_sections.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask], locations, channels
+        self.nodes.dmax[mask] = cross_sections_module.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask], cross_sections, channels
+        )
+
+        # Pipes, interpolated nodes
+        mask = self.nodes.content_type == ContentType.TYPE_V2_PIPE
+        self.nodes.dmax[mask] = pipes_module.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask], pipes
         )
 
         # Connection nodes: complex logic based on the connected objects
-        connection_nodes.set_bottom_levels(
-            self.nodes, self.lines, locations, channels, pipes, weirs, culverts
+        connection_nodes_module.set_bottom_levels(
+            self.nodes, self.lines, cross_sections, channels, pipes, weirs, culverts
         )
 
         # Lines: based on the nodes
         self.lines.set_bottom_levels(self.nodes, allow_nan=False)
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
-        cross_sections.fix_dpumax(self.lines, self.nodes, locations)
+        cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""

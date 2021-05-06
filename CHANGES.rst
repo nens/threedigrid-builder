@@ -9,6 +9,9 @@ Changelog of threedigrid-builder
 
 - Fixed a bug in the refinement areas code (Fortran) on Ubuntu 20.04.
 
+- Added the Pipes model that is able to compute Nodes & Lines from Pipes.
+  Pipes are also included in the calculation_type and bottom_level computations.
+
 
 0.1.2 (2021-04-28)
 ------------------

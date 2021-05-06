@@ -6,8 +6,10 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid.connection_nodes import set_bottom_levels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from unittest import mock
@@ -73,11 +75,14 @@ def test_get_nodes(connection_nodes):
         ),
     ],
 )
-def test_set_calculation_types_single_node(kcu, expected):
+@pytest.mark.parametrize(
+    "content_type", [ContentType.TYPE_V2_CHANNEL, ContentType.TYPE_V2_PIPE]
+)
+def test_set_calculation_types_single_node(kcu, expected, content_type):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(kcu)),
-        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_type=content_type,
         line=[(1, 9999)] * len(kcu),
         kcu=kcu,
     )
@@ -87,7 +92,10 @@ def test_set_calculation_types_single_node(kcu, expected):
     assert nodes.calculation_type[0] == expected
 
 
-def test_set_calculation_types_multiple_nodes():
+@pytest.mark.parametrize(
+    "content_type", [ContentType.TYPE_V2_CHANNEL, ContentType.TYPE_V2_PIPE]
+)
+def test_set_calculation_types_multiple_nodes(content_type):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -95,7 +103,7 @@ def test_set_calculation_types_multiple_nodes():
     )
     lines = Lines(
         id=[1, 2, 3],
-        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_type=content_type,
         line=[(1, 2), (2, 9999), (9999, 1)],
         kcu=[LineType.LINE_1D_CONNECTED, -9999, LineType.LINE_1D_ISOLATED],
     )
@@ -121,7 +129,9 @@ def test_set_calculation_types_multiple_nodes():
     ],
 )
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_bottom_level")
-def test_set_bottom_levels_single_node(compute_bottom_level, line, dmax_mock, expected):
+def test_set_bottom_levels_single_node_channels(
+    compute_bottom_level, line, dmax_mock, expected
+):
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(line)),
@@ -149,7 +159,7 @@ def test_set_bottom_levels_single_node(compute_bottom_level, line, dmax_mock, ex
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.compute_bottom_level")
-def test_set_bottom_levels_multiple_nodes(compute_bottom_level):
+def test_set_bottom_levels_multiple_nodes_channels(compute_bottom_level):
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -190,3 +200,95 @@ def test_set_bottom_levels_multiple_nodes(compute_bottom_level):
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, [3.0, 8.0, 24.0])
+
+
+@pytest.mark.parametrize(
+    "line,invert_levels,expected",
+    [
+        (np.empty((0, 2), dtype=int), (3.0, 4.0), np.nan),  # no line at all
+        ([(2, 3)], (3.0, 4.0), np.nan),  # no line to the specific node
+        ([(1, 2)], (3.0, 4.0), 3.0),  # starting point
+        ([(2, 1)], (3.0, 4.0), 4.0),  # end point
+        ([(1, 2), (2, 1)], (3.0, 4.0), 3.0),  # both end and start; start is lower
+        ([(1, 2), (2, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
+    ],
+)
+def test_set_bottom_levels_single_node_pipes(line, invert_levels, expected):
+    nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
+    lines = Lines(
+        id=range(len(line)),
+        content_type=ContentType.TYPE_V2_PIPE,
+        content_pk=2,
+        line=line,
+    )
+    pipes = Pipes(
+        id=[2],
+        invert_level_start_point=[invert_levels[0]],
+        invert_level_end_point=[invert_levels[1]],
+    )
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, expected)
+
+
+def test_set_bottom_levels_multiple_nodes_pipes():
+    nodes = Nodes(
+        id=[1, 2, 3],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        dmax=[np.nan, np.nan, -24.0],
+    )
+    lines = Lines(
+        id=[1, 2, 3],
+        content_type=[ContentType.TYPE_V2_PIPE, -9999, ContentType.TYPE_V2_PIPE],
+        content_pk=[2, -9999, 3],
+        line=[(1, 2), (1, 2), (1, 3)],
+    )
+    pipes = Pipes(
+        id=[2, 3],
+        invert_level_start_point=[3.0, 4.0],
+        invert_level_end_point=[8.0, 8.0],
+    )
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, [3.0, 8.0, -24.0])
+
+
+def test_bottom_levels_above_invert_level():
+    nodes = Nodes(
+        id=[1, 2],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        dmax=[10.0, 20.0],
+        content_pk=[52, 22],
+    )
+    lines = Lines(
+        id=[1],
+        content_type=ContentType.TYPE_V2_PIPE,
+        content_pk=2,
+        line=[[1, 2]],
+    )
+    pipes = Pipes(
+        id=[2],
+        invert_level_start_point=[3.0],
+        invert_level_end_point=[4.0],
+    )
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    # assert the resulting value of dmax
+    with pytest.raises(SchematisationError) as e:
+        set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+        assert str(e).startswith("Connection nodes [22, 52] have a manhole")
