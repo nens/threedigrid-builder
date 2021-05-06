@@ -58,7 +58,7 @@ class Pipes(Channels.original_class):
             Channels.interpolate_nodes
         """
         if pygeos.is_missing(self.the_geom).any():
-            raise RuntimeError(
+            raise ValueError(
                 "Pipes found without a geometry. Call set_geometries first."
             )
         nodes = super().interpolate_nodes(*args, **kwargs)
@@ -74,3 +74,30 @@ class Pipes(Channels.original_class):
         lines = super().get_lines(*args, **kwargs)
         lines.content_type[:] = ContentType.TYPE_V2_PIPE
         return lines
+
+
+def compute_bottom_level(pipe_id, ds, pipes):
+    """Compute the bottom level by interpolating between invert levels
+
+    This function is to be used for interpolated nodes on pipes.
+
+    Args:
+        pipe_id (ndarray of int): the id (content_pk) of the pipe
+        ds (ndarray of float): the distance from the pipe start to the point
+        pipes (Pipes): used to lookup the invert levels
+
+    Returns:
+        an array of the same shape as pipe_id and ds containing the interpolated values
+    """
+    if pygeos.is_missing(pipes.the_geom).any():
+        raise ValueError("Pipes found without a geometry. Call set_geometries first.")
+    pipe_lengths = pygeos.length(pipes.the_geom)
+    pipe_idx = pipes.id_to_index(pipe_id)
+    weights = ds / pipe_lengths[pipe_idx]
+    if np.any(weights < 0.0) or np.any(weights > 1.0):
+        raise ValueError("Encountered pipe nodes outside of the pipe bounds")
+
+    left = pipes.invert_level_start_point[pipe_idx]
+    right = pipes.invert_level_end_point[pipe_idx]
+
+    return weights * right + (1 - weights) * left

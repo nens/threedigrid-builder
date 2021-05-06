@@ -261,4 +261,4 @@ def test_set_bottom_levels_multiple_nodes_pipes():
     set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     # assert the resulting value of dmax
-    assert_almost_equal(nodes.dmax, [3.0, np.nan, 24.0])
+    assert_almost_equal(nodes.dmax, [3.0, 8.0, 24.0])

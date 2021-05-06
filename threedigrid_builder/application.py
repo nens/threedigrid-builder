@@ -58,7 +58,7 @@ def _get_1d_grid(path, node_id_start=0, line_id_start=0):
     )
 
     grid.set_calculation_types()
-    grid.set_bottom_levels(cross_section_locations, channels, None, None, None)
+    grid.set_bottom_levels(cross_section_locations, channels, pipes, None, None)
 
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid

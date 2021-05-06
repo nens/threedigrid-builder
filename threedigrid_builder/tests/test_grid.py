@@ -160,21 +160,28 @@ def test_set_calculation_types(set_calculation_types, grid):
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
+@mock.patch("threedigrid_builder.grid.pipes.compute_bottom_level")
 @mock.patch("threedigrid_builder.grid.cross_sections.compute_bottom_level")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
 @mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
-def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute):
+def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
-        id=[1, 2, 3],
-        content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
-        content_pk=[1, 1, 3],
-        ds1d=[2.0, 12.0, 21.0],
-        dmax=[np.nan, 12.0, np.nan],
+        id=[1, 2, 3, 4],
+        content_type=[
+            ContentType.TYPE_V2_CHANNEL,
+            -9999,
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_PIPE,
+        ],
+        content_pk=[1, 1, 3, 2],
+        ds1d=[2.0, 12.0, 21.0, 15.0],
+        dmax=[np.nan, 12.0, np.nan, np.nan],
     )
     lines = Lines(id=[])
     cs_compute.return_value = [42.0, 43.0]
+    pipe_compute.return_value = [44.0]
     grid = Grid(nodes=nodes, lines=lines)
     locations = mock.Mock()
     channels = mock.Mock()
@@ -191,8 +198,14 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute):
     assert args[2] is locations
     assert args[3] is channels
 
+    # pipe compute_bottom_level was called correctly
+    args, kwargs = pipe_compute.call_args
+    assert_array_equal(args[0], [2])  # pipe_id
+    assert_array_equal(args[1], [15.0])  # ds
+    assert args[2] is pipes
+
     # node attribute dmax is adapted correctly
-    assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0])
+    assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0, 44.0])
 
     # connection node set_bottom_levels was called correctly
     cn_compute.assert_called_with(
