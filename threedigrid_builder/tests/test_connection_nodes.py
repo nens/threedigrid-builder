@@ -6,6 +6,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Pipes
@@ -240,7 +241,7 @@ def test_set_bottom_levels_multiple_nodes_pipes():
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
-        dmax=[np.nan, np.nan, 24.0],
+        dmax=[np.nan, np.nan, -24.0],
     )
     lines = Lines(
         id=[1, 2, 3],
@@ -261,4 +262,33 @@ def test_set_bottom_levels_multiple_nodes_pipes():
     set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     # assert the resulting value of dmax
-    assert_almost_equal(nodes.dmax, [3.0, 8.0, 24.0])
+    assert_almost_equal(nodes.dmax, [3.0, 8.0, -24.0])
+
+
+def test_bottom_levels_above_invert_level():
+    nodes = Nodes(
+        id=[1, 2],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        dmax=[10.0, 20.0],
+        content_pk=[52, 22],
+    )
+    lines = Lines(
+        id=[1],
+        content_type=ContentType.TYPE_V2_PIPE,
+        content_pk=2,
+        line=[[1, 2]],
+    )
+    pipes = Pipes(
+        id=[2],
+        invert_level_start_point=[3.0],
+        invert_level_end_point=[4.0],
+    )
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = mock.Mock()
+
+    # assert the resulting value of dmax
+    with pytest.raises(SchematisationError) as e:
+        set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+        assert str(e).startswith("Connection nodes [22, 52] have a manhole")

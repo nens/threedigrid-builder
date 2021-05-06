@@ -6,6 +6,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import numpy as np
@@ -133,7 +134,7 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
 
     The bottom level (dmax) of a connection nodes is based on:
       - from the manhole.bottom_level
-        - (not implemented) must be lower than the invert level of pipes (if not: error)
+        - must be lower than the invert level of pipes (if not: error)
       - if not present: the lowest of all neigboring objects
         - channel: interpolate for channels (like channel node)
         - pipe: invert level start or end
@@ -152,12 +153,45 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         weirs: to take crest levels, not yet implemented
         culverts: to take invert levels, not yet implemented
     """
-    # Get the indices and ids of the relevant nodes
-    node_idx = np.where(
-        (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
-        & (np.isnan(nodes.dmax))
-    )[0]
-    node_id = nodes.index_to_id(node_idx)
+    is_connection_node = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+    has_manhole = np.isfinite(nodes.dmax)
+
+    # Get ids of the relevant nodes (including manholes for the pipe-manhole check)
+    node_id = nodes.index_to_id(np.where(is_connection_node)[0])
+    # Copy the dmax of the manholes for later reference
+    manhole_dmax = nodes.dmax[is_connection_node & has_manhole].copy()
+    # line_idx: pipe lines
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_PIPE)[0]
+    # line_idx_1: pipe lines for which the connection node is the start
+    line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
+    if line_idx_1.size > 0:
+        # get the dmax from the invert_level_start
+        pipe_id = lines.content_pk[line_idx_1]
+        dmax = pipes.invert_level_start_point[pipes.id_to_index(pipe_id)]
+        # find the nodes that match to these pipe lines and put the dmax
+        _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
+        _put_if_less(nodes.dmax, _node_idx, dmax)
+    # line_idx_2: pipe lines for which the connection node is the end
+    line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
+    if line_idx_2.size > 0:
+        # get the dmax from the invert_level_end
+        pipe_id = lines.content_pk[line_idx_2]
+        dmax = pipes.invert_level_end_point[pipes.id_to_index(pipe_id)]
+        # find the nodes that match to these pipe lines and put the dmax
+        _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
+        _put_if_less(nodes.dmax, _node_idx, dmax)
+
+    # Check if the new node dmax is below the original manhole dmax
+    has_lower_dmax = nodes.dmax[is_connection_node & has_manhole] < manhole_dmax
+    if np.any(has_lower_dmax):
+        ids = nodes.content_pk[is_connection_node & has_manhole][has_lower_dmax]
+        raise SchematisationError(
+            f"Connection nodes {sorted(ids.tolist())} have a manhole with a "
+            f"bottom_level that is greater than the invert level(s) of connecting pipes."
+        )
+
+    # Get the indices and ids of the relevant nodes (now excluding manholes)
+    node_id = nodes.index_to_id(np.where(is_connection_node & ~has_manhole)[0])
 
     # line_idx: channel lines
     line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
@@ -179,25 +213,6 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         channel_ds = pygeos.length(channels.the_geom[channels.id_to_index(channel_id)])
         dmax = compute_bottom_level(channel_id, channel_ds, locations, channels)
         # find the nodes that match to these channel lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
-        _put_if_less(nodes.dmax, _node_idx, dmax)
-
-    # pipes
-    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_PIPE)[0]
-    line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
-    if line_idx_1.size > 0:
-        # get the dmax from the invert_level_start
-        pipe_id = lines.content_pk[line_idx_1]
-        dmax = pipes.invert_level_start_point[pipes.id_to_index(pipe_id)]
-        # find the nodes that match to these pipe lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
-        _put_if_less(nodes.dmax, _node_idx, dmax)
-    line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
-    if line_idx_2.size > 0:
-        # get the dmax from the invert_level_end
-        pipe_id = lines.content_pk[line_idx_2]
-        dmax = pipes.invert_level_end_point[pipes.id_to_index(pipe_id)]
-        # find the nodes that match to these pipe lines and put the dmax
         _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
         _put_if_less(nodes.dmax, _node_idx, dmax)
 
