@@ -1,3 +1,4 @@
+from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
@@ -46,34 +47,35 @@ def two_channels():
 
 
 @pytest.mark.parametrize(
-    "dist,size,expected",
+    "dist,expected",
     [
-        (3.0, 12 / 4, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments
-        (4.0, 12 / 3, [(4, 0), (6, 2)]),  # 12 / 4  = 3 segments
-        (5.0, 12 / 2, [(6, 0)]),  # 12 / 5  = 2.4 -> 2 segments
-        (6.0, 12 / 2, [(6, 0)]),  # 12 / 6  = 2 segments
-        (8.0, 12 / 2, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
-        (9.0, 12, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
-        (100.0, 12, np.empty((0, 2), dtype=float)),
+        (3.0, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments
+        (4.0, [(4, 0), (6, 2)]),  # 12 / 4  = 3 segments
+        (5.0, [(6, 0)]),  # 12 / 5  = 2.4 -> 2 segments
+        (6.0, [(6, 0)]),  # 12 / 6  = 2 segments
+        (8.0, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
+        (9.0, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
+        (100.0, np.empty((0, 2), dtype=float)),
     ],
 )
-def test_interpolate_nodes_one_channel(dist, size, expected, one_channel):
+def test_interpolate_nodes_one_channel(dist, expected, one_channel):
     one_channel.dist_calc_points[0] = dist
-    nodes, segment_size = one_channel.interpolate_nodes(
+    nodes = one_channel.interpolate_nodes(
         itertools.count(start=2), global_dist_calc_points=74.0
     )
 
     assert_array_equal(nodes.id, range(2, 2 + len(expected)))
-    assert_array_equal(nodes.coordinates, expected)
+    assert_almost_equal(nodes.coordinates, expected, decimal=7)
     assert_array_equal(nodes.content_pk, 1)
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, 2)
-    assert_array_equal(nodes.ds1d, np.arange(1, len(expected) + 1) * size)
-    assert_array_equal(segment_size, size)
+
+    expected_size = 12.0 / (len(expected) + 1)
+    assert_array_equal(nodes.ds1d, np.arange(1, len(expected) + 1) * expected_size)
 
 
 def test_interpolate_nodes_two_channels(two_channels):
-    nodes, segment_size = two_channels.interpolate_nodes(
+    nodes = two_channels.interpolate_nodes(
         itertools.count(start=2), global_dist_calc_points=50.0
     )
 
@@ -84,7 +86,6 @@ def test_interpolate_nodes_two_channels(two_channels):
     assert_array_equal(nodes.content_pk, [1, 1, 1, 2, 2, 2])
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
-    assert_array_equal(segment_size, [5.0, 50.0])
 
 
 def test_get_lines(connection_nodes, two_channels):
@@ -94,18 +95,19 @@ def test_get_lines(connection_nodes, two_channels):
         connection_nodes,
         nodes,
         itertools.count(start=0),
-        segment_size=np.array([23, 101]),
         connection_node_offset=100,
     )
 
     expected_line = [(100, 10), (10, 103), (101, 11), (11, 12), (12, 102)]
+    expected_sizes = [20.0 / 2.0] * 2 + [200.0 / 3.0] * 3
 
     assert_array_equal(lines.id, range(5))
     assert_array_equal(lines.line, expected_line)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
-    assert_array_equal(lines.ds1d, [23, 23, 101, 101, 101])
+    assert_almost_equal(lines.ds1d, expected_sizes)
+    assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
 
 
 @pytest.mark.parametrize(
