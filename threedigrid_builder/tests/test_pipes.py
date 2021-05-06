@@ -5,6 +5,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import linear
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid.pipes import compute_bottom_level
 from unittest import mock
@@ -60,7 +61,7 @@ def test_interpolate_nodes_no_geometries(pipes):
         pipes.interpolate_nodes(2, foo="bar")
 
 
-@mock.patch.object(Channels.original_class, "interpolate_nodes")
+@mock.patch.object(linear.BaseLinear, "interpolate_nodes")
 def test_interpolate_nodes(interpolate_nodes_m, pipes_with_geom):
     interpolate_nodes_m.return_value = Nodes(id=[0, 1])
 
@@ -72,7 +73,7 @@ def test_interpolate_nodes(interpolate_nodes_m, pipes_with_geom):
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_PIPE)
 
 
-@mock.patch.object(Channels.original_class, "get_lines")
+@mock.patch.object(linear.BaseLinear, "get_lines")
 def test_get_lines(get_lines_m, pipes):
     get_lines_m.return_value = Lines(id=[0, 1])
 

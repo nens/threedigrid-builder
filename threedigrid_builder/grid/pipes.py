@@ -3,7 +3,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import SewerageType
-from threedigrid_builder.grid.channels import Channels
+from threedigrid_builder.grid import linear
 
 import numpy as np
 import pygeos
@@ -34,7 +34,7 @@ class Pipe:
 
 
 @array_of(Pipe)
-class Pipes(Channels.original_class):
+class Pipes(linear.BaseLinear):
     def set_geometries(self, connection_nodes):
         """Compute pipe geometries from the connection node locations"""
         # construct the pipe geometries
@@ -55,7 +55,7 @@ class Pipes(Channels.original_class):
         """Compute interpolated nodes for pipes.
 
         See also:
-            Channels.interpolate_nodes
+            BaseLinear.interpolate_nodes
         """
         if pygeos.is_missing(self.the_geom).any():
             raise ValueError(
@@ -69,7 +69,7 @@ class Pipes(Channels.original_class):
         """Compute the grid lines for the pipes.
 
         See also:
-            Channels.get_lines
+            BaseLinear.get_lines
         """
         lines = super().get_lines(*args, **kwargs)
         lines.content_type[:] = ContentType.TYPE_V2_PIPE

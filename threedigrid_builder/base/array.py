@@ -269,7 +269,6 @@ class array_of:
         class Wrapper(ArrayDataClass, cls):
             pass
 
-        Wrapper.original_class = cls
         Wrapper.data_class = self.data_class
 
         # transfers __name__, __doc__, etc. from cls to Wrapper
