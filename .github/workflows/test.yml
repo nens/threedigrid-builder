@@ -42,9 +42,9 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install sqlite3, spatialite and GEOS libraries
+      - name: Install sqlite3 and spatialite libraries
         run: |
-          sudo apt-get install --yes --no-install-recommends sqlite3 libsqlite3-mod-spatialite libgeos-dev
+          sudo apt-get install --yes --no-install-recommends sqlite3 libsqlite3-mod-spatialite
 
       - name: Compile libthreedigrid
         shell: bash
@@ -55,8 +55,6 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
           pip install cython ${{ matrix.pins }}
-          pip install git+https://github.com/nens/threedi-modelchecker#egg=threedi-modelchecker --no-build-isolation
-          pip install git+https://github.com/pygeos/pygeos#egg=pygeos --no-build-isolation
           pip install -e .[test,gridadmin] --no-build-isolation
           pip list
 

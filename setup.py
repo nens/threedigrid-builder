@@ -70,7 +70,7 @@ version = open("VERSION.rst").read()
 install_requires = [
     "numpy>=1.13",
     "threedi-modelchecker>=0.12",
-    "pygeos",
+    "pygeos>=0.10",
     "pyproj",
     "condenser[geo]",
     "rasterio",
