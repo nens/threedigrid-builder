@@ -1,6 +1,6 @@
 from .cross_sections import compute_bottom_level
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import Nodes, Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
@@ -229,3 +229,22 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         warnings.warn(
             "Ignoring culvert invert level while setting connection node dmax"
         )
+
+
+def get_1d2d_lines(nodes, cell_ids, cell_tree, connection_nodes, line_id_counter):
+    connected_idx = np.where(
+        (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
+        & np.isin(nodes.calculation_type, [CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED])
+    )[0]
+    idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
+    node_idx = connected_idx[idx[0]]
+    node_id = nodes.index_to_id(node_idx)
+    connection_node_idx = connection_nodes.id_to_index(nodes.content_pk[node_idx])
+    cell_id = cell_ids[idx[1]]
+
+    connected_lines = Lines(
+        id=itertools.islice(line_id_counter, len(node_id)),
+        line=np.array([node_id, cell_id]).T,
+        kcu=LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE if is_manhole else LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
+        dpumax=nodes.drain
+    )

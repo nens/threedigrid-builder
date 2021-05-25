@@ -3,8 +3,10 @@ from . import cross_sections as cross_sections_module
 from . import pipes as pipes_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import ContentType, NodeType
 
+import itertools
+import pygeos
 
 __all__ = ["Grid"]
 
@@ -261,6 +263,15 @@ class Grid:
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
+
+    def set_1d2d(self, connection_nodes):
+        is_2d_open = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+        cell_ids = self.nodes.id[is_2d_open]
+        cell_tree = pygeos.STRtree(pygeos.box(*self.nodes.bounds[is_2d_open].T))
+
+        line_id_counter = itertools.count(start=self.lines.id[-1] + 1)
+
+        self.lines += connection_nodes_module.get_1d2d_lines(self.nodes, cell_ids, cell_tree, connection_nodes, line_id_counter)
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
