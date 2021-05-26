@@ -213,7 +213,7 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
     )
 
     # lines set_bottom_levels was called correctly
-    lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=False)
+    lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=True)
 
     # fix_dpumax was called correctly
     fix_dpumax.assert_called_with(grid.lines, grid.nodes, locations)

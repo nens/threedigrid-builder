@@ -10,6 +10,7 @@ from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Pipes
+from threedigrid_builder.grid.connection_nodes import get_1d2d_lines
 from threedigrid_builder.grid.connection_nodes import set_bottom_levels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from unittest import mock
@@ -29,6 +30,8 @@ def connection_nodes():
         storage_area=np.array([-2, 0, 15, np.nan]),
         calculation_type=np.array([1, 2, 5, 2]),
         bottom_level=np.array([2.1, 5.2, np.nan, np.nan]),
+        manhole_id=[1, 2, -9999, -9999],
+        drain_level=[1.2, 3.4, np.nan, np.nan],
     )
 
 
@@ -292,3 +295,79 @@ def test_bottom_levels_above_invert_level():
     with pytest.raises(SchematisationError) as e:
         set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         assert str(e).startswith("Connection nodes [22, 52] have a manhole")
+
+
+@pytest.fixture
+def cell_args():
+    cells = pygeos.box(0, 0, 1, 1), pygeos.box(1, 0, 2, 1)
+    cell_ids = np.array([5, 6])
+    cell_tree = pygeos.STRtree(cells)
+    return cell_tree, cell_ids
+
+
+@pytest.mark.parametrize(
+    "node_coordinates,expected_lines",
+    [
+        ([(0.5, 0.5)], [(0, 5)]),  # first cell, center
+        ([(0, 0.5)], [(0, 5)]),  # first cell, left edge
+        ([(0.5, 1)], [(0, 5)]),  # first cell, top edge
+        ([(0.5, 0)], [(0, 5)]),  # first cell, bottom edge
+        ([(0, 1)], [(0, 5)]),  # first cell, topleft corner
+        ([(0, 0)], [(0, 5)]),  # first cell, bottomleft corner
+        ([(1.5, 0.5)], [(0, 6)]),  # second cell, center
+        ([(2, 0.5)], [(0, 6)]),  # second cell, right edge
+        ([(1.5, 1)], [(0, 6)]),  # second cell, top edge
+        ([(1.5, 0)], [(0, 6)]),  # second cell, bottom edge
+        ([(2, 1)], [(0, 6)]),  # second cell, topright corner
+        ([(2, 0)], [(0, 6)]),  # second cell, bottomright corner
+        ([(1, 1)], [(0, 5)]),  # edge between: top corner
+        ([(1, 0)], [(0, 5)]),  # edge between: bottom corner
+        ([(1, 0.5)], [(0, 5)]),  # edge between: middle
+        ([(-1e-7, 0.5)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(2.0001, 1.5)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(1, 1.0001)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(1, -1e-7)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(0.5, 0.5), (0.5, 0.9)], [(0, 5), (1, 5)]),  # two cells, same
+        ([(0.5, 0.5), (1.5, 0.5)], [(0, 5), (1, 6)]),  # two cells, different
+    ],
+)
+def test_1d2d(node_coordinates, expected_lines, connection_nodes, cell_args):
+    nodes = Nodes(
+        id=range(len(node_coordinates)),
+        coordinates=node_coordinates,
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        calculation_type=CalculationType.CONNECTED,
+    )
+    actual = get_1d2d_lines(nodes, *cell_args, connection_nodes, itertools.count())
+    assert_array_equal(actual.line, expected_lines)
+
+
+def test_1d2d_multiple(connection_nodes, cell_args):
+    CN = ContentType.TYPE_V2_CONNECTION_NODES
+    CH = ContentType.TYPE_V2_CHANNEL
+    C1 = CalculationType.CONNECTED
+    C2 = CalculationType.DOUBLE_CONNECTED
+    nodes = Nodes(
+        id=[0, 2, 5, 7],
+        coordinates=[(0.5, 0.5)] * 4,  # all the same, geo-stuff is tested elsewhere
+        content_type=[CN, CN, CH, CN],
+        content_pk=[1, 3, 1, 4],
+        calculation_type=[C1, C2, C2, C1],
+        dmax=[1.0, 3.0, 2.0, 4.0],
+    )
+
+    actual = get_1d2d_lines(nodes, *cell_args, connection_nodes, itertools.count())
+    # all connect to the same cell, but the double-connected exists twice
+    assert_array_equal(actual.line, [(0, 5), (2, 5), (2, 5), (7, 5)])
+    # only the manholes (conn. nodes 1 and 3) have storage
+    assert_array_equal(
+        actual.kcu,
+        [
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
+        ],
+    )
+    # for the manholes, conn_node.drain_level is copied, otherwise, dmax is taken
+    assert_array_equal(actual.dpumax, [1.2, 3.4, 3.4, 4.0])

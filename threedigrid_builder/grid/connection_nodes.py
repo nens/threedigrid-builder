@@ -277,17 +277,17 @@ def get_1d2d_lines(nodes, cell_tree, cell_ids, connection_nodes, line_id_counter
     # The query_bulk returns 2 1D arrays: one with indices into the supplied node
     # geometries and one with indices into the tree of cells.
     idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
+    # Address edge cases: just take the first line
+    _, first_unique_index = np.unique(idx[0], return_index=True)
+    idx = idx[:, first_unique_index]
     n_lines = idx.shape[1]
+    if n_lines == 0:
+        return Lines(id=[])
     node_idx = connected_idx[idx[0]]  # convert to node indexes
     node_id = nodes.index_to_id(node_idx)  # convert to node ids
     connection_node_id = nodes.content_pk[node_idx]  # convert to CN id & index
     connection_node_idx = connection_nodes.id_to_index(connection_node_id)
     cell_id = cell_ids[idx[1]]  # convert to cell ids
-
-    # In theory, query_bulk could give no or multiple lines for some connection nodes.
-    # we don't check this: no line is OK (connection node is outside of 2D domain) and
-    # multiple lines would be very odd (two cells would encompass the same space)
-    # TODO: Test the case in which a connection node is at the boundary between 2 cells.
 
     # assign line types depending on whether CN is manhole and its calculation type
     is_manhole = connection_nodes.manhole_id[connection_node_idx] != -9999
