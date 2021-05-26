@@ -47,10 +47,11 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
 
     connection_nodes = db.get_connection_nodes()
 
-    grid += Grid.from_connection_nodes(
+    cn_grid = Grid.from_connection_nodes(
         connection_nodes=connection_nodes, node_id_counter=node_id_counter
     )
-    connection_node_first_id = grid.nodes.id[0]
+    connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
+    grid += cn_grid
 
     channels = db.get_channels()
     grid += Grid.from_channels(
@@ -78,7 +79,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
     grid.set_calculation_types()
     grid.set_bottom_levels(cross_section_locations, channels, pipes, None, None)
 
-    grid.set_1d2d(connection_nodes)
+    grid.add_1d2d(connection_nodes)
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid
 
