@@ -17,16 +17,16 @@ jobs:
         include:
           # 2017
           - python: 3.6
-            pins: "numpy==1.13.* pygeos==0.7.* h5py==2.7.*"
+            pins: "numpy==1.13.* h5py==2.7.*"
           # 2018
           - python: 3.7
-            pins: "numpy==1.15.* pygeos==0.7.* h5py==2.9.*"
+            pins: "numpy==1.15.* h5py==2.9.*"
           # 2019
           - python: 3.8
-            pins: "numpy==1.17.* pygeos==0.8.* h5py==2.10.*"
+            pins: "numpy==1.17.* h5py==2.10.*"
           # 2020
           - python: 3.9
-            pins: "numpy==1.19.* pygeos==0.9.* h5py==3.1.*"
+            pins: "numpy==1.19.* h5py==3.1.*"
           # current
           - python: 3.9
             display_name: "latest"
