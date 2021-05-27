@@ -2,6 +2,7 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import linear
+from threedigrid_builder.grid.cross_sections import compute_bottom_level
 
 import pygeos
 
@@ -40,3 +41,30 @@ class Channels(linear.BaseLinear):
         lines = super().get_lines(*args, **kwargs)
         lines.content_type[:] = ContentType.TYPE_V2_CHANNEL
         return lines
+
+    def get_1d2d_properties(self, nodes, node_idx, locations):
+        """Compute properties (has_storage, dpumax) of 1D-2D flowlines.
+
+        Args:
+            nodes (Nodes): All nodes
+            node_idx (array of int): indices into nodes for which to compute properties
+            locations (CrossSectionLocations): for the bank_levels
+
+        Returns:
+            tuple of:
+            - has_storage (bool): always False
+            - dpumax (array of float): interpolated between CS location bank_levels
+        """
+        # 1D2D lines connected to channel nodes never have storage
+        has_storage = False
+
+        # TODO: The weights are also computed for the dmax. This could be more efficient
+        dpumax = compute_bottom_level(
+            nodes.content_pk[node_idx],
+            nodes.ds1d[node_idx],
+            locations,
+            self,
+            mode="bank",
+        )
+
+        return has_storage, dpumax

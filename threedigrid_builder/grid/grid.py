@@ -357,19 +357,18 @@ def get_1d2d_lines(
     duplicator = np.repeat(np.arange(n_lines), duplicator)
 
     # Identify different types of objects and dispatch to the associated functions
-    is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
-    is_conn_node = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+    is_ch = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
+    is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
 
     has_storage = np.zeros(n_lines, dtype=bool)
     dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
 
-    (
-        has_storage[is_conn_node],
-        dpumax[is_conn_node],
-    ) = connection_nodes.get_1d2d_properties(nodes, node_idx[is_conn_node])
-    # has_storage[is_channel], dpumax[is_channel] = channels.get_1d2d_properties(
-    #     nodes, node_idx[is_channel], locations
-    # )
+    has_storage[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
+        nodes, node_idx[is_cn]
+    )
+    has_storage[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
+        nodes, node_idx[is_ch], locations
+    )
 
     # map "has_storage" to "kcu" (including double/single connected properties)
     # map the two binary arrays on numbers 0, 1, 2, 3

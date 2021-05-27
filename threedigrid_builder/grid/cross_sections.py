@@ -149,7 +149,7 @@ def compute_weights(channel_id, ds, cs, channels):
     return cross1, cross2, weights
 
 
-def compute_bottom_level(channel_id, ds, cs, channels):
+def compute_bottom_level(channel_id, ds, cs, channels, mode="bottom"):
     """Compute the bottom level by interpolating/extrapolating between cross sections
 
     This can be used at nodes (for dmax) or at line centres (for dpumax).
@@ -159,6 +159,7 @@ def compute_bottom_level(channel_id, ds, cs, channels):
         ds (ndarray of float): see compute_weights
         cs (CrossSectionLocations): the reference_level is inter/extrapolated
         channels (Channels): see compute_weights
+        mode ({"bottom", "bank"})
 
     Returns:
         an array of the same shape as channel_id containing the interpolated values
@@ -167,7 +168,12 @@ def compute_bottom_level(channel_id, ds, cs, channels):
         compute_weights: computes the interpolation weights
     """
     cross1, cross2, weights = compute_weights(channel_id, ds, cs, channels)
-    values = cs.reference_level
+    if mode == "bottom":
+        values = cs.reference_level
+    elif mode == "bank":
+        values = cs.bank_level
+    else:
+        raise ValueError(f"Unknown mode {mode}")
     left = values.take(cs.id_to_index(cross1))
     right = values.take(cs.id_to_index(cross2))
     return weights * left + (1 - weights) * right

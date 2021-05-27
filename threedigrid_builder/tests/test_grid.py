@@ -264,7 +264,9 @@ def test_1d2d(node_coordinates, expected_lines, connection_nodes, grid2d):
     connection_nodes = mock.Mock()
     connection_nodes.get_1d2d_properties.return_value = 0, 0
     channels = mock.Mock()
+    channels.get_1d2d_properties.return_value = 0, 0
     pipes = mock.Mock()
+    pipes.get_1d2d_properties.return_value = 0, 0
     locations = mock.Mock()
 
     grid2d.add_1d2d(connection_nodes, channels, pipes, locations)
