@@ -299,23 +299,11 @@ def get_1d2d_lines(
 
     Currently implemented 1D nodes are: connection nodes and channel nodes.
 
-    The line type (kcu) is set to one of four options:
-    - LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE for connected manholes and pipes
-    - LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE for connected non-manholes and channels
-    - LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE for double connected manholes and pipes
-    - LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE for double connected non-manholes and channels
+    The line type and bottom level (kcu and dpumax) are set according to the
+    "get_1d2d_properties" on the associate objects (ConnectionNodes, Channels, ...).
 
-    Note that for the line type, the connection_node.storage_area is not taken into
-    account. Connection nodes without manhole but with storage will get a line type
-    "WITHOUT_STORAGE".
-    # TODO: Is this a schematisation error?
-
-    The bottom level (dpumax) depends on the kind of node:
-    - for manholes: the manhole's drain_level
-    - for other connection nodes: the dmax (which is computed from connected objects)
-    - for channels: interpolated between cross section location's exchange_level
-    - for pipes: interpolated between manhole drain_levels
-    If the 2D bottom level is higher, this will be corrected later by threedi-tables.
+    If the 2D bottom level will turn out higher, this will be corrected later by
+    threedi-tables.
 
     The line will connect to the cell in which the 1D node is located. For edge cases,
     the line will connect to the cell with the lowest id. Users may want to influence
