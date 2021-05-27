@@ -304,10 +304,9 @@ def test_1d2d_properties(connection_nodes):
     )
     node_idx = [0, 1, 3]
 
-    has_storage, dpumax = connection_nodes.get_1d2d_properties(nodes, node_idx)
+    is_sewerage, dpumax = connection_nodes.get_1d2d_properties(nodes, node_idx)
 
-    # only the manholes (conn. nodes 1 and 3) have storage
-    assert_array_equal(has_storage, [True, True, False])
+    assert_array_equal(is_sewerage, [True, True, False])
 
     # for the manholes, conn_node.drain_level is copied, otherwise, dmax is taken
     assert_array_equal(dpumax, [1.2, 3.4, 4.0])

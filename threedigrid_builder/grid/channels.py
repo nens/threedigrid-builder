@@ -43,7 +43,7 @@ class Channels(linear.BaseLinear):
         return lines
 
     def get_1d2d_properties(self, nodes, node_idx, locations):
-        """Compute properties (has_storage, dpumax) of 1D-2D flowlines.
+        """Compute properties (is_sewerage, dpumax) of 1D-2D flowlines.
 
         Args:
             nodes (Nodes): All nodes
@@ -52,12 +52,9 @@ class Channels(linear.BaseLinear):
 
         Returns:
             tuple of:
-            - has_storage (bool): always False
+            - is_sewerage (bool): always False
             - dpumax (array of float): interpolated between CS location bank_levels
         """
-        # 1D2D lines connected to channel nodes never have storage
-        has_storage = False
-
         # dpumax is interpolated between cross section location bank levels
         dpumax = interpolate(
             nodes.cross1[node_idx],
@@ -67,4 +64,4 @@ class Channels(linear.BaseLinear):
             "bank_level",
         )
 
-        return has_storage, dpumax
+        return False, dpumax

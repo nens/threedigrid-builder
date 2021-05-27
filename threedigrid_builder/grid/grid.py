@@ -317,7 +317,7 @@ def get_1d2d_lines(
     Currently implemented 1D nodes are: connection nodes and channel nodes.
 
     The line type and bottom level (kcu and dpumax) are set according to the
-    "get_1d2d_properties" on the associate objects (ConnectionNodes, Channels, ...).
+    "get_1d2d_properties" on the corresponding objects (ConnectionNodes, Channels, ...).
 
     If the 2D bottom level will turn out higher, this will be corrected later by
     threedi-tables.
@@ -329,8 +329,10 @@ def get_1d2d_lines(
     Args:
         nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
             the 1D nodes already have a dmax and calculation_type set.
-        connection_nodes (ConnectionNodes): for looking up drain levels
-        locations (CrossSectionLocations): for looking up exchange levels
+        connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
+        channels (Channels)
+        pipes (Pipes)
+        locations (CrossSectionLocations): for looking up bank_level
         line_id_counter (iterable): An iterable yielding integers
 
     Returns:
@@ -377,26 +379,26 @@ def get_1d2d_lines(
     is_ch = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
     is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
 
-    has_storage = np.zeros(n_lines, dtype=bool)
+    is_sewerage = np.zeros(n_lines, dtype=bool)
     dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
 
-    has_storage[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
+    is_sewerage[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
         nodes, node_idx[is_cn]
     )
-    has_storage[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
+    is_sewerage[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
         nodes, node_idx[is_ch], locations
     )
 
-    # map "has_storage" to "kcu" (including double/single connected properties)
+    # map "is_sewerage" to "kcu" (including double/single connected properties)
     # map the two binary arrays on numbers 0, 1, 2, 3
-    options = is_double * 2 + has_storage
+    options = is_double * 2 + is_sewerage
     kcu = np.choose(
         options,
         choices=[
-            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
         ],
     )
 

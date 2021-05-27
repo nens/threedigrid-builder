@@ -69,14 +69,7 @@ class ConnectionNodes:
         return nodes
 
     def get_1d2d_properties(self, nodes, node_idx):
-        """Compute properties (has_storage, dpumax) of 1D-2D flowlines.
-
-        Note that self.storage_area is not taken into account for has_storage.
-        Connection nodes without manhole but with storage will still get
-        has_storage=False. Connection nodes with manhole but without storage should not
-        exist.
-
-        # TODO: Is this a schematisation error?
+        """Compute properties (is_sewerage, dpumax) of 1D-2D flowlines.
 
         Args:
             nodes (Nodes): All nodes
@@ -84,7 +77,7 @@ class ConnectionNodes:
 
         Returns:
             tuple of:
-            - has_storage (array of bool): based on self.manhole_id
+            - is_sewerage (array of bool): based on self.manhole_id
             - dpumax (array of float): based on self.drain_level or nodes.dmax
         """
         # get the corresponding connection node indexes
@@ -92,13 +85,12 @@ class ConnectionNodes:
         connection_node_idx = self.id_to_index(connection_node_id)
 
         is_manhole = self.manhole_id[connection_node_idx] != -9999
-        has_storage = is_manhole
 
         # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
         dpumax = np.where(
             is_manhole, self.drain_level[connection_node_idx], nodes.dmax[node_idx]
         )
-        return has_storage, dpumax
+        return is_manhole, dpumax
 
 
 def set_calculation_types(nodes, lines):
