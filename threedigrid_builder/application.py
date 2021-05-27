@@ -79,7 +79,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
     grid.set_calculation_types()
     grid.set_bottom_levels(cross_section_locations, channels, pipes, None, None)
 
-    grid.add_1d2d(connection_nodes)
+    grid.add_1d2d(connection_nodes, channels, pipes, cross_section_locations)
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid
 

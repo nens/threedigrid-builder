@@ -1,7 +1,9 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
@@ -38,7 +40,13 @@ def grid2d():
         "y0p": 10.0,
     }
     return Grid(
-        nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats
+        nodes=Nodes(
+            id=[0, 1],
+            node_type=NodeType.NODE_2D_OPEN_WATER,
+            bounds=[(0, 0, 1, 1), (1, 0, 2, 1)],
+        ),
+        lines=Lines(id=[0]),
+        quadtree_stats=quadtree_stats,
     )
 
 
@@ -217,3 +225,48 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
 
     # fix_dpumax was called correctly
     fix_dpumax.assert_called_with(grid.lines, grid.nodes, locations)
+
+
+@pytest.mark.parametrize(
+    "node_coordinates,expected_lines",
+    [
+        ([(0.5, 0.5)], [(7, 0)]),  # first cell, center
+        ([(0, 0.5)], [(7, 0)]),  # first cell, left edge
+        ([(0.5, 1)], [(7, 0)]),  # first cell, top edge
+        ([(0.5, 0)], [(7, 0)]),  # first cell, bottom edge
+        ([(0, 1)], [(7, 0)]),  # first cell, topleft corner
+        ([(0, 0)], [(7, 0)]),  # first cell, bottomleft corner
+        ([(1.5, 0.5)], [(7, 1)]),  # second cell, center
+        ([(2, 0.5)], [(7, 1)]),  # second cell, right edge
+        ([(1.5, 1)], [(7, 1)]),  # second cell, top edge
+        ([(1.5, 0)], [(7, 1)]),  # second cell, bottom edge
+        ([(2, 1)], [(7, 1)]),  # second cell, topright corner
+        ([(2, 0)], [(7, 1)]),  # second cell, bottomright corner
+        ([(1, 1)], [(7, 0)]),  # edge between: top corner
+        ([(1, 0)], [(7, 0)]),  # edge between: bottom corner
+        ([(1, 0.5)], [(7, 0)]),  # edge between: middle
+        ([(-1e-7, 0.5)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(2.0001, 1.5)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(1, 1.0001)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(1, -1e-7)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(0.5, 0.5), (0.5, 0.9)], [(7, 0), (8, 0)]),  # two cells, same
+        ([(0.5, 0.5), (1.5, 0.5)], [(7, 0), (8, 1)]),  # two cells, different
+    ],
+)
+def test_1d2d(node_coordinates, expected_lines, connection_nodes, grid2d):
+    grid2d.nodes += Nodes(
+        id=[7, 8][: len(node_coordinates)],
+        coordinates=node_coordinates,
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        calculation_type=CalculationType.CONNECTED,
+    )
+
+    connection_nodes = mock.Mock()
+    connection_nodes.get_1d2d_properties.return_value = 0, 0
+    channels = mock.Mock()
+    pipes = mock.Mock()
+    locations = mock.Mock()
+
+    grid2d.add_1d2d(connection_nodes, channels, pipes, locations)
+
+    assert_array_equal(grid2d.lines.line[1:], expected_lines)

@@ -3,10 +3,12 @@ from . import cross_sections as cross_sections_module
 from . import pipes as pipes_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 
 import itertools
+import numpy as np
 import pygeos
 
 
@@ -266,7 +268,7 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
-    def add_1d2d(self, connection_nodes):
+    def add_1d2d(self, connection_nodes, channels, pipes, locations):
         """Connect 1D and 2D elements by adding 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
@@ -275,14 +277,10 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
-        is_2d_open = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-        cell_ids = self.nodes.id[is_2d_open]
-        cell_tree = pygeos.STRtree(pygeos.box(*self.nodes.bounds[is_2d_open].T))
-
         line_id_counter = itertools.count(start=self.lines.id[-1] + 1)
 
-        self.lines += connection_nodes_module.get_1d2d_lines(
-            self.nodes, cell_tree, cell_ids, connection_nodes, line_id_counter
+        self.lines += get_1d2d_lines(
+            self.nodes, connection_nodes, channels, pipes, locations, line_id_counter
         )
 
     def finalize(self, epsg_code=None):
@@ -291,3 +289,99 @@ class Grid:
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
         self.epsg_code = epsg_code
+
+
+def get_1d2d_lines(
+    nodes, connection_nodes, channels, pipes, locations, line_id_counter
+):
+    """Compute 1D-2D flowlines for (double) connected 1D nodes.
+
+    Currently implemented 1D nodes are: connection nodes and channel nodes.
+
+    The line type (kcu) is set to one of four options:
+    - LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE for connected manholes and pipes
+    - LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE for connected non-manholes and channels
+    - LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE for double connected manholes and pipes
+    - LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE for double connected non-manholes and channels
+
+    Note that for the line type, the connection_node.storage_area is not taken into
+    account. Connection nodes without manhole but with storage will get a line type
+    "WITHOUT_STORAGE".
+    # TODO: Is this a schematisation error?
+
+    The bottom level (dpumax) depends on the kind of node:
+    - for manholes: the manhole's drain_level
+    - for other connection nodes: the dmax (which is computed from connected objects)
+    - for channels: interpolated between cross section location's exchange_level
+    - for pipes: interpolated between manhole drain_levels
+    If the 2D bottom level is higher, this will be corrected later by threedi-tables.
+
+    The line will connect to the cell in which the 1D node is located. For edge cases,
+    the line will connect to the cell with the lowest id. Users may want to influence
+    which cells are connected to. This is currently unimplemented.
+
+    Args:
+        nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
+            the 1D nodes already have a dmax and calculation_type set.
+        connection_nodes (ConnectionNodes): for looking up drain levels
+        locations (CrossSectionLocations): for looking up exchange levels
+        line_id_counter (iterable): An iterable yielding integers
+
+    Returns:
+        Lines with data in the following columns:
+        - id: counter generated from line_id_counter
+        - kcu: LINE_1D2D_* type (see above)
+        - dpumax: based on drain_level or dmax (see above)
+    """
+    is_2d_open = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+    cell_ids = nodes.id[is_2d_open]
+    cell_tree = pygeos.STRtree(pygeos.box(*nodes.bounds[is_2d_open].T))
+
+    connected_idx = np.where(
+        np.isin(
+            nodes.content_type,
+            [ContentType.TYPE_V2_CONNECTION_NODES, ContentType.TYPE_V2_CHANNEL],
+        )
+        & np.isin(
+            nodes.calculation_type,
+            [CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED],
+        )
+    )[0]
+
+    # The query_bulk returns 2 1D arrays: one with indices into the supplied node
+    # geometries and one with indices into the tree of cells.
+    idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
+    # Address edge cases: just take the first line
+    _, first_unique_index = np.unique(idx[0], return_index=True)
+    idx = idx[:, first_unique_index]
+    n_lines = idx.shape[1]
+    if n_lines == 0:
+        return Lines(id=[])
+    node_idx = connected_idx[idx[0]]  # convert to node indexes
+    node_id = nodes.index_to_id(node_idx)  # convert to node ids
+    cell_id = cell_ids[idx[1]]  # convert to cell ids
+
+    # Identify different types of objects in the 1D-2D lines
+    is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
+    is_conn_node = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+
+    kcu = np.full(n_lines, fill_value=-9999, dtype=np.int32)
+    dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
+
+    kcu[is_conn_node], dpumax[is_conn_node] = connection_nodes.get_1d2d_properties(
+        nodes, node_idx[is_conn_node]
+    )
+    # kcu[is_channel] = channels.get_1d2d_kcu(nodes, node_idx[is_channel], locations)
+    # dpumax[is_channel] = channels.get_1d2d_dpumax(nodes, node_idx[is_channel], locations)
+
+    # create a 'duplicator' array that duplicates lines from double connected nodes
+    duplicator = np.ones(n_lines, dtype=int)
+    duplicator[nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED] = 2
+    duplicator = np.repeat(np.arange(n_lines), duplicator)
+
+    return Lines(
+        id=itertools.islice(line_id_counter, len(duplicator)),
+        line=np.array([node_id, cell_id]).T[duplicator],
+        kcu=kcu[duplicator],
+        dpumax=dpumax[duplicator],
+    )

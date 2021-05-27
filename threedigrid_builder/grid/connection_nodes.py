@@ -1,6 +1,5 @@
 from .cross_sections import compute_bottom_level
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -68,6 +67,33 @@ class ConnectionNodes:
             dmax=self.bottom_level,
         )
         return nodes
+
+    def get_1d2d_properties(self, nodes, node_idx):
+        # get the corresponding connection node indexes
+        connection_node_id = nodes.content_pk[node_idx]
+        connection_node_idx = self.id_to_index(connection_node_id)
+
+        # assign line types depending on whether CN is manhole and its calculation type
+        is_manhole = self.manhole_id[connection_node_idx] != -9999
+        is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
+
+        # map the two binary arrays on numbers 0, 1, 2, 3
+        options = is_double * 2 + is_manhole
+        kcu = np.choose(
+            options,
+            choices=[
+                LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+            ],
+        )
+
+        # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
+        dpumax = np.where(
+            is_manhole, self.drain_level[connection_node_idx], nodes.dmax[node_idx]
+        )
+        return kcu, dpumax
 
 
 def set_calculation_types(nodes, lines):
@@ -230,87 +256,3 @@ def set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         warnings.warn(
             "Ignoring culvert invert level while setting connection node dmax"
         )
-
-
-def get_1d2d_lines(nodes, cell_tree, cell_ids, connection_nodes, line_id_counter):
-    """Compute 1D-2D flowlines for (double) connected connection nodes.
-
-    The line_type (kcu) is set to one of four options:
-    - LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE for connected manholes
-    - LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE for connected non-manholes
-    - LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE for double connected manholes
-    - LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE for double connected non-manholes
-
-    Note that the storage_area is not taken into account. Connection nodes without
-    mahole but with storage area get LINE_1D2D_(...)_WITHOUT_STORAGE. Manholes without
-    storage area cannot occur anyway, so that is no problem.
-
-    The bottom level (dpumax) is set to the manhole's drain_level for mainholes, and
-    to the connection node's dmax otherwise. It may be updated in threedi-tables if
-    the cell's dmax turns out to be higher.
-
-    Be sure that the nodes already have a dmax and calculation_type set, because they
-    are used in this function.
-
-    Args:
-        nodes (Nodes): Nodes that contain connection nodes. Be sure that the nodes
-            already have a dmax and calculation_type set.
-        cell_tree (pygeos.STRTree): a tree of cells to connect the lines to
-        cell_ids (array of int): the node ids belonging to the cells
-        connection_nodes (ConnectionNodes): for looking up drain levels
-        line_id_counter (iterator of int): A counter to set new line ids
-
-    Returns:
-        Lines with data in the following columns:
-        - id: counter generated from line_id_counter
-        - kcu: LINE_1D2D_* type (see above)
-        - dpumax: based on drain_level or dmax (see above)
-    """
-    connected_idx = np.where(
-        (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
-        & np.isin(
-            nodes.calculation_type,
-            [CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED],
-        )
-    )[0]
-
-    # The query_bulk returns 2 1D arrays: one with indices into the supplied node
-    # geometries and one with indices into the tree of cells.
-    idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
-    # Address edge cases: just take the first line
-    _, first_unique_index = np.unique(idx[0], return_index=True)
-    idx = idx[:, first_unique_index]
-    n_lines = idx.shape[1]
-    if n_lines == 0:
-        return Lines(id=[])
-    node_idx = connected_idx[idx[0]]  # convert to node indexes
-    node_id = nodes.index_to_id(node_idx)  # convert to node ids
-    connection_node_id = nodes.content_pk[node_idx]  # convert to CN id & index
-    connection_node_idx = connection_nodes.id_to_index(connection_node_id)
-    cell_id = cell_ids[idx[1]]  # convert to cell ids
-
-    # assign line types depending on whether CN is manhole and its calculation type
-    is_manhole = connection_nodes.manhole_id[connection_node_idx] != -9999
-    is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
-    kcu = np.full(n_lines, fill_value=-9999, dtype=np.int32)
-    kcu[is_manhole & ~is_double] = LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE
-    kcu[~is_manhole & ~is_double] = LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE
-    kcu[is_manhole & is_double] = LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE
-    kcu[~is_manhole & is_double] = LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE
-
-    # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
-    dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
-    dpumax[is_manhole] = connection_nodes.drain_level[connection_node_idx[is_manhole]]
-    dpumax[~is_manhole] = nodes.dmax[node_idx[~is_manhole]]
-
-    # create a 'duplicator' array that duplicates lines from double connected nodes
-    duplicator = np.ones(n_lines, dtype=int)
-    duplicator[is_double] = 2
-    duplicator = np.repeat(np.arange(n_lines), duplicator)
-
-    return Lines(
-        id=itertools.islice(line_id_counter, len(duplicator)),
-        line=np.array([node_id, cell_id]).T[duplicator],
-        kcu=kcu[duplicator],
-        dpumax=dpumax[duplicator],
-    )
