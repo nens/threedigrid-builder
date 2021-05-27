@@ -296,14 +296,6 @@ def test_bottom_levels_above_invert_level():
         assert str(e).startswith("Connection nodes [22, 52] have a manhole")
 
 
-@pytest.fixture
-def cell_args():
-    cells = pygeos.box(0, 0, 1, 1), pygeos.box(1, 0, 2, 1)
-    cell_ids = np.array([5, 6])
-    cell_tree = pygeos.STRtree(cells)
-    return cell_tree, cell_ids
-
-
 def test_1d2d_properties(connection_nodes):
     nodes = Nodes(
         id=[0, 2, 5, 7],
