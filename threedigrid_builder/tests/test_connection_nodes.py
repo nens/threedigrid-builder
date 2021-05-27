@@ -29,6 +29,8 @@ def connection_nodes():
         storage_area=np.array([-2, 0, 15, np.nan]),
         calculation_type=np.array([1, 2, 5, 2]),
         bottom_level=np.array([2.1, 5.2, np.nan, np.nan]),
+        manhole_id=[1, 2, -9999, -9999],
+        drain_level=[1.2, 3.4, np.nan, np.nan],
     )
 
 
@@ -292,3 +294,19 @@ def test_bottom_levels_above_invert_level():
     with pytest.raises(SchematisationError) as e:
         set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
         assert str(e).startswith("Connection nodes [22, 52] have a manhole")
+
+
+def test_1d2d_properties(connection_nodes):
+    nodes = Nodes(
+        id=[0, 2, 5, 7],
+        content_pk=[1, 3, 1, 4],
+        dmax=[1.0, 3.0, 2.0, 4.0],
+    )
+    node_idx = [0, 1, 3]
+
+    is_sewerage, dpumax = connection_nodes.get_1d2d_properties(nodes, node_idx)
+
+    assert_array_equal(is_sewerage, [True, True, False])
+
+    # for the manholes, conn_node.drain_level is copied, otherwise, dmax is taken
+    assert_array_equal(dpumax, [1.2, 3.4, 4.0])

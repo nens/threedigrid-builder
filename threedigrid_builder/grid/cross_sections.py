@@ -57,7 +57,7 @@ def compute_weights(channel_id, ds, cs, channels):
         channels (Channels): Used to lookup the channel geometry
 
     Returns:
-        tuple of cross1, cross2, cross_weights
+        tuple of cross1, cross2, cross_weight
 
     See also:
         Channels.get_lines: computes the lines in the correct order
@@ -143,10 +143,32 @@ def compute_weights(channel_id, ds, cs, channels):
     ds_2 = cs_ds[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
-        weights = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
-    weights[~np.isfinite(weights)] = 1.0
+        cross_weight = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
+    cross_weight[~np.isfinite(cross_weight)] = 1.0
 
-    return cross1, cross2, weights
+    return cross1, cross2, cross_weight
+
+
+def interpolate(cross1, cross2, cross_weight, cs, cs_attr):
+    """Interpolate an attribute of CrossSectionLocation using known weights.
+
+    Args:
+        cross1 (ndarray of int): see compute_weights
+        cross2 (ndarray of int): see compute_weights
+        cross_weight (ndarray of float): see compute_weights
+        cs (CrossSectionLocations)
+        cs_attr ({"reference_level", "bank_level"}): see compute_weights
+
+    Returns:
+        an array of the same shape cross1 containing the interpolated values
+
+    See also:
+        compute_weights: computes the interpolation weights
+    """
+    values = getattr(cs, cs_attr)
+    left = values.take(cs.id_to_index(cross1))
+    right = values.take(cs.id_to_index(cross2))
+    return cross_weight * left + (1 - cross_weight) * right
 
 
 def compute_bottom_level(channel_id, ds, cs, channels):
@@ -166,11 +188,8 @@ def compute_bottom_level(channel_id, ds, cs, channels):
     See also:
         compute_weights: computes the interpolation weights
     """
-    cross1, cross2, weights = compute_weights(channel_id, ds, cs, channels)
-    values = cs.reference_level
-    left = values.take(cs.id_to_index(cross1))
-    right = values.take(cs.id_to_index(cross2))
-    return weights * left + (1 - weights) * right
+    cross1, cross2, cross_weight = compute_weights(channel_id, ds, cs, channels)
+    return interpolate(cross1, cross2, cross_weight, cs, "reference_level")
 
 
 def fix_dpumax(lines, nodes, cs, allow_nan=False):

@@ -3,6 +3,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import linear
 from unittest import mock
 
@@ -46,3 +47,26 @@ def test_get_lines(get_lines_m, channels):
 
     assert lines is get_lines_m.return_value
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
+
+
+def test_1d2d_properties(channels):
+    nodes = Nodes(
+        id=[0, 2, 5, 7],
+        dmax=[1.0, 3.0, 2.0, 4.0],
+        cross1=[2, 5, -9999, 10],
+        cross2=[5, 10, -9999, 13],
+        cross_weight=[0.2, 0.5, np.nan, 0.8],
+    )
+    locations = CrossSectionLocations(
+        id=[2, 5, 10, 13],
+        bank_level=[1.0, 2.0, 3.0, 4.0],
+    )
+    node_idx = [0, 1, 3]
+
+    is_sewerage, dpumax = channels.get_1d2d_properties(nodes, node_idx, locations)
+
+    # channels are no sewerage
+    assert_array_equal(is_sewerage, False)
+
+    # for the manholes, conn_node.drain_level is copied, otherwise, dmax is taken
+    assert_array_equal(dpumax, [1.8, 2.5, 3.2])

@@ -68,6 +68,30 @@ class ConnectionNodes:
         )
         return nodes
 
+    def get_1d2d_properties(self, nodes, node_idx):
+        """Compute properties (is_sewerage, dpumax) of 1D-2D flowlines.
+
+        Args:
+            nodes (Nodes): All nodes
+            node_idx (array of int): indices into nodes for which to compute properties
+
+        Returns:
+            tuple of:
+            - is_sewerage (array of bool): based on self.manhole_id
+            - dpumax (array of float): based on self.drain_level or nodes.dmax
+        """
+        # get the corresponding connection node indexes
+        connection_node_id = nodes.content_pk[node_idx]
+        connection_node_idx = self.id_to_index(connection_node_id)
+
+        is_manhole = self.manhole_id[connection_node_idx] != -9999
+
+        # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
+        dpumax = np.where(
+            is_manhole, self.drain_level[connection_node_idx], nodes.dmax[node_idx]
+        )
+        return is_manhole, dpumax
+
 
 def set_calculation_types(nodes, lines):
     """Set the calculation types for connection nodes that do not yet have one.

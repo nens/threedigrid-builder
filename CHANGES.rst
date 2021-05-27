@@ -12,6 +12,8 @@ Changelog of threedigrid-builder
 - Added the Pipes model that is able to compute Nodes & Lines from Pipes.
   Pipes are also included in the calculation_type and bottom_level computations.
 
+- Added 1D-2D lines for connection nodes, manholes, and channels.
+
 
 0.1.2 (2021-04-28)
 ------------------

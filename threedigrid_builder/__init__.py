@@ -1,2 +1,2 @@
-from .application import *
-from .exceptions import *
+from .application import *  # NOQA
+from .exceptions import *  # NOQA

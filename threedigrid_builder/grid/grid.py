@@ -3,7 +3,14 @@ from . import cross_sections as cross_sections_module
 from . import pipes as pipes_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
+
+import itertools
+import numpy as np
+import pygeos
 
 
 __all__ = ["Grid"]
@@ -151,15 +158,27 @@ class Grid:
         return cls(nodes, lines)
 
     def set_channel_weights(self, cross_sections, channels):
-        """Set cross section weights to channel lines.
+        """Set cross section weights to channel nodes and lines.
 
-        The attributes lines.cross1, lines.cross2, lines.cross_weight are
-        changed in place for lines whose content_type equals TYPE_V2_CHANNEL.
+        The attributes cross1, cross2, cross_weight are changed in place for nodes and
+        lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
             cross_sections (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
+        # Mask the nodes to only the Channel nodes
+        node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
+        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
+            self.nodes.content_pk[node_mask],
+            self.nodes.ds1d[node_mask],
+            cross_sections,
+            channels,
+        )
+        self.nodes.cross1[node_mask] = cross1
+        self.nodes.cross2[node_mask] = cross2
+        self.nodes.cross_weight[node_mask] = cross_weight
+
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
         cross1, cross2, cross_weight = cross_sections_module.compute_weights(
@@ -229,7 +248,7 @@ class Grid:
     def set_bottom_levels(self, cross_sections, channels, pipes, weirs, culverts):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
-        Note that there should not be 2D nodes & lines in the grid yet.
+        This assumes that the channel weights have been computed already.
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
@@ -241,8 +260,12 @@ class Grid:
         """
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = cross_sections_module.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask], cross_sections, channels
+        self.nodes.dmax[mask] = cross_sections_module.interpolate(
+            self.nodes.cross1[mask],
+            self.nodes.cross2[mask],
+            self.nodes.cross_weight[mask],
+            cross_sections,
+            "reference_level",
         )
 
         # Pipes, interpolated nodes
@@ -257,10 +280,26 @@ class Grid:
         )
 
         # Lines: based on the nodes
-        self.lines.set_bottom_levels(self.nodes, allow_nan=False)
+        self.lines.set_bottom_levels(self.nodes, allow_nan=True)
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
+
+    def add_1d2d(self, connection_nodes, channels, pipes, locations):
+        """Connect 1D and 2D elements by adding 1D-2D lines.
+
+        Every (double) connected node gets a 1D-2D connection to the cell in which it
+        is located. Double connected gives two lines to the same node.
+
+        In addition to id and line attributes, also the kcu (line type) and dpumax
+        (bottom level) are computed.
+        """
+        line_id_start = self.lines.id[-1] if len(self.lines) > 0 else 0
+        line_id_counter = itertools.count(start=line_id_start)
+
+        self.lines += get_1d2d_lines(
+            self.nodes, connection_nodes, channels, pipes, locations, line_id_counter
+        )
 
     def finalize(self, epsg_code=None):
         """Finalize the Grid, computing and setting derived attributes"""
@@ -268,3 +307,104 @@ class Grid:
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
         self.epsg_code = epsg_code
+
+
+def get_1d2d_lines(
+    nodes, connection_nodes, channels, pipes, locations, line_id_counter
+):
+    """Compute 1D-2D flowlines for (double) connected 1D nodes.
+
+    Currently implemented 1D nodes are: connection nodes and channel nodes.
+
+    The line type and bottom level (kcu and dpumax) are set according to the
+    "get_1d2d_properties" on the corresponding objects (ConnectionNodes, Channels, ...).
+
+    If the 2D bottom level will turn out higher, this will be corrected later by
+    threedi-tables.
+
+    The line will connect to the cell in which the 1D node is located. For edge cases,
+    the line will connect to the cell with the lowest id. Users may want to influence
+    which cells are connected to. This is currently unimplemented.
+
+    Args:
+        nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
+            the 1D nodes already have a dmax and calculation_type set.
+        connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
+        channels (Channels)
+        pipes (Pipes)
+        locations (CrossSectionLocations): for looking up bank_level
+        line_id_counter (iterable): An iterable yielding integers
+
+    Returns:
+        Lines with data in the following columns:
+        - id: counter generated from line_id_counter
+        - kcu: LINE_1D2D_* type (see above)
+        - dpumax: based on drain_level or dmax (see above)
+    """
+    is_2d_open = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+    cell_ids = nodes.id[is_2d_open]
+    cell_tree = pygeos.STRtree(pygeos.box(*nodes.bounds[is_2d_open].T))
+
+    connected_idx = np.where(
+        np.isin(
+            nodes.content_type,
+            [ContentType.TYPE_V2_CONNECTION_NODES, ContentType.TYPE_V2_CHANNEL],
+        )
+        & np.isin(
+            nodes.calculation_type,
+            [CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED],
+        )
+    )[0]
+
+    # The query_bulk returns 2 1D arrays: one with indices into the supplied node
+    # geometries and one with indices into the tree of cells.
+    idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
+    # Address edge cases: just take the first line
+    _, first_unique_index = np.unique(idx[0], return_index=True)
+    idx = idx[:, first_unique_index]
+    n_lines = idx.shape[1]
+    if n_lines == 0:
+        return Lines(id=[])
+    node_idx = connected_idx[idx[0]]  # convert to node indexes
+    node_id = nodes.index_to_id(node_idx)  # convert to node ids
+    cell_id = cell_ids[idx[1]]  # convert to cell ids
+
+    # create a 'duplicator' array that duplicates lines from double connected nodes
+    is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
+    duplicator = np.ones(n_lines, dtype=int)
+    duplicator[is_double] = 2
+    duplicator = np.repeat(np.arange(n_lines), duplicator)
+
+    # Identify different types of objects and dispatch to the associated functions
+    is_ch = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
+    is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+
+    is_sewerage = np.zeros(n_lines, dtype=bool)
+    dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
+
+    is_sewerage[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
+        nodes, node_idx[is_cn]
+    )
+    is_sewerage[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
+        nodes, node_idx[is_ch], locations
+    )
+
+    # map "is_sewerage" to "kcu" (including double/single connected properties)
+    # map the two binary arrays on numbers 0, 1, 2, 3
+    options = is_double * 2 + is_sewerage
+    kcu = np.choose(
+        options,
+        choices=[
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
+        ],
+    )
+
+    return Lines(
+        id=itertools.islice(line_id_counter, len(duplicator)),
+        line=np.array([node_id, cell_id]).T[duplicator],
+        kcu=kcu[duplicator],
+        dpumax=dpumax[duplicator],
+    )

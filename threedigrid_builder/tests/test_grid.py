@@ -1,7 +1,10 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
@@ -38,7 +41,13 @@ def grid2d():
         "y0p": 10.0,
     }
     return Grid(
-        nodes=Nodes(id=[0, 1]), lines=Lines(id=[0]), quadtree_stats=quadtree_stats
+        nodes=Nodes(
+            id=[0, 1],
+            node_type=NodeType.NODE_2D_OPEN_WATER,
+            bounds=[(0, 0, 1, 1), (1, 0, 2, 1)],
+        ),
+        lines=Lines(id=[0]),
+        quadtree_stats=quadtree_stats,
     )
 
 
@@ -127,13 +136,19 @@ def test_from_channels():
 @mock.patch("threedigrid_builder.grid.cross_sections.compute_weights")
 def test_set_channel_weights(compute_weights):
     # set an input grid and mock the compute_weights return value
+    nodes = Nodes(
+        id=[1, 2, 3],
+        content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
+        content_pk=[1, 1, 3],
+        ds1d=[2.0, 12.0, 21.0],
+    )
     lines = Lines(
         id=[1, 2, 3],
         content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
         content_pk=[1, 1, 3],
         ds1d=[2.0, 12.0, 21.0],
     )
-    grid = Grid(nodes=Nodes(id=[]), lines=lines)
+    grid = Grid(nodes=nodes, lines=lines)
     compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # cross1, cross2, weights
     locations = mock.Mock()
     channels = mock.Mock()
@@ -142,11 +157,17 @@ def test_set_channel_weights(compute_weights):
     grid.set_channel_weights(locations, channels)
 
     # compute_weights was called correctly
+    assert compute_weights.call_count == 2
     args, kwargs = compute_weights.call_args
     assert_array_equal(args[0], [1, 3])  # channel_id
     assert_array_equal(args[1], [2.0, 21.0])  # ds
     assert args[2] is locations
     assert args[3] is channels
+
+    # node attributes cross1, cross2, cross_weight are adapted correctly
+    assert_array_equal(nodes.cross1, [0, -9999, 1])
+    assert_array_equal(nodes.cross2, [1, -9999, 2])
+    assert_array_equal(nodes.cross_weight, [0.2, np.nan, 0.4])
 
     # line attributes cross1, cross2, cross_weight are adapted correctly
     assert_array_equal(lines.cross1, [0, -9999, 1])
@@ -161,11 +182,11 @@ def test_set_calculation_types(set_calculation_types, grid):
 
 
 @mock.patch("threedigrid_builder.grid.pipes.compute_bottom_level")
-@mock.patch("threedigrid_builder.grid.cross_sections.compute_bottom_level")
+@mock.patch("threedigrid_builder.grid.cross_sections.interpolate")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
 @mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
-def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
+def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate, pipe_compute):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
         id=[1, 2, 3, 4],
@@ -178,9 +199,12 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
         content_pk=[1, 1, 3, 2],
         ds1d=[2.0, 12.0, 21.0, 15.0],
         dmax=[np.nan, 12.0, np.nan, np.nan],
+        cross1=[5, -9999, 7, -9999],
+        cross2=[6, -9999, 8, -9999],
+        cross_weight=[0.2, np.nan, 0.8, np.nan],
     )
     lines = Lines(id=[])
-    cs_compute.return_value = [42.0, 43.0]
+    cs_interpolate.return_value = [42.0, 43.0]
     pipe_compute.return_value = [44.0]
     grid = Grid(nodes=nodes, lines=lines)
     locations = mock.Mock()
@@ -191,12 +215,13 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
 
     grid.set_bottom_levels(locations, channels, pipes, weirs, culverts)
 
-    # cross section compute_bottom_level was called correctly
-    args, kwargs = cs_compute.call_args
-    assert_array_equal(args[0], [1, 3])  # channel_id
-    assert_array_equal(args[1], [2.0, 21.0])  # ds
-    assert args[2] is locations
-    assert args[3] is channels
+    # cross section interpolate was called correctly
+    args, _ = cs_interpolate.call_args
+    assert_array_equal(args[0], [5, 7])  # cross1
+    assert_array_equal(args[1], [6, 8])  # cross2
+    assert_array_equal(args[2], [0.2, 0.8])  # weights
+    assert args[3] is locations
+    assert args[4] == "reference_level"
 
     # pipe compute_bottom_level was called correctly
     args, kwargs = pipe_compute.call_args
@@ -213,7 +238,103 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_compute, pipe_compute):
     )
 
     # lines set_bottom_levels was called correctly
-    lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=False)
+    lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=True)
 
     # fix_dpumax was called correctly
     fix_dpumax.assert_called_with(grid.lines, grid.nodes, locations)
+
+
+@pytest.mark.parametrize(
+    "node_coordinates,expected_lines",
+    [
+        ([(0.5, 0.5)], [(7, 0)]),  # first cell, center
+        ([(0, 0.5)], [(7, 0)]),  # first cell, left edge
+        ([(0.5, 1)], [(7, 0)]),  # first cell, top edge
+        ([(0.5, 0)], [(7, 0)]),  # first cell, bottom edge
+        ([(0, 1)], [(7, 0)]),  # first cell, topleft corner
+        ([(0, 0)], [(7, 0)]),  # first cell, bottomleft corner
+        ([(1.5, 0.5)], [(7, 1)]),  # second cell, center
+        ([(2, 0.5)], [(7, 1)]),  # second cell, right edge
+        ([(1.5, 1)], [(7, 1)]),  # second cell, top edge
+        ([(1.5, 0)], [(7, 1)]),  # second cell, bottom edge
+        ([(2, 1)], [(7, 1)]),  # second cell, topright corner
+        ([(2, 0)], [(7, 1)]),  # second cell, bottomright corner
+        ([(1, 1)], [(7, 0)]),  # edge between: top corner
+        ([(1, 0)], [(7, 0)]),  # edge between: bottom corner
+        ([(1, 0.5)], [(7, 0)]),  # edge between: middle
+        ([(-1e-7, 0.5)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(2.0001, 1.5)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(1, 1.0001)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(1, -1e-7)], np.empty((0, 2), dtype=int)),  # marginally outside
+        ([(0.5, 0.5), (0.5, 0.9)], [(7, 0), (8, 0)]),  # two cells, same
+        ([(0.5, 0.5), (1.5, 0.5)], [(7, 0), (8, 1)]),  # two cells, different
+    ],
+)
+def test_1d2d(node_coordinates, expected_lines, grid2d):
+    grid2d.nodes += Nodes(
+        id=[7, 8][: len(node_coordinates)],
+        coordinates=node_coordinates,
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        calculation_type=CalculationType.CONNECTED,
+    )
+    grid2d.lines = Lines(id=[])
+
+    connection_nodes = mock.Mock()
+    connection_nodes.get_1d2d_properties.return_value = 0, 0
+    channels = mock.Mock()
+    channels.get_1d2d_properties.return_value = 0, 0
+    pipes = mock.Mock()
+    pipes.get_1d2d_properties.return_value = 0, 0
+    locations = mock.Mock()
+
+    grid2d.add_1d2d(connection_nodes, channels, pipes, locations)
+
+    assert_array_equal(grid2d.lines.line, expected_lines)
+
+
+def test_1d2d_multiple(grid2d):
+    CN = ContentType.TYPE_V2_CONNECTION_NODES
+    CH = ContentType.TYPE_V2_CHANNEL
+    C1 = CalculationType.CONNECTED
+    C2 = CalculationType.DOUBLE_CONNECTED
+    grid2d.nodes += Nodes(
+        id=[2, 3, 5, 7],
+        coordinates=[(0.5, 0.5)] * 4,  # all the same, geo-stuff is tested elsewhere
+        content_type=[CN, CN, CH, CN],
+        calculation_type=[C1, C2, C2, C1],
+    )
+    grid2d.lines = Lines(id=[])
+
+    connection_nodes = mock.Mock()
+    connection_nodes.get_1d2d_properties.return_value = ([True, True, False], [1, 2, 3])
+    channels = mock.Mock()
+    channels.get_1d2d_properties.return_value = (False, [5])
+    pipes = mock.Mock()
+    pipes.get_1d2d_properties.return_value = 0, 0
+    locations = mock.Mock()
+
+    grid2d.add_1d2d(connection_nodes, channels, pipes, locations)
+
+    args, _ = connection_nodes.get_1d2d_properties.call_args
+    assert args[0] is grid2d.nodes
+    assert_array_equal(args[1], [2, 3, 5])  # node_idx (offset by 2 because of 2d cells)
+
+    args, _ = channels.get_1d2d_properties.call_args
+    assert args[0] is grid2d.nodes
+    assert_array_equal(args[1], [4])  # node_idx (offset by 2 because of 2d cells)
+    assert args[2] is locations
+
+    # the kcu comes from the "has_storage" from get_1d2d_properties and the calc type
+    assert_array_equal(
+        grid2d.lines.kcu,
+        [
+            LineType.LINE_1D2D_SINGLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+        ],
+    )
+    # the dpumax comes from the get_1d2d_properties
+    assert_array_equal(grid2d.lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0])

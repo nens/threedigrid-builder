@@ -20,19 +20,38 @@ import itertools
 __all__ = ["make_grid"]
 
 
-def _get_1d_grid(path, node_id_start=0, line_id_start=0):
+def _make_grid(sqlite_path, dem_path, model_area_path=None):
     """Compute interpolated channel nodes"""
-    db = SQLite(path)
+    db = SQLite(sqlite_path)
+
+    node_id_counter = itertools.count()
+    line_id_counter = itertools.count()
+
+    subgrid = Subgrid(dem_path, model_area=model_area_path)
+    subgrid_meta = subgrid.get_meta()
+
+    db = SQLite(sqlite_path)
+    refinements = db.get_grid_refinements()
+    quadtree = QuadTree(
+        subgrid_meta,
+        db.global_settings["kmax"],
+        db.global_settings["grid_space"],
+        refinements,
+    )
+    grid = Grid.from_quadtree(
+        quadtree=quadtree,
+        area_mask=subgrid_meta["area_mask"],
+        node_id_counter=node_id_counter,
+        line_id_counter=line_id_counter,
+    )
 
     connection_nodes = db.get_connection_nodes()
 
-    node_id_counter = itertools.count(start=node_id_start)
-    line_id_counter = itertools.count(start=line_id_start)
-
-    grid = Grid.from_connection_nodes(
+    cn_grid = Grid.from_connection_nodes(
         connection_nodes=connection_nodes, node_id_counter=node_id_counter
     )
-    connection_node_first_id = grid.nodes.id[0]
+    connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
+    grid += cn_grid
 
     channels = db.get_channels()
     grid += Grid.from_channels(
@@ -60,36 +79,8 @@ def _get_1d_grid(path, node_id_start=0, line_id_start=0):
     grid.set_calculation_types()
     grid.set_bottom_levels(cross_section_locations, channels, pipes, None, None)
 
+    grid.add_1d2d(connection_nodes, channels, pipes, cross_section_locations)
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
-    return grid
-
-
-def _get_2d_grid(sqlite_path, dem_path, model_area_path=None):
-    """Make 2D computational grid"""
-
-    node_counter = itertools.count()
-    line_counter = itertools.count()
-
-    subgrid = Subgrid(dem_path, model_area=model_area_path)
-    subgrid_meta = subgrid.get_meta()
-
-    db = SQLite(sqlite_path)
-    refinements = db.get_grid_refinements()
-    quadtree = QuadTree(
-        subgrid_meta,
-        db.global_settings["kmax"],
-        db.global_settings["grid_space"],
-        refinements,
-    )
-    grid = Grid.from_quadtree(
-        quadtree=quadtree,
-        area_mask=subgrid_meta["area_mask"],
-        node_id_counter=node_counter,
-        line_id_counter=line_counter,
-    )
-
-    grid.finalize(epsg_code=db.global_settings["epsg_code"])
-
     return grid
 
 
@@ -146,12 +137,6 @@ def make_grid(
     else:
         raise ValueError(f"Unsupported output format '{extension}'")
 
-    grid = _get_2d_grid(sqlite_path, dem_path, model_area_path)
-
-    node_id_start = grid.nodes.id[-1] + 1 if len(grid.nodes) > 0 else 0
-    line_id_start = grid.lines.id[-1] + 1 if len(grid.lines) > 0 else 0
-    grid += _get_1d_grid(
-        sqlite_path, node_id_start=node_id_start, line_id_start=line_id_start
-    )
+    grid = _make_grid(sqlite_path, dem_path, model_area_path)
 
     writer(grid, out_path)
