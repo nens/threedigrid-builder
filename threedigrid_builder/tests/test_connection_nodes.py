@@ -305,16 +305,9 @@ def cell_args():
 
 
 def test_1d2d_properties(connection_nodes):
-    CN = ContentType.TYPE_V2_CONNECTION_NODES
-    CH = ContentType.TYPE_V2_CHANNEL
-    C1 = CalculationType.CONNECTED
-    C2 = CalculationType.DOUBLE_CONNECTED
     nodes = Nodes(
         id=[0, 2, 5, 7],
-        coordinates=[(0.5, 0.5)] * 4,  # all the same, geo-stuff is tested elsewhere
-        content_type=[CN, CN, CH, CN],
         content_pk=[1, 3, 1, 4],
-        calculation_type=[C1, C2, C2, C1],
         dmax=[1.0, 3.0, 2.0, 4.0],
     )
     node_idx = [0, 1, 3]

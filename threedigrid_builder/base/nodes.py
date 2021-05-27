@@ -26,6 +26,9 @@ class Node:
     nodm: int  # quadtree grid coordinate x
     nodn: int  # quadtree grid coordinate y
     storage_area: float
+    cross1: int  # the id of the cross section location
+    cross2: int  # the id of the cross section location
+    cross_weight: float
 
 
 @array_of(Node)

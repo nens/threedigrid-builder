@@ -158,15 +158,27 @@ class Grid:
         return cls(nodes, lines)
 
     def set_channel_weights(self, cross_sections, channels):
-        """Set cross section weights to channel lines.
+        """Set cross section weights to channel nodes and lines.
 
-        The attributes lines.cross1, lines.cross2, lines.cross_weight are
-        changed in place for lines whose content_type equals TYPE_V2_CHANNEL.
+        The attributes cross1, cross2, cross_weight are changed in place for nodes and
+        lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
             cross_sections (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
+        # Mask the nodes to only the Channel nodes
+        node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
+        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
+            self.nodes.content_pk[node_mask],
+            self.nodes.ds1d[node_mask],
+            cross_sections,
+            channels,
+        )
+        self.nodes.cross1[node_mask] = cross1
+        self.nodes.cross2[node_mask] = cross2
+        self.nodes.cross_weight[node_mask] = cross_weight
+
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
         cross1, cross2, cross_weight = cross_sections_module.compute_weights(
@@ -236,7 +248,7 @@ class Grid:
     def set_bottom_levels(self, cross_sections, channels, pipes, weirs, culverts):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
-        Note that there should not be 2D nodes & lines in the grid yet.
+        This assumes that the channel weights have been computed already.
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
@@ -248,8 +260,12 @@ class Grid:
         """
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = cross_sections_module.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask], cross_sections, channels
+        self.nodes.dmax[mask] = cross_sections_module.interpolate(
+            self.nodes.cross1[mask],
+            self.nodes.cross2[mask],
+            self.nodes.cross_weight[mask],
+            cross_sections,
+            "reference_level",
         )
 
         # Pipes, interpolated nodes
@@ -278,7 +294,8 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
-        line_id_counter = itertools.count(start=self.lines.id[-1] + 1)
+        line_id_start = self.lines.id[-1] if len(self.lines) > 0 else 0
+        line_id_counter = itertools.count(start=line_id_start)
 
         self.lines += get_1d2d_lines(
             self.nodes, connection_nodes, channels, pipes, locations, line_id_counter

@@ -2,7 +2,7 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import linear
-from threedigrid_builder.grid.cross_sections import compute_bottom_level
+from threedigrid_builder.grid.cross_sections import interpolate
 
 import pygeos
 
@@ -58,13 +58,13 @@ class Channels(linear.BaseLinear):
         # 1D2D lines connected to channel nodes never have storage
         has_storage = False
 
-        # TODO: The weights are also computed for the dmax. This could be more efficient
-        dpumax = compute_bottom_level(
-            nodes.content_pk[node_idx],
-            nodes.ds1d[node_idx],
+        # dpumax is interpolated between cross section location bank levels
+        dpumax = interpolate(
+            nodes.cross1[node_idx],
+            nodes.cross2[node_idx],
+            nodes.cross_weight[node_idx],
             locations,
-            self,
-            mode="bank",
+            "bank_level",
         )
 
         return has_storage, dpumax
