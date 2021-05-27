@@ -73,27 +73,14 @@ class ConnectionNodes:
         connection_node_id = nodes.content_pk[node_idx]
         connection_node_idx = self.id_to_index(connection_node_id)
 
-        # assign line types depending on whether CN is manhole and its calculation type
         is_manhole = self.manhole_id[connection_node_idx] != -9999
-        is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
-
-        # map the two binary arrays on numbers 0, 1, 2, 3
-        options = is_double * 2 + is_manhole
-        kcu = np.choose(
-            options,
-            choices=[
-                LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
-                LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
-                LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
-                LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
-            ],
-        )
+        has_storage = is_manhole
 
         # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
         dpumax = np.where(
             is_manhole, self.drain_level[connection_node_idx], nodes.dmax[node_idx]
         )
-        return kcu, dpumax
+        return has_storage, dpumax
 
 
 def set_calculation_types(nodes, lines):

@@ -5,6 +5,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 
 import itertools
@@ -361,23 +362,39 @@ def get_1d2d_lines(
     node_id = nodes.index_to_id(node_idx)  # convert to node ids
     cell_id = cell_ids[idx[1]]  # convert to cell ids
 
-    # Identify different types of objects in the 1D-2D lines
+    # create a 'duplicator' array that duplicates lines from double connected nodes
+    is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
+    duplicator = np.ones(n_lines, dtype=int)
+    duplicator[is_double] = 2
+    duplicator = np.repeat(np.arange(n_lines), duplicator)
+
+    # Identify different types of objects and dispatch to the associated functions
     is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
     is_conn_node = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
 
-    kcu = np.full(n_lines, fill_value=-9999, dtype=np.int32)
+    has_storage = np.zeros(n_lines, dtype=bool)
     dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
 
-    kcu[is_conn_node], dpumax[is_conn_node] = connection_nodes.get_1d2d_properties(
-        nodes, node_idx[is_conn_node]
-    )
-    # kcu[is_channel] = channels.get_1d2d_kcu(nodes, node_idx[is_channel], locations)
-    # dpumax[is_channel] = channels.get_1d2d_dpumax(nodes, node_idx[is_channel], locations)
+    (
+        has_storage[is_conn_node],
+        dpumax[is_conn_node],
+    ) = connection_nodes.get_1d2d_properties(nodes, node_idx[is_conn_node])
+    # has_storage[is_channel], dpumax[is_channel] = channels.get_1d2d_properties(
+    #     nodes, node_idx[is_channel], locations
+    # )
 
-    # create a 'duplicator' array that duplicates lines from double connected nodes
-    duplicator = np.ones(n_lines, dtype=int)
-    duplicator[nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED] = 2
-    duplicator = np.repeat(np.arange(n_lines), duplicator)
+    # map "has_storage" to "kcu" (including double/single connected properties)
+    # map the two binary arrays on numbers 0, 1, 2, 3
+    options = is_double * 2 + has_storage
+    kcu = np.choose(
+        options,
+        choices=[
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITHOUT_STORAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_WITH_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITHOUT_STORAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_WITH_STORAGE,
+        ],
+    )
 
     return Lines(
         id=itertools.islice(line_id_counter, len(duplicator)),
