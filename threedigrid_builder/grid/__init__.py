@@ -12,3 +12,4 @@ from .pipes import *  # NOQA
 from .grid_refinement import *  # NOQA
 from .grid import *  # NOQA
 from .quadtree import *  # NOQA
+from .structures import *  # NOQA

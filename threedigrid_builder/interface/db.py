@@ -15,8 +15,11 @@ from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
+from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import GridRefinements
+from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
+from threedigrid_builder.grid import Weirs
 
 import numpy as np
 import pygeos
@@ -179,6 +182,41 @@ class SQLite:
         # transform to a CrossSectionLocations object
         return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
 
+    def get_culverts(self):
+        """Return Culverts"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Culvert.id,
+                    models.Culvert.code,
+                    models.Culvert.the_geom,
+                    models.Culvert.dist_calc_points,
+                    models.Culvert.connection_node_start_id,
+                    models.Culvert.connection_node_end_id,
+                    models.Culvert.calculation_type,
+                    models.Culvert.cross_section_definition_id,
+                    models.Culvert.invert_level_start_point,
+                    models.Culvert.invert_level_end_point,
+                    models.Culvert.discharge_coefficient_negative,
+                    models.Culvert.discharge_coefficient_positive,
+                    models.Culvert.friction_type,
+                    models.Culvert.friction_value,
+                )
+                .order_by(models.Culvert.id)
+                .as_structarray()
+            )
+
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        # TODO: Determine whether to do this:
+        # arr["calculation_type"] -= 100  # maps (100, 101, 102, 105) to (0, 1, 2, 5)
+
+        # transform to a CrossSectionLocations object
+        return Culverts(**{name: arr[name] for name in arr.dtype.names})
+
     def get_grid_refinements(self):
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
@@ -212,6 +250,32 @@ class SQLite:
 
         return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
 
+    def get_orifices(self):
+        """Return Orifices"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Orifice.id,
+                    models.Orifice.code,
+                    models.Orifice.connection_node_start_id,
+                    models.Orifice.connection_node_end_id,
+                    models.Orifice.crest_level,
+                    models.Orifice.crest_type,
+                    models.Orifice.cross_section_definition_id,
+                    models.Orifice.discharge_coefficient_negative,
+                    models.Orifice.discharge_coefficient_positive,
+                    models.Orifice.friction_type,
+                    models.Orifice.friction_value,
+                )
+                .order_by(models.Orifice.id)
+                .as_structarray()
+            )
+
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        return Orifices(**{name: arr[name] for name in arr.dtype.names})
+
     def get_pipes(self):
         """Return Pipes"""
         with self.get_session() as session:
@@ -239,6 +303,32 @@ class SQLite:
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_weirs(self):
+        """Return Weirs"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Weir.id,
+                    models.Weir.code,
+                    models.Weir.connection_node_start_id,
+                    models.Weir.connection_node_end_id,
+                    models.Weir.crest_level,
+                    models.Weir.crest_type,
+                    models.Weir.cross_section_definition_id,
+                    models.Weir.discharge_coefficient_negative,
+                    models.Weir.discharge_coefficient_positive,
+                    models.Weir.friction_type,
+                    models.Weir.friction_value,
+                )
+                .order_by(models.Weir.id)
+                .as_structarray()
+            )
+
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        return Weirs(**{name: arr[name] for name in arr.dtype.names})
 
 
 def _object_as_dict(obj):

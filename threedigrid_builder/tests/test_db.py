@@ -7,7 +7,10 @@ from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
+from threedigrid_builder.grid import Culverts
+from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
+from threedigrid_builder.grid import Weirs
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
@@ -134,3 +137,27 @@ def test_get_pipes(db):
     assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
+
+
+def test_get_culverts(db):
+    culverts = db.get_culverts()
+    assert isinstance(culverts, Culverts)
+
+    # some test samples
+    assert len(culverts) == 92
+
+
+def test_get_orifices(db):
+    orifices = db.get_orifices()
+    assert isinstance(orifices, Orifices)
+
+    # some test samples
+    assert len(orifices) == 0
+
+
+def test_get_weirs(db):
+    weirs = db.get_weirs()
+    assert isinstance(weirs, Weirs)
+
+    # some test samples
+    assert len(weirs) == 56
