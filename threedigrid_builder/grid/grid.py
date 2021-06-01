@@ -254,7 +254,7 @@ class Grid:
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
-        2. pipe nodes: interpolate between invert level start & end
+        2. pipe and culvert nodes: interpolate between invert level start & end
         3. connection nodes: see connection_nodes.set_bottom_levels
         4. lines: dpumax = greatest of the two neighboring nodes dmax
           - except for channels with no interpolated nodes: take reference level, but
@@ -272,8 +272,14 @@ class Grid:
 
         # Pipes, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_PIPE
-        self.nodes.dmax[mask] = pipes_module.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask], pipes
+        self.nodes.dmax[mask] = pipes.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
+        )
+
+        # Culverts, interpolated nodes
+        mask = self.nodes.content_type == ContentType.TYPE_V2_CULVERT
+        self.nodes.dmax[mask] = culverts.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
         )
 
         # Connection nodes: complex logic based on the connected objects

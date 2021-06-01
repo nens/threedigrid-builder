@@ -134,6 +134,34 @@ class BaseLinear:
             kcu=self.calculation_type[segment_idx],
         )
 
+    def compute_bottom_level(self, ids, ds):
+        """Compute the bottom level by interpolating between invert levels
+
+        This function is to be used for interpolated nodes on pipes and culverts.
+
+        Args:
+            ids (ndarray of int): the id (content_pk) of the object
+            ds (ndarray of float): the position of the node measured along the object
+
+        Returns:
+            an array of the same shape as ids and ds containing the interpolated values
+        """
+        if pygeos.is_missing(self.the_geom).any():
+            raise ValueError(
+                f"{self.__class__.__name__} found without a geometry. Call "
+                f"set_geometries first."
+            )
+        lengths = pygeos.length(self.the_geom)
+        idx = self.id_to_index(ids)
+        weights = ds / lengths[idx]
+        if np.any(weights < 0.0) or np.any(weights > 1.0):
+            raise ValueError("Encountered nodes outside of the linear object bounds")
+
+        left = self.invert_level_start_point[idx]
+        right = self.invert_level_end_point[idx]
+
+        return weights * right + (1 - weights) * left
+
 
 def counts_to_ranges(counts):
     """Convert an array of list-of-lists counts to ranges.

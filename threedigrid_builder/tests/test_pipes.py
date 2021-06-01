@@ -6,7 +6,6 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import linear
 from threedigrid_builder.grid import Pipes
-from threedigrid_builder.grid.pipes import compute_bottom_level
 from unittest import mock
 
 import numpy as np
@@ -99,14 +98,14 @@ def test_compute_bottom_level(pipe_ids, ds, pipes, expected):
     # invert levels are [3, 4] for id=1 and [5, 6] for id=2
     pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
 
-    actual = compute_bottom_level(pipe_ids, ds, pipes)
+    actual = pipes.compute_bottom_level(pipe_ids, ds)
 
     assert_almost_equal(actual, expected)
 
 
 def test_compute_bottom_level_raises_no_geom(pipes):
     with pytest.raises(ValueError, match=".*Call set_geometries first.*"):
-        compute_bottom_level([1], [5.0], pipes)
+        pipes.compute_bottom_level([1], [5.0])
 
 
 @pytest.mark.parametrize(
@@ -118,5 +117,5 @@ def test_compute_bottom_level_raises_no_geom(pipes):
 )
 def test_compute_bottom_level_raises_out_of_bounds(pipe_ids, ds, pipes):
     pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
-    with pytest.raises(ValueError, match=".*outside of the pipe bounds.*"):
-        compute_bottom_level(pipe_ids, ds, pipes)
+    with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
+        pipes.compute_bottom_level(pipe_ids, ds)

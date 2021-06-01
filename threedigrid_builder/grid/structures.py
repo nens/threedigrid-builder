@@ -54,6 +54,30 @@ class Culverts(linear.BaseLinear):
         coordinates[:, 1, 1] = pygeos.get_y(points_2)
         self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
 
+    def interpolate_nodes(self, *args, **kwargs):
+        """Compute interpolated nodes for culverts.
+
+        See also:
+            BaseLinear.interpolate_nodes
+        """
+        if pygeos.is_missing(self.the_geom).any():
+            raise ValueError(
+                "Culverts found without a geometry. Call set_geometries first."
+            )
+        nodes = super().interpolate_nodes(*args, **kwargs)
+        nodes.content_type[:] = ContentType.TYPE_V2_CULVERT
+        return nodes
+
+    def get_lines(self, *args, **kwargs):
+        """Compute the grid lines for the culverts.
+
+        See also:
+            BaseLinear.get_lines
+        """
+        lines = super().get_lines(*args, **kwargs)
+        lines.content_type[:] = ContentType.TYPE_V2_CULVERT
+        return lines
+
 
 class _WeirOrifice:  # NL: stuw / doorlaat
     id: int

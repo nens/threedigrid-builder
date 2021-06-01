@@ -181,38 +181,39 @@ def test_set_calculation_types(set_calculation_types, grid):
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.pipes.compute_bottom_level")
 @mock.patch("threedigrid_builder.grid.cross_sections.interpolate")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
 @mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
-def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate, pipe_compute):
+def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
-        id=[1, 2, 3, 4],
+        id=[1, 2, 3, 4, 5],
         content_type=[
             ContentType.TYPE_V2_CHANNEL,
             -9999,
             ContentType.TYPE_V2_CHANNEL,
             ContentType.TYPE_V2_PIPE,
+            ContentType.TYPE_V2_CULVERT,
         ],
-        content_pk=[1, 1, 3, 2],
-        ds1d=[2.0, 12.0, 21.0, 15.0],
-        dmax=[np.nan, 12.0, np.nan, np.nan],
-        cross1=[5, -9999, 7, -9999],
-        cross2=[6, -9999, 8, -9999],
-        cross_weight=[0.2, np.nan, 0.8, np.nan],
+        content_pk=[1, 1, 3, 2, 5],
+        ds1d=[2.0, 12.0, 21.0, 15.0, 0.5],
+        dmax=[np.nan, 12.0, np.nan, np.nan, np.nan],
+        cross1=[5, -9999, 7, -9999, -9999],
+        cross2=[6, -9999, 8, -9999, -9999],
+        cross_weight=[0.2, np.nan, 0.8, np.nan, np.nan],
     )
     lines = Lines(id=[])
     cs_interpolate.return_value = [42.0, 43.0]
-    pipe_compute.return_value = [44.0]
     grid = Grid(nodes=nodes, lines=lines)
     locations = mock.Mock()
     channels = mock.Mock()
     pipes = mock.Mock()
+    pipes.compute_bottom_level.return_value = [44.0]
     weirs = mock.Mock()
     orifices = mock.Mock()
     culverts = mock.Mock()
+    culverts.compute_bottom_level.return_value = [45.0]
 
     grid.set_bottom_levels(locations, channels, pipes, weirs, orifices, culverts)
 
@@ -224,14 +225,18 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate, pipe_compute)
     assert args[3] is locations
     assert args[4] == "reference_level"
 
-    # pipe compute_bottom_level was called correctly
-    args, kwargs = pipe_compute.call_args
+    # pipes.compute_bottom_level was called correctly
+    args, _ = pipes.compute_bottom_level.call_args
     assert_array_equal(args[0], [2])  # pipe_id
     assert_array_equal(args[1], [15.0])  # ds
-    assert args[2] is pipes
+
+    # culverts.compute_bottom_level was called correctly
+    args, _ = culverts.compute_bottom_level.call_args
+    assert_array_equal(args[0], [5])  # culvert_id
+    assert_array_equal(args[1], [0.5])  # ds
 
     # node attribute dmax is adapted correctly
-    assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0, 44.0])
+    assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0, 44.0, 45.0])
 
     # connection node set_bottom_levels was called correctly
     cn_compute.assert_called_with(

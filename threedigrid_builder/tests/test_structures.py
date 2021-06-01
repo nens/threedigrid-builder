@@ -1,3 +1,4 @@
+from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes
@@ -85,3 +86,42 @@ def test_culverts_set_geometries(culverts: Culverts, connection_nodes):
     culverts.the_geom[1] = None
     culverts.set_geometries(connection_nodes)
     assert pygeos.equals(culverts.the_geom, expected).all()
+
+
+@pytest.mark.parametrize(
+    "culvert_ids,ds,expected",
+    [
+        ([1], [5.0], [3.5]),
+        ([2], [0.5], [5.5]),
+        ([1, 2], [5.0, 0.5], [3.5, 5.5]),
+        ([2, 1], [0.5, 5.0], [5.5, 3.5]),
+        ([1, 1, 2, 2], [5.0, 7.5, 0.5, 0.25], [3.5, 3.75, 5.5, 5.25]),
+    ],
+)
+def test_culverts_compute_bottom_level(culvert_ids, ds, culverts, expected):
+    # set geometries with lengths 10 and 1 (resp. id 1 and 2)
+    # invert levels are [3, 4] for id=1 and [5, 6] for id=2
+    culverts.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
+
+    actual = culverts.compute_bottom_level(culvert_ids, ds)
+
+    assert_almost_equal(actual, expected)
+
+
+def test_culverts_compute_bottom_level_raises_no_geom(culverts):
+    culverts.the_geom[:] = None
+    with pytest.raises(ValueError, match=".*Call set_geometries first.*"):
+        culverts.compute_bottom_level([1], [0.2])
+
+
+@pytest.mark.parametrize(
+    "culvert_ids,ds",
+    [
+        ([1], [10.1]),
+        ([2], [-1e-7]),
+    ],
+)
+def test_culverts_compute_bottom_level_raises_out_of_bounds(culvert_ids, ds, culverts):
+    culverts.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
+    with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
+        culverts.compute_bottom_level(culvert_ids, ds)
