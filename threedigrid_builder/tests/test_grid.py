@@ -211,9 +211,10 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate, pipe_compute)
     channels = mock.Mock()
     pipes = mock.Mock()
     weirs = mock.Mock()
+    orifices = mock.Mock()
     culverts = mock.Mock()
 
-    grid.set_bottom_levels(locations, channels, pipes, weirs, culverts)
+    grid.set_bottom_levels(locations, channels, pipes, weirs, orifices, culverts)
 
     # cross section interpolate was called correctly
     args, _ = cs_interpolate.call_args
@@ -234,7 +235,7 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate, pipe_compute)
 
     # connection node set_bottom_levels was called correctly
     cn_compute.assert_called_with(
-        grid.nodes, grid.lines, locations, channels, pipes, weirs, culverts
+        grid.nodes, grid.lines, locations, channels, pipes, weirs, orifices, culverts
     )
 
     # lines set_bottom_levels was called correctly
@@ -286,8 +287,9 @@ def test_1d2d(node_coordinates, expected_lines, grid2d):
     pipes = mock.Mock()
     pipes.get_1d2d_properties.return_value = 0, 0
     locations = mock.Mock()
+    culverts = mock.Mock()
 
-    grid2d.add_1d2d(connection_nodes, channels, pipes, locations)
+    grid2d.add_1d2d(connection_nodes, channels, pipes, locations, culverts)
 
     assert_array_equal(grid2d.lines.line, expected_lines)
 
@@ -312,8 +314,9 @@ def test_1d2d_multiple(grid2d):
     pipes = mock.Mock()
     pipes.get_1d2d_properties.return_value = 0, 0
     locations = mock.Mock()
+    culverts = mock.Mock()
 
-    grid2d.add_1d2d(connection_nodes, channels, pipes, locations)
+    grid2d.add_1d2d(connection_nodes, channels, pipes, locations, culverts)
 
     args, _ = connection_nodes.get_1d2d_properties.call_args
     assert args[0] is grid2d.nodes

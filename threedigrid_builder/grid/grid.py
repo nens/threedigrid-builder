@@ -245,7 +245,9 @@ class Grid:
         """
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(self, cross_sections, channels, pipes, weirs, culverts):
+    def set_bottom_levels(
+        self, cross_sections, channels, pipes, weirs, orifices, culverts
+    ):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         This assumes that the channel weights have been computed already.
@@ -276,7 +278,14 @@ class Grid:
 
         # Connection nodes: complex logic based on the connected objects
         connection_nodes_module.set_bottom_levels(
-            self.nodes, self.lines, cross_sections, channels, pipes, weirs, culverts
+            self.nodes,
+            self.lines,
+            cross_sections,
+            channels,
+            pipes,
+            weirs,
+            orifices,
+            culverts,
         )
 
         # Lines: based on the nodes
@@ -285,7 +294,7 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
-    def add_1d2d(self, connection_nodes, channels, pipes, locations):
+    def add_1d2d(self, connection_nodes, channels, pipes, locations, culverts):
         """Connect 1D and 2D elements by adding 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
@@ -298,7 +307,13 @@ class Grid:
         line_id_counter = itertools.count(start=line_id_start)
 
         self.lines += get_1d2d_lines(
-            self.nodes, connection_nodes, channels, pipes, locations, line_id_counter
+            self.nodes,
+            connection_nodes,
+            channels,
+            pipes,
+            locations,
+            culverts,
+            line_id_counter,
         )
 
     def finalize(self, epsg_code=None):
@@ -310,7 +325,7 @@ class Grid:
 
 
 def get_1d2d_lines(
-    nodes, connection_nodes, channels, pipes, locations, line_id_counter
+    nodes, connection_nodes, channels, pipes, locations, culverts, line_id_counter
 ):
     """Compute 1D-2D flowlines for (double) connected 1D nodes.
 
@@ -333,6 +348,7 @@ def get_1d2d_lines(
         channels (Channels)
         pipes (Pipes)
         locations (CrossSectionLocations): for looking up bank_level
+        culverts (Culverts)
         line_id_counter (iterable): An iterable yielding integers
 
     Returns:
