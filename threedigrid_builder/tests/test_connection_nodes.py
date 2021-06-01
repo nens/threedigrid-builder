@@ -9,7 +9,9 @@ from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
+from threedigrid_builder.grid import Weirs
 from threedigrid_builder.grid.connection_nodes import set_bottom_levels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
 from unittest import mock
@@ -149,9 +151,12 @@ def test_set_bottom_levels_single_node_channels(
     pipes = mock.Mock()
     culverts = mock.Mock()
     weirs = mock.Mock()
+    orifices = mock.Mock()
 
     compute_bottom_level.side_effect = [np.atleast_1d(x) for x in dmax_mock]
-    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+    set_bottom_levels(
+        nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+    )
 
     # assert the correct call to compute_bottom_level
     assert compute_bottom_level.call_count == len(dmax_mock)
@@ -184,9 +189,12 @@ def test_set_bottom_levels_multiple_nodes_channels(compute_bottom_level):
     pipes = mock.Mock()
     culverts = mock.Mock()
     weirs = mock.Mock()
+    orifices = mock.Mock()
 
     compute_bottom_level.side_effect = (np.array([3.0, 4.0]), np.array([8.0]))
-    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+    set_bottom_levels(
+        nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+    )
 
     # assert the correct call to compute_dmax
     assert compute_bottom_level.call_count == 2
@@ -232,8 +240,11 @@ def test_set_bottom_levels_single_node_pipes(line, invert_levels, expected):
     channels = mock.Mock()
     culverts = mock.Mock()
     weirs = mock.Mock()
+    orifices = mock.Mock()
 
-    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+    set_bottom_levels(
+        nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+    )
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, expected)
@@ -260,11 +271,46 @@ def test_set_bottom_levels_multiple_nodes_pipes():
     channels = mock.Mock()
     culverts = mock.Mock()
     weirs = mock.Mock()
+    orifices = mock.Mock()
 
-    set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+    set_bottom_levels(
+        nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+    )
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, [3.0, 8.0, -24.0])
+
+
+@pytest.mark.parametrize("structure_type", [Weirs, Orifices])
+def test_set_bottom_levels_crested_structure(structure_type):
+    nodes = Nodes(
+        id=[1, 2, 3],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        dmax=[np.nan, np.nan, -24.0],
+    )
+    lines = Lines(
+        id=[1, 2],
+        content_type=[structure_type.content_type, -9999],
+        content_pk=[2, -9999],
+        line=[(1, 2), (1, 2)],
+    )
+    pipes = mock.Mock()
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    if structure_type == Weirs:
+        weirs = Weirs(id=[2], crest_level=3.0)
+        orifices = mock.Mock()
+    elif structure_type == Orifices:
+        weirs = mock.Mock()
+        orifices = Orifices(id=[2], crest_level=3.0)
+
+    set_bottom_levels(
+        nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+    )
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, [3.0, 3.0, -24.0])
 
 
 def test_bottom_levels_above_invert_level():
@@ -289,10 +335,45 @@ def test_bottom_levels_above_invert_level():
     channels = mock.Mock()
     culverts = mock.Mock()
     weirs = mock.Mock()
+    orifices = mock.Mock()
 
     # assert the resulting value of dmax
     with pytest.raises(SchematisationError) as e:
-        set_bottom_levels(nodes, lines, locations, channels, pipes, weirs, culverts)
+        set_bottom_levels(
+            nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+        )
+        assert str(e).startswith("Connection nodes [22, 52] have a manhole")
+
+
+@pytest.mark.parametrize("structure_type", [Weirs, Orifices])
+def test_bottom_levels_above_crest_level(structure_type):
+    nodes = Nodes(
+        id=[1, 2],
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        dmax=[10.0, 20.0],
+        content_pk=[52, 22],
+    )
+    lines = Lines(
+        id=[1],
+        content_type=structure_type.content_type,
+        content_pk=2,
+        line=[[1, 2]],
+    )
+    pipes = mock.Mock()
+    locations = mock.Mock()
+    channels = mock.Mock()
+    culverts = mock.Mock()
+    weirs = structure_type(
+        id=[2],
+        crest_level=[3.0],
+    )
+    orifices = mock.Mock()
+
+    # assert the resulting value of dmax
+    with pytest.raises(SchematisationError) as e:
+        set_bottom_levels(
+            nodes, lines, locations, channels, pipes, weirs, orifices, culverts
+        )
         assert str(e).startswith("Connection nodes [22, 52] have a manhole")
 
 

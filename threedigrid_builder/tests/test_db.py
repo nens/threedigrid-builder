@@ -191,4 +191,3 @@ def test_get_weirs(db):
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
-    assert weirs.the_geom[36] is None
