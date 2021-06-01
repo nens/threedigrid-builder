@@ -70,3 +70,13 @@ def test_set_bottom_levels_nan_check(nodes, lines):
 
     with pytest.raises(ValueError):
         lines.set_bottom_levels(nodes)
+
+
+def test_set_bottom_levels_skips_already_set(nodes, lines):
+    # this happens for weirs and orifices (dpumax is taken from crest_level)
+    nodes.dmax[:] = [1.0, 2.0, 3.0]
+    lines.dpumax[:] = [np.nan, np.nan, 23.0]
+
+    lines.set_bottom_levels(nodes, allow_nan=True)
+
+    assert_equal(lines.dpumax, [1.0, 2.0, 23.0])

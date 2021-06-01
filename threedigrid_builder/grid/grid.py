@@ -57,18 +57,18 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: ids generated based on counter
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates: node coordinates
             - nodes.bounds: node bounds
             - nodes.node_type: Node_type (initially NODE_2D_OPEN_WATER)
             - nodes.nodk: Grid refinement level of node
             - nodes.nodm: horizontal index of node at grid refinement level nodk
             - nodes.nodn: vertical index of node at grid refinement level nodk
-            - lines.id: ids generated based on counter
+            - lines.id: integer generated from line_id_counter
             - lines.line: lines between connecting nodes.
-            - lines.lik:  Grid refinement level of line (smallest at refinements.)
-            - lines.lim:  horizontal index of line at grid refimenent level lik
-            - lines.lin:  vertical index line at grid refimenent level lik
+            - lines.lik: Grid refinement level of line (smallest at refinements.)
+            - lines.lim: horizontal index of line at grid refimenent level lik
+            - lines.lin: vertical index line at grid refimenent level lik
         """
 
         nodes, lines = quadtree.get_nodes_lines(
@@ -90,9 +90,7 @@ class Grid:
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
-    def from_connection_nodes(
-        cls, connection_nodes, node_id_counter, connection_node_offset=0
-    ):
+    def from_connection_nodes(cls, connection_nodes, node_id_counter):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
@@ -101,7 +99,7 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: ids generated based on counter
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates: node coordinates (from self.the_geom)
             - nodes.content_type: TYPE_V2_CONNECTION_NODES
             - nodes.content_pk: the user-supplied id
@@ -133,13 +131,13 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: counter generated here starting from node_id_offset
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates
             - nodes.content_type: ContentType.TYPE_V2_CHANNEL
             - nodes.content_pk: the id of the Channel from which this node originates
             - nodes.node_type: NODE_1D_NO_STORAGE
             - nodes.calculation_type: from the channel
-            - lines.id: 0-based counter generated here
+            - lines.id: integer generated from line_id_counter
             - lines.line: lines between connection nodes and added channel
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
@@ -213,13 +211,13 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: counter generated here starting from node_id_offset
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates
             - nodes.content_type: ContentType.TYPE_V2_PIPE
             - nodes.content_pk: the id of the Pipe from which this node originates
             - nodes.node_type: NODE_1D_NO_STORAGE
             - nodes.calculation_type: from the pipe
-            - lines.id: 0-based counter generated here
+            - lines.id: integer generated from line_id_counter
             - lines.line: lines between connection nodes and added pipe
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_PIPE
@@ -234,6 +232,64 @@ class Grid:
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
+        )
+        return cls(nodes, lines)
+
+    @classmethod
+    def from_structures(
+        cls,
+        connection_nodes,
+        culverts,
+        weirs,
+        orifices,
+        global_dist_calc_points,
+        node_id_counter,
+        line_id_counter,
+        connection_node_offset=0,
+    ):
+        """Construct a grid for the culverts, weirs, and orifices
+
+        Args:
+            connection_nodes (ConnectionNodes): used to map ids to indices
+            culverts (Culverts)
+            weirs (Weirs)
+            orifices (Orifices)
+            global_dist_calc_points (float): Default node interdistance.
+            node_id_counter (iterable): an iterable yielding integers
+            line_id_counter (iterable): an iterable yielding integers
+            connection_node_offset (int): offset to give connection node
+              indices in the returned lines.line. Default 0.
+
+        Returns:
+            Grid with data in the following columns:
+            - nodes.id: integer generated from node_id_counter
+            - nodes.coordinates
+            - nodes.content_type: culvert, weir, or orifice
+            - nodes.content_pk: the id of the Culvert from which this node originates
+            - nodes.node_type: NODE_1D_NO_STORAGE
+            - nodes.calculation_type: from the culvert
+            - lines.id: integer generated from line_id_counter
+            - lines.line: lines between connection nodes and added pipe
+              nodes. The indices are offset using the respective parameters.
+            - lines.content_type: culvert, weir, or orifice
+            - lines.content_pk: the id of the object from which this line originates
+            - lines.kcu: from the object's calculation_type
+            - lines.line_geometries: a segment of the culvert's geometry or none
+        """
+        culverts.set_geometries(connection_nodes)
+
+        nodes = culverts.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = culverts.get_lines(
+            connection_nodes,
+            nodes,
+            line_id_counter,
+            connection_node_offset=connection_node_offset,
+        )
+        lines += weirs.get_lines(
+            connection_nodes, line_id_counter, connection_node_offset
+        )
+        lines += orifices.get_lines(
+            connection_nodes, line_id_counter, connection_node_offset
         )
         return cls(nodes, lines)
 
@@ -358,7 +414,7 @@ def get_1d2d_lines(
 
     Returns:
         Lines with data in the following columns:
-        - id: counter generated from line_id_counter
+        - id: integer generated from line_id_counter
         - kcu: LINE_1D2D_* type (see above)
         - dpumax: based on drain_level or dmax (see above)
     """
