@@ -34,6 +34,8 @@ class Culvert:  # NL: duiker
 
 @array_of(Culvert)
 class Culverts(linear.BaseLinear):
+    content_type = ContentType.TYPE_V2_CULVERT
+
     def set_geometries(self, connection_nodes):
         """Compute culvert geometries from the connection nodes where necessary"""
         has_no_geom = pygeos.is_missing(self.the_geom)
@@ -64,19 +66,7 @@ class Culverts(linear.BaseLinear):
             raise ValueError(
                 "Culverts found without a geometry. Call set_geometries first."
             )
-        nodes = super().interpolate_nodes(*args, **kwargs)
-        nodes.content_type[:] = ContentType.TYPE_V2_CULVERT
-        return nodes
-
-    def get_lines(self, *args, **kwargs):
-        """Compute the grid lines for the culverts.
-
-        See also:
-            BaseLinear.get_lines
-        """
-        lines = super().get_lines(*args, **kwargs)
-        lines.content_type[:] = ContentType.TYPE_V2_CULVERT
-        return lines
+        return super().interpolate_nodes(*args, **kwargs)
 
 
 class _WeirOrifice:  # NL: stuw / doorlaat

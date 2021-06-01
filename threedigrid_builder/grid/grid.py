@@ -1,6 +1,5 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
-from . import pipes as pipes_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType

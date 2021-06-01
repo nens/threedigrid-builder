@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import linear
@@ -55,7 +56,7 @@ class LinearObject:
 
 @array_of(LinearObject)
 class LinearObjects(linear.BaseLinear):
-    pass
+    content_type = ContentType.TYPE_V2_CONNECTION_NODES  # just pick one for the test
 
 
 @pytest.fixture
@@ -222,6 +223,7 @@ def test_interpolate_nodes_one_linear_object(dist, expected, one_linear_object):
 
     assert_array_equal(nodes.id, range(2, 2 + len(expected)))
     assert_almost_equal(nodes.coordinates, expected, decimal=7)
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
     assert_array_equal(nodes.content_pk, 1)
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, 2)
@@ -239,6 +241,7 @@ def test_interpolate_nodes_two_linear_objects(two_linear_objects):
 
     assert_array_equal(nodes.id, range(2, 8))
     assert_array_equal(nodes.coordinates, expected_points)
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
     assert_array_equal(nodes.content_pk, [1, 1, 1, 2, 2, 2])
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
@@ -259,6 +262,7 @@ def test_get_lines(connection_nodes, two_linear_objects):
 
     assert_array_equal(lines.id, range(5))
     assert_array_equal(lines.line, expected_line)
+    assert_array_equal(lines.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
     assert_almost_equal(lines.ds1d, expected_sizes)

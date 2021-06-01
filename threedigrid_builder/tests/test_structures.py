@@ -81,6 +81,12 @@ def test_get_lines(connection_nodes, two_weir_orifices):
     assert_array_equal(lines.dpumax, [2.3, 4.5])
 
 
+def test_culverts_interpolate_nodes_no_geometries(culverts):
+    culverts.the_geom[:] = None
+    with pytest.raises(ValueError, match=".*Call set_geometries first.*"):
+        culverts.interpolate_nodes(2, foo="bar")
+
+
 def test_culverts_set_geometries(culverts: Culverts, connection_nodes):
     expected = culverts.the_geom.copy()
     culverts.the_geom[1] = None

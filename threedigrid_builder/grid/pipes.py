@@ -35,6 +35,8 @@ class Pipe:
 
 @array_of(Pipe)
 class Pipes(linear.BaseLinear):
+    content_type = ContentType.TYPE_V2_PIPE
+
     def set_geometries(self, connection_nodes):
         """Compute pipe geometries from the connection node locations"""
         # construct the pipe geometries
@@ -61,16 +63,4 @@ class Pipes(linear.BaseLinear):
             raise ValueError(
                 "Pipes found without a geometry. Call set_geometries first."
             )
-        nodes = super().interpolate_nodes(*args, **kwargs)
-        nodes.content_type[:] = ContentType.TYPE_V2_PIPE
-        return nodes
-
-    def get_lines(self, *args, **kwargs):
-        """Compute the grid lines for the pipes.
-
-        See also:
-            BaseLinear.get_lines
-        """
-        lines = super().get_lines(*args, **kwargs)
-        lines.content_type[:] = ContentType.TYPE_V2_PIPE
-        return lines
+        return super().interpolate_nodes(*args, **kwargs)

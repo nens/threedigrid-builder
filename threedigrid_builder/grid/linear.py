@@ -13,6 +13,8 @@ COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered e
 
 
 class BaseLinear:
+    content_type = None  # to be defined by subclasses
+
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute nodes on each linear object with constant intervals
 
@@ -49,7 +51,7 @@ class BaseLinear:
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
-            content_type=ContentType.TYPE_V2_CHANNEL,
+            content_type=self.content_type,
             content_pk=self.index_to_id(index),
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[index],
@@ -129,6 +131,7 @@ class BaseLinear:
             id=itertools.islice(line_id_counter, len(segments)),
             line_geometries=segments,
             line=line,
+            content_type=self.content_type,
             content_pk=self.id[segment_idx],
             ds1d=end_s - start_s,
             kcu=self.calculation_type[segment_idx],
