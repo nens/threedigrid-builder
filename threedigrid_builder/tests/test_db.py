@@ -146,12 +146,30 @@ def test_get_culverts(db):
     # some test samples
     assert len(culverts) == 92
 
+    assert culverts.id[89] == 2000112
+    assert culverts.code[35] == "500"
+    assert (
+        pygeos.to_wkt(culverts.the_geom[36])
+        == "LINESTRING (108351 516428, 108357 516430)"
+    )
+    assert culverts.dist_calc_points[52] == 20.0
+    assert culverts.connection_node_start_id[45] == 1220
+    assert culverts.connection_node_end_id[61] == 1620
+    assert culverts.calculation_type[4] == CalculationType.ISOLATED
+    assert culverts.cross_section_definition_id[0] == 97
+    assert culverts.invert_level_start_point[21] == -2.39
+    assert culverts.invert_level_end_point[83] == -3.28
+    assert culverts.discharge_coefficient_negative[0] == 0.8
+    assert culverts.discharge_coefficient_positive[0] == 0.8
+    assert culverts.friction_type[28] == FrictionType.MANNING
+    assert culverts.friction_value[36] == 0.03
+
 
 def test_get_orifices(db):
     orifices = db.get_orifices()
     assert isinstance(orifices, Orifices)
 
-    # some test samples
+    # no orifices in test dataset
     assert len(orifices) == 0
 
 
@@ -161,3 +179,16 @@ def test_get_weirs(db):
 
     # some test samples
     assert len(weirs) == 56
+
+    assert weirs.id[13] == 17
+    assert weirs.code[11] == "317"
+    assert weirs.connection_node_start_id[40] == 1643
+    assert weirs.connection_node_end_id[7] == 394
+    assert weirs.crest_level[26] == -2.508
+    assert weirs.crest_type[0] == CalculationType.SHORT_CRESTED
+    assert weirs.cross_section_definition_id[0] == 8
+    assert weirs.discharge_coefficient_negative[0] == 0.0
+    assert weirs.discharge_coefficient_positive[0] == 0.8
+    assert weirs.friction_type[28] == FrictionType.MANNING
+    assert weirs.friction_value[36] == 0.03
+    assert weirs.the_geom[36] is None

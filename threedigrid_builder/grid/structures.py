@@ -32,7 +32,7 @@ class Culverts:
     pass
 
 
-class Orifice:
+class Orifice:  # NL: stuw / doorlaat
     id: int
     code: str
     connection_node_start_id: int
@@ -55,24 +55,5 @@ class Orifices:
     pass
 
 
-class Weir:  # NL: stuw
-    id: int
-    code: str
-    connection_node_start_id: int
-    connection_node_end_id: int
-    crest_level: float
-    crest_type: CalculationType
-    cross_section_definition_id: int
-    discharge_coefficient_negative: float
-    discharge_coefficient_positive: float
-    friction_type: FrictionType
-    friction_value: float
-    the_geom: pygeos.Geometry
-    # zoom_category
-    # display_name
-    # sewerage
-
-
-@array_of(Weir)
-class Weirs:
-    pass
+Weir = Orifice
+Weirs = Orifices
