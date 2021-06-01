@@ -11,7 +11,6 @@ from threedigrid_builder.exceptions import SchematisationError
 import itertools
 import numpy as np
 import pygeos
-import warnings
 
 
 __all__ = ["ConnectionNodes"]
@@ -268,11 +267,3 @@ def set_bottom_levels(
         # find the nodes that match to these channel lines and put the dmax
         _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
         _put_if_less(nodes.dmax, _node_idx, dmax)
-
-    # culverts
-    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CULVERT)[0]
-    line_idx = line_idx[np.isin(lines.line[line_idx, :], node_id).any(axis=1)]
-    if line_idx.size > 0:
-        warnings.warn(
-            "Ignoring culvert invert level while setting connection node dmax"
-        )

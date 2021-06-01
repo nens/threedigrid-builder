@@ -355,7 +355,9 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
-    def add_1d2d(self, connection_nodes, channels, pipes, locations, culverts):
+    def add_1d2d(
+        self, connection_nodes, channels, pipes, locations, culverts, line_id_counter
+    ):
         """Connect 1D and 2D elements by adding 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
@@ -364,9 +366,6 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
-        line_id_start = self.lines.id[-1] if len(self.lines) > 0 else 0
-        line_id_counter = itertools.count(start=line_id_start)
-
         self.lines += get_1d2d_lines(
             self.nodes,
             connection_nodes,

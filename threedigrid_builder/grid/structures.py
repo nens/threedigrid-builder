@@ -114,7 +114,7 @@ class _WeirOrifices:
         line = np.array([cn_start_idx, cn_end_idx]) + connection_node_offset
         return Lines(
             id=itertools.islice(line_id_counter, len(self)),
-            line=line,
+            line=line.T,
             content_type=self.content_type,
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType
