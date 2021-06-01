@@ -3,6 +3,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
+from threedigrid_builder.grid import linear
 
 import itertools
 import numpy as np
@@ -32,8 +33,26 @@ class Culvert:  # NL: duiker
 
 
 @array_of(Culvert)
-class Culverts:
-    pass
+class Culverts(linear.BaseLinear):
+    def set_geometries(self, connection_nodes):
+        """Compute culvert geometries from the connection nodes where necessary"""
+        has_no_geom = pygeos.is_missing(self.the_geom)
+        if not has_no_geom.any():
+            return
+
+        # construct the culvert geometries
+        points_1 = connection_nodes.the_geom[
+            connection_nodes.id_to_index(self.connection_node_start_id[has_no_geom])
+        ]
+        points_2 = connection_nodes.the_geom[
+            connection_nodes.id_to_index(self.connection_node_end_id[has_no_geom])
+        ]
+        coordinates = np.empty((np.count_nonzero(has_no_geom), 2, 2))
+        coordinates[:, 0, 0] = pygeos.get_x(points_1)
+        coordinates[:, 0, 1] = pygeos.get_y(points_1)
+        coordinates[:, 1, 0] = pygeos.get_x(points_2)
+        coordinates[:, 1, 1] = pygeos.get_y(points_2)
+        self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
 
 
 class _WeirOrifice:  # NL: stuw / doorlaat
