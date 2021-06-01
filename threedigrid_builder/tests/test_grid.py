@@ -9,6 +9,7 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from unittest import mock
 
+import itertools
 import numpy as np
 import pygeos
 import pytest
@@ -294,7 +295,14 @@ def test_1d2d(node_coordinates, expected_lines, grid2d):
     locations = mock.Mock()
     culverts = mock.Mock()
 
-    grid2d.add_1d2d(connection_nodes, channels, pipes, locations, culverts)
+    grid2d.add_1d2d(
+        connection_nodes,
+        channels,
+        pipes,
+        locations,
+        culverts,
+        line_id_counter=itertools.count(),
+    )
 
     assert_array_equal(grid2d.lines.line, expected_lines)
 
@@ -321,7 +329,14 @@ def test_1d2d_multiple(grid2d):
     locations = mock.Mock()
     culverts = mock.Mock()
 
-    grid2d.add_1d2d(connection_nodes, channels, pipes, locations, culverts)
+    grid2d.add_1d2d(
+        connection_nodes,
+        channels,
+        pipes,
+        locations,
+        culverts,
+        line_id_counter=itertools.count(),
+    )
 
     args, _ = connection_nodes.get_1d2d_properties.call_args
     assert args[0] is grid2d.nodes

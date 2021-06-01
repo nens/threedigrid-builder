@@ -40,17 +40,6 @@ def culverts():
 
 
 @pytest.fixture(scope="module", params=[Weirs, Orifices])
-def one_weir_orifice(request):
-    return request.param(
-        id=[1],
-        connection_node_start_id=[21],
-        connection_node_end_id=[42],
-        crest_level=[2.3],
-        crest_type=[4],
-    )
-
-
-@pytest.fixture(scope="module", params=[Weirs, Orifices])
 def two_weir_orifices(request):
     return request.param(
         id=[1, 2],
@@ -74,7 +63,7 @@ def test_get_lines(connection_nodes, two_weir_orifices):
         expected_content_type = ContentType.TYPE_V2_ORIFICE
 
     assert_array_equal(lines.id, range(2))
-    assert_array_equal(lines.line, [(100, 101), (103, 102)])
+    assert_array_equal(lines.line, [(100, 103), (101, 102)])
     assert_array_equal(lines.content_type, expected_content_type)
     assert_array_equal(lines.content_pk, [1, 2])
     assert_array_equal(lines.kcu, [4, 3])

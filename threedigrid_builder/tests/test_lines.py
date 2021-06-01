@@ -79,4 +79,4 @@ def test_set_bottom_levels_skips_already_set(nodes, lines):
 
     lines.set_bottom_levels(nodes, allow_nan=True)
 
-    assert_equal(lines.dpumax, [1.0, 2.0, 23.0])
+    assert_equal(lines.dpumax, [2.0, 3.0, 23.0])
