@@ -30,29 +30,6 @@ def pipes():
     )
 
 
-@pytest.fixture
-def pipes_with_geom(pipes, connection_nodes):
-    pipes.set_geometries(connection_nodes)
-    return pipes
-
-
-def test_set_geometries(pipes, connection_nodes):
-    pipes.set_geometries(connection_nodes)
-
-    expected_geometries = pygeos.linestrings(
-        [
-            [(0, 21), (1, 25)],
-            [(0, 21), (3, 42)],
-        ]
-    )
-    assert pygeos.equals(pipes.the_geom, expected_geometries).all()
-
-
-def test_interpolate_nodes_no_geometries(pipes):
-    with pytest.raises(ValueError, match=".*Call set_geometries first.*"):
-        pipes.interpolate_nodes(2, foo="bar")
-
-
 @pytest.mark.parametrize(
     "pipe_ids,ds,expected",
     [

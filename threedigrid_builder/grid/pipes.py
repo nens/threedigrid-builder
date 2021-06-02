@@ -5,7 +5,6 @@ from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import linear
 
-import numpy as np
 import pygeos
 
 
@@ -36,31 +35,3 @@ class Pipe:
 @array_of(Pipe)
 class Pipes(linear.BaseLinear):
     content_type = ContentType.TYPE_V2_PIPE
-
-    def set_geometries(self, connection_nodes):
-        """Compute pipe geometries from the connection node locations"""
-        # construct the pipe geometries
-        points_1 = connection_nodes.the_geom[
-            connection_nodes.id_to_index(self.connection_node_start_id)
-        ]
-        points_2 = connection_nodes.the_geom[
-            connection_nodes.id_to_index(self.connection_node_end_id)
-        ]
-        coordinates = np.empty((len(self), 2, 2))
-        coordinates[:, 0, 0] = pygeos.get_x(points_1)
-        coordinates[:, 0, 1] = pygeos.get_y(points_1)
-        coordinates[:, 1, 0] = pygeos.get_x(points_2)
-        coordinates[:, 1, 1] = pygeos.get_y(points_2)
-        self.the_geom = pygeos.linestrings(coordinates)
-
-    def interpolate_nodes(self, *args, **kwargs):
-        """Compute interpolated nodes for pipes.
-
-        See also:
-            BaseLinear.interpolate_nodes
-        """
-        if pygeos.is_missing(self.the_geom).any():
-            raise ValueError(
-                "Pipes found without a geometry. Call set_geometries first."
-            )
-        return super().interpolate_nodes(*args, **kwargs)

@@ -195,8 +195,8 @@ def set_bottom_levels(
         line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
         if line_idx_1.size > 0:
             # get the dmax from the invert_level_start
-            pipe_id = lines.content_pk[line_idx_1]
-            dmax = objs.invert_level_start_point[objs.id_to_index(pipe_id)]
+            obj_id = lines.content_pk[line_idx_1]
+            dmax = objs.invert_level_start_point[objs.id_to_index(obj_id)]
             # find the nodes that match to these pipe lines and put the dmax
             _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
             _put_if_less(nodes.dmax, _node_idx, dmax)
@@ -204,8 +204,8 @@ def set_bottom_levels(
         line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
         if line_idx_2.size > 0:
             # get the dmax from the invert_level_end
-            pipe_id = lines.content_pk[line_idx_2]
-            dmax = objs.invert_level_end_point[objs.id_to_index(pipe_id)]
+            obj_id = lines.content_pk[line_idx_2]
+            dmax = objs.invert_level_end_point[objs.id_to_index(obj_id)]
             # find the nodes that match to these pipe lines and put the dmax
             _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
             _put_if_less(nodes.dmax, _node_idx, dmax)

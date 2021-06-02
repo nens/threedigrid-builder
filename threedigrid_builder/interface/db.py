@@ -111,7 +111,8 @@ class SQLite:
             )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["calculation_type"] -= 100  # maps (100, 101, 102, 105) to (0, 1, 2, 5)
+        # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
+        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
@@ -215,8 +216,8 @@ class SQLite:
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
-        # TODO: Determine whether to do this:
-        # arr["calculation_type"] -= 100  # maps (100, 101, 102, 105) to (0, 1, 2, 5)
+        # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
+        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
 
         # transform to a CrossSectionLocations object
         return Culverts(**{name: arr[name] for name in arr.dtype.names})

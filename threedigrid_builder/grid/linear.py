@@ -14,6 +14,30 @@ COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered e
 class BaseLinear:
     content_type = None  # to be defined by subclasses
 
+    def set_geometries(self, connection_nodes):
+        """Set the_geom from connection nodes where necessary.
+
+        Args:
+            connection_nodes (ConnectionNodes): to take the coordinates from
+        """
+        has_no_geom = pygeos.is_missing(self.the_geom)
+        if not has_no_geom.any():
+            return
+
+        # construct the culvert geometries
+        points_1 = connection_nodes.the_geom[
+            connection_nodes.id_to_index(self.connection_node_start_id[has_no_geom])
+        ]
+        points_2 = connection_nodes.the_geom[
+            connection_nodes.id_to_index(self.connection_node_end_id[has_no_geom])
+        ]
+        coordinates = np.empty((np.count_nonzero(has_no_geom), 2, 2))
+        coordinates[:, 0, 0] = pygeos.get_x(points_1)
+        coordinates[:, 0, 1] = pygeos.get_y(points_1)
+        coordinates[:, 1, 0] = pygeos.get_x(points_2)
+        coordinates[:, 1, 1] = pygeos.get_y(points_2)
+        self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
+
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute nodes on each linear object with constant intervals
 
@@ -38,6 +62,11 @@ class BaseLinear:
             - ds1d: distance (along the linestring) to the start of the linestring
             The nodes are ordered by content_pk and then by position on the linestring.
         """
+        if pygeos.is_missing(self.the_geom).any():
+            raise ValueError(
+                f"{self.__class__.__name__} encountered without a geometry."
+            )
+
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
         dists[~np.isfinite(dists)] = global_dist_calc_points

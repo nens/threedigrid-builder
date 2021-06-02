@@ -269,8 +269,7 @@ class Grid:
             - nodes.node_type: NODE_1D_NO_STORAGE
             - nodes.calculation_type: from the culvert
             - lines.id: integer generated from line_id_counter
-            - lines.line: lines between connection nodes and added pipe
-              nodes. The indices are offset using the respective parameters.
+            - lines.line: lines between connection nodes and added culvert nodes
             - lines.content_type: culvert, weir, or orifice
             - lines.content_pk: the id of the object from which this line originates
             - lines.kcu: from the object's calculation_type

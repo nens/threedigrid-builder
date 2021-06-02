@@ -36,40 +36,8 @@ class Culvert:  # NL: duiker
 class Culverts(linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CULVERT
 
-    def set_geometries(self, connection_nodes):
-        """Compute culvert geometries from the connection nodes where necessary"""
-        has_no_geom = pygeos.is_missing(self.the_geom)
-        if not has_no_geom.any():
-            return
 
-        # construct the culvert geometries
-        points_1 = connection_nodes.the_geom[
-            connection_nodes.id_to_index(self.connection_node_start_id[has_no_geom])
-        ]
-        points_2 = connection_nodes.the_geom[
-            connection_nodes.id_to_index(self.connection_node_end_id[has_no_geom])
-        ]
-        coordinates = np.empty((np.count_nonzero(has_no_geom), 2, 2))
-        coordinates[:, 0, 0] = pygeos.get_x(points_1)
-        coordinates[:, 0, 1] = pygeos.get_y(points_1)
-        coordinates[:, 1, 0] = pygeos.get_x(points_2)
-        coordinates[:, 1, 1] = pygeos.get_y(points_2)
-        self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
-
-    def interpolate_nodes(self, *args, **kwargs):
-        """Compute interpolated nodes for culverts.
-
-        See also:
-            BaseLinear.interpolate_nodes
-        """
-        if pygeos.is_missing(self.the_geom).any():
-            raise ValueError(
-                "Culverts found without a geometry. Call set_geometries first."
-            )
-        return super().interpolate_nodes(*args, **kwargs)
-
-
-class _WeirOrifice:  # NL: stuw / doorlaat
+class WeirOrifice:  # NL: stuw / doorlaat
     id: int
     code: str
     connection_node_start_id: int
@@ -86,8 +54,8 @@ class _WeirOrifice:  # NL: stuw / doorlaat
     # sewerage
 
 
-@array_of(_WeirOrifice)
-class _WeirOrifices:
+@array_of(WeirOrifice)
+class WeirOrifices:
     content_type = None  # subclasses need to define this
 
     def get_lines(self, connection_nodes, line_id_counter, connection_node_offset=0):
@@ -109,12 +77,13 @@ class _WeirOrifices:
             - dpumax: the crest_level of the structure
         """
         # map connection node IDs to node indices
-        cn_start_idx = connection_nodes.id_to_index(self.connection_node_start_id)
-        cn_end_idx = connection_nodes.id_to_index(self.connection_node_end_id)
-        line = np.array([cn_start_idx, cn_end_idx]) + connection_node_offset
+        line = np.empty((len(self), 2), dtype=np.int32, order="F")
+        line[:, 0] = connection_nodes.id_to_index(self.connection_node_start_id)
+        line[:, 1] = connection_nodes.id_to_index(self.connection_node_end_id)
+        line += connection_node_offset
         return Lines(
             id=itertools.islice(line_id_counter, len(self)),
-            line=line.T,
+            line=line,
             content_type=self.content_type,
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType
@@ -122,9 +91,9 @@ class _WeirOrifices:
         )
 
 
-class Orifices(_WeirOrifices):
+class Orifices(WeirOrifices):
     content_type = ContentType.TYPE_V2_ORIFICE
 
 
-class Weirs(_WeirOrifices):
+class Weirs(WeirOrifices):
     content_type = ContentType.TYPE_V2_WEIR

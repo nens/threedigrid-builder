@@ -373,11 +373,10 @@ def test_bottom_levels_above_crest_level(structure_type):
     locations = mock.Mock()
     channels = mock.Mock()
     culverts = mock.Mock()
-    weirs = structure_type(
+    weirs = orifices = structure_type(
         id=[2],
         crest_level=[3.0],
     )
-    orifices = mock.Mock()
 
     # assert the resulting value of dmax
     with pytest.raises(SchematisationError) as e:
