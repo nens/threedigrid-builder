@@ -1,6 +1,5 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import linear
 
@@ -13,6 +12,32 @@ COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered e
 
 
 class BaseLinear:
+    content_type = None  # to be defined by subclasses
+
+    def set_geometries(self, connection_nodes):
+        """Set the_geom from connection nodes where necessary.
+
+        Args:
+            connection_nodes (ConnectionNodes): to take the coordinates from
+        """
+        has_no_geom = pygeos.is_missing(self.the_geom)
+        if not has_no_geom.any():
+            return
+
+        # construct the culvert geometries
+        points_1 = connection_nodes.the_geom[
+            connection_nodes.id_to_index(self.connection_node_start_id[has_no_geom])
+        ]
+        points_2 = connection_nodes.the_geom[
+            connection_nodes.id_to_index(self.connection_node_end_id[has_no_geom])
+        ]
+        coordinates = np.empty((np.count_nonzero(has_no_geom), 2, 2))
+        coordinates[:, 0, 0] = pygeos.get_x(points_1)
+        coordinates[:, 0, 1] = pygeos.get_y(points_1)
+        coordinates[:, 1, 0] = pygeos.get_x(points_2)
+        coordinates[:, 1, 1] = pygeos.get_y(points_2)
+        self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
+
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute nodes on each linear object with constant intervals
 
@@ -37,6 +62,11 @@ class BaseLinear:
             - ds1d: distance (along the linestring) to the start of the linestring
             The nodes are ordered by content_pk and then by position on the linestring.
         """
+        if pygeos.is_missing(self.the_geom).any():
+            raise ValueError(
+                f"{self.__class__.__name__} encountered without a geometry."
+            )
+
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()  # copy because of inplace edits
         dists[~np.isfinite(dists)] = global_dist_calc_points
@@ -49,7 +79,7 @@ class BaseLinear:
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
-            content_type=ContentType.TYPE_V2_CHANNEL,
+            content_type=self.content_type,
             content_pk=self.index_to_id(index),
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[index],
@@ -129,10 +159,39 @@ class BaseLinear:
             id=itertools.islice(line_id_counter, len(segments)),
             line_geometries=segments,
             line=line,
+            content_type=self.content_type,
             content_pk=self.id[segment_idx],
             ds1d=end_s - start_s,
             kcu=self.calculation_type[segment_idx],
         )
+
+    def compute_bottom_level(self, ids, ds):
+        """Compute the bottom level by interpolating between invert levels
+
+        This function is to be used for interpolated nodes on pipes and culverts.
+
+        Args:
+            ids (ndarray of int): the id (content_pk) of the object
+            ds (ndarray of float): the position of the node measured along the object
+
+        Returns:
+            an array of the same shape as ids and ds containing the interpolated values
+        """
+        if pygeos.is_missing(self.the_geom).any():
+            raise ValueError(
+                f"{self.__class__.__name__} found without a geometry. Call "
+                f"set_geometries first."
+            )
+        lengths = pygeos.length(self.the_geom)
+        idx = self.id_to_index(ids)
+        weights = ds / lengths[idx]
+        if np.any(weights < 0.0) or np.any(weights > 1.0):
+            raise ValueError("Encountered nodes outside of the linear object bounds")
+
+        left = self.invert_level_start_point[idx]
+        right = self.invert_level_end_point[idx]
+
+        return weights * right + (1 - weights) * left
 
 
 def counts_to_ranges(counts):

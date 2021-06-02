@@ -1,13 +1,6 @@
 from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import linear
 from threedigrid_builder.grid import Pipes
-from threedigrid_builder.grid.pipes import compute_bottom_level
-from unittest import mock
 
 import numpy as np
 import pygeos
@@ -37,53 +30,6 @@ def pipes():
     )
 
 
-@pytest.fixture
-def pipes_with_geom(pipes, connection_nodes):
-    pipes.set_geometries(connection_nodes)
-    return pipes
-
-
-def test_set_geometries(pipes, connection_nodes):
-    pipes.set_geometries(connection_nodes)
-
-    expected_geometries = pygeos.linestrings(
-        [
-            [(0, 21), (1, 25)],
-            [(0, 21), (3, 42)],
-        ]
-    )
-    assert pygeos.equals(pipes.the_geom, expected_geometries).all()
-
-
-def test_interpolate_nodes_no_geometries(pipes):
-    with pytest.raises(ValueError, match=".*Call set_geometries first.*"):
-        pipes.interpolate_nodes(2, foo="bar")
-
-
-@mock.patch.object(linear.BaseLinear, "interpolate_nodes")
-def test_interpolate_nodes(interpolate_nodes_m, pipes_with_geom):
-    interpolate_nodes_m.return_value = Nodes(id=[0, 1])
-
-    nodes = pipes_with_geom.interpolate_nodes(2, foo="bar")
-
-    interpolate_nodes_m.assert_called_with(2, foo="bar")
-
-    assert nodes is interpolate_nodes_m.return_value
-    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_PIPE)
-
-
-@mock.patch.object(linear.BaseLinear, "get_lines")
-def test_get_lines(get_lines_m, pipes):
-    get_lines_m.return_value = Lines(id=[0, 1])
-
-    lines = pipes.get_lines(2, foo="bar")
-
-    get_lines_m.assert_called_with(2, foo="bar")
-
-    assert lines is get_lines_m.return_value
-    assert_array_equal(lines.content_type, ContentType.TYPE_V2_PIPE)
-
-
 @pytest.mark.parametrize(
     "pipe_ids,ds,expected",
     [
@@ -99,14 +45,14 @@ def test_compute_bottom_level(pipe_ids, ds, pipes, expected):
     # invert levels are [3, 4] for id=1 and [5, 6] for id=2
     pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
 
-    actual = compute_bottom_level(pipe_ids, ds, pipes)
+    actual = pipes.compute_bottom_level(pipe_ids, ds)
 
     assert_almost_equal(actual, expected)
 
 
 def test_compute_bottom_level_raises_no_geom(pipes):
     with pytest.raises(ValueError, match=".*Call set_geometries first.*"):
-        compute_bottom_level([1], [5.0], pipes)
+        pipes.compute_bottom_level([1], [5.0])
 
 
 @pytest.mark.parametrize(
@@ -118,5 +64,5 @@ def test_compute_bottom_level_raises_no_geom(pipes):
 )
 def test_compute_bottom_level_raises_out_of_bounds(pipe_ids, ds, pipes):
     pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
-    with pytest.raises(ValueError, match=".*outside of the pipe bounds.*"):
-        compute_bottom_level(pipe_ids, ds, pipes)
+    with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
+        pipes.compute_bottom_level(pipe_ids, ds)

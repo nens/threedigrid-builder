@@ -1,6 +1,5 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
-from . import pipes as pipes_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
@@ -58,18 +57,18 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: ids generated based on counter
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates: node coordinates
             - nodes.bounds: node bounds
             - nodes.node_type: Node_type (initially NODE_2D_OPEN_WATER)
             - nodes.nodk: Grid refinement level of node
             - nodes.nodm: horizontal index of node at grid refinement level nodk
             - nodes.nodn: vertical index of node at grid refinement level nodk
-            - lines.id: ids generated based on counter
+            - lines.id: integer generated from line_id_counter
             - lines.line: lines between connecting nodes.
-            - lines.lik:  Grid refinement level of line (smallest at refinements.)
-            - lines.lim:  horizontal index of line at grid refimenent level lik
-            - lines.lin:  vertical index line at grid refimenent level lik
+            - lines.lik: Grid refinement level of line (smallest at refinements.)
+            - lines.lim: horizontal index of line at grid refimenent level lik
+            - lines.lin: vertical index line at grid refimenent level lik
         """
 
         nodes, lines = quadtree.get_nodes_lines(
@@ -91,9 +90,7 @@ class Grid:
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
-    def from_connection_nodes(
-        cls, connection_nodes, node_id_counter, connection_node_offset=0
-    ):
+    def from_connection_nodes(cls, connection_nodes, node_id_counter):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
@@ -102,7 +99,7 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: ids generated based on counter
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates: node coordinates (from self.the_geom)
             - nodes.content_type: TYPE_V2_CONNECTION_NODES
             - nodes.content_pk: the user-supplied id
@@ -134,13 +131,13 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: counter generated here starting from node_id_offset
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates
             - nodes.content_type: ContentType.TYPE_V2_CHANNEL
             - nodes.content_pk: the id of the Channel from which this node originates
             - nodes.node_type: NODE_1D_NO_STORAGE
             - nodes.calculation_type: from the channel
-            - lines.id: 0-based counter generated here
+            - lines.id: integer generated from line_id_counter
             - lines.line: lines between connection nodes and added channel
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_CHANNEL
@@ -214,13 +211,13 @@ class Grid:
 
         Returns:
             Grid with data in the following columns:
-            - nodes.id: counter generated here starting from node_id_offset
+            - nodes.id: integer generated from node_id_counter
             - nodes.coordinates
             - nodes.content_type: ContentType.TYPE_V2_PIPE
             - nodes.content_pk: the id of the Pipe from which this node originates
             - nodes.node_type: NODE_1D_NO_STORAGE
             - nodes.calculation_type: from the pipe
-            - lines.id: 0-based counter generated here
+            - lines.id: integer generated from line_id_counter
             - lines.line: lines between connection nodes and added pipe
               nodes. The indices are offset using the respective parameters.
             - lines.content_type: ContentType.TYPE_V2_PIPE
@@ -238,6 +235,63 @@ class Grid:
         )
         return cls(nodes, lines)
 
+    @classmethod
+    def from_structures(
+        cls,
+        connection_nodes,
+        culverts,
+        weirs,
+        orifices,
+        global_dist_calc_points,
+        node_id_counter,
+        line_id_counter,
+        connection_node_offset=0,
+    ):
+        """Construct a grid for the culverts, weirs, and orifices
+
+        Args:
+            connection_nodes (ConnectionNodes): used to map ids to indices
+            culverts (Culverts)
+            weirs (Weirs)
+            orifices (Orifices)
+            global_dist_calc_points (float): Default node interdistance.
+            node_id_counter (iterable): an iterable yielding integers
+            line_id_counter (iterable): an iterable yielding integers
+            connection_node_offset (int): offset to give connection node
+              indices in the returned lines.line. Default 0.
+
+        Returns:
+            Grid with data in the following columns:
+            - nodes.id: integer generated from node_id_counter
+            - nodes.coordinates
+            - nodes.content_type: culvert, weir, or orifice
+            - nodes.content_pk: the id of the Culvert from which this node originates
+            - nodes.node_type: NODE_1D_NO_STORAGE
+            - nodes.calculation_type: from the culvert
+            - lines.id: integer generated from line_id_counter
+            - lines.line: lines between connection nodes and added culvert nodes
+            - lines.content_type: culvert, weir, or orifice
+            - lines.content_pk: the id of the object from which this line originates
+            - lines.kcu: from the object's calculation_type
+            - lines.line_geometries: a segment of the culvert's geometry or none
+        """
+        culverts.set_geometries(connection_nodes)
+
+        nodes = culverts.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = culverts.get_lines(
+            connection_nodes,
+            nodes,
+            line_id_counter,
+            connection_node_offset=connection_node_offset,
+        )
+        lines += weirs.get_lines(
+            connection_nodes, line_id_counter, connection_node_offset
+        )
+        lines += orifices.get_lines(
+            connection_nodes, line_id_counter, connection_node_offset
+        )
+        return cls(nodes, lines)
+
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
 
@@ -245,14 +299,16 @@ class Grid:
         """
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(self, cross_sections, channels, pipes, weirs, culverts):
+    def set_bottom_levels(
+        self, cross_sections, channels, pipes, weirs, orifices, culverts
+    ):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         This assumes that the channel weights have been computed already.
 
         The levels are based on:
         1. channel nodes: interpolate between crosssection locations
-        2. pipe nodes: interpolate between invert level start & end
+        2. pipe and culvert nodes: interpolate between invert level start & end
         3. connection nodes: see connection_nodes.set_bottom_levels
         4. lines: dpumax = greatest of the two neighboring nodes dmax
           - except for channels with no interpolated nodes: take reference level, but
@@ -270,13 +326,26 @@ class Grid:
 
         # Pipes, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_PIPE
-        self.nodes.dmax[mask] = pipes_module.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask], pipes
+        self.nodes.dmax[mask] = pipes.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
+        )
+
+        # Culverts, interpolated nodes
+        mask = self.nodes.content_type == ContentType.TYPE_V2_CULVERT
+        self.nodes.dmax[mask] = culverts.compute_bottom_level(
+            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
         )
 
         # Connection nodes: complex logic based on the connected objects
         connection_nodes_module.set_bottom_levels(
-            self.nodes, self.lines, cross_sections, channels, pipes, weirs, culverts
+            self.nodes,
+            self.lines,
+            cross_sections,
+            channels,
+            pipes,
+            weirs,
+            orifices,
+            culverts,
         )
 
         # Lines: based on the nodes
@@ -285,7 +354,9 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
-    def add_1d2d(self, connection_nodes, channels, pipes, locations):
+    def add_1d2d(
+        self, connection_nodes, channels, pipes, locations, culverts, line_id_counter
+    ):
         """Connect 1D and 2D elements by adding 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
@@ -294,11 +365,14 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
-        line_id_start = self.lines.id[-1] if len(self.lines) > 0 else 0
-        line_id_counter = itertools.count(start=line_id_start)
-
         self.lines += get_1d2d_lines(
-            self.nodes, connection_nodes, channels, pipes, locations, line_id_counter
+            self.nodes,
+            connection_nodes,
+            channels,
+            pipes,
+            locations,
+            culverts,
+            line_id_counter,
         )
 
     def finalize(self, epsg_code=None):
@@ -310,7 +384,7 @@ class Grid:
 
 
 def get_1d2d_lines(
-    nodes, connection_nodes, channels, pipes, locations, line_id_counter
+    nodes, connection_nodes, channels, pipes, locations, culverts, line_id_counter
 ):
     """Compute 1D-2D flowlines for (double) connected 1D nodes.
 
@@ -333,11 +407,12 @@ def get_1d2d_lines(
         channels (Channels)
         pipes (Pipes)
         locations (CrossSectionLocations): for looking up bank_level
+        culverts (Culverts)
         line_id_counter (iterable): An iterable yielding integers
 
     Returns:
         Lines with data in the following columns:
-        - id: counter generated from line_id_counter
+        - id: integer generated from line_id_counter
         - kcu: LINE_1D2D_* type (see above)
         - dpumax: based on drain_level or dmax (see above)
     """

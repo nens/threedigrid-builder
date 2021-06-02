@@ -8,6 +8,7 @@ from pyproj.crs import CRS
 from sqlalchemy import cast
 from sqlalchemy import inspect
 from sqlalchemy import Integer
+from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
@@ -15,10 +16,16 @@ from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
+from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import GridRefinements
+from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
+from threedigrid_builder.grid import Weirs
+from typing import Callable
+from typing import ContextManager
 
 import numpy as np
+import pathlib
 import pygeos
 
 
@@ -37,7 +44,7 @@ NumpyQuery.default_numpy_settings[IntegerEnum] = {
 
 
 class SQLite:
-    def __init__(self, path):
+    def __init__(self, path: pathlib.Path):
         path = str(path)
         sqlite_settings = {"db_path": path, "db_file": path}
         self.db = ThreediDatabase(
@@ -46,7 +53,7 @@ class SQLite:
         self._global_settings = None
 
     @contextmanager
-    def get_session(self):
+    def get_session(self) -> ContextManager[Session]:
         """A context manager that yields an SQLAlchemy session.
 
         The session is closed af the context manager exit. No commit or rollback
@@ -62,7 +69,7 @@ class SQLite:
             session.close()
 
     @property
-    def global_settings(self):
+    def global_settings(self) -> dict:
         """Return the global settings dictionary from the SQLite at path.
 
         The global settings are cached on self.
@@ -73,7 +80,7 @@ class SQLite:
             self._global_settings = _object_as_dict(settings)
         return self._global_settings
 
-    def reproject(self, geometries):
+    def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
 
         Notes:
@@ -86,7 +93,7 @@ class SQLite:
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
         return pygeos.apply(geometries, func)
 
-    def get_channels(self):
+    def get_channels(self) -> Channels:
         """Return Channels"""
         with self.get_session() as session:
             arr = (
@@ -104,12 +111,13 @@ class SQLite:
             )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["calculation_type"] -= 100  # maps (100, 101, 102, 105) to (0, 1, 2, 5)
+        # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
+        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_connection_nodes(self):
+    def get_connection_nodes(self) -> ConnectionNodes:
         """Return ConnectionNodes (which are enriched using the manhole table)"""
         with self.get_session() as session:
             arr = (
@@ -137,7 +145,7 @@ class SQLite:
 
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_cross_section_definitions(self):
+    def get_cross_section_definitions(self) -> CrossSectionDefinitions:
         """Return CrossSectionDefinitions"""
         with self.get_session() as session:
             arr = (
@@ -155,7 +163,7 @@ class SQLite:
         # transform to a CrossSectionDefinitions object
         return CrossSectionDefinitions(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_cross_section_locations(self):
+    def get_cross_section_locations(self) -> CrossSectionLocations:
         """Return CrossSectionLocations"""
         with self.get_session() as session:
             arr = (
@@ -179,7 +187,42 @@ class SQLite:
         # transform to a CrossSectionLocations object
         return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_grid_refinements(self):
+    def get_culverts(self) -> Culverts:
+        """Return Culverts"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Culvert.id,
+                    models.Culvert.code,
+                    models.Culvert.the_geom,
+                    models.Culvert.dist_calc_points,
+                    models.Culvert.connection_node_start_id,
+                    models.Culvert.connection_node_end_id,
+                    models.Culvert.calculation_type,
+                    models.Culvert.cross_section_definition_id,
+                    models.Culvert.invert_level_start_point,
+                    models.Culvert.invert_level_end_point,
+                    models.Culvert.discharge_coefficient_negative,
+                    models.Culvert.discharge_coefficient_positive,
+                    models.Culvert.friction_type,
+                    models.Culvert.friction_value,
+                )
+                .order_by(models.Culvert.id)
+                .as_structarray()
+            )
+
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
+        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
+
+        # transform to a CrossSectionLocations object
+        return Culverts(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_grid_refinements(self) -> GridRefinements:
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
             arr1 = (
@@ -212,7 +255,33 @@ class SQLite:
 
         return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_pipes(self):
+    def get_orifices(self) -> Orifices:
+        """Return Orifices"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Orifice.id,
+                    models.Orifice.code,
+                    models.Orifice.connection_node_start_id,
+                    models.Orifice.connection_node_end_id,
+                    models.Orifice.crest_level,
+                    models.Orifice.crest_type,
+                    models.Orifice.cross_section_definition_id,
+                    models.Orifice.discharge_coefficient_negative,
+                    models.Orifice.discharge_coefficient_positive,
+                    models.Orifice.friction_type,
+                    models.Orifice.friction_value,
+                )
+                .order_by(models.Orifice.id)
+                .as_structarray()
+            )
+
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        return Orifices(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_pipes(self) -> Pipes:
         """Return Pipes"""
         with self.get_session() as session:
             arr = (
@@ -240,8 +309,34 @@ class SQLite:
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
 
+    def get_weirs(self) -> Weirs:
+        """Return Weirs"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Weir.id,
+                    models.Weir.code,
+                    models.Weir.connection_node_start_id,
+                    models.Weir.connection_node_end_id,
+                    models.Weir.crest_level,
+                    models.Weir.crest_type,
+                    models.Weir.cross_section_definition_id,
+                    models.Weir.discharge_coefficient_negative,
+                    models.Weir.discharge_coefficient_positive,
+                    models.Weir.friction_type,
+                    models.Weir.friction_value,
+                )
+                .order_by(models.Weir.id)
+                .as_structarray()
+            )
 
-def _object_as_dict(obj):
+        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
+        arr["friction_type"][arr["friction_type"] == 4] = 2
+
+        return Weirs(**{name: arr[name] for name in arr.dtype.names})
+
+
+def _object_as_dict(obj) -> dict:
     # https://stackoverflow.com/questions/1958219/convert-sqlalchemy-row-object-to-python-dict
     return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
 
@@ -249,7 +344,7 @@ def _object_as_dict(obj):
 # Constructing a Transformer takes quite long, so we use caching here. The
 # function is deterministic so this doesn't have any side effects.
 @lru_cache(maxsize=8)
-def _get_reproject_func(source_epsg, target_epsg):
+def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
     transformer = Transformer.from_crs(
         CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
     )
