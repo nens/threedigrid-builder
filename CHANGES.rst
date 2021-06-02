@@ -14,6 +14,8 @@ Changelog of threedigrid-builder
 
 - Added 1D-2D lines for connection nodes, manholes, and channels.
 
+- Added culverts, orifices, and weirs.
+
 
 0.1.2 (2021-04-28)
 ------------------
