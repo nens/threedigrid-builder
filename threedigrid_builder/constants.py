@@ -91,13 +91,6 @@ class CrossSectionShape(IntEnum):
 
 
 @unique
-class ManholeIndicator(IntEnum):
-    INSPECTION = 0
-    OUTLET = 1
-    PUMP = 2
-
-
-@unique
 class SewerageType(IntEnum):
     COMBINED = 0
     STORMWATER = 1
@@ -107,3 +100,9 @@ class SewerageType(IntEnum):
     SINKER = 5
     STORAGE = 6
     STORAGE_SETTLING_TANK = 7
+
+
+@unique
+class PumpType(IntEnum):
+    REACTS_ON_SUCTION_SIDE = 1
+    REACTS_ON_DELIVERY_SIDE = 2

@@ -1,7 +1,6 @@
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
@@ -65,7 +64,7 @@ def test_get_connection_nodes(db):
     assert connection_nodes.manhole_id[10] == 11
     assert connection_nodes.manhole_id[100] == -9999
     assert connection_nodes.calculation_type[1] == CalculationType.CONNECTED
-    assert connection_nodes.manhole_indicator[6] == ManholeIndicator.OUTLET
+    assert connection_nodes.manhole_indicator[6] == 1
     assert connection_nodes.bottom_level[9] == -3.51
     assert connection_nodes.drain_level[1] == -0.82
     assert connection_nodes.surface_level[35] == -0.54
