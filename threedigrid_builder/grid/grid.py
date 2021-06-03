@@ -371,6 +371,7 @@ class Grid:
         """
         self.pumps = pumps
         self.pumps.renumber()
+        self.pumps.set_lines(self.nodes)
         self.pumps.set_node_data(self.nodes)
 
     def add_1d2d(

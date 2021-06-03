@@ -1,5 +1,6 @@
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
 
 import numpy as np
@@ -39,25 +40,49 @@ class Pumps:
         self.content_pk[:] = self.id
         self.id[:] = np.arange(len(self))
 
-    def set_node_data(self, nodes):
+    def set_lines(self, nodes):
         """Set the node ids into self.line by mapping connection_node_start/end_id."""
         mask = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
         node_ids = nodes.id[mask]
-        connection_node_ids = nodes.content_pk[mask]
+        cn_ids = nodes.content_pk[mask]
 
-        # sort by connection node id so that we can lookup
-        sorter = np.argsort(connection_node_ids)
-        node_ids = node_ids[sorter]
-        connection_node_ids = connection_node_ids[sorter]
+        if (np.diff(cn_ids) < 0).any():
+            # sort by connection node id so that we can lookup
+            sorter = np.argsort(cn_ids)
+            node_ids = node_ids[sorter]
+            cn_ids = cn_ids[sorter]
 
-        self.line[:, 0] = node_ids[
-            np.searchsorted(connection_node_ids, self.connection_node_start_id)
-        ]
+        # check which connection node ids are specified
+        has_start = self.connection_node_start_id >= 0
         has_end = self.connection_node_end_id >= 0
-        self.line[has_end, 1] = node_ids[
-            np.searchsorted(connection_node_ids, self.connection_node_end_id[has_end])
-        ]
+        if not has_start.all():
+            raise SchematisationError(
+                f"Pumps {self.content_pk[~has_start].tolist()} have no "
+                f"connection_node_start_id"
+            )
 
+        # lookup the corresponding index into node_ids
+        start_idx = np.searchsorted(cn_ids, self.connection_node_start_id)
+        end_idx = np.searchsorted(cn_ids, self.connection_node_end_id[has_end])
+
+        # check if the connection node ids indeed exist
+        start_is_ok = (
+            cn_ids.take(start_idx, mode="clip") == self.connection_node_start_id
+        )
+        end_is_ok = (
+            cn_ids.take(end_idx, mode="clip") == self.connection_node_end_id[has_end]
+        )
+        if not (start_is_ok.all() and end_is_ok.all()):
+            raise SchematisationError(
+                f"Pumps {self.content_pk[~(start_is_ok & end_is_ok)].tolist()} refer "
+                f"to nonexisting connection nodes."
+            )
+        self.line[:, 0] = node_ids[start_idx]
+        self.line[has_end, 1] = node_ids[end_idx]
+
+    def set_node_data(self, nodes):
+        """Set bottom_level, line_coords, and coordinates from node ids in self.line."""
+        has_end = self.line[:, 1] != -9999
         start_node_idx = nodes.id_to_index(self.line[:, 0])
         end_node_idx = nodes.id_to_index(self.line[has_end, 1])
 

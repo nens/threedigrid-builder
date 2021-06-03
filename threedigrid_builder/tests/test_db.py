@@ -1,3 +1,4 @@
+from threedigrid_builder.base import Pumps
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
@@ -136,6 +137,24 @@ def test_get_pipes(db):
     assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
+
+
+def test_get_pumps(db):
+    pumps = db.get_pumps()
+    assert isinstance(pumps, Pumps)
+
+    # some test samples
+    assert len(pumps) == 19
+    assert pumps.id[11] == 13
+    assert pumps.code[0] == "Rioolgemaal"
+    assert pumps.capacity[12] == 288.0
+    assert pumps.connection_node_start_id[13] == 1006
+    assert pumps.connection_node_end_id[0] == -9999  # NULL handling
+    assert pumps.connection_node_end_id[2] == 218
+    assert pumps.type_[5] == 1
+    assert pumps.start_level[0] == -4.0
+    assert pumps.lower_stop_level[18] == -1.9
+    assert np.isnan(pumps.upper_stop_level[15])
 
 
 def test_get_culverts(db):
