@@ -173,28 +173,54 @@ def test_write_quadtree(h5_out, dataset, shape, dtype):
         ("ngr2bc", (), "i4"),
     ],
 )
-def test_write_grid_counts(h5_out, dataset, shape, dtype):
+def test_write_meta(h5_out, dataset, shape, dtype):
     assert h5_out["meta"][dataset].shape == shape
     assert h5_out["meta"][dataset].dtype == np.dtype(dtype)
 
 
 @pytest.mark.parametrize(
-    "attr,dtype",
+    "attr,shape,dtype",
     [
-        ("epsg_code", "i4"),
-        ("has_1d", "i4"),
-        ("has_2d", "i4"),
-        ("extent_1d", "float64"),
-        ("extent_2d", "float64"),
-        ("has_interception", "i4"),
-        ("has_pumpstations", "i4"),
-        ("has_simple_infiltration", "i4"),
-        # ('model_name', "S"),  # For later concern.
-        # ('model_slug', "S"),  # For later concern.
-        # ('revision_hash', "S"),  # For later concern.
-        ("revision_nr", "i4"),
-        ("threedigrid_builder_version", "i4"),
+        ("epsg_code", (), "int32"),  # changed to int
+        ("has_1d", (), "int32"),
+        ("has_2d", (), "int32"),
+        ("extent_1d", (4,), "float64"),
+        ("extent_2d", (4,), "float64"),
+        ("has_breaches", (), "int32"),
+        ("has_groundwater", (), "int32"),
+        ("has_groundwater_flow", (), "int32"),
+        ("has_interception", (), "int32"),
+        ("has_pumpstations", (), "int32"),
+        ("has_simple_infiltration", (), "int32"),
+        ("model_name", (), "S"),
+        ("model_slug", (), "S"),
+        ("revision_hash", (), "S"),
+        ("revision_nr", (), "S"),
+        ("threedi_version", (), "S"),
+        ("threedicore_version", (), "S"),
     ],
 )
-def test_write_grid_characteristics(h5_out, attr, dtype):
+def test_write_attrs(h5_out, attr, shape, dtype):
+    assert h5_out.attrs[attr].shape == shape
     assert h5_out.attrs[attr].dtype == np.dtype(dtype)
+
+
+@pytest.mark.parametrize(
+    "group,attr",
+    [
+        ("breaches", "prepared"),
+        ("levees", "prepared"),
+        ("lines", "channels_prepared"),
+        ("lines", "culverts_prepared"),
+        ("lines", "lines_prepared"),
+        ("lines", "orifices_prepared"),
+        ("lines", "pipes_prepared"),
+        ("lines", "weirs_prepared"),
+        ("nodes", "connectionnodes_prepared"),
+        ("nodes", "manholes_prepared"),
+        ("nodes", "prepared"),
+        ("pumps", "prepared"),
+    ],
+)  # [(x, y) for x in list(f) for y in list(f[x].attrs)]
+def test_write_sub_attrs(h5_out, group, attr):
+    assert h5_out[group].attrs[attr] == 1
