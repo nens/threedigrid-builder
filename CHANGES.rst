@@ -16,6 +16,8 @@ Changelog of threedigrid-builder
 
 - Added culverts, orifices, and weirs.
 
+- Added pumps (pumpstations).
+
 
 0.1.2 (2021-04-28)
 ------------------
