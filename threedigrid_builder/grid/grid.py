@@ -2,6 +2,7 @@ from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import Pumps
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
@@ -16,7 +17,14 @@ __all__ = ["Grid"]
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines, epsg_code=None, quadtree_stats=None):
+    def __init__(
+        self,
+        nodes: Nodes,
+        lines: Lines,
+        pumps: Pumps = None,
+        epsg_code=None,
+        quadtree_stats=None,
+    ):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
@@ -25,6 +33,7 @@ class Grid:
         self.lines = lines
         self.epsg_code = epsg_code  # Grid is aware of its epsg_code
         self.quadtree_stats = quadtree_stats
+        self.pumps = pumps
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -353,6 +362,16 @@ class Grid:
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
+
+    def set_pumps(self, pumps):
+        """Set the pumps on this grid object
+
+        Args:
+            pumps (Pumps): the pumps to set, this is changed inplace
+        """
+        self.pumps = pumps
+        self.pumps.renumber()
+        self.pumps.set_node_data(self.nodes)
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

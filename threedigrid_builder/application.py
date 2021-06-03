@@ -103,6 +103,9 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
         culverts=culverts,
         line_id_counter=line_id_counter,
     )
+    pumps = db.get_pumps()
+    grid.set_pumps(pumps)
+
     grid.finalize(epsg_code=db.global_settings["epsg_code"])
     return grid
 
@@ -111,6 +114,7 @@ def _grid_to_gpkg(grid, path):
     with GeopackageOut(path) as out:
         out.write_nodes(grid.nodes, epsg_code=grid.epsg_code)
         out.write_lines(grid.lines, epsg_code=grid.epsg_code)
+        out.write_pumps(grid.pumps, epsg_code=grid.epsg_code)
 
 
 def _grid_to_hdf5(grid, path):
@@ -121,6 +125,7 @@ def _grid_to_hdf5(grid, path):
             out.write_quadtree(grid.quadtree_stats)
         out.write_nodes(grid.nodes)
         out.write_lines(grid.lines)
+        out.write_pumps(grid.pumps)
 
 
 def make_grid(

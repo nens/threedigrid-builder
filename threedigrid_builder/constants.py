@@ -100,9 +100,3 @@ class SewerageType(IntEnum):
     SINKER = 5
     STORAGE = 6
     STORAGE_SETTLING_TANK = 7
-
-
-@unique
-class PumpType(IntEnum):
-    REACTS_ON_SUCTION_SIDE = 1
-    REACTS_ON_DELIVERY_SIDE = 2

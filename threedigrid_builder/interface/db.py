@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
+from threedigrid_builder.base import Pumps
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -308,6 +309,27 @@ class SQLite:
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_pumps(self) -> Pumps:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Pumpstation.id,
+                    models.Pumpstation.code,
+                    models.Pumpstation.capacity,
+                    models.Pumpstation.connection_node_start_id,
+                    models.Pumpstation.connection_node_end_id,
+                    models.Pumpstation.type_,
+                    models.Pumpstation.start_level,
+                    models.Pumpstation.lower_stop_level,
+                    models.Pumpstation.upper_stop_level,
+                )
+                .order_by(models.Pumpstation.id)
+                .as_structarray()
+            )
+
+        # transform to a Pumps object
+        return Pumps(**{name: arr[name] for name in arr.dtype.names})
 
     def get_weirs(self) -> Weirs:
         """Return Weirs"""
