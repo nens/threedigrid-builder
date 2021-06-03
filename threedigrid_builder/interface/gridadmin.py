@@ -357,36 +357,35 @@ class GridAdminOut(OutputInterface):
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")
-        shape = (len(pumps),)
-        fill_int = np.full(shape, -9999, dtype="i4")
-        fill_float = np.full(shape, -9999, dtype=float)
 
         # Datasets that match directly to a lines attribute:
-        self.write_dataset(
-            group, "bottom_level", pumps.bottom_level
-        )  # dmax of start node
+        self.write_dataset(group, "bottom_level", pumps.bottom_level)
+        self.write_dataset(group, "code", pumps.code.astype("S32"), fill=b"")
         self.write_dataset(group, "content_pk", pumps.content_pk)
-        self.write_dataset(group, "id", pumps.id)  # to generate, start with 1
-        self.write_dataset(group, "node1_id", pumps.line[:, 0])  # reken node
-        self.write_dataset(group, "node2_id", pumps.line[:, 1])  # reken node
+        self.write_dataset(group, "id", pumps.id)
+        self.write_dataset(group, "node1_id", pumps.line[:, 0])
+        self.write_dataset(group, "node2_id", pumps.line[:, 1])
         self.write_dataset(group, "node_coordinates", pumps.line_coords.T)
-
-        # coordinates is the centroid of node_coordinates if both set, else the one that is set.
-        self.write_dataset(group, "coordinates", np.full((2,) + shape, np.nan))
+        self.write_dataset(group, "capacity", pumps.capacity)
+        self.write_dataset(
+            group, "connection_node_end_pk", pumps.connection_node_end_id
+        )
+        self.write_dataset(
+            group, "connection_node_start_pk", pumps.connection_node_start_id
+        )
+        self.write_dataset(group, "coordinates", pumps.coordinates)
+        self.write_dataset(group, "lower_stop_level", pumps.lower_stop_level)
+        self.write_dataset(group, "start_level", pumps.start_level)
+        self.write_dataset(group, "type", pumps.type_)
+        self.write_dataset(group, "upper_stop_level", pumps.upper_stop_level)
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "capacity", fill_float)
-        self.write_dataset(group, "connection_node_end_pk", fill_int)
-        self.write_dataset(group, "connection_node_start_pk", fill_int)
         self.write_dataset(
-            group, "display_name", np.full(shape, b"", dtype="S64"), fill=b""
+            group, "display_name", np.full(len(pumps), b"", dtype="S64"), fill=b""
         )
-        self.write_dataset(group, "lower_stop_level", fill_float)
-        self.write_dataset(group, "start_level", fill_float)
-        self.write_dataset(group, "type", fill_int)
-        self.write_dataset(group, "upper_stop_level", fill_float)
-        self.write_dataset(group, "zoom_category", fill_int)
-        self.write_dataset(group, "code", np.full(shape, b"", dtype="S32"), fill=b"")
+        self.write_dataset(
+            group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
+        )
 
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
