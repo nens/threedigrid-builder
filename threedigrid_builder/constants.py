@@ -91,13 +91,6 @@ class CrossSectionShape(IntEnum):
 
 
 @unique
-class ManholeIndicator(IntEnum):
-    INSPECTION = 0
-    OUTLET = 1
-    PUMP = 2
-
-
-@unique
 class SewerageType(IntEnum):
     COMBINED = 0
     STORMWATER = 1

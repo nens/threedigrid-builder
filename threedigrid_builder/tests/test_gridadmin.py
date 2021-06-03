@@ -1,5 +1,6 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import Pumps
 from threedigrid_builder.interface import GridAdminOut
 
 import h5py
@@ -25,6 +26,10 @@ def h5_out():
             None,
         ],
     )
+    pumps = Pumps(
+        id=[1, 2],
+        line=[[1, 2], [2, 3]],
+    )
     quadtree_stats = {
         "lgrmin": 5,
         "kmax": 2,
@@ -44,6 +49,7 @@ def h5_out():
             out.write_quadtree(quadtree_stats)
             out.write_nodes(nodes)
             out.write_lines(lines)
+            out.write_pumps(pumps)
 
         with h5py.File(path, "r") as f:
             yield f
@@ -198,3 +204,35 @@ def test_write_grid_counts(h5_out, dataset, shape, dtype):
 )
 def test_write_grid_characteristics(h5_out, attr, dtype):
     assert h5_out.attrs[attr].dtype == np.dtype(dtype)
+
+
+# obtained from bergermeer gridadmin.h5, edited:
+# - 20 pumps to 3
+# - int64 to int32
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("bottom_level", (3,), "float64"),
+        ("capacity", (3,), "float64"),
+        ("connection_node_end_pk", (3,), "int32"),
+        ("connection_node_start_pk", (3,), "int32"),
+        ("content_pk", (3,), "int32"),
+        ("coordinates", (2, 3), "float64"),
+        ("display_name", (3,), "|S64"),  # increased size from 24 to 64
+        ("id", (3,), "int32"),
+        ("lower_stop_level", (3,), "float64"),
+        ("node1_id", (3,), "int32"),
+        ("node2_id", (3,), "int32"),
+        ("node_coordinates", (4, 3), "float64"),
+        # ("nodp1d", (2, 3), "int32"), removed
+        # ("p1dtyp", (3,), "int32"), removed
+        ("start_level", (3,), "float64"),
+        ("type", (3,), "int32"),
+        ("zoom_category", (3,), "int32"),
+        ("code", (3,), "|S32"),  # added
+        ("upper_stop_level", (3,), "float64"),  # added
+    ],
+)
+def test_write_pumps(h5_out, dataset, shape, dtype):
+    assert h5_out["pumps"][dataset].shape == shape
+    assert h5_out["pumps"][dataset].dtype == np.dtype(dtype)

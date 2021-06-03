@@ -1,7 +1,7 @@
+from threedigrid_builder.base import Pumps
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
@@ -65,7 +65,7 @@ def test_get_connection_nodes(db):
     assert connection_nodes.manhole_id[10] == 11
     assert connection_nodes.manhole_id[100] == -9999
     assert connection_nodes.calculation_type[1] == CalculationType.CONNECTED
-    assert connection_nodes.manhole_indicator[6] == ManholeIndicator.OUTLET
+    assert connection_nodes.manhole_indicator[6] == 1
     assert connection_nodes.bottom_level[9] == -3.51
     assert connection_nodes.drain_level[1] == -0.82
     assert connection_nodes.surface_level[35] == -0.54
@@ -137,6 +137,24 @@ def test_get_pipes(db):
     assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
+
+
+def test_get_pumps(db):
+    pumps = db.get_pumps()
+    assert isinstance(pumps, Pumps)
+
+    # some test samples
+    assert len(pumps) == 19
+    assert pumps.id[11] == 13
+    assert pumps.code[0] == "Rioolgemaal"
+    assert pumps.capacity[12] == 288.0
+    assert pumps.connection_node_start_id[13] == 1006
+    assert pumps.connection_node_end_id[0] == -9999  # NULL handling
+    assert pumps.connection_node_end_id[2] == 218
+    assert pumps.type_[5] == 1
+    assert pumps.start_level[0] == -4.0
+    assert pumps.lower_stop_level[18] == -1.9
+    assert np.isnan(pumps.upper_stop_level[15])
 
 
 def test_get_culverts(db):

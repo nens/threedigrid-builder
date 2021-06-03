@@ -355,6 +355,38 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "sewerage_type", fill_int)
         self.write_dataset(group, "zoom_category", fill_int)
 
+    def write_pumps(self, pumps):
+        group = self._file.create_group("pumps")
+
+        # Datasets that match directly to a lines attribute:
+        self.write_dataset(group, "bottom_level", pumps.bottom_level)
+        self.write_dataset(group, "code", pumps.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "content_pk", pumps.content_pk)
+        self.write_dataset(group, "id", pumps.id)
+        self.write_dataset(group, "node1_id", pumps.line[:, 0])
+        self.write_dataset(group, "node2_id", pumps.line[:, 1])
+        self.write_dataset(group, "node_coordinates", pumps.line_coords.T)
+        self.write_dataset(group, "capacity", pumps.capacity)
+        self.write_dataset(
+            group, "connection_node_end_pk", pumps.connection_node_end_id
+        )
+        self.write_dataset(
+            group, "connection_node_start_pk", pumps.connection_node_start_id
+        )
+        self.write_dataset(group, "coordinates", pumps.coordinates)
+        self.write_dataset(group, "lower_stop_level", pumps.lower_stop_level)
+        self.write_dataset(group, "start_level", pumps.start_level)
+        self.write_dataset(group, "type", pumps.type_)
+        self.write_dataset(group, "upper_stop_level", pumps.upper_stop_level)
+
+        # can be collected from SQLite, but empty for now:
+        self.write_dataset(
+            group, "display_name", np.full(len(pumps), b"", dtype="S64"), fill=b""
+        )
+        self.write_dataset(
+            group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
+        )
+
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.

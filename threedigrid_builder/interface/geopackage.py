@@ -101,3 +101,30 @@ class GeopackageOut(OutputInterface):
         )
 
         df_lines.to_file(self.path, layer="lines", driver="GPKG")
+
+    def write_pumps(self, pumps, epsg_code=None, **kwargs):
+        """Write "pumps" layers to a geopackage
+
+        Args:
+            pumps (Pumps)
+            epsg_code (int)
+        """
+        pump_data = pumps.to_dict()
+
+        # construct lines from pumps.line_coords
+        lines = np.empty(len(pumps), dtype=object)
+        line_coords = pump_data.pop("line_coords")
+        has_end = np.isfinite(line_coords[:, 2:]).all(axis=1)
+        lines[has_end] = pygeos.linestrings(line_coords[has_end].reshape(-1, 2, 2))
+
+        # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays
+        pump_data["node_1"], pump_data["node_2"] = pump_data.pop("line").T
+        # also cast centroid coordinates to 1D arrays
+        pump_data["centroid_x"], pump_data["centroid_y"] = pump_data.pop(
+            "coordinates"
+        ).T
+
+        # construct the geodataframe
+        df_pumps = geopandas.GeoDataFrame(pump_data, geometry=lines, crs=epsg_code)
+
+        df_pumps.to_file(self.path, layer="pumps", driver="GPKG")
