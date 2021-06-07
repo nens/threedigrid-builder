@@ -31,11 +31,13 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
     subgrid_meta = subgrid.get_meta()
 
     db = SQLite(sqlite_path)
+
+    make_grid_settings, make_tables_settings = db.get_settings()
     refinements = db.get_grid_refinements()
     quadtree = QuadTree(
         subgrid_meta,
-        db.global_settings["kmax"],
-        db.global_settings["grid_space"],
+        make_grid_settings.kmax,
+        make_grid_settings.grid_space,
         refinements,
     )
     grid = Grid.from_quadtree(
@@ -57,7 +59,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
     grid += Grid.from_channels(
         connection_nodes=connection_nodes,
         channels=channels,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
+        global_dist_calc_points=make_grid_settings.dist_calc_points,
         node_id_counter=node_id_counter,
         line_id_counter=line_id_counter,
         connection_node_offset=connection_node_first_id,
@@ -70,7 +72,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
     grid += Grid.from_pipes(
         connection_nodes=connection_nodes,
         pipes=pipes,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
+        global_dist_calc_points=make_grid_settings.dist_calc_point,
         node_id_counter=node_id_counter,
         line_id_counter=line_id_counter,
         connection_node_offset=connection_node_first_id,
@@ -84,7 +86,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
         culverts=culverts,
         weirs=weirs,
         orifices=orifices,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
+        global_dist_calc_points=make_grid_settings.dist_calc_points,
         node_id_counter=node_id_counter,
         line_id_counter=line_id_counter,
         connection_node_offset=connection_node_first_id,
@@ -103,7 +105,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
         culverts=culverts,
         line_id_counter=line_id_counter,
     )
-    grid.finalize(epsg_code=db.global_settings["epsg_code"])
+    grid.finalize(epsg_code=make_grid_settings.epsg_code)
     return grid
 
 

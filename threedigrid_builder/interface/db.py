@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
+from threedigrid_builder.base import GridAttrs, MakeGridSettings, MakeTablesSettings
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -21,7 +22,7 @@ from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
-from typing import Callable
+from typing import Callable, Tuple
 from typing import ContextManager
 
 import numpy as np
@@ -68,17 +69,68 @@ class SQLite:
         finally:
             session.close()
 
-    @property
-    def global_settings(self) -> dict:
-        """Return the global settings dictionary from the SQLite at path.
-
-        The global settings are cached on self.
+    def get_settings(self) -> Tuple[MakeGridSettings, MakeTablesSettings]:
+        """Return the settings relevant for makegrid and maketables.
         """
-        if self._global_settings is None:
-            with self.get_session() as session:
-                settings = session.query(models.GlobalSetting).order_by("id").first()
-            self._global_settings = _object_as_dict(settings)
-        return self._global_settings
+        with self.get_session() as session:
+            global_ = session.query(models.GlobalSetting).order_by("id").first()
+            groundwater = session.query(models.GroundWater).order_by("id").first()
+            interflow = session.query(models.Interflow).order_by("id").first()
+            infiltration = session.query(models.SimpleInfiltration).order_by("id").first()
+
+        make_grid = MakeGridSettings(
+            epsg_code=global_.epsg_code,
+            grid_space=global_.grid_space,
+            dist_calc_points=global_.dist_calc_points,
+            kmax=global_.kmax,
+            embedded_cutoff_threshold=global_.embedded_cutoff_threshold,
+            max_angle_1d_advection=global_.max_angle_1d_advection,
+            has_groundwater=groundwater is not None,
+        )
+        make_tables = MakeTablesSettings(
+            epsg_code=global_.epsg_code,
+            table_step_size=global_.table_step_size,
+            frict_type=global_.frict_type,
+            frict_coef=global_.frict_coef,
+            interception_global=global_.interception_global,
+            frict_avg=global_.frict_avg,
+            table_step_size_1d=global_.table_step_size_1d,
+            table_step_size_volume_2d=global_.table_step_size_volume_2d,
+        )
+        if groundwater is not None:
+            if groundwater.groundwater_hydro_connectivity is not None or groundwater.groundwater_hydro_connectivity_file is not None:
+                make_grid.has_groundwater_flow = True
+            for field in (
+                "groundwater_impervious_layer_level",
+                "groundwater_impervious_layer_level_type",
+                "phreatic_storage_capacity",
+                "phreatic_storage_capacity_type",
+                "equilibrium_infiltration_rate",
+                "equilibrium_infiltration_rate_type",
+                "initial_infiltration_rate",
+                "initial_infiltration_rate_type",
+                "infiltration_decay_period",
+                "infiltration_decay_period_type",
+                "groundwater_hydro_connectivity",
+                "groundwater_hydro_connectivity_type",
+            ):
+                setattr(make_tables, field, getattr(groundwater, field))
+        if interflow is not None:
+            for field in (
+                "interflow_type",
+                "porosity",
+                "porosity_layer_thickness",
+                "impervious_layer_elevation",
+                "hydraulic_conductivity",
+            ):
+                setattr(make_tables, field, getattr(interflow, field))
+        if infiltration is not None:
+            for field in (
+                "infiltration_rate",
+                "infiltration_surface_option",
+            ):
+                setattr(make_tables, field, getattr(infiltration, field))
+        return make_grid, make_tables
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.

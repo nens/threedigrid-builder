@@ -195,9 +195,9 @@ def test_write_meta(h5_out, dataset, shape, dtype):
         ("model_name", (), "S"),
         ("model_slug", (), "S"),
         ("revision_hash", (), "S"),
-        ("revision_nr", (), "S"),
+        ("revision_nr", (), "int32"),  # changed to int
         ("threedi_version", (), "S"),
-        ("threedicore_version", (), "S"),
+        # ("threedicore_version", (), "S"),  # deleted
     ],
 )
 def test_write_attrs(h5_out, attr, shape, dtype):

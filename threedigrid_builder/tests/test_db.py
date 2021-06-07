@@ -3,6 +3,7 @@ from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import SewerageType
+from threedigrid_builder.base import MakeGridSettings, MakeTablesSettings
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -137,6 +138,20 @@ def test_get_pipes(db):
     assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
+
+
+def test_get_settings(db):
+    make_grid_settings, make_tables_settings = db.get_settings()
+    assert isinstance(make_grid_settings, MakeGridSettings)
+    assert isinstance(make_tables_settings, MakeTablesSettings)
+
+    # some test samples
+    assert make_grid_settings.epsg_code == 28992
+    assert make_grid_settings.grid_space == 20.0
+    assert make_grid_settings.dist_calc_points == 15.0
+    assert make_grid_settings.kmax == 4
+    assert make_grid_settings.embedded_cutoff_threshold == 0.05
+    assert make_grid_settings.max_angle_1d_advection == 90.0
 
 
 def test_get_culverts(db):
