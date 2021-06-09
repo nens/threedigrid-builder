@@ -10,20 +10,54 @@ from threedigrid_builder.constants import NodeType
 import itertools
 import numpy as np
 import pygeos
+from dataclasses import dataclass
 
 
-__all__ = ["Grid"]
+__all__ = ["Grid", "GridAttrs"]
+
+
+@dataclass
+class GridAttrs:
+    """Metadata that needs to end up in the gridadmin file.
+    """
+    epsg_code: int
+    model_name: str  # name from sqlite globalsettings.name
+    model_slug: str = ""  # from repository.slug
+    revision_hash: str = ""  # from repository.revision.hash
+    revision_nr: int = 0  # from repository.revision.number
+    threedi_version: str = ""  # TODO what version to put here in new makegrid?
+    threedicore_version: str = ""  # TODO what version to put here in new makegrid?
+    has_1d: bool = False  # TODO also add a derivative of manhole_storage_area?
+    has_2d: bool = False
+    has_breaches: bool = False
+    has_groundwater: bool = False
+    has_groundwater_flow: bool = False
+    has_interception: bool = False
+    has_pumpstations: bool = False
+    has_simple_infiltration: bool = False
+
+
+@dataclass
+class QuadtreeStats:
+    lgrmin: int
+    kmax: int
+    mmax: int
+    nmax: int
+    dx: float
+    dxp: float
+    x0p: float
+    y0p: float
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines, epsg_code=None, quadtree_stats=None):
+    def __init__(self, nodes: Nodes, lines: Lines, attrs=None, quadtree_stats=None):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
         self.nodes = nodes
         self.lines = lines
-        self.epsg_code = epsg_code  # Grid is aware of its epsg_code
+        self.attrs = attrs
         self.quadtree_stats = quadtree_stats
 
     def __add__(self, other):
@@ -76,16 +110,16 @@ class Grid:
         )
 
         # Some general quadtree grid statistics we need in the .h5 later on.
-        quadtree_stats = {
-            "lgrmin": quadtree.lgrmin,
-            "kmax": quadtree.kmax,
-            "mmax": quadtree.mmax,
-            "nmax": quadtree.nmax,
-            "dx": quadtree.dx,
-            "dxp": quadtree.pixel_size,
-            "x0p": quadtree.origin[0],
-            "y0p": quadtree.origin[1],
-        }
+        quadtree_stats = QuadtreeStats(
+            lgrmin=quadtree.lgrmin,
+            kmax=quadtree.kmax,
+            mmax=quadtree.mmax,
+            max=quadtree.nmax,
+            dx=quadtree.dx,
+            dxp=quadtree.pixel_size,
+            x0p=quadtree.origin[0],
+            y0p=quadtree.origin[1],
+        )
 
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 

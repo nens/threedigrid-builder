@@ -1,26 +1,6 @@
 from dataclasses import dataclass
 
-__all__ = ["GridAttrs", "MakeGridSettings", "MakeTablesSettings"]
-
-
-@dataclass
-class GridAttrs:
-    """Grid metadata that needs to end up in the gridadmin.
-    """
-    model_name: str  # name from sqlite globalsettings.name
-    model_slug: str  # from repository.slug
-    revision_hash: str  # from repository.revision.hash
-    revision_nr: int  # from repository.revision.number
-    threedi_version: str  # threedi-api version
-    # threedicore_version  deleted
-
-
-@dataclass
-class EnabledComponents:
-    has_groundwater: bool = False
-    has_groundwater_flow: bool = False
-    has_interception: bool = False  # TODO
-    has_simple_infiltration: bool = False  # TODO
+__all__ = ["MakeGridSettings", "MakeTablesSettings"]
 
 
 @dataclass
@@ -28,16 +8,11 @@ class MakeGridSettings:
     """Settings necessary for threedigrid-builder.
     """
     ## from GlobalSettings
-    # use_2d_flow: bool  is ignored now
-    # use_1d_flow: bool  is ignored now
-    # manhole_storage_area: float  is ignored now
-    epsg_code: int
     grid_space: float
     dist_calc_points: float
     kmax: int
     embedded_cutoff_threshold: float = None  # default is set in __post_init__
     max_angle_1d_advection: float = None  # default is set in __post_init__
-   
 
     def __post_init__(self):
         # set some defaults
@@ -52,7 +27,6 @@ class MakeTablesSettings:
     """Settings necessary for threedi-tables.
     """
     ## from GlobalSettings
-    epsg_code: int
     table_step_size: float
     frict_type: int
     frict_coef: float

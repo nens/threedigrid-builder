@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
-from threedigrid_builder.base import GridAttrs, MakeGridSettings, MakeTablesSettings
-from threedigrid_builder.grid import Channels
+from threedigrid_builder.base import MakeGridSettings, MakeTablesSettings
+from threedigrid_builder.grid import Channels, GridAttrs
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
@@ -69,7 +69,7 @@ class SQLite:
         finally:
             session.close()
 
-    def get_settings(self) -> Tuple[MakeGridSettings, MakeTablesSettings]:
+    def get_settings(self) -> Tuple[GridAttrs, MakeGridSettings, MakeTablesSettings]:
         """Return the settings relevant for makegrid and maketables.
         """
         with self.get_session() as session:
@@ -78,8 +78,11 @@ class SQLite:
             interflow = session.query(models.Interflow).order_by("id").first()
             infiltration = session.query(models.SimpleInfiltration).order_by("id").first()
 
-        make_grid = MakeGridSettings(
+        attrs = GridAttrs(
             epsg_code=global_.epsg_code,
+            model_name=global_.name,
+        )
+        make_grid = MakeGridSettings(
             grid_space=global_.grid_space,
             dist_calc_points=global_.dist_calc_points,
             kmax=global_.kmax,
@@ -88,7 +91,6 @@ class SQLite:
             has_groundwater=groundwater is not None,
         )
         make_tables = MakeTablesSettings(
-            epsg_code=global_.epsg_code,
             table_step_size=global_.table_step_size,
             frict_type=global_.frict_type,
             frict_coef=global_.frict_coef,
