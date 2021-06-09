@@ -6,7 +6,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import Grid, GridAttrs, QuadtreeStats
 from unittest import mock
 
 import itertools
@@ -31,7 +31,7 @@ def grid():
 
 @pytest.fixture
 def grid2d():
-    quadtree_stats = {
+    quadtree_stats = QuadtreeStats(**{
         "lgrmin": 2,
         "kmax": 1,
         "mmax": np.array([1]),
@@ -40,7 +40,8 @@ def grid2d():
         "dxp": 0.5,
         "x0p": 10.0,
         "y0p": 10.0,
-    }
+    })
+    attrs = GridAttrs(epsg_code=12432634, model_name="test-name")
     return Grid(
         nodes=Nodes(
             id=[0, 1],
@@ -48,13 +49,15 @@ def grid2d():
             bounds=[(0, 0, 1, 1), (1, 0, 2, 1)],
         ),
         lines=Lines(id=[0]),
+        attrs=attrs,
         quadtree_stats=quadtree_stats,
     )
 
 
 @pytest.fixture
 def grid1d():
-    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), epsg_code=4326)
+    attrs = GridAttrs(epsg_code=4326, model_name="test-name")
+    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), attrs=attrs)
 
 
 def test_from_quadtree():
@@ -96,7 +99,7 @@ def test_from_connection_nodes():
 
 def test_concatenate_grid(grid2d, grid1d):
     grid = grid2d + grid1d
-    assert grid.epsg_code == grid1d.epsg_code
+    assert grid.attrs == grid1d.attrs
     assert grid.quadtree_stats == grid2d.quadtree_stats
     assert_array_equal(grid.nodes.id[0:2], grid2d.nodes.id)
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)

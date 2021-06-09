@@ -13,7 +13,7 @@ import pygeos
 from dataclasses import dataclass
 
 
-__all__ = ["Grid", "GridAttrs"]
+__all__ = ["Grid", "GridAttrs", "QuadtreeStats"]
 
 
 @dataclass
@@ -79,6 +79,16 @@ class Grid:
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
+    def from_meta(cls, epsg_code, model_name, **kwargs):, model_slug=None, revision_hash=None, revision_nr=None, threedi_version=None):
+
+        attrs = GridAttrs(
+            epsg_code=epsg_code,
+            model_name=model_name
+
+        )
+        cls(Nodes(id=[]), Lines(id=[]), attrs)
+
+    @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
         """Construct the 2D grid based on the quadtree object.
 
@@ -114,7 +124,7 @@ class Grid:
             lgrmin=quadtree.lgrmin,
             kmax=quadtree.kmax,
             mmax=quadtree.mmax,
-            max=quadtree.nmax,
+            nmax=quadtree.nmax,
             dx=quadtree.dx,
             dxp=quadtree.pixel_size,
             x0p=quadtree.origin[0],

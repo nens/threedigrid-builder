@@ -20,7 +20,7 @@ import itertools
 __all__ = ["make_grid"]
 
 
-def _make_grid(sqlite_path, dem_path, model_area_path=None):
+def _make_grid(sqlite_path, dem_path, model_area_path=None, meta=None):
     """Compute interpolated channel nodes"""
     db = SQLite(sqlite_path)
 
@@ -32,7 +32,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
 
     db = SQLite(sqlite_path)
 
-    make_grid_settings, make_tables_settings = db.get_settings()
+    attrs = make_grid_settings, make_tables_settings = db.get_settings()
     refinements = db.get_grid_refinements()
     quadtree = QuadTree(
         subgrid_meta,
@@ -46,6 +46,7 @@ def _make_grid(sqlite_path, dem_path, model_area_path=None):
         node_id_counter=node_id_counter,
         line_id_counter=line_id_counter,
     )
+    grid.attrs = attrs
 
     connection_nodes = db.get_connection_nodes()
 
@@ -130,6 +131,7 @@ def make_grid(
     dem_path: Path,
     out_path: Path,
     model_area_path: Optional[Path] = None,
+    meta: dict = None,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -141,6 +143,8 @@ def make_grid(
         out_path: The path of the (to be created) output file. Allowed extensions
             are: .h5 (HDF5) and .gpkg (Geopackage)
         model_area_path
+        meta: an optional dict with the following (optional) keys: model_slug (str),
+            revision_hash (str), revision_nr (int), threedi_version (str)
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -162,6 +166,6 @@ def make_grid(
     else:
         raise ValueError(f"Unsupported output format '{extension}'")
 
-    grid = _make_grid(sqlite_path, dem_path, model_area_path)
+    grid = _make_grid(sqlite_path, dem_path, model_area_path, meta=meta)
 
     writer(grid, out_path)

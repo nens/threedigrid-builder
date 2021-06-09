@@ -1,3 +1,4 @@
+from threedigrid_builder.grid.grid import GridAttrs
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
@@ -141,17 +142,24 @@ def test_get_pipes(db):
 
 
 def test_get_settings(db):
-    make_grid_settings, make_tables_settings = db.get_settings()
+    attrs, make_grid_settings, make_tables_settings = db.get_settings()
+    assert isinstance(attrs, GridAttrs)
     assert isinstance(make_grid_settings, MakeGridSettings)
     assert isinstance(make_tables_settings, MakeTablesSettings)
 
-    # some test samples
-    assert make_grid_settings.epsg_code == 28992
+    assert attrs.epsg_code == 28992
+    assert attrs.model_name == "simple_infil_no_grndwtr"
     assert make_grid_settings.grid_space == 20.0
     assert make_grid_settings.dist_calc_points == 15.0
     assert make_grid_settings.kmax == 4
     assert make_grid_settings.embedded_cutoff_threshold == 0.05
     assert make_grid_settings.max_angle_1d_advection == 90.0
+    assert make_tables_settings.table_step_size == 0.05
+    assert make_tables_settings.frict_type == 2
+    assert make_tables_settings.frict_avg == 0
+    assert make_tables_settings.interception_global == 100.0
+    assert make_tables_settings.table_step_size_1d == 0.05
+    assert make_tables_settings.table_step_size_volume_2d == 0.05
 
 
 def test_get_culverts(db):

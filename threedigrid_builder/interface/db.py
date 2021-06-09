@@ -51,7 +51,13 @@ class SQLite:
         self.db = ThreediDatabase(
             connection_settings=sqlite_settings, db_type="spatialite"
         )
-        self._global_settings = None
+        self._epsg_code = None  # for reproject()
+
+    @property
+    def epsg_code(self) -> int:
+        if self._epsg_code is None:
+            self._epsg_code = self.get_settings()[0].epsg_code
+        return self._epsg_code
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
@@ -88,7 +94,6 @@ class SQLite:
             kmax=global_.kmax,
             embedded_cutoff_threshold=global_.embedded_cutoff_threshold,
             max_angle_1d_advection=global_.max_angle_1d_advection,
-            has_groundwater=groundwater is not None,
         )
         make_tables = MakeTablesSettings(
             table_step_size=global_.table_step_size,
@@ -132,7 +137,7 @@ class SQLite:
                 "infiltration_surface_option",
             ):
                 setattr(make_tables, field, getattr(infiltration, field))
-        return make_grid, make_tables
+        return attrs, make_grid, make_tables
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
@@ -143,7 +148,7 @@ class SQLite:
         Args:
           geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
         """
-        target_epsg = self.global_settings["epsg_code"]
+        target_epsg = self.epsg_code
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
         return pygeos.apply(geometries, func)
 
