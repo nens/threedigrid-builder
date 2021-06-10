@@ -6,6 +6,7 @@ This layer depends on the interfaces as well as on the domain layer.
 """
 
 from pathlib import Path
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
@@ -29,17 +30,19 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
 
     settings = db.get_settings()
     grid = Grid.from_meta(**settings, **(meta or {}))
-    make_grid_settings = settings["make_grid_settings"]
+    grid_settings = settings["grid_settings"]
 
-    if dem_path is not None:
-        grid.attrs.has_2d = True
+    if grid_settings.use_2d:
+        if not dem_path:
+            raise SchematisationError("DEM file expected")
+        # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
         subgrid = Subgrid(dem_path, model_area=model_area_path)
         subgrid_meta = subgrid.get_meta()
         refinements = db.get_grid_refinements()
         quadtree = QuadTree(
             subgrid_meta,
-            make_grid_settings.kmax,
-            make_grid_settings.grid_space,
+            grid_settings.kmax,
+            grid_settings.grid_space,
             refinements,
         )
         grid += Grid.from_quadtree(
@@ -50,8 +53,7 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
         )
 
     connection_nodes = db.get_connection_nodes()
-    if len(connection_nodes) != 0:
-        grid.attrs.has_1d = True
+    if grid_settings.use_1d_flow and len(connection_nodes) > 0:
         cn_grid = Grid.from_connection_nodes(
             connection_nodes=connection_nodes, node_id_counter=node_id_counter
         )
@@ -62,7 +64,7 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
         grid += Grid.from_channels(
             connection_nodes=connection_nodes,
             channels=channels,
-            global_dist_calc_points=make_grid_settings.dist_calc_points,
+            global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
@@ -75,7 +77,7 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
         grid += Grid.from_pipes(
             connection_nodes=connection_nodes,
             pipes=pipes,
-            global_dist_calc_points=make_grid_settings.dist_calc_point,
+            global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
@@ -89,7 +91,7 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
             culverts=culverts,
             weirs=weirs,
             orifices=orifices,
-            global_dist_calc_points=make_grid_settings.dist_calc_points,
+            global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
@@ -99,8 +101,9 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
         grid.set_bottom_levels(
             cross_section_locations, channels, pipes, weirs, orifices, culverts
         )
+        grid.set_pumps(db.get_pumps())
 
-    if grid.attrs.has_1d and grid.attrs.has_2d:
+    if grid.meta.has_1d and grid.meta.has_2d:
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,
@@ -110,25 +113,20 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
             line_id_counter=line_id_counter,
         )
 
-    pumps = db.get_pumps()
-    if len(pumps) > 0:
-        grid.attrs.has_pumpstations = True
-        grid.set_pumps(pumps)
-
-    grid.finalize(epsg_code=make_grid_settings.epsg_code)
+    grid.finalize()
     return grid
 
 
 def _grid_to_gpkg(grid, path):
     with GeopackageOut(path) as out:
-        out.write_nodes(grid.nodes, epsg_code=grid.epsg_code)
-        out.write_lines(grid.lines, epsg_code=grid.epsg_code)
-        out.write_pumps(grid.pumps, epsg_code=grid.epsg_code)
+        out.write_nodes(grid.nodes, epsg_code=grid.meta.epsg_code)
+        out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
+        out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
 
 
 def _grid_to_hdf5(grid, path):
     with GridAdminOut(path) as out:
-        out.write_grid_characteristics(grid.nodes, grid.lines, epsg_code=grid.epsg_code)
+        out.write_meta(grid.meta)
         out.write_grid_counts(grid.nodes, grid.lines)
         if grid.quadtree_stats is not None:
             out.write_quadtree(grid.quadtree_stats)

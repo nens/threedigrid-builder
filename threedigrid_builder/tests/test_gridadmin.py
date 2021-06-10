@@ -188,22 +188,23 @@ def test_write_meta(h5_out, dataset, shape, dtype):
     "attr,shape,dtype",
     [
         ("epsg_code", (), "int32"),  # changed to int
-        ("has_1d", (), "int32"),
-        ("has_2d", (), "int32"),
+        ("has_1d", (), "bool"),  # changed to bool
+        ("has_2d", (), "bool"),  # changed to bool
         ("extent_1d", (4,), "float64"),
         ("extent_2d", (4,), "float64"),
-        ("has_breaches", (), "int32"),
-        ("has_groundwater", (), "int32"),
-        ("has_groundwater_flow", (), "int32"),
-        ("has_interception", (), "int32"),
-        ("has_pumpstations", (), "int32"),
-        ("has_simple_infiltration", (), "int32"),
+        ("has_breaches", (), "bool"),  # changed to bool
+        ("has_groundwater", (), "bool"),  # changed to bool
+        ("has_groundwater_flow", (), "bool"),  # changed to bool
+        ("has_interception", (), "bool"),  # changed to bool
+        ("has_pumpstations", (), "bool"),  # changed to bool
+        ("has_simple_infiltration", (), "bool"),  # changed to bool
+        ("has_interflow", (), "bool"),  # added
         ("model_name", (), "S"),
         ("model_slug", (), "S"),
         ("revision_hash", (), "S"),
         ("revision_nr", (), "int32"),  # changed to int
         ("threedi_version", (), "S"),
-        # ("threedicore_version", (), "S"),  # deleted
+        ("threedicore_version", (), "S"),
     ],
 )
 def test_write_attrs(h5_out, attr, shape, dtype):

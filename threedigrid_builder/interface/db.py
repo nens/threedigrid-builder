@@ -2,6 +2,7 @@
 
 from condenser import NumpyQuery
 from contextlib import contextmanager
+from enum import Enum
 from functools import lru_cache
 from pyproj import Transformer
 from pyproj.crs import CRS
@@ -12,9 +13,10 @@ from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
-from threedigrid_builder.base import MakeGridSettings
-from threedigrid_builder.base import MakeTablesSettings
+from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import TablesSettings
+from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -46,6 +48,41 @@ NumpyQuery.default_numpy_settings[IntegerEnum] = {
 }
 
 
+def _object_as_dict(obj) -> dict:
+    """Convert SQLAlchemy object to dict, casting Enums"""
+    result = {}
+    if obj is None:
+        return result
+    for c in inspect(obj).mapper.column_attrs:
+        val = getattr(obj, c.key)
+        if isinstance(val, Enum):
+            val = val.value
+        result[c.key] = val
+    return result
+
+
+def _set_initialization_type(
+    dct, global_field, file_field=None, type_field=None, default=None
+):
+    """Set the InitializationType depending on global_field and file_field."""
+    if file_field is None:
+        file_field = f"{global_field}_file"
+    if type_field is None:
+        type_field = f"{global_field}_type"
+
+    # If the ``file_field`` contains a value, the initialization type will be changed to
+    # the ``default_type``, if supplied.
+    if dct[file_field]:
+        if default is not None:
+            dct[type_field] = default
+    # If there is no file, check if the global value is not None
+    elif dct[global_field] is not None:
+        dct[type_field] = InitializationType.GLOBAL
+    else:
+        # No file, no global value
+        dct[type_field] = InitializationType.NONE
+
+
 class SQLite:
     def __init__(self, path: pathlib.Path):
         path = str(path)
@@ -54,12 +91,6 @@ class SQLite:
             connection_settings=sqlite_settings, db_type="spatialite"
         )
         self._epsg_code = None  # for reproject()
-
-    @property
-    def epsg_code(self) -> int:
-        if self._epsg_code is None:
-            self._epsg_code = self.get_settings()[0]
-        return self._epsg_code
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
@@ -81,12 +112,14 @@ class SQLite:
         """Return the settings relevant for makegrid and maketables.
 
         Returns:
-           dict with epsg_code, model_name, make_grid_settings, make_table_settings
+           dict with epsg_code, model_name, grid_settings, make_table_settings
         """
+
         with self.get_session() as session:
             global_ = _object_as_dict(
                 session.query(models.GlobalSetting).order_by("id").first()
             )
+            # TODO use foreign keys.
             groundwater = _object_as_dict(
                 session.query(models.GroundWater).order_by("id").first()
             )
@@ -97,16 +130,60 @@ class SQLite:
                 session.query(models.SimpleInfiltration).order_by("id").first()
             )
 
-        make_grid = MakeGridSettings.from_dict(global_)
-        make_tables = MakeTablesSettings.from_dict(
+        # record if there is a DEM file to be expected
+        # Note: use_2d_flow only determines whether there are flow lines
+        global_["use_2d"] = bool(global_["dem_file"])
+
+        # set/adapt initialization types to include information about file presence
+        NONE = InitializationType.NONE
+        NO_AGG = InitializationType.NO_AGG
+        AVERAGE = InitializationType.AVERAGE
+        _set_initialization_type(
+            global_, "frict_coef", default=AVERAGE if global_["frict_avg"] else NO_AGG
+        )
+        _set_initialization_type(
+            global_,
+            "interception_global",
+            file_field="interception_file",
+            type_field="interception_type",
+            default=NO_AGG,
+        )
+        if interflow:
+            _set_initialization_type(interflow, "porosity", default=NO_AGG)
+            _set_initialization_type(
+                interflow, "hydraulic_conductivity", default=AVERAGE
+            )
+        if infiltration:
+            _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
+            # max_infiltration_capacity_file has no corresponding global value!
+            infiltration["max_infiltration_capacity_file"] = (
+                NO_AGG if infiltration.get("max_infiltration_capacity_file") else NONE
+            )
+        if groundwater:
+            # default is what the user supplied (MIN/MAX/AVERAGE)
+            _set_initialization_type(groundwater, "groundwater_impervious_layer_level")
+            _set_initialization_type(groundwater, "phreatic_storage_capacity")
+            _set_initialization_type(groundwater, "equilibrium_infiltration_rate")
+            _set_initialization_type(groundwater, "initial_infiltration_rate")
+            _set_initialization_type(groundwater, "infiltration_decay_period")
+            _set_initialization_type(groundwater, "groundwater_hydro_connectivity")
+
+        make_grid = GridSettings.from_dict(global_)
+        make_tables = TablesSettings.from_dict(
             {**groundwater, **interflow, **infiltration, **global_}
         )
         return {
             "epsg_code": global_["epsg_code"],
             "model_name": global_["name"],
-            "make_grid_settings": make_grid,
-            "make_tables_settings": make_tables,
+            "grid_settings": make_grid,
+            "tables_settings": make_tables,
         }
+
+    @property
+    def epsg_code(self) -> int:
+        if self._epsg_code is None:
+            self._epsg_code = self.get_settings()["epsg_code"]
+        return self._epsg_code
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
@@ -383,13 +460,6 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
         return Weirs(**{name: arr[name] for name in arr.dtype.names})
-
-
-def _object_as_dict(obj) -> dict:
-    if obj is None:
-        return {}
-    # https://stackoverflow.com/questions/1958219/convert-sqlalchemy-row-object-to-python-dict
-    return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
 
 
 # Constructing a Transformer takes quite long, so we use caching here. The

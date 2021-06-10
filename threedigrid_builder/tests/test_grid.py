@@ -7,7 +7,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import GridAttrs
+from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid import QuadtreeStats
 from unittest import mock
 
@@ -45,7 +45,7 @@ def grid2d():
             "y0p": 10.0,
         }
     )
-    attrs = GridAttrs(epsg_code=12432634, model_name="test-name")
+    attrs = GridMeta(epsg_code=12432634, model_name="test-name")
     return Grid(
         nodes=Nodes(
             id=[0, 1],
@@ -60,7 +60,7 @@ def grid2d():
 
 @pytest.fixture
 def grid1d():
-    attrs = GridAttrs(epsg_code=4326, model_name="test-name")
+    attrs = GridMeta(epsg_code=4326, model_name="test-name")
     return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), attrs=attrs)
 
 
@@ -103,7 +103,7 @@ def test_from_connection_nodes():
 
 def test_concatenate_grid(grid2d, grid1d):
     grid = grid2d + grid1d
-    assert grid.attrs == grid1d.attrs
+    assert grid.meta == grid1d.attrs
     assert grid.quadtree_stats == grid2d.quadtree_stats
     assert_array_equal(grid.nodes.id[0:2], grid2d.nodes.id)
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)

@@ -1,6 +1,6 @@
-from threedigrid_builder.base import MakeGridSettings
-from threedigrid_builder.base import MakeTablesSettings
+from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
@@ -13,7 +13,7 @@ from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
-from threedigrid_builder.grid.grid import GridAttrs
+from threedigrid_builder.grid.grid import GridMeta
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
@@ -143,24 +143,24 @@ def test_get_pipes(db):
 
 
 def test_get_settings(db):
-    attrs, make_grid_settings, make_tables_settings = db.get_settings()
-    assert isinstance(attrs, GridAttrs)
-    assert isinstance(make_grid_settings, MakeGridSettings)
-    assert isinstance(make_tables_settings, MakeTablesSettings)
+    attrs, grid_settings, tables_settings = db.get_settings()
+    assert isinstance(attrs, GridMeta)
+    assert isinstance(grid_settings, GridSettings)
+    assert isinstance(tables_settings, TablesSettings)
 
     assert attrs.epsg_code == 28992
     assert attrs.model_name == "simple_infil_no_grndwtr"
-    assert make_grid_settings.grid_space == 20.0
-    assert make_grid_settings.dist_calc_points == 15.0
-    assert make_grid_settings.kmax == 4
-    assert make_grid_settings.embedded_cutoff_threshold == 0.05
-    assert make_grid_settings.max_angle_1d_advection == 90.0
-    assert make_tables_settings.table_step_size == 0.05
-    assert make_tables_settings.frict_type == 2
-    assert make_tables_settings.frict_avg == 0
-    assert make_tables_settings.interception_global == 100.0
-    assert make_tables_settings.table_step_size_1d == 0.05
-    assert make_tables_settings.table_step_size_volume_2d == 0.05
+    assert grid_settings.grid_space == 20.0
+    assert grid_settings.dist_calc_points == 15.0
+    assert grid_settings.kmax == 4
+    assert grid_settings.embedded_cutoff_threshold == 0.05
+    assert grid_settings.max_angle_1d_advection == 90.0
+    assert tables_settings.table_step_size == 0.05
+    assert tables_settings.frict_type == 2
+    assert tables_settings.frict_avg == 0
+    assert tables_settings.interception_global == 100.0
+    assert tables_settings.table_step_size_1d == 0.05
+    assert tables_settings.table_step_size_volume_2d == 0.05
 
 
 def test_get_pumps(db):

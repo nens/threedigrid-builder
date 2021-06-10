@@ -4,6 +4,8 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from typing import Tuple
 
+import numpy as np
+
 
 __all__ = ["Nodes"]
 
@@ -34,3 +36,19 @@ class Node:
 @array_of(Node)
 class Nodes:
     """Calculation node."""
+
+    def get_extent_1d(self):
+        is_1d = np.isin(
+            self.node_type, (NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE)
+        )
+        if not is_1d.any():
+            return
+        x, y = self.coordinates[is_1d].T
+        return np.amin(x), np.amin(y), np.amax(x), np.amax(y)
+
+    def get_extent_2d(self):
+        is_2d = self.node_type == NodeType.NODE_2D_OPEN_WATER
+        if not is_2d.any():
+            return
+        x, y = self.coordinates[is_2d].T
+        return np.amin(x), np.amin(y), np.amax(x), np.amax(y)
