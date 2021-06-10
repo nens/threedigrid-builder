@@ -56,7 +56,7 @@ class SQLite:
     @property
     def epsg_code(self) -> int:
         if self._epsg_code is None:
-            self._epsg_code = self.get_settings()[0].epsg_code
+            self._epsg_code = self.get_settings()[0]
         return self._epsg_code
 
     @contextmanager
@@ -75,69 +75,28 @@ class SQLite:
         finally:
             session.close()
 
-    def get_settings(self) -> Tuple[GridAttrs, MakeGridSettings, MakeTablesSettings]:
+    def get_settings(self) -> dict:
         """Return the settings relevant for makegrid and maketables.
+
+        Returns:
+           dict with epsg_code, model_name, make_grid_settings, make_table_settings
         """
         with self.get_session() as session:
-            global_ = session.query(models.GlobalSetting).order_by("id").first()
-            groundwater = session.query(models.GroundWater).order_by("id").first()
-            interflow = session.query(models.Interflow).order_by("id").first()
-            infiltration = session.query(models.SimpleInfiltration).order_by("id").first()
+            global_ = _object_as_dict(session.query(models.GlobalSetting).order_by("id").first())
+            groundwater = _object_as_dict(session.query(models.GroundWater).order_by("id").first())
+            interflow = _object_as_dict(session.query(models.Interflow).order_by("id").first())
+            infiltration = _object_as_dict(session.query(models.SimpleInfiltration).order_by("id").first())
 
-        attrs = GridAttrs(
-            epsg_code=global_.epsg_code,
-            model_name=global_.name,
+        make_grid = MakeGridSettings.from_dict(global_)
+        make_tables = MakeTablesSettings.from_dict(
+            {**groundwater, **interflow, **infiltration, **global_}
         )
-        make_grid = MakeGridSettings(
-            grid_space=global_.grid_space,
-            dist_calc_points=global_.dist_calc_points,
-            kmax=global_.kmax,
-            embedded_cutoff_threshold=global_.embedded_cutoff_threshold,
-            max_angle_1d_advection=global_.max_angle_1d_advection,
-        )
-        make_tables = MakeTablesSettings(
-            table_step_size=global_.table_step_size,
-            frict_type=global_.frict_type,
-            frict_coef=global_.frict_coef,
-            interception_global=global_.interception_global,
-            frict_avg=global_.frict_avg,
-            table_step_size_1d=global_.table_step_size_1d,
-            table_step_size_volume_2d=global_.table_step_size_volume_2d,
-        )
-        if groundwater is not None:
-            if groundwater.groundwater_hydro_connectivity is not None or groundwater.groundwater_hydro_connectivity_file is not None:
-                make_grid.has_groundwater_flow = True
-            for field in (
-                "groundwater_impervious_layer_level",
-                "groundwater_impervious_layer_level_type",
-                "phreatic_storage_capacity",
-                "phreatic_storage_capacity_type",
-                "equilibrium_infiltration_rate",
-                "equilibrium_infiltration_rate_type",
-                "initial_infiltration_rate",
-                "initial_infiltration_rate_type",
-                "infiltration_decay_period",
-                "infiltration_decay_period_type",
-                "groundwater_hydro_connectivity",
-                "groundwater_hydro_connectivity_type",
-            ):
-                setattr(make_tables, field, getattr(groundwater, field))
-        if interflow is not None:
-            for field in (
-                "interflow_type",
-                "porosity",
-                "porosity_layer_thickness",
-                "impervious_layer_elevation",
-                "hydraulic_conductivity",
-            ):
-                setattr(make_tables, field, getattr(interflow, field))
-        if infiltration is not None:
-            for field in (
-                "infiltration_rate",
-                "infiltration_surface_option",
-            ):
-                setattr(make_tables, field, getattr(infiltration, field))
-        return attrs, make_grid, make_tables
+        return {
+            "epsg_code": global_["epsg_code"],
+            "model_name": global_["name"],
+            "make_grid_settings": make_grid,
+            "make_tables_settings": make_tables,
+        }
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
@@ -396,6 +355,8 @@ class SQLite:
 
 
 def _object_as_dict(obj) -> dict:
+    if obj is None:
+        return {}
     # https://stackoverflow.com/questions/1958219/convert-sqlalchemy-row-object-to-python-dict
     return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
 

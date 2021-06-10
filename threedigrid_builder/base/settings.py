@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 __all__ = ["MakeGridSettings", "MakeTablesSettings"]
 
@@ -11,15 +11,14 @@ class MakeGridSettings:
     grid_space: float
     dist_calc_points: float
     kmax: int
-    embedded_cutoff_threshold: float = None  # default is set in __post_init__
-    max_angle_1d_advection: float = None  # default is set in __post_init__
+    embedded_cutoff_threshold: float = 0.05
+    max_angle_1d_advection: float = 90.0
 
-    def __post_init__(self):
-        # set some defaults
-        if self.embedded_cutoff_threshold is None:
-            self.embedded_cutoff_threshold = 0.05
-        if self.max_angle_1d_advection is None:
-            self.max_angle_1d_advection = 90.0
+    @classmethod
+    def from_dict(cls, dct):
+        """Construct skipping unknown fields and None values"""
+        class_fields = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in dct.items() if k in class_fields and v is not None})
 
 
 @dataclass
@@ -70,3 +69,9 @@ class MakeTablesSettings:
             self.table_step_size_1d = self.table_step_size
         if self.table_step_size_volume_2d is None:
             self.table_step_size_volume_2d = self.table_step_size
+
+    @classmethod
+    def from_dict(cls, dct):
+        """Construct skipping unknown fields and None values"""
+        class_fields = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in dct.items() if k in class_fields and v is not None})

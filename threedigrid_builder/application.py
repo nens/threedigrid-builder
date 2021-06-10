@@ -20,92 +20,96 @@ import itertools
 __all__ = ["make_grid"]
 
 
-def _make_grid(sqlite_path, dem_path, model_area_path=None, meta=None):
+def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
     """Compute interpolated channel nodes"""
     db = SQLite(sqlite_path)
 
     node_id_counter = itertools.count()
     line_id_counter = itertools.count()
 
-    subgrid = Subgrid(dem_path, model_area=model_area_path)
-    subgrid_meta = subgrid.get_meta()
+    settings = db.get_settings()
+    grid = Grid.from_meta(**settings, **(meta or {}))
+    make_grid_settings = settings["make_grid_settings"]
 
-    db = SQLite(sqlite_path)
-
-    attrs = make_grid_settings, make_tables_settings = db.get_settings()
-    refinements = db.get_grid_refinements()
-    quadtree = QuadTree(
-        subgrid_meta,
-        make_grid_settings.kmax,
-        make_grid_settings.grid_space,
-        refinements,
-    )
-    grid = Grid.from_quadtree(
-        quadtree=quadtree,
-        area_mask=subgrid_meta["area_mask"],
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-    )
-    grid.attrs = attrs
+    if dem_path is not None:
+        grid.attrs.has_2d = True
+        subgrid = Subgrid(dem_path, model_area=model_area_path)
+        subgrid_meta = subgrid.get_meta()
+        refinements = db.get_grid_refinements()
+        quadtree = QuadTree(
+            subgrid_meta,
+            make_grid_settings.kmax,
+            make_grid_settings.grid_space,
+            refinements,
+        )
+        grid += Grid.from_quadtree(
+            quadtree=quadtree,
+            area_mask=subgrid_meta["area_mask"],
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+        )
 
     connection_nodes = db.get_connection_nodes()
+    if len(connection_nodes) != 0:
+        grid.attrs.has_1d = True
+        cn_grid = Grid.from_connection_nodes(
+            connection_nodes=connection_nodes, node_id_counter=node_id_counter
+        )
+        connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
+        grid += cn_grid
 
-    cn_grid = Grid.from_connection_nodes(
-        connection_nodes=connection_nodes, node_id_counter=node_id_counter
-    )
-    connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
-    grid += cn_grid
+        channels = db.get_channels()
+        grid += Grid.from_channels(
+            connection_nodes=connection_nodes,
+            channels=channels,
+            global_dist_calc_points=make_grid_settings.dist_calc_points,
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
 
-    channels = db.get_channels()
-    grid += Grid.from_channels(
-        connection_nodes=connection_nodes,
-        channels=channels,
-        global_dist_calc_points=make_grid_settings.dist_calc_points,
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_first_id,
-    )
+        cross_section_locations = db.get_cross_section_locations()
+        grid.set_channel_weights(cross_section_locations, channels)
 
-    cross_section_locations = db.get_cross_section_locations()
-    grid.set_channel_weights(cross_section_locations, channels)
+        pipes = db.get_pipes()
+        grid += Grid.from_pipes(
+            connection_nodes=connection_nodes,
+            pipes=pipes,
+            global_dist_calc_points=make_grid_settings.dist_calc_point,
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
 
-    pipes = db.get_pipes()
-    grid += Grid.from_pipes(
-        connection_nodes=connection_nodes,
-        pipes=pipes,
-        global_dist_calc_points=make_grid_settings.dist_calc_point,
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_first_id,
-    )
+        culverts = db.get_culverts()
+        weirs = db.get_weirs()
+        orifices = db.get_orifices()
+        grid += grid.from_structures(
+            connection_nodes=connection_nodes,
+            culverts=culverts,
+            weirs=weirs,
+            orifices=orifices,
+            global_dist_calc_points=make_grid_settings.dist_calc_points,
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
 
-    culverts = db.get_culverts()
-    weirs = db.get_weirs()
-    orifices = db.get_orifices()
-    grid += grid.from_structures(
-        connection_nodes=connection_nodes,
-        culverts=culverts,
-        weirs=weirs,
-        orifices=orifices,
-        global_dist_calc_points=make_grid_settings.dist_calc_points,
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_first_id,
-    )
+        grid.set_calculation_types()
+        grid.set_bottom_levels(
+            cross_section_locations, channels, pipes, weirs, orifices, culverts
+        )
 
-    grid.set_calculation_types()
-    grid.set_bottom_levels(
-        cross_section_locations, channels, pipes, weirs, orifices, culverts
-    )
+    if grid.attrs.has_1d and grid.attrs.has_2d:
+        grid.add_1d2d(
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            locations=cross_section_locations,
+            culverts=culverts,
+            line_id_counter=line_id_counter,
+        )
 
-    grid.add_1d2d(
-        connection_nodes=connection_nodes,
-        channels=channels,
-        pipes=pipes,
-        locations=cross_section_locations,
-        culverts=culverts,
-        line_id_counter=line_id_counter,
-    )
     grid.finalize(epsg_code=make_grid_settings.epsg_code)
     return grid
 

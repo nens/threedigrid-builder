@@ -1,3 +1,5 @@
+import threedigrid_builder
+from threedigrid_builder.base.settings import MakeGridSettings, MakeTablesSettings
 from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
 from threedigrid_builder.base import Lines
@@ -10,8 +12,8 @@ from threedigrid_builder.constants import NodeType
 import itertools
 import numpy as np
 import pygeos
-from dataclasses import dataclass
-
+from dataclasses import dataclass, fields
+from typing import Optional
 
 __all__ = ["Grid", "GridAttrs", "QuadtreeStats"]
 
@@ -22,11 +24,16 @@ class GridAttrs:
     """
     epsg_code: int
     model_name: str  # name from sqlite globalsettings.name
-    model_slug: str = ""  # from repository.slug
-    revision_hash: str = ""  # from repository.revision.hash
-    revision_nr: int = 0  # from repository.revision.number
-    threedi_version: str = ""  # TODO what version to put here in new makegrid?
-    threedicore_version: str = ""  # TODO what version to put here in new makegrid?
+
+    make_grid_settings: MakeGridSettings
+    make_tables_settings: MakeTablesSettings
+
+    model_slug: Optional[str] = ""  # from repository.slug
+    revision_hash: Optional[str] = ""  # from repository.revision.hash
+    revision_nr: Optional[int] = None  # from repository.revision.number
+    threedi_version: Optional[str] = None  # threedi-api version
+    threedicore_version: str = ""  # filled in __post_init__
+
     has_1d: bool = False  # TODO also add a derivative of manhole_storage_area?
     has_2d: bool = False
     has_breaches: bool = False
@@ -35,6 +42,16 @@ class GridAttrs:
     has_interception: bool = False
     has_pumpstations: bool = False
     has_simple_infiltration: bool = False
+
+    @classmethod
+    def from_dict(cls, dct):
+        """Construct skipping unknown fields and None values"""
+        class_fields = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in dct.items() if k in class_fields and v is not None})
+
+    def __post_init__(self):
+        if not self.threedicore_version:
+            self.threedicore_version = threedigrid_builder.__version__
 
 
 @dataclass
@@ -79,14 +96,11 @@ class Grid:
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
 
     @classmethod
-    def from_meta(cls, epsg_code, model_name, **kwargs):, model_slug=None, revision_hash=None, revision_nr=None, threedi_version=None):
-
-        attrs = GridAttrs(
-            epsg_code=epsg_code,
-            model_name=model_name
-
-        )
-        cls(Nodes(id=[]), Lines(id=[]), attrs)
+    def from_meta(cls, **kwargs):
+        attrs = GridAttrs.from_dict(kwargs)
+        if attrs.make_tables_settings.groundwater_hydro_connectivity is not None:
+            attrs.has_groundwater_flow = True
+        return cls(Nodes(id=[]), Lines(id=[]), attrs=attrs)
 
     @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
