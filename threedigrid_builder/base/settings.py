@@ -1,12 +1,14 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
+from dataclasses import fields
+
 
 __all__ = ["MakeGridSettings", "MakeTablesSettings"]
 
 
 @dataclass
 class MakeGridSettings:
-    """Settings necessary for threedigrid-builder.
-    """
+    """Settings necessary for threedigrid-builder."""
+
     ## from GlobalSettings
     grid_space: float
     dist_calc_points: float
@@ -18,13 +20,15 @@ class MakeGridSettings:
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
         class_fields = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in dct.items() if k in class_fields and v is not None})
+        return cls(
+            **{k: v for k, v in dct.items() if k in class_fields and v is not None}
+        )
 
 
 @dataclass
 class MakeTablesSettings:
-    """Settings necessary for threedi-tables.
-    """
+    """Settings necessary for threedi-tables."""
+
     ## from GlobalSettings
     table_step_size: float
     frict_type: int
@@ -74,4 +78,6 @@ class MakeTablesSettings:
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
         class_fields = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in dct.items() if k in class_fields and v is not None})
+        return cls(
+            **{k: v for k, v in dct.items() if k in class_fields and v is not None}
+        )

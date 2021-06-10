@@ -1,27 +1,31 @@
-import threedigrid_builder
-from threedigrid_builder.base.settings import MakeGridSettings, MakeTablesSettings
 from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
+from dataclasses import dataclass
+from dataclasses import fields
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import Pumps
+from threedigrid_builder.base.settings import MakeGridSettings
+from threedigrid_builder.base.settings import MakeTablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from typing import Optional
 
 import itertools
 import numpy as np
 import pygeos
-from dataclasses import dataclass, fields
-from typing import Optional
+import threedigrid_builder
+
 
 __all__ = ["Grid", "GridAttrs", "QuadtreeStats"]
 
 
 @dataclass
 class GridAttrs:
-    """Metadata that needs to end up in the gridadmin file.
-    """
+    """Metadata that needs to end up in the gridadmin file."""
+
     epsg_code: int
     model_name: str  # name from sqlite globalsettings.name
 
@@ -47,7 +51,9 @@ class GridAttrs:
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
         class_fields = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in dct.items() if k in class_fields and v is not None})
+        return cls(
+            **{k: v for k, v in dct.items() if k in class_fields and v is not None}
+        )
 
     def __post_init__(self):
         if not self.threedicore_version:
@@ -67,7 +73,14 @@ class QuadtreeStats:
 
 
 class Grid:
-    def __init__(self, nodes: Nodes, lines: Lines, attrs=None, quadtree_stats=None):
+    def __init__(
+        self,
+        nodes: Nodes,
+        lines: Lines,
+        pumps: Pumps = None,
+        attrs=None,
+        quadtree_stats=None,
+    ):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
@@ -76,6 +89,7 @@ class Grid:
         self.lines = lines
         self.attrs = attrs
         self.quadtree_stats = quadtree_stats
+        self.pumps = pumps
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -411,6 +425,17 @@ class Grid:
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
+
+    def set_pumps(self, pumps):
+        """Set the pumps on this grid object
+
+        Args:
+            pumps (Pumps): the pumps to set, this is changed inplace
+        """
+        self.pumps = pumps
+        self.pumps.renumber()
+        self.pumps.set_lines(self.nodes)
+        self.pumps.set_node_data(self.nodes)
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

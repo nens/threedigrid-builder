@@ -4,7 +4,6 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import ManholeIndicator
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 
@@ -23,7 +22,7 @@ class ConnectionNode:
     storage_area: float
     manhole_id: int
     calculation_type: CalculationType
-    manhole_indicator: ManholeIndicator
+    manhole_indicator: int
     bottom_level: float
     drain_level: float
     surface_level: float

@@ -12,8 +12,10 @@ from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
-from threedigrid_builder.base import MakeGridSettings, MakeTablesSettings
-from threedigrid_builder.grid import Channels, GridAttrs
+from threedigrid_builder.base import MakeGridSettings
+from threedigrid_builder.base import MakeTablesSettings
+from threedigrid_builder.base import Pumps
+from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
@@ -22,7 +24,7 @@ from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
-from typing import Callable, Tuple
+from typing import Callable
 from typing import ContextManager
 
 import numpy as np
@@ -82,10 +84,18 @@ class SQLite:
            dict with epsg_code, model_name, make_grid_settings, make_table_settings
         """
         with self.get_session() as session:
-            global_ = _object_as_dict(session.query(models.GlobalSetting).order_by("id").first())
-            groundwater = _object_as_dict(session.query(models.GroundWater).order_by("id").first())
-            interflow = _object_as_dict(session.query(models.Interflow).order_by("id").first())
-            infiltration = _object_as_dict(session.query(models.SimpleInfiltration).order_by("id").first())
+            global_ = _object_as_dict(
+                session.query(models.GlobalSetting).order_by("id").first()
+            )
+            groundwater = _object_as_dict(
+                session.query(models.GroundWater).order_by("id").first()
+            )
+            interflow = _object_as_dict(
+                session.query(models.Interflow).order_by("id").first()
+            )
+            infiltration = _object_as_dict(
+                session.query(models.SimpleInfiltration).order_by("id").first()
+            )
 
         make_grid = MakeGridSettings.from_dict(global_)
         make_tables = MakeTablesSettings.from_dict(
@@ -326,6 +336,27 @@ class SQLite:
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_pumps(self) -> Pumps:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Pumpstation.id,
+                    models.Pumpstation.code,
+                    models.Pumpstation.capacity,
+                    models.Pumpstation.connection_node_start_id,
+                    models.Pumpstation.connection_node_end_id,
+                    models.Pumpstation.type_,
+                    models.Pumpstation.start_level,
+                    models.Pumpstation.lower_stop_level,
+                    models.Pumpstation.upper_stop_level,
+                )
+                .order_by(models.Pumpstation.id)
+                .as_structarray()
+            )
+
+        # transform to a Pumps object
+        return Pumps(**{name: arr[name] for name in arr.dtype.names})
 
     def get_weirs(self) -> Weirs:
         """Return Weirs"""

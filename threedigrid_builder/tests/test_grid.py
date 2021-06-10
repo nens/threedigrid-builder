@@ -6,7 +6,9 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import Grid, GridAttrs, QuadtreeStats
+from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import GridAttrs
+from threedigrid_builder.grid import QuadtreeStats
 from unittest import mock
 
 import itertools
@@ -31,16 +33,18 @@ def grid():
 
 @pytest.fixture
 def grid2d():
-    quadtree_stats = QuadtreeStats(**{
-        "lgrmin": 2,
-        "kmax": 1,
-        "mmax": np.array([1]),
-        "nmax": np.array([1]),
-        "dx": np.array([2.0]),
-        "dxp": 0.5,
-        "x0p": 10.0,
-        "y0p": 10.0,
-    })
+    quadtree_stats = QuadtreeStats(
+        **{
+            "lgrmin": 2,
+            "kmax": 1,
+            "mmax": np.array([1]),
+            "nmax": np.array([1]),
+            "dx": np.array([2.0]),
+            "dxp": 0.5,
+            "x0p": 10.0,
+            "y0p": 10.0,
+        }
+    )
     attrs = GridAttrs(epsg_code=12432634, model_name="test-name")
     return Grid(
         nodes=Nodes(

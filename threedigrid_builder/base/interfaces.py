@@ -1,5 +1,6 @@
 from .lines import Lines
 from .nodes import Nodes
+from .pumps import Pumps
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
@@ -29,4 +30,8 @@ class OutputInterface(ABC):
 
     @abstractmethod
     def write_lines(self, lines: Lines):
+        pass
+
+    @abstractmethod
+    def write_pumps(self, pumps: Pumps):
         pass
