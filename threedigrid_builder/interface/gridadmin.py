@@ -56,7 +56,10 @@ def field_to_h5(group, name, dtype, val, mode="attrs"):
     dtype = unpack_optional_type(dtype)
     # handle Tuple
     if is_tuple_type(dtype):
-        shape = (len(dtype.__args__),)
+        if dtype.__args__[-1] is Ellipsis:
+            shape = (len(val),)
+        else:
+            shape = (len(dtype.__args__),)
         dtype = dtype.__args__[0]
     else:
         shape = ()

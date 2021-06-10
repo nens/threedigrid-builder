@@ -73,9 +73,9 @@ class GridMeta:
 class QuadtreeStats:
     lgrmin: int
     kmax: int
-    mmax: Tuple[int, int, int, int]
-    nmax: Tuple[int, int, int, int]
-    dx: Tuple[float, float, float, float]
+    mmax: Tuple[int, ...]
+    nmax: Tuple[int, ...]
+    dx: Tuple[float, ...]
     dxp: float
     x0p: float
     y0p: float
@@ -483,8 +483,8 @@ class Grid:
             self.meta.has_pumpstations = True
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
-        self.meta.has_1d = self.meta.extend_1d is not None
-        self.meta.has_2d = self.meta.extend_2d is not None
+        self.meta.has_1d = self.meta.extent_1d is not None
+        self.meta.has_2d = self.meta.extent_2d is not None
 
 
 def get_1d2d_lines(

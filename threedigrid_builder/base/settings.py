@@ -11,12 +11,12 @@ class GridSettings:
     """Settings necessary for threedigrid-builder."""
 
     ## from GlobalSettings
-    use_2d: bool
-    use_1d_flow: bool
-    use_2d_flow: bool
-    grid_space: float
-    dist_calc_points: float
-    kmax: int
+    use_2d: bool = None
+    use_1d_flow: bool = None
+    use_2d_flow: bool = None
+    grid_space: float = None
+    dist_calc_points: float = None
+    kmax: int = None
     embedded_cutoff_threshold: float = 0.05
     max_angle_1d_advection: float = 90.0
 
@@ -34,12 +34,12 @@ class TablesSettings:
     """Settings necessary for threedi-tables."""
 
     ## from GlobalSettings
-    table_step_size: float
-    frict_type: int
-    frict_coef: float
-    frict_coef_type: InitializationType
-    interception_global: float
-    interception_type: InitializationType
+    table_step_size: float = None
+    frict_type: int = None
+    frict_coef: float = None
+    frict_coef_type: InitializationType = None
+    interception_global: float = None
+    interception_type: InitializationType = None
     table_step_size_1d: float = None  # default is set in __post_init__
     table_step_size_volume_2d: float = None  # default is set in __post_init__
 

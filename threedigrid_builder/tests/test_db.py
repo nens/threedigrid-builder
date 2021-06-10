@@ -4,6 +4,7 @@ from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
+from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
@@ -13,7 +14,6 @@ from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
-from threedigrid_builder.grid.grid import GridMeta
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
@@ -143,22 +143,25 @@ def test_get_pipes(db):
 
 
 def test_get_settings(db):
-    attrs, grid_settings, tables_settings = db.get_settings()
-    assert isinstance(attrs, GridMeta)
-    assert isinstance(grid_settings, GridSettings)
-    assert isinstance(tables_settings, TablesSettings)
+    result = db.get_settings()
+    assert result["epsg_code"] == 28992
+    assert result["model_name"] == "simple_infil_no_grndwtr"
 
-    assert attrs.epsg_code == 28992
-    assert attrs.model_name == "simple_infil_no_grndwtr"
+    grid_settings = result["grid_settings"]
+    assert isinstance(grid_settings, GridSettings)
     assert grid_settings.grid_space == 20.0
     assert grid_settings.dist_calc_points == 15.0
     assert grid_settings.kmax == 4
     assert grid_settings.embedded_cutoff_threshold == 0.05
     assert grid_settings.max_angle_1d_advection == 90.0
+    tables_settings = result["tables_settings"]
+    assert isinstance(tables_settings, TablesSettings)
     assert tables_settings.table_step_size == 0.05
     assert tables_settings.frict_type == 2
-    assert tables_settings.frict_avg == 0
+    assert tables_settings.frict_coef == 0.03
+    assert tables_settings.frict_coef_type == InitializationType.GLOBAL
     assert tables_settings.interception_global == 100.0
+    assert tables_settings.interception_type == InitializationType.NO_AGG
     assert tables_settings.table_step_size_1d == 0.05
     assert tables_settings.table_step_size_volume_2d == 0.05
 

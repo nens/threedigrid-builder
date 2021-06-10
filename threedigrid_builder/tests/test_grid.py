@@ -1,6 +1,8 @@
 from numpy.testing import assert_array_equal
+from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
@@ -32,7 +34,17 @@ def grid():
 
 
 @pytest.fixture
-def grid2d():
+def meta():
+    return GridMeta(
+        epsg_code=12432634,
+        model_name="test-name",
+        grid_settings=GridSettings(use_2d=True, use_1d_flow=True),
+        tables_settings=TablesSettings(),
+    )
+
+
+@pytest.fixture
+def grid2d(meta):
     quadtree_stats = QuadtreeStats(
         **{
             "lgrmin": 2,
@@ -45,7 +57,6 @@ def grid2d():
             "y0p": 10.0,
         }
     )
-    attrs = GridMeta(epsg_code=12432634, model_name="test-name")
     return Grid(
         nodes=Nodes(
             id=[0, 1],
@@ -53,15 +64,14 @@ def grid2d():
             bounds=[(0, 0, 1, 1), (1, 0, 2, 1)],
         ),
         lines=Lines(id=[0]),
-        attrs=attrs,
+        meta=meta,
         quadtree_stats=quadtree_stats,
     )
 
 
 @pytest.fixture
-def grid1d():
-    attrs = GridMeta(epsg_code=4326, model_name="test-name")
-    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), attrs=attrs)
+def grid1d(meta):
+    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), meta=meta)
 
 
 def test_from_quadtree():
@@ -103,7 +113,7 @@ def test_from_connection_nodes():
 
 def test_concatenate_grid(grid2d, grid1d):
     grid = grid2d + grid1d
-    assert grid.meta == grid1d.attrs
+    assert grid.meta == grid1d.meta
     assert grid.quadtree_stats == grid2d.quadtree_stats
     assert_array_equal(grid.nodes.id[0:2], grid2d.nodes.id)
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)
