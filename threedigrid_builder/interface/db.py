@@ -80,7 +80,7 @@ def _set_initialization_type(
         dct[type_field] = InitializationType.GLOBAL
     else:
         # No file, no global value
-        dct[type_field] = InitializationType.NONE
+        dct[type_field] = None
 
 
 class SQLite:
@@ -116,26 +116,38 @@ class SQLite:
         """
 
         with self.get_session() as session:
-            global_ = _object_as_dict(
-                session.query(models.GlobalSetting).order_by("id").first()
-            )
-            # TODO use foreign keys.
-            groundwater = _object_as_dict(
-                session.query(models.GroundWater).order_by("id").first()
-            )
-            interflow = _object_as_dict(
-                session.query(models.Interflow).order_by("id").first()
-            )
-            infiltration = _object_as_dict(
-                session.query(models.SimpleInfiltration).order_by("id").first()
-            )
+            global_ = session.query(models.GlobalSetting).order_by("id").first()
+            if global_.groundwater_settings_id is not None:
+                groundwater = _object_as_dict(
+                    session.query(models.GroundWater)
+                    .filter_by(id=global_.groundwater_settings_id)
+                    .one()
+                )
+            else:
+                groundwater = {}
+            if global_.interflow_settings_id is not None:
+                interflow = _object_as_dict(
+                    session.query(models.Interflow)
+                    .filter_by(id=global_.interflow_settings_id)
+                    .one()
+                )
+            else:
+                interflow = {}
+            if global_.simple_infiltration_settings_id is not None:
+                infiltration = _object_as_dict(
+                    session.query(models.SimpleInfiltration)
+                    .filter_by(id=global_.simple_infiltration_settings_id)
+                    .one()
+                )
+            else:
+                infiltration = {}
+            global_ = _object_as_dict(global_)
 
         # record if there is a DEM file to be expected
         # Note: use_2d_flow only determines whether there are flow lines
         global_["use_2d"] = bool(global_["dem_file"])
 
         # set/adapt initialization types to include information about file presence
-        NONE = InitializationType.NONE
         NO_AGG = InitializationType.NO_AGG
         AVERAGE = InitializationType.AVERAGE
         _set_initialization_type(
@@ -157,7 +169,7 @@ class SQLite:
             _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
             # max_infiltration_capacity_file has no corresponding global value!
             infiltration["max_infiltration_capacity_file"] = (
-                NO_AGG if infiltration.get("max_infiltration_capacity_file") else NONE
+                NO_AGG if infiltration.get("max_infiltration_capacity_file") else None
             )
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)

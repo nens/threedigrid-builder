@@ -147,23 +147,59 @@ def test_get_settings(db):
     assert result["epsg_code"] == 28992
     assert result["model_name"] == "simple_infil_no_grndwtr"
 
-    grid_settings = result["grid_settings"]
-    assert isinstance(grid_settings, GridSettings)
-    assert grid_settings.grid_space == 20.0
-    assert grid_settings.dist_calc_points == 15.0
-    assert grid_settings.kmax == 4
-    assert grid_settings.embedded_cutoff_threshold == 0.05
-    assert grid_settings.max_angle_1d_advection == 90.0
-    tables_settings = result["tables_settings"]
-    assert isinstance(tables_settings, TablesSettings)
-    assert tables_settings.table_step_size == 0.05
-    assert tables_settings.frict_type == 2
-    assert tables_settings.frict_coef == 0.03
-    assert tables_settings.frict_coef_type == InitializationType.GLOBAL
-    assert tables_settings.interception_global == 100.0
-    assert tables_settings.interception_type == InitializationType.NO_AGG
-    assert tables_settings.table_step_size_1d == 0.05
-    assert tables_settings.table_step_size_volume_2d == 0.05
+    g = result["grid_settings"]
+    assert isinstance(g, GridSettings)
+    # some settings copied over from SQLite:
+    assert g.use_1d_flow is True
+    assert g.use_2d_flow is True
+    assert g.grid_space == 20.0
+    assert g.dist_calc_points == 15.0
+    assert g.kmax == 4
+    assert g.embedded_cutoff_threshold == 0.05
+    assert g.max_angle_1d_advection == 90.0
+    # use_2d is based on the presence of dem_file:
+    assert g.use_2d is True
+
+    s = result["tables_settings"]
+    assert isinstance(s, TablesSettings)
+    assert s.table_step_size == 0.05
+    assert s.frict_type == 2
+    assert s.frict_coef == 0.03
+    assert s.frict_coef_type == InitializationType.GLOBAL
+    assert s.interception_global == 100.0
+    assert s.interception_type == InitializationType.NO_AGG
+    assert s.table_step_size_1d == 0.05
+    assert s.table_step_size_volume_2d == 0.05
+    assert s.manhole_storage_area is None
+
+    # groundwater settings
+    assert s.groundwater_impervious_layer_level == -5.0
+    assert s.groundwater_impervious_layer_level_type == InitializationType.GLOBAL
+    assert s.phreatic_storage_capacity == 0.25
+    assert s.phreatic_storage_capacity_type == InitializationType.GLOBAL
+    assert s.equilibrium_infiltration_rate == 100.0
+    assert s.equilibrium_infiltration_rate_type == InitializationType.GLOBAL
+    assert s.initial_infiltration_rate == 300.0
+    assert s.initial_infiltration_rate_type == InitializationType.GLOBAL
+    assert s.infiltration_decay_period == 0.1
+    assert s.infiltration_decay_period_type == InitializationType.GLOBAL
+    assert s.groundwater_hydro_connectivity == 1.0
+    assert s.groundwater_hydro_connectivity_type == InitializationType.GLOBAL
+
+    # there are interflow settings, but most are unset
+    assert s.interflow_type == 0  # means: no interflow
+    assert s.porosity is None
+    assert s.porosity_type is None
+    assert s.porosity_layer_thickness is None
+    assert s.impervious_layer_elevation is None
+    assert s.hydraulic_conductivity is None
+    assert s.hydraulic_conductivity_type is None
+
+    # there are no infiltration settings
+    assert s.infiltration_rate is None
+    assert s.infiltration_rate_type is None
+    assert s.infiltration_surface_option is None
+    assert s.max_infiltration_capacity_type is None
 
 
 def test_get_pumps(db):

@@ -9,7 +9,6 @@ from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from typing import Optional
@@ -34,13 +33,13 @@ class GridMeta:
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
-    model_slug: Optional[str] = ""  # from repository.slug
-    revision_hash: Optional[str] = ""  # from repository.revision.hash
+    model_slug: Optional[str] = None  # from repository.slug
+    revision_hash: Optional[str] = None  # from repository.revision.hash
     revision_nr: Optional[int] = None  # from repository.revision.number
     threedi_version: Optional[str] = None  # threedi-api version
-    threedicore_version: str = ""
+    threedicore_version: Optional[str] = None  # not used anymore
     threedigrid_builder_version: str = ""  # filled in __post_init__
-    threedi_tables_version: str = ""
+    threedi_tables_version: Optional[str] = None  # filled in threedi-tables
 
     # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
     has_1d: bool = False
@@ -123,13 +122,12 @@ class Grid:
         """Construct a grid with only metadata"""
         meta = GridMeta.from_dict(kwargs)
         # set flags
-        sett = meta.tables_settings  # shorthand
-        NONE = InitializationType.NONE  # shorthand
-        meta.has_interception = sett.interception_type != NONE
-        meta.has_groundwater_flow = sett.groundwater_hydro_connectivity_type != NONE
-        meta.has_simple_infiltration = sett.infiltration_rate_type != NONE
-        meta.has_groundwater = sett.groundwater_impervious_layer_level_type != NONE
-        meta.has_interflow = sett.interflow_type != 0
+        s = meta.tables_settings  # shorthand
+        meta.has_interception = s.interception_type is not None
+        meta.has_groundwater_flow = s.groundwater_hydro_connectivity_type is not None
+        meta.has_simple_infiltration = s.infiltration_rate_type is not None
+        meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
+        meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
 
     @classmethod

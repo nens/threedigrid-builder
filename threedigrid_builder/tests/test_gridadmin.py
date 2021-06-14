@@ -37,8 +37,19 @@ def h5_out():
     meta = GridMeta(
         epsg_code=12432634,
         model_name="test-name",
-        grid_settings=GridSettings(use_2d=True, use_1d_flow=True),
-        tables_settings=TablesSettings(),
+        grid_settings=GridSettings(
+            use_2d=True,
+            use_1d_flow=True,
+            use_2d_flow=True,
+            grid_space=20.0,
+            dist_calc_points=25.0,
+            kmax=4,
+        ),
+        tables_settings=TablesSettings(
+            table_step_size=0.05,
+            frict_coef=0.03,
+            frict_coef_type=9,
+        ),
     )
     quadtree_stats = QuadtreeStats(
         **{

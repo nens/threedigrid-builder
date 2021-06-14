@@ -104,7 +104,6 @@ class SewerageType(IntEnum):
 
 @unique
 class InitializationType(IntEnum):
-    NONE = -1  # no global value and no file
     MAX = 0  # file present
     MIN = 1  # file present
     AVERAGE = 2  # file present
