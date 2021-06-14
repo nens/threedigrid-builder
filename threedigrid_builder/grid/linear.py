@@ -211,6 +211,8 @@ def counts_to_ranges(counts):
     >>> counts_to_ranges([3, 2, 0, 1, 0])
     (array([0, 3, 5, 5, 6]), array([3, 5, 5, 6, 6]))
     """
+    if len(counts) == 0:
+        return np.empty((0,), dtype=int), np.empty((0,), dtype=int)
     stop = np.cumsum(counts)
     start = np.roll(stop, 1)
     start[0] = 0
@@ -255,6 +257,8 @@ def counts_to_column_index(counts):
     >>> counts_to_indices([3, 2, 0, 1, 0])
     array([0, 1, 2, 0, 1, 0])
     """
+    if len(counts) == 0:
+        return np.empty((0, ), dtype=int)
     start, stop = counts_to_ranges(counts)
     return np.arange(stop[-1]) - np.repeat(start, counts)
 
@@ -314,6 +318,9 @@ def line_substring(linestrings, start, end, index=None):
         index = np.arange(n_lines)
     else:
         (n_segments,) = index.shape
+
+    if n_segments == 0:
+        return np.empty((0,), dtype=object)
 
     coords, coord_line_idx = pygeos.get_coordinates(linestrings, return_index=True)
     line_n_coords = pygeos.get_num_coordinates(linestrings)

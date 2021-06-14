@@ -23,6 +23,8 @@ Changelog of threedigrid-builder
   root 'attrs' of the output gridadmin.h5. The settings are written into datasets inside
   newly addres groups "grid_settings" and "tables_settings".
 
+- Fixes for models with no channels.
+
 
 0.1.2 (2021-04-28)
 ------------------

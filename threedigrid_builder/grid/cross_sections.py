@@ -66,6 +66,13 @@ def compute_weights(channel_id, ds, cs, channels):
         missing = set(channels.id) - set(cs.channel_id)
         raise ValueError(f"Channels {missing} have no cross section location set.")
 
+    if len(channel_id) == 0:
+        return (
+            np.empty((0,), dtype=int),
+            np.empty((0,), dtype=int),
+            np.empty((0,), dtype=float),
+        )
+
     # Make an array that sorts the cross section (cs) locations by channel_id
     cs_sorter = np.argsort(cs.channel_id)
 
