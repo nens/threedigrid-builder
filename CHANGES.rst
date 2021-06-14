@@ -18,6 +18,11 @@ Changelog of threedigrid-builder
 
 - Added pumps (pumpstations).
 
+- Settings and metadata are read from the SQLite. Some metadata (like model_slug) can
+  also be provided via the main (make_grid) function. The metadata is written to the
+  root 'attrs' of the output gridadmin.h5. The settings are written into datasets inside
+  newly addres groups "grid_settings" and "tables_settings".
+
 
 0.1.2 (2021-04-28)
 ------------------

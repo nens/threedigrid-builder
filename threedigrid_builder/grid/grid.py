@@ -1,19 +1,83 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
+from dataclasses import dataclass
+from dataclasses import fields
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base.settings import GridSettings
+from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from typing import Optional
+from typing import Tuple
 
 import itertools
 import numpy as np
 import pygeos
+import threedigrid_builder
 
 
-__all__ = ["Grid"]
+__all__ = ["Grid", "GridMeta", "QuadtreeStats"]
+
+
+@dataclass
+class GridMeta:
+    """Metadata that needs to end up in the gridadmin file."""
+
+    epsg_code: int
+    model_name: str  # name from sqlite globalsettings.name
+
+    grid_settings: GridSettings
+    tables_settings: TablesSettings
+
+    model_slug: Optional[str] = None  # from repository.slug
+    revision_hash: Optional[str] = None  # from repository.revision.hash
+    revision_nr: Optional[int] = None  # from repository.revision.number
+    threedi_version: Optional[str] = None  # threedi-api version
+    threedicore_version: Optional[str] = None  # not used anymore
+    threedigrid_builder_version: str = ""  # filled in __post_init__
+    threedi_tables_version: Optional[str] = None  # filled in threedi-tables
+
+    # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
+    has_1d: bool = False
+    has_2d: bool = False
+    has_breaches: bool = False
+    has_groundwater: bool = False
+    has_groundwater_flow: bool = False
+    has_interception: bool = False
+    has_pumpstations: bool = False
+    has_simple_infiltration: bool = False
+    has_interflow: bool = False
+
+    extent_1d: Optional[Tuple[float, float, float, float]] = None
+    extent_2d: Optional[Tuple[float, float, float, float]] = None
+
+    @classmethod
+    def from_dict(cls, dct):
+        """Construct skipping unknown fields and None values"""
+        class_fields = {f.name for f in fields(cls)}
+        return cls(
+            **{k: v for k, v in dct.items() if k in class_fields and v is not None}
+        )
+
+    def __post_init__(self):
+        if not self.threedigrid_builder_version:
+            self.threedigrid_builder_version = threedigrid_builder.__version__
+
+
+@dataclass
+class QuadtreeStats:
+    lgrmin: int
+    kmax: int
+    mmax: Tuple[int, ...]
+    nmax: Tuple[int, ...]
+    dx: Tuple[float, ...]
+    dxp: float
+    x0p: float
+    y0p: float
 
 
 class Grid:
@@ -22,7 +86,7 @@ class Grid:
         nodes: Nodes,
         lines: Lines,
         pumps: Pumps = None,
-        epsg_code=None,
+        meta=None,
         quadtree_stats=None,
     ):
         if not isinstance(nodes, Nodes):
@@ -31,7 +95,7 @@ class Grid:
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
         self.nodes = nodes
         self.lines = lines
-        self.epsg_code = epsg_code  # Grid is aware of its epsg_code
+        self.meta = meta
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
 
@@ -52,6 +116,19 @@ class Grid:
 
     def __repr__(self):
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
+
+    @classmethod
+    def from_meta(cls, **kwargs):
+        """Construct a grid with only metadata"""
+        meta = GridMeta.from_dict(kwargs)
+        # set flags
+        s = meta.tables_settings  # shorthand
+        meta.has_interception = s.interception_type is not None
+        meta.has_groundwater_flow = s.groundwater_hydro_connectivity_type is not None
+        meta.has_simple_infiltration = s.infiltration_rate_type is not None
+        meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
+        meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
+        return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
 
     @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
@@ -85,16 +162,16 @@ class Grid:
         )
 
         # Some general quadtree grid statistics we need in the .h5 later on.
-        quadtree_stats = {
-            "lgrmin": quadtree.lgrmin,
-            "kmax": quadtree.kmax,
-            "mmax": quadtree.mmax,
-            "nmax": quadtree.nmax,
-            "dx": quadtree.dx,
-            "dxp": quadtree.pixel_size,
-            "x0p": quadtree.origin[0],
-            "y0p": quadtree.origin[1],
-        }
+        quadtree_stats = QuadtreeStats(
+            lgrmin=quadtree.lgrmin,
+            kmax=quadtree.kmax,
+            mmax=quadtree.mmax,
+            nmax=quadtree.nmax,
+            dx=quadtree.dx,
+            dxp=quadtree.pixel_size,
+            x0p=quadtree.origin[0],
+            y0p=quadtree.origin[1],
+        )
 
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
@@ -395,12 +472,17 @@ class Grid:
             line_id_counter,
         )
 
-    def finalize(self, epsg_code=None):
+    def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
-        self.epsg_code = epsg_code
+        if self.pumps is not None and len(self.pumps) > 0:
+            self.meta.has_pumpstations = True
+        self.meta.extent_1d = self.nodes.get_extent_1d()
+        self.meta.extent_2d = self.nodes.get_extent_2d()
+        self.meta.has_1d = self.meta.extent_1d is not None
+        self.meta.has_2d = self.meta.extent_2d is not None
 
 
 def get_1d2d_lines(

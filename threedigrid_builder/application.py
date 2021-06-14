@@ -6,6 +6,7 @@ This layer depends on the interfaces as well as on the domain layer.
 """
 
 from pathlib import Path
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
@@ -20,106 +21,112 @@ import itertools
 __all__ = ["make_grid"]
 
 
-def _make_grid(sqlite_path, dem_path, model_area_path=None):
+def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
     """Compute interpolated channel nodes"""
     db = SQLite(sqlite_path)
 
     node_id_counter = itertools.count()
     line_id_counter = itertools.count()
 
-    subgrid = Subgrid(dem_path, model_area=model_area_path)
-    subgrid_meta = subgrid.get_meta()
+    settings = db.get_settings()
+    grid = Grid.from_meta(**settings, **(meta or {}))
+    grid_settings = settings["grid_settings"]
 
-    db = SQLite(sqlite_path)
-    refinements = db.get_grid_refinements()
-    quadtree = QuadTree(
-        subgrid_meta,
-        db.global_settings["kmax"],
-        db.global_settings["grid_space"],
-        refinements,
-    )
-    grid = Grid.from_quadtree(
-        quadtree=quadtree,
-        area_mask=subgrid_meta["area_mask"],
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-    )
+    if grid_settings.use_2d:
+        if not dem_path:
+            raise SchematisationError("DEM file expected")
+        # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
+        subgrid = Subgrid(dem_path, model_area=model_area_path)
+        subgrid_meta = subgrid.get_meta()
+        refinements = db.get_grid_refinements()
+        quadtree = QuadTree(
+            subgrid_meta,
+            grid_settings.kmax,
+            grid_settings.grid_space,
+            refinements,
+        )
+        grid += Grid.from_quadtree(
+            quadtree=quadtree,
+            area_mask=subgrid_meta["area_mask"],
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+        )
 
     connection_nodes = db.get_connection_nodes()
+    if grid_settings.use_1d_flow and len(connection_nodes) > 0:
+        cn_grid = Grid.from_connection_nodes(
+            connection_nodes=connection_nodes, node_id_counter=node_id_counter
+        )
+        connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
+        grid += cn_grid
 
-    cn_grid = Grid.from_connection_nodes(
-        connection_nodes=connection_nodes, node_id_counter=node_id_counter
-    )
-    connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
-    grid += cn_grid
+        channels = db.get_channels()
+        grid += Grid.from_channels(
+            connection_nodes=connection_nodes,
+            channels=channels,
+            global_dist_calc_points=grid_settings.dist_calc_points,
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
 
-    channels = db.get_channels()
-    grid += Grid.from_channels(
-        connection_nodes=connection_nodes,
-        channels=channels,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_first_id,
-    )
+        cross_section_locations = db.get_cross_section_locations()
+        grid.set_channel_weights(cross_section_locations, channels)
 
-    cross_section_locations = db.get_cross_section_locations()
-    grid.set_channel_weights(cross_section_locations, channels)
+        pipes = db.get_pipes()
+        grid += Grid.from_pipes(
+            connection_nodes=connection_nodes,
+            pipes=pipes,
+            global_dist_calc_points=grid_settings.dist_calc_points,
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
 
-    pipes = db.get_pipes()
-    grid += Grid.from_pipes(
-        connection_nodes=connection_nodes,
-        pipes=pipes,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_first_id,
-    )
+        culverts = db.get_culverts()
+        weirs = db.get_weirs()
+        orifices = db.get_orifices()
+        grid += grid.from_structures(
+            connection_nodes=connection_nodes,
+            culverts=culverts,
+            weirs=weirs,
+            orifices=orifices,
+            global_dist_calc_points=grid_settings.dist_calc_points,
+            node_id_counter=node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
 
-    culverts = db.get_culverts()
-    weirs = db.get_weirs()
-    orifices = db.get_orifices()
-    grid += grid.from_structures(
-        connection_nodes=connection_nodes,
-        culverts=culverts,
-        weirs=weirs,
-        orifices=orifices,
-        global_dist_calc_points=db.global_settings["dist_calc_points"],
-        node_id_counter=node_id_counter,
-        line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_first_id,
-    )
+        grid.set_calculation_types()
+        grid.set_bottom_levels(
+            cross_section_locations, channels, pipes, weirs, orifices, culverts
+        )
+        grid.set_pumps(db.get_pumps())
 
-    grid.set_calculation_types()
-    grid.set_bottom_levels(
-        cross_section_locations, channels, pipes, weirs, orifices, culverts
-    )
+    if grid.meta.has_1d and grid.meta.has_2d:
+        grid.add_1d2d(
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            locations=cross_section_locations,
+            culverts=culverts,
+            line_id_counter=line_id_counter,
+        )
 
-    grid.add_1d2d(
-        connection_nodes=connection_nodes,
-        channels=channels,
-        pipes=pipes,
-        locations=cross_section_locations,
-        culverts=culverts,
-        line_id_counter=line_id_counter,
-    )
-    pumps = db.get_pumps()
-    grid.set_pumps(pumps)
-
-    grid.finalize(epsg_code=db.global_settings["epsg_code"])
+    grid.finalize()
     return grid
 
 
 def _grid_to_gpkg(grid, path):
     with GeopackageOut(path) as out:
-        out.write_nodes(grid.nodes, epsg_code=grid.epsg_code)
-        out.write_lines(grid.lines, epsg_code=grid.epsg_code)
-        out.write_pumps(grid.pumps, epsg_code=grid.epsg_code)
+        out.write_nodes(grid.nodes, epsg_code=grid.meta.epsg_code)
+        out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
+        out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
 
 
 def _grid_to_hdf5(grid, path):
     with GridAdminOut(path) as out:
-        out.write_grid_characteristics(grid.nodes, grid.lines, epsg_code=grid.epsg_code)
+        out.write_meta(grid.meta)
         out.write_grid_counts(grid.nodes, grid.lines)
         if grid.quadtree_stats is not None:
             out.write_quadtree(grid.quadtree_stats)
@@ -133,6 +140,7 @@ def make_grid(
     dem_path: Path,
     out_path: Path,
     model_area_path: Optional[Path] = None,
+    meta: dict = None,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -144,6 +152,8 @@ def make_grid(
         out_path: The path of the (to be created) output file. Allowed extensions
             are: .h5 (HDF5) and .gpkg (Geopackage)
         model_area_path
+        meta: an optional dict with the following (optional) keys: model_slug (str),
+            revision_hash (str), revision_nr (int), threedi_version (str)
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -165,6 +175,6 @@ def make_grid(
     else:
         raise ValueError(f"Unsupported output format '{extension}'")
 
-    grid = _make_grid(sqlite_path, dem_path, model_area_path)
+    grid = _make_grid(sqlite_path, dem_path, model_area_path, meta=meta)
 
     writer(grid, out_path)

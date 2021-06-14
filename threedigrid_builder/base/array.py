@@ -2,18 +2,20 @@ from enum import IntEnum
 
 import numpy as np
 import sys
+import typing
 
 
 USE_PEP560 = sys.version_info[:3] >= (3, 7, 0)
 if USE_PEP560:
     from typing import _GenericAlias
 else:
+    from typing import _Union
     from typing import TupleMeta
 
-__all__ = ["array_of"]
+__all__ = ["array_of", "is_tuple_type", "is_int_enum", "unpack_optional_type"]
 
 
-def _is_tuple_type(_type):
+def is_tuple_type(_type):
     """Test if the type is a indexed typing.Tuple type.
 
     Examples:
@@ -25,12 +27,41 @@ def _is_tuple_type(_type):
         return type(_type) is TupleMeta
 
 
-def _is_int_enum(_type):
+def is_union_type(_type):
+    """Test if the type is an typing.Union type.
+
+    Examples:
+        is_union_type(Union[int, str]) == True
+    """
+    if USE_PEP560:
+        return isinstance(_type, _GenericAlias) and _type.__origin__ is typing.Union
+    else:
+        return type(_type) is _Union
+
+
+def is_int_enum(_type):
     """Test if the type is a subclass of IntEnum."""
     try:
         return issubclass(_type, IntEnum)
     except TypeError:  # happens when _type is something like List[int]
         return False
+
+
+def unpack_optional_type(_type):
+    """Unpack Optional[<type>] to <type> if necessary
+
+    Examples:
+        >>> unpack_optional(Optional[int])
+        int
+        >>> unpack_optional(int)
+        int
+    """
+    # Optional[x] is actually Union[x, None]
+    if not is_union_type(_type):
+        return _type
+    # Check if it has 2 args and the second one is a NoneType
+    if len(_type.__args__) == 2 and isinstance(None, _type.__args__[1]):
+        return _type.__args__[0]
 
 
 def _to_ndarray(value, elem_type, expected_length):
@@ -42,7 +73,7 @@ def _to_ndarray(value, elem_type, expected_length):
         expected_length (int or None): the expected number of rows
     """
     # Tuple[...] becomes 2D Array
-    if _is_tuple_type(elem_type):
+    if is_tuple_type(elem_type):
         sub_types = elem_type.__args__
         expected_shape = (expected_length, len(sub_types))
         elem_type = sub_types[0]
@@ -50,7 +81,7 @@ def _to_ndarray(value, elem_type, expected_length):
         expected_shape = (expected_length,)
 
     # cast python to numpy dtypes
-    if elem_type is int or _is_int_enum(elem_type):
+    if elem_type is int or is_int_enum(elem_type):
         dtype = np.int32
         null_value = -9999
     elif elem_type is float:
@@ -71,7 +102,7 @@ def _to_ndarray(value, elem_type, expected_length):
     else:
         arr = np.asarray(value, dtype=dtype, order="F")
 
-    if _is_int_enum(elem_type):
+    if is_int_enum(elem_type):
         allowed = list(elem_type) + [-9999]
         if not np.isin(arr, allowed).all():
             raise ValueError(
@@ -244,7 +275,7 @@ class array_of:
 
         # check the subtypes of Tuples
         for name, elem_type in fields.items():
-            if _is_tuple_type(elem_type):
+            if is_tuple_type(elem_type):
                 sub_types = elem_type.__args__
                 n_columns = len(sub_types)
                 if n_columns == 0:

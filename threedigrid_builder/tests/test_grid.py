@@ -1,12 +1,17 @@
 from numpy.testing import assert_array_equal
+from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import GridMeta
+from threedigrid_builder.grid import QuadtreeStats
 from unittest import mock
 
 import itertools
@@ -30,17 +35,40 @@ def grid():
 
 
 @pytest.fixture
-def grid2d():
-    quadtree_stats = {
-        "lgrmin": 2,
-        "kmax": 1,
-        "mmax": np.array([1]),
-        "nmax": np.array([1]),
-        "dx": np.array([2.0]),
-        "dxp": 0.5,
-        "x0p": 10.0,
-        "y0p": 10.0,
-    }
+def meta():
+    return GridMeta(
+        epsg_code=12432634,
+        model_name="test-name",
+        grid_settings=GridSettings(
+            use_2d=True,
+            use_1d_flow=True,
+            use_2d_flow=True,
+            grid_space=20.0,
+            dist_calc_points=25.0,
+            kmax=4,
+        ),
+        tables_settings=TablesSettings(
+            table_step_size=0.05,
+            frict_coef=0.03,
+            frict_coef_type=9,
+        ),
+    )
+
+
+@pytest.fixture
+def grid2d(meta):
+    quadtree_stats = QuadtreeStats(
+        **{
+            "lgrmin": 2,
+            "kmax": 1,
+            "mmax": np.array([1]),
+            "nmax": np.array([1]),
+            "dx": np.array([2.0]),
+            "dxp": 0.5,
+            "x0p": 10.0,
+            "y0p": 10.0,
+        }
+    )
     return Grid(
         nodes=Nodes(
             id=[0, 1],
@@ -48,13 +76,42 @@ def grid2d():
             bounds=[(0, 0, 1, 1), (1, 0, 2, 1)],
         ),
         lines=Lines(id=[0]),
+        meta=meta,
         quadtree_stats=quadtree_stats,
     )
 
 
 @pytest.fixture
-def grid1d():
-    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), epsg_code=4326)
+def grid1d(meta):
+    return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), meta=meta)
+
+
+@pytest.mark.parametrize(
+    "setting,expected_true",
+    [
+        ("interception_type", "has_interception"),
+        ("groundwater_hydro_connectivity_type", "has_groundwater_flow"),
+        ("infiltration_rate_type", "has_simple_infiltration"),
+        ("groundwater_impervious_layer_level_type", "has_groundwater"),
+        ("interflow_type", "has_interflow"),
+    ],
+)
+def test_from_meta(meta, setting, expected_true):
+    setattr(meta.tables_settings, setting, InitializationType.GLOBAL)
+    grid = Grid.from_meta(
+        epsg_code=1234,
+        model_name="test",
+        grid_settings=meta.grid_settings,
+        tables_settings=meta.tables_settings,
+    )
+    for attr in (
+        "has_interception",
+        "has_groundwater_flow",
+        "has_simple_infiltration",
+        "has_groundwater",
+        "has_interflow",
+    ):
+        assert getattr(grid.meta, attr) is (attr == expected_true)
 
 
 def test_from_quadtree():
@@ -96,7 +153,7 @@ def test_from_connection_nodes():
 
 def test_concatenate_grid(grid2d, grid1d):
     grid = grid2d + grid1d
-    assert grid.epsg_code == grid1d.epsg_code
+    assert grid.meta == grid1d.meta
     assert grid.quadtree_stats == grid2d.quadtree_stats
     assert_array_equal(grid.nodes.id[0:2], grid2d.nodes.id)
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)

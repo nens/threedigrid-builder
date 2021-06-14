@@ -1,7 +1,12 @@
+from dataclasses import fields
+from threedigrid_builder.base import is_int_enum
+from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import OutputInterface
+from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import GridMeta
 
 import numpy as np
 import pygeos
@@ -41,6 +46,64 @@ LINE_TYPES_1D2D_GW = (
 )
 
 
+def field_to_h5(group, name, dtype, val, mode="attrs"):
+    """Write a dataclass field to H5py attributes or datasets.
+
+    None values are converted automatically to -9999 (int an IntEnum), NaN (float)
+    and "" (str). bool values cannot be None. Unknown datatypes are skipped silently.
+    """
+    # convert Optional[<type>] to <type>
+    dtype = unpack_optional_type(dtype)
+    # handle Tuple
+    if is_tuple_type(dtype):
+        if dtype.__args__[-1] is Ellipsis:
+            shape = (len(val),)
+        else:
+            shape = (len(dtype.__args__),)
+        dtype = dtype.__args__[0]
+    else:
+        shape = ()
+    if dtype is bool:
+        pass
+    elif dtype is int or is_int_enum(dtype):
+        dtype = np.int32
+        if val is None:
+            val = np.full(shape, -9999, dtype=dtype)
+    elif dtype is float:
+        dtype = np.float64
+        if val is None:
+            val = np.full(shape, np.nan, dtype=dtype)
+    elif dtype is str:
+        # Future: Write variable-length UTF-8
+        # dtype = h5py.special_dtype(vlen=str)
+        # But for calccore, we now need fixed-length ASCII
+        if shape != ():
+            raise RuntimeError("Cannot write string lists to HDF5.")
+        if val is None:
+            val = b""
+        dtype = f"S{max(len(val), 1)}"
+        if not isinstance(val, bytes):
+            val = val.encode()
+    else:
+        return
+    if mode == "attrs":
+        group.attrs.create(name, data=val, shape=shape, dtype=dtype)
+    elif mode == "datasets":
+        group.create_dataset(name, data=val, shape=shape, dtype=dtype)
+    else:
+        raise ValueError(f"Unknown h5 write mode '{mode}'")
+
+
+def dataclass_to_h5(group, datacls, mode="attrs"):
+    """Write a dataclass to H5py attributes or datasets.
+
+    None values are converted automatically to -9999 (int an IntEnum), NaN (float)
+    and "" (str). bool values cannot be None. Unknown datatypes are skipped silently.
+    """
+    for field in fields(datacls):
+        field_to_h5(group, field.name, field.type, getattr(datacls, field.name), mode)
+
+
 class GridAdminOut(OutputInterface):
     def __init__(self, path):
         if h5py is None:
@@ -54,63 +117,21 @@ class GridAdminOut(OutputInterface):
     def __exit__(self, *args, **kwargs):
         self._file.close()
 
-    def write_grid_characteristics(self, nodes, lines, epsg_code):
-        """Write the "attrs" of the gridadmin file.
+    def write_meta(self, meta: GridMeta):
+        """Write the metadata to the gridadmin file.
+
+        Metadata is stored in attrs and settings are stored in dedicated groups.
 
         Args:
-            nodes (Nodes)
-            lines (Lines)
-            epsg_code (int)
-
-        Raises:
-            ValueError if it exists already.
+            meta (GridMeta)
         """
+        dataclass_to_h5(self._file, meta, "attrs")
 
-        self._file.attrs.create("epsg_code", epsg_code, dtype="i4")
+        make_grid = self._file.create_group("grid_settings")
+        dataclass_to_h5(make_grid, meta.grid_settings, mode="datasets")
 
-        is_1d = np.isin(nodes.node_type, NODE_TYPES_1D)
-        if is_1d.any():
-            extent_1d = np.array(
-                [
-                    np.amin(nodes.coordinates[is_1d, 0]),
-                    np.amin(nodes.coordinates[is_1d, 1]),
-                    np.amax(nodes.coordinates[is_1d, 0]),
-                    np.amax(nodes.coordinates[is_1d, 1]),
-                ]
-            )
-            self._file.attrs.create("extent_1d", extent_1d, dtype="i4")
-            self._file.attrs.create("has_1d", 1, dtype="i4")
-        else:
-            self._file.attrs.create(
-                "extent_1d", np.array([-9999.0, -9999.0, -9999.0, -9999.0])
-            )
-            self._file.attrs.create("has_1d", 0, dtype="i4")
-
-        is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-        if is_2d.any():
-            extent_2d = np.array(
-                [
-                    np.amin(nodes.bounds[is_2d, 0]),
-                    np.amin(nodes.bounds[is_2d, 1]),
-                    np.amax(nodes.bounds[is_2d, 2]),
-                    np.amax(nodes.bounds[is_2d, 3]),
-                ]
-            )
-            self._file.attrs.create("extent_2d", extent_2d, dtype="i4")
-            self._file.attrs.create("has_2d", 1, dtype="i4")
-        else:
-            self._file.attrs.create(
-                "extent_2d", np.array([-9999.0, -9999.0, -9999.0, -9999.0])
-            )
-            self._file.attrs.create("has_2d", 0, dtype="i4")
-        self._file.attrs.create("has_interception", 0, dtype="i4")
-        self._file.attrs.create("has_pumpstations", 0, dtype="i4")
-        self._file.attrs.create("has_simple_infiltration", 0, dtype="i4")
-        self._file.attrs.create("model_name", b"...")
-        self._file.attrs.create("model_slug", b"...")
-        self._file.attrs.create("revision_hash", b"...")
-        self._file.attrs.create("revision_nr", 0, dtype="i4")
-        self._file.attrs.create("threedigrid_builder_version", 0, dtype="i4")
+        make_tables = self._file.create_group("tables_settings")
+        dataclass_to_h5(make_tables, meta.tables_settings, mode="datasets")
 
     def write_grid_counts(self, nodes, lines):
         """Write the "meta" group in the gridadmin file.
@@ -163,8 +184,7 @@ class GridAdminOut(OutputInterface):
         """
 
         group = self._file.create_group("grid_coordinate_attributes")
-        for k, v in quadtree_statistics.items():
-            group.create_dataset(k, data=v, dtype=get_dtype(v))
+        dataclass_to_h5(group, quadtree_statistics, mode="datasets")
 
     def write_nodes(self, nodes, **kwargs):
         """Write the "nodes" group in the gridadmin file
@@ -329,7 +349,7 @@ class GridAdminOut(OutputInterface):
         start[0] = 0
         line_geometries = [coords[a:b].ravel() for a, b in zip(start, end)]
         line_geometries.insert(0, np.array([-9999.0, -9999.0]))
-        # The dataset has a special "variable length" dtype. This one is special specific write method.
+        # The dataset has a special "variable length" dtype. This one is special write method.
         vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
         group.create_dataset(
             "line_geometries",
@@ -412,23 +432,3 @@ class GridAdminOut(OutputInterface):
             ds[:, 1:] = values
         else:
             ValueError("Too many dimensions for values.")
-
-
-def get_dtype(value):
-    """Return a numpy dtype based on input value.
-
-    Args:
-        value (ndarray, int, float, bool)
-    """
-    elem_type = type(value)
-    if elem_type is np.ndarray:
-        dtype = value.dtype
-    elif elem_type is int:
-        dtype = np.int32
-    elif elem_type is float:
-        dtype = np.float64
-    elif elem_type is bool:
-        dtype = bool
-    else:
-        dtype = object
-    return dtype

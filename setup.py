@@ -75,6 +75,7 @@ install_requires = [
     "condenser[geo]",
     "rasterio",
     "sqlalchemy<1.4",
+    "dataclasses ; python_version<'3.7'"
 ]
 
 test_requires = ["pytest"]

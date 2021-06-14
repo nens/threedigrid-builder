@@ -100,3 +100,12 @@ class SewerageType(IntEnum):
     SINKER = 5
     STORAGE = 6
     STORAGE_SETTLING_TANK = 7
+
+
+@unique
+class InitializationType(IntEnum):
+    MAX = 0  # file present
+    MIN = 1  # file present
+    AVERAGE = 2  # file present
+    NO_AGG = 3  # file present
+    GLOBAL = 9  # no file present, use global value

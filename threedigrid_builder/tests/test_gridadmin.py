@@ -1,6 +1,10 @@
+from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import TablesSettings
+from threedigrid_builder.grid import GridMeta
+from threedigrid_builder.grid import QuadtreeStats
 from threedigrid_builder.interface import GridAdminOut
 
 import h5py
@@ -30,21 +34,40 @@ def h5_out():
         id=[1, 2],
         line=[[1, 2], [2, 3]],
     )
-    quadtree_stats = {
-        "lgrmin": 5,
-        "kmax": 2,
-        "mmax": np.array([2, 4], dtype=np.int32),
-        "nmax": np.array([3, 5], dtype=np.int32),
-        "dx": np.array([1.0, 2.0], dtype=np.float64),
-        "dxp": 0.5,
-        "x0p": 10.0,
-        "y0p": 10.0,
-    }
+    meta = GridMeta(
+        epsg_code=12432634,
+        model_name="test-name",
+        grid_settings=GridSettings(
+            use_2d=True,
+            use_1d_flow=True,
+            use_2d_flow=True,
+            grid_space=20.0,
+            dist_calc_points=25.0,
+            kmax=4,
+        ),
+        tables_settings=TablesSettings(
+            table_step_size=0.05,
+            frict_coef=0.03,
+            frict_coef_type=9,
+        ),
+    )
+    quadtree_stats = QuadtreeStats(
+        **{
+            "lgrmin": 5,
+            "kmax": 2,
+            "mmax": np.array([2, 4], dtype=np.int32),
+            "nmax": np.array([3, 5], dtype=np.int32),
+            "dx": np.array([1.0, 2.0], dtype=np.float64),
+            "dxp": 0.5,
+            "x0p": 10.0,
+            "y0p": 10.0,
+        }
+    )
 
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
         path = tmpfile.name
         with GridAdminOut(path) as out:
-            out.write_grid_characteristics(nodes, lines, 28992)
+            out.write_meta(meta)
             out.write_grid_counts(nodes, lines)
             out.write_quadtree(quadtree_stats)
             out.write_nodes(nodes)
@@ -179,31 +202,62 @@ def test_write_quadtree(h5_out, dataset, shape, dtype):
         ("ngr2bc", (), "i4"),
     ],
 )
-def test_write_grid_counts(h5_out, dataset, shape, dtype):
+def test_write_meta(h5_out, dataset, shape, dtype):
     assert h5_out["meta"][dataset].shape == shape
     assert h5_out["meta"][dataset].dtype == np.dtype(dtype)
 
 
 @pytest.mark.parametrize(
-    "attr,dtype",
+    "attr,shape,dtype",
     [
-        ("epsg_code", "i4"),
-        ("has_1d", "i4"),
-        ("has_2d", "i4"),
-        ("extent_1d", "float64"),
-        ("extent_2d", "float64"),
-        ("has_interception", "i4"),
-        ("has_pumpstations", "i4"),
-        ("has_simple_infiltration", "i4"),
-        # ('model_name', "S"),  # For later concern.
-        # ('model_slug', "S"),  # For later concern.
-        # ('revision_hash', "S"),  # For later concern.
-        ("revision_nr", "i4"),
-        ("threedigrid_builder_version", "i4"),
+        ("epsg_code", (), "int32"),  # changed to int
+        ("has_1d", (), "bool"),  # changed to bool
+        ("has_2d", (), "bool"),  # changed to bool
+        ("extent_1d", (4,), "float64"),
+        ("extent_2d", (4,), "float64"),
+        ("has_breaches", (), "bool"),  # changed to bool
+        ("has_groundwater", (), "bool"),  # changed to bool
+        ("has_groundwater_flow", (), "bool"),  # changed to bool
+        ("has_interception", (), "bool"),  # changed to bool
+        ("has_pumpstations", (), "bool"),  # changed to bool
+        ("has_simple_infiltration", (), "bool"),  # changed to bool
+        ("has_interflow", (), "bool"),  # added
+        ("model_name", (), "S"),
+        ("model_slug", (), "S"),
+        ("revision_hash", (), "S"),
+        ("revision_nr", (), "int32"),  # changed to int
+        ("threedi_version", (), "S"),
+        ("threedicore_version", (), "S"),
     ],
 )
-def test_write_grid_characteristics(h5_out, attr, dtype):
-    assert h5_out.attrs[attr].dtype == np.dtype(dtype)
+def test_write_attrs(h5_out, attr, shape, dtype):
+    assert h5_out.attrs[attr].shape == shape
+    actual = h5_out.attrs[attr].dtype
+    if dtype == "S":
+        actual = actual.char
+    assert np.dtype(actual) == np.dtype(dtype)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize(
+    "group,attr",
+    [
+        ("breaches", "prepared"),
+        ("levees", "prepared"),
+        ("lines", "channels_prepared"),
+        ("lines", "culverts_prepared"),
+        ("lines", "lines_prepared"),
+        ("lines", "orifices_prepared"),
+        ("lines", "pipes_prepared"),
+        ("lines", "weirs_prepared"),
+        ("nodes", "connectionnodes_prepared"),
+        ("nodes", "manholes_prepared"),
+        ("nodes", "prepared"),
+        ("pumps", "prepared"),
+    ],
+)  # [(x, y) for x in list(f) for y in list(f[x].attrs)]
+def test_write_sub_attrs(h5_out, group, attr):
+    assert h5_out[group].attrs[attr] == 1
 
 
 # obtained from bergermeer gridadmin.h5, edited:
