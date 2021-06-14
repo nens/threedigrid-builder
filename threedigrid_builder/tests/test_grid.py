@@ -5,6 +5,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
@@ -83,6 +84,34 @@ def grid2d(meta):
 @pytest.fixture
 def grid1d(meta):
     return Grid(nodes=Nodes(id=[2, 3]), lines=Lines(id=[1]), meta=meta)
+
+
+@pytest.mark.parametrize(
+    "setting,expected_true",
+    [
+        ("interception_type", "has_interception"),
+        ("groundwater_hydro_connectivity_type", "has_groundwater_flow"),
+        ("infiltration_rate_type", "has_simple_infiltration"),
+        ("groundwater_impervious_layer_level_type", "has_groundwater"),
+        ("interflow_type", "has_interflow"),
+    ],
+)
+def test_from_meta(meta, setting, expected_true):
+    setattr(meta.tables_settings, setting, InitializationType.GLOBAL)
+    grid = Grid.from_meta(
+        epsg_code=1234,
+        model_name="test",
+        grid_settings=meta.grid_settings,
+        tables_settings=meta.tables_settings,
+    )
+    for attr in (
+        "has_interception",
+        "has_groundwater_flow",
+        "has_simple_infiltration",
+        "has_groundwater",
+        "has_interflow",
+    ):
+        assert getattr(grid.meta, attr) is (attr == expected_true)
 
 
 def test_from_quadtree():
