@@ -13,16 +13,31 @@ from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import SQLite
 from threedigrid_builder.interface import Subgrid
+from typing import Callable
 from typing import Optional
 
 import itertools
+import logging
 
 
 __all__ = ["make_grid"]
 
+logger = logging.getLogger(__name__)
 
-def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
+
+def _default_progress_callback(progress: float, message: str):
+    logger.info("Progress: %d, Message: %s", progress * 100, message)
+
+
+def _make_grid(
+    sqlite_path,
+    dem_path=None,
+    model_area_path=None,
+    meta=None,
+    progress_callback=None,
+):
     """Compute interpolated channel nodes"""
+    progress_callback(0.0, "Reading input schematisation...")
     db = SQLite(sqlite_path)
 
     node_id_counter = itertools.count()
@@ -33,12 +48,14 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
     grid_settings = settings["grid_settings"]
 
     if grid_settings.use_2d:
+        progress_callback(0.1, "Constructing subgrid...")
         if not dem_path:
             raise SchematisationError("DEM file expected")
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
         subgrid = Subgrid(dem_path, model_area=model_area_path)
         subgrid_meta = subgrid.get_meta()
         refinements = db.get_grid_refinements()
+        progress_callback(0.7, "Constructing quadtree...")
         quadtree = QuadTree(
             subgrid_meta,
             grid_settings.kmax,
@@ -54,6 +71,7 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
 
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
+        progress_callback(0.8, "Constructing 1D network...")
         cn_grid = Grid.from_connection_nodes(
             connection_nodes=connection_nodes, node_id_counter=node_id_counter
         )
@@ -104,6 +122,7 @@ def _make_grid(sqlite_path, dem_path=None, model_area_path=None, meta=None):
         grid.set_pumps(db.get_pumps())
 
     if grid.meta.has_1d and grid.meta.has_2d:
+        progress_callback(0.9, "Connecting 1D and 2D elements...")
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,
@@ -141,6 +160,7 @@ def make_grid(
     out_path: Path,
     model_area_path: Optional[Path] = None,
     meta: dict = None,
+    progress_callback: Optional[Callable[[float, str], None]] = None,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -154,6 +174,8 @@ def make_grid(
         model_area_path
         meta: an optional dict with the following (optional) keys: model_slug (str),
             revision_hash (str), revision_nr (int), threedi_version (str)
+        progress_callback: an optional function that updates the progress. The function
+            should take an float in the range 0-1 and a message string.
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -174,7 +196,16 @@ def make_grid(
         writer = _grid_to_gpkg
     else:
         raise ValueError(f"Unsupported output format '{extension}'")
+    if progress_callback is None:
+        progress_callback = _default_progress_callback
 
-    grid = _make_grid(sqlite_path, dem_path, model_area_path, meta=meta)
+    grid = _make_grid(
+        sqlite_path,
+        dem_path,
+        model_area_path,
+        meta=meta,
+        progress_callback=progress_callback,
+    )
 
+    progress_callback(0.95, "Writing gridadmin...")
     writer(grid, out_path)
