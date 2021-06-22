@@ -25,7 +25,7 @@ __all__ = ["make_grid"]
 logger = logging.getLogger(__name__)
 
 
-def default_progress_callback(progress: float, message: Optional[str]):
+def _default_progress_callback(progress: float, message: str):
     logger.info("Progress: %d, Message: %s", progress * 100, message)
 
 
@@ -197,7 +197,7 @@ def make_grid(
     else:
         raise ValueError(f"Unsupported output format '{extension}'")
     if progress_callback is None:
-        progress_callback = default_progress_callback
+        progress_callback = _default_progress_callback
 
     grid = _make_grid(
         sqlite_path,
