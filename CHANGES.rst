@@ -25,6 +25,8 @@ Changelog of threedigrid-builder
 
 - Fixes for models with no channels.
 
+- Add an optional progress callback.
+
 
 0.1.2 (2021-04-28)
 ------------------
