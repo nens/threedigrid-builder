@@ -58,7 +58,12 @@ jobs:
           pip install -e .[test,gridadmin] --no-build-isolation
           pip list
 
-      - name: Run tests
+      - name: Run unittests
         shell: bash
         run: |
           pytest threedigrid_builder
+
+      - name: Run integration tests
+        shell: bash
+        run: |
+          pytest integration_tests
