@@ -258,7 +258,7 @@ def counts_to_column_index(counts):
     array([0, 1, 2, 0, 1, 0])
     """
     if len(counts) == 0:
-        return np.empty((0, ), dtype=int)
+        return np.empty((0,), dtype=int)
     start, stop = counts_to_ranges(counts)
     return np.arange(stop[-1]) - np.repeat(start, counts)
 

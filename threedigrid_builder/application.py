@@ -13,10 +13,11 @@ from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import SQLite
 from threedigrid_builder.interface import Subgrid
-from typing import Optional, Callable
-import logging
+from typing import Callable
+from typing import Optional
 
 import itertools
+import logging
 
 
 __all__ = ["make_grid"]
