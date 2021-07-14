@@ -490,10 +490,9 @@ def get_1d2d_lines(
 ):
     """Compute 1D-2D flowlines for (double) connected 1D nodes.
 
-    Currently implemented 1D nodes are: connection nodes and channel nodes.
-
     The line type and bottom level (kcu and dpumax) are set according to the
-    "get_1d2d_properties" on the corresponding objects (ConnectionNodes, Channels, ...).
+    "get_1d2d_properties" on the corresponding objects (ConnectionNodes, Channels,
+    Pipes, Culverts).
 
     If the 2D bottom level will turn out higher, this will be corrected later by
     threedi-tables.
@@ -525,7 +524,12 @@ def get_1d2d_lines(
     connected_idx = np.where(
         np.isin(
             nodes.content_type,
-            [ContentType.TYPE_V2_CONNECTION_NODES, ContentType.TYPE_V2_CHANNEL],
+            [
+                ContentType.TYPE_V2_CONNECTION_NODES,
+                ContentType.TYPE_V2_CHANNEL,
+                ContentType.TYPE_V2_PIPE,
+                ContentType.TYPE_V2_CULVERT,
+            ],
         )
         & np.isin(
             nodes.calculation_type,
@@ -555,6 +559,8 @@ def get_1d2d_lines(
     # Identify different types of objects and dispatch to the associated functions
     is_ch = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
     is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+    is_pipe = nodes.content_type[node_idx] == ContentType.TYPE_V2_PIPE
+    is_culvert = nodes.content_type[node_idx] == ContentType.TYPE_V2_CULVERT
 
     is_sewerage = np.zeros(n_lines, dtype=bool)
     dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
@@ -564,6 +570,12 @@ def get_1d2d_lines(
     )
     is_sewerage[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
         nodes, node_idx[is_ch], locations
+    )
+    is_sewerage[is_pipe], dpumax[is_pipe] = pipes.get_1d2d_properties(
+        nodes, node_idx[is_pipe], connection_nodes,
+    )
+    is_sewerage[is_culvert], dpumax[is_culvert] = culverts.get_1d2d_properties(
+        nodes, node_idx[is_culvert], connection_nodes,
     )
 
     # map "is_sewerage" to "kcu" (including double/single connected properties)
