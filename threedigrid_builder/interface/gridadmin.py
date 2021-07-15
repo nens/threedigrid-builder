@@ -422,6 +422,8 @@ class GridAdminOut(OutputInterface):
                 name, (values.shape[0] + 1,), dtype=values.dtype, fillvalue=fill
             )
             ds[1:] = values
+            if name == "id":  # set the ID of the dummy element
+                ds[0] = 0
         elif values.ndim == 2:
             ds = group.create_dataset(
                 name,
