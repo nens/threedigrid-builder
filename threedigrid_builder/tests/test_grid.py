@@ -363,24 +363,18 @@ def test_1d2d(node_coordinates, expected_lines, grid2d):
 
 
 @pytest.mark.parametrize(
-    "node_coordinates",
-    [
-        [(-1e-7, 0.5)],
-        [(2.0001, 1.5)],
-        [(1, 1.0001)],
-        [(1, -1e-7)],
-    ],
+    "node_coordinates", [(-1e-7, 0.5), (2.0001, 1.5), (1, 1.0001), (1, -1e-7)]
 )
 def test_1d2d_no_cell(node_coordinates, grid2d):
     grid2d.nodes += Nodes(
-        id=[7, 8][: len(node_coordinates)],
-        coordinates=node_coordinates,
+        id=[7],
+        coordinates=[node_coordinates],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         calculation_type=CalculationType.CONNECTED,
     )
     grid2d.lines = Lines(id=[])
 
-    with pytest.raises(SchematisationError):
+    with pytest.raises(SchematisationError, match=".*outside of the 2D.*"):
         grid2d.add_1d2d(*((mock.Mock(),) * 6))
 
 

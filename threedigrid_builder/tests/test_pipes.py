@@ -1,6 +1,9 @@
 from numpy.testing import assert_almost_equal
+from numpy.testing import assert_array_equal
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Pipes
+from unittest import mock
 
 import numpy as np
 import pygeos
@@ -13,6 +16,7 @@ def connection_nodes():
     return ConnectionNodes(
         id=[21, 25, 33, 42],
         the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+        drain_level=[0.0, 20.0, 30.0, 10.0],
     )
 
 
@@ -66,3 +70,29 @@ def test_compute_bottom_level_raises_out_of_bounds(pipe_ids, ds, pipes):
     pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
     with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
         pipes.compute_bottom_level(pipe_ids, ds)
+
+
+def test_1d2d_properties(pipes):
+    nodes = Nodes(
+        id=[0, 2, 5, 7],
+        content_pk=[1, 1, 2, 2],
+        ds1d=[12.0, 13.0, 14.0, 15.0],
+    )
+    node_idx = [0, 1, 3]
+
+    connection_nodes = mock.Mock()
+
+    with mock.patch.object(pipes, "compute_drain_level") as compute_drain_level:
+        compute_drain_level.return_value = np.array([1.8, 2.5, 3.2])
+        is_closed, dpumax = pipes.get_1d2d_properties(nodes, node_idx, connection_nodes)
+
+        _, kwargs = compute_drain_level.call_args
+        assert_array_equal(kwargs["ids"], [1, 1, 2])  # the content pk
+        assert_array_equal(kwargs["ds"], [12.0, 13.0, 15.0])  # the ds1d
+        assert kwargs["connection_nodes"] is connection_nodes
+
+    # pipes are closed
+    assert_array_equal(is_closed, True)
+
+    # interpolation between manhole drain levels is further tested elsewhere
+    assert_array_equal(dpumax, [1.8, 2.5, 3.2])

@@ -224,7 +224,12 @@ class BaseLinear:
         left = connection_nodes.drain_level[left_cn_idx]
         right = connection_nodes.drain_level[right_cn_idx]
 
-        return weights * right + (1 - weights) * left
+        result = weights * right + (1 - weights) * left
+
+        # fix cases with nan on one side
+        result[np.isnan(result)] = left[np.isnan(result)]
+        result[np.isnan(result)] = right[np.isnan(result)]
+        return result
 
 
 def counts_to_ranges(counts):

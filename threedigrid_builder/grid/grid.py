@@ -559,8 +559,9 @@ def get_1d2d_lines(
             if np.any(types == content_type)
         ]
         raise SchematisationError(
-            f"The following objects are (double) connected but are (partially) outside "
-            f"of the 2D calculation cells: {', '.join(object_pk_list)}."
+            f"The following object(s) have a connected calculation type but are "
+            f"(partially) outside of the 2D calculation cells: "
+            f"{', '.join(object_pk_list)}."
         )
     if n_lines == 0:
         return Lines(id=[])
