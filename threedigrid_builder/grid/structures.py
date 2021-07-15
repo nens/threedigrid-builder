@@ -37,7 +37,7 @@ class Culverts(linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CULVERT
 
     def get_1d2d_properties(self, nodes, node_idx, connection_nodes):
-        """Compute properties (is_sewerage, dpumax) of 1D-2D flowlines.
+        """Compute properties (is_closed, dpumax) of 1D-2D culvert flowlines.
 
         Args:
             nodes (Nodes): All nodes
@@ -46,11 +46,9 @@ class Culverts(linear.BaseLinear):
 
         Returns:
             tuple of:
-            - is_sewerage (bool): always False
+            - is_closed (bool): always True
             - dpumax (array of float): interpolated between CN drain_level
         """
-        is_sewerage = False
-
         # dpumax is interpolated between drain levels of adjacent manholes (conn nodes)
         dpumax = self.compute_drain_level(
             ids=nodes.content_pk[node_idx],
@@ -58,7 +56,7 @@ class Culverts(linear.BaseLinear):
             connection_nodes=connection_nodes,
         )
 
-        return False, dpumax
+        return True, dpumax
 
 
 class WeirOrifice:  # NL: stuw / doorlaat

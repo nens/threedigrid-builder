@@ -408,9 +408,9 @@ def test_1d2d_multiple(grid2d):
     assert_array_equal(
         grid2d.lines.kcu,
         [
-            LineType.LINE_1D2D_SINGLE_CONNECTED_SEWERAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,

@@ -11,6 +11,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from typing import Optional
 from typing import Tuple
 
@@ -521,29 +522,46 @@ def get_1d2d_lines(
     cell_ids = nodes.id[is_2d_open]
     cell_tree = pygeos.STRtree(pygeos.box(*nodes.bounds[is_2d_open].T))
 
+    HAS_1D2D_CONTENT_TYPES = (
+        ContentType.TYPE_V2_CONNECTION_NODES,
+        ContentType.TYPE_V2_CHANNEL,
+        ContentType.TYPE_V2_PIPE,
+        ContentType.TYPE_V2_CULVERT,
+    )
+    HAS_1D2D_CALC_TYPES = (CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED)
     connected_idx = np.where(
-        np.isin(
-            nodes.content_type,
-            [
-                ContentType.TYPE_V2_CONNECTION_NODES,
-                ContentType.TYPE_V2_CHANNEL,
-                ContentType.TYPE_V2_PIPE,
-                ContentType.TYPE_V2_CULVERT,
-            ],
-        )
-        & np.isin(
-            nodes.calculation_type,
-            [CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED],
-        )
+        np.isin(nodes.content_type, HAS_1D2D_CONTENT_TYPES)
+        & np.isin(nodes.calculation_type, HAS_1D2D_CALC_TYPES)
     )[0]
+    n_connected_nodes = connected_idx.shape[0]
+    if n_connected_nodes == 0:
+        return Lines(id=[])
+
+    # TODO Error if a node is not in a 2D cell.
 
     # The query_bulk returns 2 1D arrays: one with indices into the supplied node
     # geometries and one with indices into the tree of cells.
     idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
-    # Address edge cases: just take the first line
+    # Address edge cases of multiple 1D-2D lines per node: just take the one
     _, first_unique_index = np.unique(idx[0], return_index=True)
     idx = idx[:, first_unique_index]
     n_lines = idx.shape[1]
+    # Error if there is a node without a 1D-2D line
+    if n_lines != n_connected_nodes:
+        # The code in this if clause is only for pretty error formatting.
+        out_of_bounds = np.delete(connected_idx, idx[0])
+        types = nodes.content_type[out_of_bounds]
+        pks = nodes.content_pk[out_of_bounds]
+        pretty_names = ("connection nodes", "channels", "pipes", "culverts")
+        object_pk_list = [
+            f"{pretty_name} {sorted(set(pks[types == content_type]))}"
+            for content_type, pretty_name in zip(HAS_1D2D_CONTENT_TYPES, pretty_names)
+            if np.any(types == content_type)
+        ]
+        raise SchematisationError(
+            f"The following objects are (double) connected but are (partially) outside "
+            f"of the 2D calculation cells: {', '.join(object_pk_list)}."
+        )
     if n_lines == 0:
         return Lines(id=[])
     node_idx = connected_idx[idx[0]]  # convert to node indexes
@@ -562,32 +580,36 @@ def get_1d2d_lines(
     is_pipe = nodes.content_type[node_idx] == ContentType.TYPE_V2_PIPE
     is_culvert = nodes.content_type[node_idx] == ContentType.TYPE_V2_CULVERT
 
-    is_sewerage = np.zeros(n_lines, dtype=bool)
+    is_closed = np.zeros(n_lines, dtype=bool)
     dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
 
-    is_sewerage[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
+    is_closed[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
         nodes, node_idx[is_cn]
     )
-    is_sewerage[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
+    is_closed[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
         nodes, node_idx[is_ch], locations
     )
-    is_sewerage[is_pipe], dpumax[is_pipe] = pipes.get_1d2d_properties(
-        nodes, node_idx[is_pipe], connection_nodes,
+    is_closed[is_pipe], dpumax[is_pipe] = pipes.get_1d2d_properties(
+        nodes,
+        node_idx[is_pipe],
+        connection_nodes,
     )
-    is_sewerage[is_culvert], dpumax[is_culvert] = culverts.get_1d2d_properties(
-        nodes, node_idx[is_culvert], connection_nodes,
+    is_closed[is_culvert], dpumax[is_culvert] = culverts.get_1d2d_properties(
+        nodes,
+        node_idx[is_culvert],
+        connection_nodes,
     )
 
-    # map "is_sewerage" to "kcu" (including double/single connected properties)
+    # map "is_closed" to "kcu" (including double/single connected properties)
     # map the two binary arrays on numbers 0, 1, 2, 3
-    options = is_double * 2 + is_sewerage
+    options = is_double * 2 + is_closed
     kcu = np.choose(
         options,
         choices=[
             LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
         ],
     )
 
