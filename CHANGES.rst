@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.1.3 (unreleased)
+0.2.0 (2021-07-15)
 ------------------
 
 - Added threedigrid_builder.grid.geo_utils with segmentize and line_substring functions.
