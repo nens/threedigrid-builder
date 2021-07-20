@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.2.1 (unreleased)
+0.2.1 (2021-07-20)
 ------------------
 
 - Fixed issue when reprojecting 0 grid refinements with pyproj 2.*
