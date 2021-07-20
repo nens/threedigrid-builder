@@ -55,6 +55,7 @@ class LinearObject:
     connection_node_start_id: int
     connection_node_end_id: int
     dist_calc_points: float
+    cross_section_definition_id: int
 
 
 @array_of(LinearObject)
@@ -71,6 +72,7 @@ def one_linear_object():
         connection_node_start_id=np.array([21]),
         connection_node_end_id=np.array([42]),
         calculation_type=np.array([2]),
+        cross_section_definition_id=[17],
     )
 
 
@@ -85,6 +87,7 @@ def two_linear_objects():
         connection_node_start_id=np.array([21, 25]),
         connection_node_end_id=np.array([42, 33]),
         calculation_type=np.array([2, 1]),
+        cross_section_definition_id=[17, 18],
     )
 
 
@@ -268,6 +271,9 @@ def test_get_lines(connection_nodes, two_linear_objects):
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
+    assert_array_equal(lines.cross1, [17, 17, 18, 18, 18])
+    assert_array_equal(lines.cross2, -9999)
+    assert_array_equal(lines.cross_weight, 1.0)
     assert_almost_equal(lines.ds1d, expected_sizes)
     assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
 

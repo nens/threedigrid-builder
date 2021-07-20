@@ -47,6 +47,7 @@ def two_weir_orifices(request):
         connection_node_end_id=[42, 33],
         crest_level=[2.3, 4.5],
         crest_type=[4, 3],
+        cross_section_definition_id=[17, 18],
     )
 
 
@@ -67,6 +68,9 @@ def test_get_lines(connection_nodes, two_weir_orifices):
     assert_array_equal(lines.content_type, expected_content_type)
     assert_array_equal(lines.content_pk, [1, 2])
     assert_array_equal(lines.kcu, [4, 3])
+    assert_array_equal(lines.cross1, [17, 18])
+    assert_array_equal(lines.cross2, -9999)
+    assert_array_equal(lines.cross_weight, [1.0, 1.0])
     assert_array_equal(lines.dpumax, [2.3, 4.5])
 
 

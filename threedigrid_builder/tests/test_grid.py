@@ -9,6 +9,7 @@ from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid import QuadtreeStats
@@ -208,7 +209,10 @@ def test_set_channel_weights(compute_weights):
     )
     grid = Grid(nodes=nodes, lines=lines)
     compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # csl1, csl2, weights
-    locations = mock.Mock()
+    locations = CrossSectionLocations(
+        id=[0, 1, 2],
+        definition_id=[5, 4, 3],
+    )
     channels = mock.Mock()
 
     # execute the method
@@ -231,6 +235,10 @@ def test_set_channel_weights(compute_weights):
     assert_array_equal(lines.cross_loc1, [0, -9999, 1])
     assert_array_equal(lines.cross_loc2, [1, -9999, 2])
     assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
+
+    # line attributes cross1, cross2 are adapted correctly
+    assert_array_equal(lines.cross1, [5, -9999, 4])
+    assert_array_equal(lines.cross2, [4, -9999, 3])
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_calculation_types")

@@ -88,6 +88,8 @@ class WeirOrifices:
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType
             dpumax=self.crest_level,
+            cross1=self.cross_section_definition_id,
+            cross_weight=1.0,
         )
 
 

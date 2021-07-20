@@ -278,6 +278,14 @@ class Grid:
         self.lines.cross_loc2[line_mask] = cross_loc2
         self.lines.cross_weight[line_mask] = cross_weight
 
+        # Also fill cross1 and cross2
+        self.lines.cross1[line_mask] = cross_section_locations.definition_id[
+            cross_section_locations.id_to_index(cross_loc1)
+        ]
+        self.lines.cross2[line_mask] = cross_section_locations.definition_id[
+            cross_section_locations.id_to_index(cross_loc2)
+        ]
+
     @classmethod
     def from_pipes(
         cls,

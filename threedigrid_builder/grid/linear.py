@@ -154,6 +154,14 @@ class BaseLinear:
         mask[last_idx] = False
         line[mask, 1] = nodes.id
 
+        # conditionally add the cross section definition (for pipes and culverts only)
+        try:
+            cross1 = self.cross_section_definition_id[segment_idx]
+            cross_weight = 1.0
+        except AttributeError:
+            cross1 = -9999
+            cross_weight = np.nan
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -163,6 +171,8 @@ class BaseLinear:
             content_pk=self.id[segment_idx],
             ds1d=end_s - start_s,
             kcu=self.calculation_type[segment_idx],
+            cross1=cross1,
+            cross_weight=cross_weight,
         )
 
     def compute_bottom_level(self, ids, ds):
