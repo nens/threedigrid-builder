@@ -25,8 +25,8 @@ def test_1d2d_properties(channels):
     nodes = Nodes(
         id=[0, 2, 5, 7],
         dmax=[1.0, 3.0, 2.0, 4.0],
-        cross1=[2, 5, -9999, 10],
-        cross2=[5, 10, -9999, 13],
+        cross_loc1=[2, 5, -9999, 10],
+        cross_loc2=[5, 10, -9999, 13],
         cross_weight=[0.2, 0.5, np.nan, 0.8],
     )
     locations = CrossSectionLocations(

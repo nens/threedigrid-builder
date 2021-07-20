@@ -207,7 +207,7 @@ def test_set_channel_weights(compute_weights):
         ds1d=[2.0, 12.0, 21.0],
     )
     grid = Grid(nodes=nodes, lines=lines)
-    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # cross1, cross2, weights
+    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # csl1, csl2, weights
     locations = mock.Mock()
     channels = mock.Mock()
 
@@ -222,14 +222,14 @@ def test_set_channel_weights(compute_weights):
     assert args[2] is locations
     assert args[3] is channels
 
-    # node attributes cross1, cross2, cross_weight are adapted correctly
-    assert_array_equal(nodes.cross1, [0, -9999, 1])
-    assert_array_equal(nodes.cross2, [1, -9999, 2])
+    # node attributes cross_loc1, cross_loc2, cross_weight are adapted correctly
+    assert_array_equal(nodes.cross_loc1, [0, -9999, 1])
+    assert_array_equal(nodes.cross_loc2, [1, -9999, 2])
     assert_array_equal(nodes.cross_weight, [0.2, np.nan, 0.4])
 
-    # line attributes cross1, cross2, cross_weight are adapted correctly
-    assert_array_equal(lines.cross1, [0, -9999, 1])
-    assert_array_equal(lines.cross2, [1, -9999, 2])
+    # line attributes cross_loc1, cross_loc2, cross_weight are adapted correctly
+    assert_array_equal(lines.cross_loc1, [0, -9999, 1])
+    assert_array_equal(lines.cross_loc2, [1, -9999, 2])
     assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
 
 
@@ -257,8 +257,8 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
         content_pk=[1, 1, 3, 2, 5],
         ds1d=[2.0, 12.0, 21.0, 15.0, 0.5],
         dmax=[np.nan, 12.0, np.nan, np.nan, np.nan],
-        cross1=[5, -9999, 7, -9999, -9999],
-        cross2=[6, -9999, 8, -9999, -9999],
+        cross_loc1=[5, -9999, 7, -9999, -9999],
+        cross_loc2=[6, -9999, 8, -9999, -9999],
         cross_weight=[0.2, np.nan, 0.8, np.nan, np.nan],
     )
     lines = Lines(id=[])
@@ -277,8 +277,8 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
 
     # cross section interpolate was called correctly
     args, _ = cs_interpolate.call_args
-    assert_array_equal(args[0], [5, 7])  # cross1
-    assert_array_equal(args[1], [6, 8])  # cross2
+    assert_array_equal(args[0], [5, 7])  # cross_loc1
+    assert_array_equal(args[1], [6, 8])  # cross_loc2
     assert_array_equal(args[2], [0.2, 0.8])  # weights
     assert args[3] is locations
     assert args[4] == "reference_level"

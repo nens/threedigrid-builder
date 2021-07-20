@@ -247,7 +247,7 @@ class Grid:
     def set_channel_weights(self, cross_section_locations, channels):
         """Set cross section weights to channel nodes and lines.
 
-        The attributes cross1, cross2, cross_weight are changed in place for nodes and
+        The attributes cross_loc1, cross2, cross_weight are changed in place for nodes and
         lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
@@ -256,26 +256,26 @@ class Grid:
         """
         # Mask the nodes to only the Channel nodes
         node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = csl_module.compute_weights(
+        cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.nodes.content_pk[node_mask],
             self.nodes.ds1d[node_mask],
             cross_section_locations,
             channels,
         )
-        self.nodes.cross1[node_mask] = cross1
-        self.nodes.cross2[node_mask] = cross2
+        self.nodes.cross_loc1[node_mask] = cross_loc1
+        self.nodes.cross_loc2[node_mask] = cross_loc2
         self.nodes.cross_weight[node_mask] = cross_weight
 
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = csl_module.compute_weights(
+        cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.lines.content_pk[line_mask],
             self.lines.ds1d[line_mask],
             cross_section_locations,
             channels,
         )
-        self.lines.cross1[line_mask] = cross1
-        self.lines.cross2[line_mask] = cross2
+        self.lines.cross_loc1[line_mask] = cross_loc1
+        self.lines.cross_loc2[line_mask] = cross_loc2
         self.lines.cross_weight[line_mask] = cross_weight
 
     @classmethod
@@ -407,8 +407,8 @@ class Grid:
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
         self.nodes.dmax[mask] = csl_module.interpolate(
-            self.nodes.cross1[mask],
-            self.nodes.cross2[mask],
+            self.nodes.cross_loc1[mask],
+            self.nodes.cross_loc2[mask],
             self.nodes.cross_weight[mask],
             cross_section_locations,
             "reference_level",

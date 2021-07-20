@@ -39,8 +39,8 @@ class Channels(linear.BaseLinear):
         """
         # dpumax is interpolated between cross section location bank levels
         dpumax = interpolate(
-            nodes.cross1[node_idx],
-            nodes.cross2[node_idx],
+            nodes.cross_loc1[node_idx],
+            nodes.cross_loc2[node_idx],
             nodes.cross_weight[node_idx],
             locations,
             "bank_level",

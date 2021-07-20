@@ -83,16 +83,16 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     5. Equalization on the right
     6. Only 1 CS location in the channel, extrapol. lead to too large index
     """
-    expected_cross1 = [1, 5, 3, 3, 3, 6, 6]
-    expected_cross2 = [1, 5, 2, 2, 2, 6, 6]
+    expected_cross_loc1 = [1, 5, 3, 3, 3, 6, 6]
+    expected_cross_loc2 = [1, 5, 2, 2, 2, 6, 6]
     expected_weight = [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
 
-    cross1, cross2, cross_weights = compute_weights(
+    cross_loc1, cross_loc2, cross_weights = compute_weights(
         channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
     )
 
-    assert_equal(cross1, expected_cross1)
-    assert_equal(cross2, expected_cross2)
+    assert_equal(cross_loc1, expected_cross_loc1)
+    assert_equal(cross_loc2, expected_cross_loc2)
     assert_almost_equal(cross_weights, expected_weight)
 
 
@@ -109,11 +109,11 @@ def test_compute_bottom_level(cross_section_locations, channels, channel_lines):
 
 @pytest.fixture
 def channel_lines_with_weights(channel_lines, cross_section_locations, channels):
-    cross1, cross2, cross_weight = compute_weights(
+    cross_loc1, cross_loc2, cross_weight = compute_weights(
         channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
     )
-    channel_lines.cross1[:] = cross1
-    channel_lines.cross2[:] = cross2
+    channel_lines.cross_loc1[:] = cross_loc1
+    channel_lines.cross_loc2[:] = cross_loc2
     channel_lines.cross_weight[:] = cross_weight
     return channel_lines
 
