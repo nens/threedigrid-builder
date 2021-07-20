@@ -483,6 +483,8 @@ def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
     )
 
     def func(coords):
+        if coords.shape[0] == 0:
+            return coords
         x, y = transformer.transform(coords[:, 0], coords[:, 1])
         return np.array([x, y]).T
 
