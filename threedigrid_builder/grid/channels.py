@@ -2,7 +2,7 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import linear
-from threedigrid_builder.grid.cross_sections import interpolate
+from threedigrid_builder.grid.cross_section_locations import interpolate
 
 import pygeos
 

@@ -1,13 +1,12 @@
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 
 import numpy as np
 import pygeos
 
 
-__all__ = ["CrossSectionLocations", "CrossSectionDefinitions"]
+__all__ = ["CrossSectionLocations"]
 
 
 class CrossSectionLocation:
@@ -24,19 +23,6 @@ class CrossSectionLocation:
 
 @array_of(CrossSectionLocation)
 class CrossSectionLocations:
-    pass
-
-
-class CrossSectionDefinition:
-    id: int
-    code: str
-    shape: CrossSectionShape
-    height: float
-    width: float
-
-
-@array_of(CrossSectionDefinition)
-class CrossSectionDefinitions:
     pass
 
 

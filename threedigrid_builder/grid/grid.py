@@ -1,5 +1,5 @@
 from . import connection_nodes as connection_nodes_module
-from . import cross_sections as cross_sections_module
+from . import cross_section_locations as csl_module
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -244,22 +244,22 @@ class Grid:
         )
         return cls(nodes, lines)
 
-    def set_channel_weights(self, cross_sections, channels):
+    def set_channel_weights(self, cross_section_locations, channels):
         """Set cross section weights to channel nodes and lines.
 
         The attributes cross1, cross2, cross_weight are changed in place for nodes and
         lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
-            cross_sections (CrossSectionLocations)
+            cross_section_locations (CrossSectionLocations)
             channels (Channels): Used to lookup the channel geometry
         """
         # Mask the nodes to only the Channel nodes
         node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
+        cross1, cross2, cross_weight = csl_module.compute_weights(
             self.nodes.content_pk[node_mask],
             self.nodes.ds1d[node_mask],
-            cross_sections,
+            cross_section_locations,
             channels,
         )
         self.nodes.cross1[node_mask] = cross1
@@ -268,10 +268,10 @@ class Grid:
 
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
+        cross1, cross2, cross_weight = csl_module.compute_weights(
             self.lines.content_pk[line_mask],
             self.lines.ds1d[line_mask],
-            cross_sections,
+            cross_section_locations,
             channels,
         )
         self.lines.cross1[line_mask] = cross1
@@ -390,7 +390,7 @@ class Grid:
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
     def set_bottom_levels(
-        self, cross_sections, channels, pipes, weirs, orifices, culverts
+        self, cross_section_locations, channels, pipes, weirs, orifices, culverts
     ):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
@@ -406,11 +406,11 @@ class Grid:
         """
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = cross_sections_module.interpolate(
+        self.nodes.dmax[mask] = csl_module.interpolate(
             self.nodes.cross1[mask],
             self.nodes.cross2[mask],
             self.nodes.cross_weight[mask],
-            cross_sections,
+            cross_section_locations,
             "reference_level",
         )
 
@@ -430,7 +430,7 @@ class Grid:
         connection_nodes_module.set_bottom_levels(
             self.nodes,
             self.lines,
-            cross_sections,
+            cross_section_locations,
             channels,
             pipes,
             weirs,
@@ -442,7 +442,7 @@ class Grid:
         self.lines.set_bottom_levels(self.nodes, allow_nan=True)
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
-        cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
+        csl_module.fix_dpumax(self.lines, self.nodes, cross_section_locations)
 
     def set_pumps(self, pumps):
         """Set the pumps on this grid object

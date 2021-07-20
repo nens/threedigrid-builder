@@ -82,10 +82,10 @@ class FrictionType(IntEnum):
 
 @unique
 class CrossSectionShape(IntEnum):
-    # TODO Check valus, 0 possibly means "CLOSED_RECTANGLE"
+    CLOSED_RECTANGLE = 0  # --> tabulated rectangle
     RECTANGLE = 1
     CIRCLE = 2
-    EGG = 3
+    EGG = 3  # --> tabulated trapezium
     TABULATED_RECTANGLE = 5
     TABULATED_TRAPEZIUM = 6
 

@@ -191,7 +191,7 @@ def test_from_channels():
     )
 
 
-@mock.patch("threedigrid_builder.grid.cross_sections.compute_weights")
+@mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")
 def test_set_channel_weights(compute_weights):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
@@ -239,10 +239,10 @@ def test_set_calculation_types(set_calculation_types, grid):
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.cross_sections.interpolate")
+@mock.patch("threedigrid_builder.grid.cross_section_locations.interpolate")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
-@mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
+@mock.patch("threedigrid_builder.grid.cross_section_locations.fix_dpumax")
 def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(

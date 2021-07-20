@@ -5,9 +5,9 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid.cross_sections import compute_bottom_level
-from threedigrid_builder.grid.cross_sections import compute_weights
-from threedigrid_builder.grid.cross_sections import fix_dpumax
+from threedigrid_builder.grid.cross_section_locations import compute_bottom_level
+from threedigrid_builder.grid.cross_section_locations import compute_weights
+from threedigrid_builder.grid.cross_section_locations import fix_dpumax
 
 import pygeos
 import pytest
