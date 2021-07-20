@@ -85,7 +85,7 @@ class Grid:
         self,
         nodes: Nodes,
         lines: Lines,
-        pumps: Pumps = None,
+        pumps: Optional[Pumps] = None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -93,6 +93,10 @@ class Grid:
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
         if not isinstance(lines, Lines):
             raise TypeError(f"Expected Lines instance, got {type(lines)}")
+        if pumps is None:
+            pumps = Pumps(id=[])
+        elif not isinstance(pumps, Pumps):
+            raise TypeError(f"Expected Pumps instance, got {type(pumps)}")
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
@@ -477,7 +481,7 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
-        if self.pumps is not None and len(self.pumps) > 0:
+        if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
