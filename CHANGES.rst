@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Fixed issue when reprojecting 0 grid refinements with pyproj 2.*
 
+- Fixed issue when writing 0 pumps with h5py 2.*
+
 
 0.2.0 (2021-07-15)
 ------------------
