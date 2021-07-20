@@ -31,8 +31,8 @@ def h5_out():
         ],
     )
     pumps = Pumps(
-        id=[1, 2],
-        line=[[1, 2], [2, 3]],
+        id=[1, 2, 3],
+        line=[[1, 2], [2, 3], [3, 4]],
     )
     meta = GridMeta(
         epsg_code=12432634,
@@ -261,30 +261,30 @@ def test_write_sub_attrs(h5_out, group, attr):
 
 
 # obtained from bergermeer gridadmin.h5, edited:
-# - 20 pumps to 3
+# - 20 pumps to 4
 # - int64 to int32
 @pytest.mark.parametrize(
     "dataset,shape,dtype",
     [
-        ("bottom_level", (3,), "float64"),
-        ("capacity", (3,), "float64"),
-        ("connection_node_end_pk", (3,), "int32"),
-        ("connection_node_start_pk", (3,), "int32"),
-        ("content_pk", (3,), "int32"),
-        ("coordinates", (2, 3), "float64"),
-        ("display_name", (3,), "|S64"),  # increased size from 24 to 64
-        ("id", (3,), "int32"),
-        ("lower_stop_level", (3,), "float64"),
-        ("node1_id", (3,), "int32"),
-        ("node2_id", (3,), "int32"),
-        ("node_coordinates", (4, 3), "float64"),
+        ("bottom_level", (4,), "float64"),
+        ("capacity", (4,), "float64"),
+        ("connection_node_end_pk", (4,), "int32"),
+        ("connection_node_start_pk", (4,), "int32"),
+        ("content_pk", (4,), "int32"),
+        ("coordinates", (2, 4), "float64"),
+        ("display_name", (4,), "|S64"),  # increased size from 24 to 64
+        ("id", (4,), "int32"),
+        ("lower_stop_level", (4,), "float64"),
+        ("node1_id", (4,), "int32"),
+        ("node2_id", (4,), "int32"),
+        ("node_coordinates", (4, 4), "float64"),
         # ("nodp1d", (2, 3), "int32"), removed
-        # ("p1dtyp", (3,), "int32"), removed
-        ("start_level", (3,), "float64"),
-        ("type", (3,), "int32"),
-        ("zoom_category", (3,), "int32"),
-        ("code", (3,), "|S32"),  # added
-        ("upper_stop_level", (3,), "float64"),  # added
+        # ("p1dtyp", (4,), "int32"), removed
+        ("start_level", (4,), "float64"),
+        ("type", (4,), "int32"),
+        ("zoom_category", (4,), "int32"),
+        ("code", (4,), "|S32"),  # added
+        ("upper_stop_level", (4,), "float64"),  # added
     ],
 )
 def test_write_pumps(h5_out, dataset, shape, dtype):

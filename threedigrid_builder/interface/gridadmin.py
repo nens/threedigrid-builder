@@ -393,7 +393,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "connection_node_start_pk", pumps.connection_node_start_id
         )
-        self.write_dataset(group, "coordinates", pumps.coordinates)
+        self.write_dataset(group, "coordinates", pumps.coordinates.T)
         self.write_dataset(group, "lower_stop_level", pumps.lower_stop_level)
         self.write_dataset(group, "start_level", pumps.start_level)
         self.write_dataset(group, "type", pumps.type_)

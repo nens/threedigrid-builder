@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Fixed issue when writing 0 pumps with h5py 2.*
 
+- Fixed missing transpose when writing pumps.coordinates to HDF5.
+
 
 0.2.0 (2021-07-15)
 ------------------
