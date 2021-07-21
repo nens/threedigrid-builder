@@ -1,5 +1,6 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_sections as cross_sections_module
+from . import obstacles as obstacles_module
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -177,6 +178,7 @@ class Grid:
             y0p=quadtree.origin[1],
         )
 
+        lines.set_line_coords(nodes)
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
@@ -445,27 +447,13 @@ class Grid:
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
     def set_obstacles(self, obstacles):
-        """Set obstacles on 2D lines. 
-           Set kcu to 101 and changes dpumax to obstacle height.
+        """Set obstacles on 2D lines.
+           Set kcu to 101 and changes flod and flou to crest_level.
 
-        Args: 
+        Args:
             obstacles (Obstacles)
         """
-        is_2d = np.isin(self.lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
-        coordinates = self.lines.line_coords[is_2d]
-        lines_tree = pygeos.STRtree(
-            pygeos.linestrings(coordinates.reshape(len(is_2d), 2, 2))
-        )
-
-        for i in range(len(obstacles.id)):
-            _, l_inscts = lines_tree.query_bulk(
-                obstacles.the_geom[i], predicate="intersects"
-            )
-            self.lines.kcu[l_inscts] = LineType.LINE_2D_OBSTACLE
-            self.lines.flod[l_inscts] = np.fmax(
-                self.lines.flod[l_inscts], obstacles.crest_level[i]
-            )
-            self.lines.flou[l_inscts] = self.lines.flod[l_inscts]
+        obstacles_module.apply_obstacles(self.lines, obstacles)
 
     def set_pumps(self, pumps):
         """Set the pumps on this grid object

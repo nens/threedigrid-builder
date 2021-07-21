@@ -13,4 +13,4 @@ from .grid_refinement import *  # NOQA
 from .grid import *  # NOQA
 from .quadtree import *  # NOQA
 from .structures import *  # NOQA
-from .obstacles import * # NOQA
+from .obstacles import *  # NOQA

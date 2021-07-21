@@ -86,4 +86,3 @@ class Lines:
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
         self.ds1d[to_fix] = pygeos.length(self.line_geometries[to_fix])
-        
