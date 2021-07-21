@@ -4,6 +4,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.grid import GridMeta
+from threedigrid_builder.grid import InternalCrossSectionDefinitions
 from threedigrid_builder.grid import QuadtreeStats
 from threedigrid_builder.interface import GridAdminOut
 
@@ -63,6 +64,12 @@ def h5_out():
             "y0p": 10.0,
         }
     )
+    cross_sections = InternalCrossSectionDefinitions(
+        id=[1, 2, 3],
+        count=[-9999, 4, 2],
+        offset=[-9999, 0, 4],
+    )
+    cross_sections.tables = np.random.random((6, 2))
 
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
         path = tmpfile.name
@@ -73,6 +80,7 @@ def h5_out():
             out.write_nodes(nodes)
             out.write_lines(lines)
             out.write_pumps(pumps)
+            out.write_cross_sections(cross_sections)
 
         with h5py.File(path, "r") as f:
             yield f
@@ -290,3 +298,21 @@ def test_write_sub_attrs(h5_out, group, attr):
 def test_write_pumps(h5_out, dataset, shape, dtype):
     assert h5_out["pumps"][dataset].shape == shape
     assert h5_out["pumps"][dataset].dtype == np.dtype(dtype)
+
+
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("id", (4,), "int32"),
+        ("code", (4,), "|S32"),  # added
+        ("shape", (4,), "int32"),
+        ("content_pk", (4,), "int32"),
+        ("width_1d", (4,), "float64"),
+        ("offset", (4,), "int32"),
+        ("count", (4,), "int32"),
+        ("tables", (2, 6), "float64"),
+    ],
+)
+def test_write_cross_sections(h5_out, dataset, shape, dtype):
+    assert h5_out["cross_sections"][dataset].shape == shape
+    assert h5_out["cross_sections"][dataset].dtype == np.dtype(dtype)

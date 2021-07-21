@@ -6,7 +6,7 @@ import math
 import numpy as np
 
 
-__all__ = ["CrossSectionDefinitions"]
+__all__ = ["CrossSectionDefinitions", "InternalCrossSectionDefinitions"]
 
 
 class CrossSectionDefinition:
@@ -68,9 +68,7 @@ class CrossSectionDefinitions:
 
 @array_of(InternalCrossSectionDefinition)
 class InternalCrossSectionDefinitions:
-    def __init__(self, tables=None, **kwargs):
-        self.tables = tables
-        super().__init__(**kwargs)
+    tables = None
 
 
 def tabulate_builtin(shape, width, height):
