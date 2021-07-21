@@ -31,15 +31,16 @@ def cross_section_definitions():
 
 
 def test_to_internal_multiple(cross_section_definitions):
+    table_1 = np.random.random((9, 2))
+    table_2 = np.random.random((4, 2))
     with mock.patch.dict(
-        "threedigrid_builder.grid.cross_section_definitions.tabulators"
-    ) as m:
-        m[SHP.CIRCLE] = mock.Mock(return_value=(1, 0.1, None))
-        table_1 = np.random.random((9, 2))
-        m[SHP.TABULATED_TRAPEZIUM] = mock.Mock(return_value=(5, 15.0, table_1))
-        table_2 = np.random.random((4, 2))
-        m[SHP.TABULATED_RECTANGLE] = mock.Mock(return_value=(6, 11.0, table_2))
-
+        "threedigrid_builder.grid.cross_section_definitions.tabulators",
+        {
+            SHP.CIRCLE: mock.Mock(return_value=(1, 0.1, None)),
+            SHP.TABULATED_TRAPEZIUM: mock.Mock(return_value=(5, 15.0, table_1)),
+            SHP.TABULATED_RECTANGLE: mock.Mock(return_value=(6, 11.0, table_2)),
+        },
+    ):
         actual = cross_section_definitions.to_internal()
 
         assert len(actual) == 3
