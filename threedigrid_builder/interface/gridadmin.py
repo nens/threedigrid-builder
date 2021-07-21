@@ -32,9 +32,9 @@ LINE_TYPES_1D = (
 )
 
 LINE_TYPES_1D2D = (
-    LineType.LINE_1D2D_SINGLE_CONNECTED_SEWERAGE,
+    LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
     LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
-    LineType.LINE_1D2D_DOUBLE_CONNECTED_SEWERAGE,
+    LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
     LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
     LineType.LINE_1D2D_POSSIBLE_BREACH,
     LineType.LINE_1D2D_ACTIVE_BREACH,
@@ -422,6 +422,8 @@ class GridAdminOut(OutputInterface):
                 name, (values.shape[0] + 1,), dtype=values.dtype, fillvalue=fill
             )
             ds[1:] = values
+            if name == "id":  # set the ID of the dummy element
+                ds[0] = 0
         elif values.ndim == 2:
             ds = group.create_dataset(
                 name,

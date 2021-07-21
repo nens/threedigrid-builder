@@ -25,7 +25,7 @@ class Channels(linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CHANNEL
 
     def get_1d2d_properties(self, nodes, node_idx, locations):
-        """Compute properties (is_sewerage, dpumax) of 1D-2D flowlines.
+        """Compute properties (is_closed, dpumax) of 1D-2D channel flowlines.
 
         Args:
             nodes (Nodes): All nodes
@@ -34,7 +34,7 @@ class Channels(linear.BaseLinear):
 
         Returns:
             tuple of:
-            - is_sewerage (bool): always False
+            - is_closed (bool): always False
             - dpumax (array of float): interpolated between CS location bank_levels
         """
         # dpumax is interpolated between cross section location bank levels
