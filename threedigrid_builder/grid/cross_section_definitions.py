@@ -30,6 +30,7 @@ class InternalCrossSectionDefinition:
 @array_of(CrossSectionDefinition)
 class CrossSectionDefinitions:
     def to_internal(self):
+        """Convert to InternalCrossSectionDefinitions."""
         internal = InternalCrossSectionDefinitions(
             id=range(len(self.id)),
             content_pk=self.id,
@@ -138,7 +139,7 @@ def tabulate_egg(shape, width, height):
     heights.reverse()
     width_list.reverse()
 
-    table = np.array([heights, width_list]).T.asfortranarray()
+    table = np.array([heights, width_list]).T
     width_1d = np.max(table[:, 1])
 
     return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, table
@@ -177,7 +178,7 @@ def tabulate_tabulated(shape, width, height):
             [float(x) for x in height.split(" ")],
             [float(x) for x in width.split(" ")],
         ]
-    ).T.asfortranarray()
+    ).T
     width_1d = np.max(table[:, 1])
     return shape, width_1d, table
 
