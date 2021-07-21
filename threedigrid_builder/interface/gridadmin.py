@@ -322,8 +322,12 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "dpumax", lines.dpumax)
         self.write_dataset(group, "flod", lines.flod)
         self.write_dataset(group, "flou", lines.flou)
-        self.write_dataset(group, "cross1", lines.cross1)
-        self.write_dataset(group, "cross2", lines.cross2)
+        self.write_dataset(
+            group, "cross1", np.add(lines.cross1, 1, where=lines.cross1 != -9999)
+        )
+        self.write_dataset(
+            group, "cross2", np.add(lines.cross2, 1, where=lines.cross2 != -9999)
+        )
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(group, "line_coords", lines.line_coords.T)
         self.write_dataset(
