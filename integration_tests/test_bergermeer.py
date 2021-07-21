@@ -1,10 +1,12 @@
-from threedigrid_builder.application import make_grid
-from threedigrid_builder.constants import LineType, NodeType
-from unittest.mock import Mock
 from numpy.testing import assert_array_equal
-import numpy as np
+from threedigrid_builder.application import make_grid
+from threedigrid_builder.constants import CrossSectionShape
+from threedigrid_builder.constants import LineType
+from threedigrid_builder.constants import NodeType
+from unittest.mock import Mock
 
 import h5py
+import numpy as np
 import pathlib
 
 
@@ -66,6 +68,13 @@ def test_integration(tmp_path):
 
         ## PUMPS
         assert f["pumps"]["id"].shape == (20,)
+
+        ## CROSS SECTIONS
+        assert count_unique(f["cross_sections"]["shape"]) == {
+            -9999: 1,
+            CrossSectionShape.CIRCLE: 8,
+            CrossSectionShape.RECTANGLE: 3,
+        }
 
     # progress increases
     args = [x[0] for x in progress_callback.call_args_list]
