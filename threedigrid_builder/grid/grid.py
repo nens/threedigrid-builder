@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import Pumps, IdNotFound
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import CalculationType
@@ -482,11 +482,16 @@ class Grid:
         Args:
             definitions (CrossSectionDefinitions)
         """
-        mask = self.lines.cross1 != -9999
-        self.lines.cross1[mask] = definitions.id_to_index(self.lines.cross1[mask])
-        mask = self.lines.cross2 != -9999
-        self.lines.cross2[mask] = definitions.id_to_index(self.lines.cross2[mask])
-        self.cross_sections = definitions.to_internal()
+        try:
+            mask = self.lines.cross1 != -9999
+            self.lines.cross1[mask] = definitions.id_to_index(self.lines.cross1[mask], check_exists=True)
+            mask = self.lines.cross2 != -9999
+            self.lines.cross2[mask] = definitions.id_to_index(self.lines.cross2[mask], check_exists=True)
+            self.cross_sections = definitions.to_internal()
+        except IdNotFound as e:
+            raise SchematisationError(
+                f"Cross section definitions {e.not_present} are not present."
+            )
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

@@ -12,7 +12,15 @@ else:
     from typing import _Union
     from typing import TupleMeta
 
-__all__ = ["array_of", "is_tuple_type", "is_int_enum", "unpack_optional_type"]
+__all__ = ["array_of", "is_tuple_type", "is_int_enum", "unpack_optional_type", "IdNotFound"]
+
+
+class IdNotFound(IndexError):
+    def __init__(self, not_present):
+        message = f"The following ids were not present: {sorted(not_present)}"
+        super().__init__(message)
+
+        self.not_present = not_present
 
 
 def is_tuple_type(_type):
@@ -181,16 +189,13 @@ class ArrayDataClass:
         }
         return self.__class__(**new_fields)
 
-    def id_to_index(self, id):
+    def id_to_index(self, id, check_exists=False):
         """Find the index of records with given id.
-
-        Note:
-            It is not checked if the id actually exists! In that case
-            behaviour of numpy.searchsorted is produced: the returned index is
-            the index where to insert id to maintain order in self.id.
 
         Args:
             id (int or array_like): The id(s) to find in self.id
+            check_exists (bool): Whether to check if the id is actually present. Raises
+              IdNotFound if an id is not present.
 
         Returns:
             int or array_like: the indexes into self.id
@@ -199,7 +204,12 @@ class ArrayDataClass:
         # len(id)    len(self.id)   timing (microseconds)
         # 1000       2000           44
         # 1000       10000          62
-        return np.searchsorted(self.id, id)  # inverse of self.id[index]
+        result = np.searchsorted(self.id, id)  # inverse of self.id[index]
+        if check_exists:
+            check = self.index_to_id(result)
+            if not np.all(check == id):
+                raise IdNotFound(set(id) - set(check))
+        return result
 
     def index_to_id(self, index):
         """Find the id of records with given index.
