@@ -6,6 +6,7 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import linear
 
 import itertools
@@ -90,6 +91,11 @@ def two_linear_objects():
         calculation_type=np.array([2, 1]),
         cross_section_definition_id=[17, 18],
     )
+
+
+@pytest.fixture
+def definitions():
+    return CrossSectionDefinitions(id=[17, 18])
 
 
 @pytest.mark.parametrize(
@@ -254,11 +260,12 @@ def test_interpolate_nodes_two_linear_objects(two_linear_objects):
     assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
 
 
-def test_get_lines(connection_nodes, two_linear_objects):
+def test_get_lines(connection_nodes, two_linear_objects, definitions):
     nodes = Nodes(id=[10, 11, 12], content_pk=[1, 2, 2])
 
     lines = two_linear_objects.get_lines(
         connection_nodes,
+        definitions,
         nodes,
         itertools.count(start=0),
         connection_node_offset=100,
@@ -272,7 +279,7 @@ def test_get_lines(connection_nodes, two_linear_objects):
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
-    assert_array_equal(lines.cross1, [17, 17, 18, 18, 18])
+    assert_array_equal(lines.cross1, [0, 0, 1, 1, 1])
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, 1.0)
     assert_almost_equal(lines.ds1d, expected_sizes)
@@ -292,7 +299,7 @@ def test_get_lines_one_linear_object(
 ):
     nodes = Nodes(id=range(4, 4 + len(linear_object_idx)), content_pk=linear_object_idx)
     lines = one_linear_object.get_lines(
-        connection_nodes, nodes, itertools.count(start=0)
+        connection_nodes, None, nodes, itertools.count(start=0)
     )
 
     assert_array_equal(lines.line, expected)
@@ -316,7 +323,7 @@ def test_get_lines_two_linear_objects(
     nodes = Nodes(id=range(4, 4 + len(linear_object_idx)), content_pk=linear_object_idx)
 
     lines = two_linear_objects.get_lines(
-        connection_nodes, nodes, itertools.count(start=0)
+        connection_nodes, None, nodes, itertools.count(start=0)
     )
 
     assert_array_equal(lines.line, expected)

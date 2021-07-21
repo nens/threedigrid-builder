@@ -10,6 +10,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
@@ -187,6 +188,7 @@ def test_from_channels():
     channels.interpolate_nodes.assert_called_with(counter, 100.0)
     channels.get_lines.assert_called_with(
         connection_nodes,
+        None,
         nodes,
         counter,
         connection_node_offset=connection_node_offset,
@@ -214,10 +216,13 @@ def test_set_channel_weights(compute_weights):
         id=[0, 1, 2],
         definition_id=[5, 4, 3],
     )
+    definitions = CrossSectionDefinitions(
+        id=[3, 4, 5],
+    )
     channels = mock.Mock()
 
     # execute the method
-    grid.set_channel_weights(locations, channels)
+    grid.set_channel_weights(locations, definitions, channels)
 
     # compute_weights was called correctly
     assert compute_weights.call_count == 2
@@ -238,8 +243,8 @@ def test_set_channel_weights(compute_weights):
     assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
 
     # line attributes cross1, cross2 are adapted correctly
-    assert_array_equal(lines.cross1, [5, -9999, 4])
-    assert_array_equal(lines.cross2, [4, -9999, 3])
+    assert_array_equal(lines.cross1, [2, -9999, 1])
+    assert_array_equal(lines.cross2, [1, -9999, 0])
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_calculation_types")

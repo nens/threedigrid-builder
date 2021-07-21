@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Weirs
@@ -53,9 +54,15 @@ def two_weir_orifices(request):
     )
 
 
-def test_get_lines(connection_nodes, two_weir_orifices):
+@pytest.fixture
+def definitions():
+    return CrossSectionDefinitions(id=[17, 18])
+
+
+def test_get_lines(connection_nodes, two_weir_orifices, definitions):
     lines = two_weir_orifices.get_lines(
         connection_nodes,
+        definitions,
         itertools.count(start=0),
         connection_node_offset=100,
     )
@@ -70,7 +77,7 @@ def test_get_lines(connection_nodes, two_weir_orifices):
     assert_array_equal(lines.content_type, expected_content_type)
     assert_array_equal(lines.content_pk, [1, 2])
     assert_array_equal(lines.kcu, [4, 3])
-    assert_array_equal(lines.cross1, [17, 18])
+    assert_array_equal(lines.cross1, [0, 1])
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, [1.0, 1.0])
     assert_array_equal(lines.dpumax, [2.3, 4.5])

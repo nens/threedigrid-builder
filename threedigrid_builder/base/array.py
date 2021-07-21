@@ -1,4 +1,5 @@
 from enum import IntEnum
+from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 import sys
@@ -17,16 +18,7 @@ __all__ = [
     "is_tuple_type",
     "is_int_enum",
     "unpack_optional_type",
-    "IdNotFound",
 ]
-
-
-class IdNotFound(IndexError):
-    def __init__(self, not_present):
-        message = f"The following ids were not present: {sorted(not_present)}"
-        super().__init__(message)
-
-        self.not_present = not_present
 
 
 def is_tuple_type(_type):
@@ -201,7 +193,7 @@ class ArrayDataClass:
         Args:
             id (int or array_like): The id(s) to find in self.id
             check_exists (bool): Whether to check if the id is actually present. Raises
-              IdNotFound if an id is not present.
+              SchematisationError if an id is not present.
 
         Returns:
             int or array_like: the indexes into self.id
@@ -214,7 +206,11 @@ class ArrayDataClass:
         if check_exists:
             check = self.index_to_id(result)
             if not np.all(check == id):
-                raise IdNotFound(set(id) - set(check))
+                missing = sorted(set(id) - set(check))
+                raise SchematisationError(
+                    f"Some objects refer to non-existing "
+                    f"{self.__class__.__name__} (missing: {missing})."
+                )
         return result
 
     def index_to_id(self, index):
