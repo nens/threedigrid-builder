@@ -1,5 +1,6 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
+from .cross_section_definitions import InternalCrossSectionDefinitions
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -86,6 +87,7 @@ class Grid:
         nodes: Nodes,
         lines: Lines,
         pumps: Optional[Pumps] = None,
+        cross_sections: Optional[InternalCrossSectionDefinitions] = None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -97,11 +99,18 @@ class Grid:
             pumps = Pumps(id=[])
         elif not isinstance(pumps, Pumps):
             raise TypeError(f"Expected Pumps instance, got {type(pumps)}")
+        if cross_sections is None:
+            cross_sections = InternalCrossSectionDefinitions(id=[])
+        elif not isinstance(cross_sections, InternalCrossSectionDefinitions):
+            raise TypeError(
+                f"Expected InternalCrossSectionDefinitions instance, got {type(cross_sections)}"
+            )
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
+        self.cross_sections = cross_sections
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -462,6 +471,21 @@ class Grid:
         self.pumps.renumber()
         self.pumps.set_lines(self.nodes)
         self.pumps.set_node_data(self.nodes)
+
+    def set_cross_sections(self, definitions):
+        """Set the cross sections on this grid object
+
+        This renumbers lines.cross1 and lines.cross2 attributes to point to the primary
+        key of the cross sections (instead of the content_pk).
+
+        Args:
+            definitions (CrossSectionDefinitions)
+        """
+        mask = self.lines.cross1 != -9999
+        self.lines.cross1[mask] = definitions.id_to_index(self.lines.cross1[mask])
+        mask = self.lines.cross2 != -9999
+        self.lines.cross2[mask] = definitions.id_to_index(self.lines.cross2[mask])
+        self.cross_sections = definitions.to_internal()
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

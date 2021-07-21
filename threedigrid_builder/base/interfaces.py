@@ -35,3 +35,7 @@ class OutputInterface(ABC):
     @abstractmethod
     def write_pumps(self, pumps: Pumps):
         pass
+
+    @abstractmethod
+    def write_cross_sections(self, cross_sections):
+        pass

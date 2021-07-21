@@ -407,6 +407,21 @@ class GridAdminOut(OutputInterface):
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
 
+    def write_cross_sections(self, cross_sections):
+        group = self._file.create_group("cross_sections")
+
+        # Datasets that match directly to a lines attribute:
+        self.write_dataset(group, "id", cross_sections.id)
+        self.write_dataset(group, "code", cross_sections.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "shape", cross_sections.shape)
+        self.write_dataset(group, "content_pk", cross_sections.content_pk)
+        self.write_dataset(group, "width_1d", cross_sections.width_1d)
+        self.write_dataset(group, "offset", cross_sections.offset)
+        self.write_dataset(group, "count", cross_sections.count)
+
+        # do not use write_dataset, that would add a dummy element which we do not want
+        group.create_dataset("tables", data=cross_sections.tables.T)
+
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.

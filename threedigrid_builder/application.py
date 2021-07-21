@@ -120,6 +120,7 @@ def _make_grid(
             cross_section_locations, channels, pipes, weirs, orifices, culverts
         )
         grid.set_pumps(db.get_pumps())
+        grid.set_cross_sections(db.get_cross_section_definitions())
 
     if grid.meta.has_1d and grid.meta.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D elements...")
@@ -152,6 +153,7 @@ def _grid_to_hdf5(grid, path):
         out.write_nodes(grid.nodes)
         out.write_lines(grid.lines)
         out.write_pumps(grid.pumps)
+        out.write_cross_sections(grid.cross_sections)
 
 
 def make_grid(
