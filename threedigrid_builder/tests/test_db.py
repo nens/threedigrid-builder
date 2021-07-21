@@ -11,6 +11,7 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Culverts
+from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
@@ -123,6 +124,12 @@ def test_get_grid_refinements(db):
     assert grid_refinements.code[5] == "2"
 
 
+def test_get_obstacles(db):
+    obstacles = db.get_obstacles()
+    assert(len(obstacles.id)) == 3
+    assert obstacles.crest_level[1] == 0.
+
+    
 def test_get_pipes(db):
     pipes = db.get_pipes()
     assert isinstance(pipes, Pipes)

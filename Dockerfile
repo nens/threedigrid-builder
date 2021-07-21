@@ -2,27 +2,34 @@ FROM python:3.9.1-slim-buster as build
 
 RUN apt-get update \ 
     && apt-get install -y cmake autoconf libtool gfortran \
-                          libgdal-dev python3-pip git procps \
+                           python3-pip git gdb procps libgdal-dev \
+                           libsqlite3-mod-spatialite vim valgrind curl \
     && apt-get clean -y
 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
-COPY ./requirements.txt /threedicore/
+COPY ./requirements.txt ./requirements_dev.txt /threedigrid-builder/
 
-RUN pip3 install -r /threedicore/requirements.txt \
+RUN pip3 install -r /threedigrid-builder/requirements.txt \
     && pip3 install GDAL==2.1.0 --global-option=build_ext \
-    && pip3 install cython
+    && pip3 install cython \
+    && pip3 install -r /threedigrid-builder/requirements_dev.txt
 
-COPY . /gridgenerator
-RUN cd /gridgenerator && ./full_build.sh RELEASE
+COPY . /threedigrid-builder
+RUN cd /threedigrid-builder && ./full_build.sh RELEASE
 # Doesnt work when done from Dockerfile. Run manually!
-# RUN cd /gridgenerator && python3 setup.py build_ext --inplace
+# RUN cd /threedigrid-builder && python3 setup.py build_ext --inplace
+
+ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
+WORKDIR /threedigrid-builder
+
+EXPOSE 8080
 
 
 FROM python:3.9.1-slim-buster
 
-LABEL name=threedigrid_builder
+LABEL name=threedigrid-builder
 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
@@ -37,12 +44,12 @@ RUN apt-get update && apt-get install gfortran python3-pip libgomp1 -y \
 
 COPY --from=build /usr/local/lib/libthreedigrid*.so* /usr/local/lib/ 
 # Copy GDAL python files
-COPY --from=build /usr/local/lib/python3.7/site-packages/GDAL-2.1.0-py3.7.egg-info \
-    /usr/local/lib/python3.7/site-packages/GDAL-2.1.0-py3.7.egg-info
-COPY --from=build /usr/local/lib/python3.7/site-packages/gdal* /usr/local/lib/python3.7/site-packages/
-COPY --from=build /usr/local/lib/python3.7/site-packages/ogr.py /usr/local/lib/python3.7/site-packages/
-COPY --from=build /usr/local/lib/python3.7/site-packages/osr.py /usr/local/lib/python3.7/site-packages/
-COPY --from=build /usr/local/lib/python3.7/site-packages/osgeo /usr/local/lib/python3.7/site-packages/osgeo
+COPY --from=build /usr/local/lib/python3.9/site-packages/GDAL-2.1.0-py3.9.egg-info \
+    /usr/local/lib/python3.9/site-packages/GDAL-2.1.0-py3.9.egg-info
+COPY --from=build /usr/local/lib/python3.9/site-packages/gdal* /usr/local/lib/python3.9/site-packages/
+COPY --from=build /usr/local/lib/python3.9/site-packages/ogr.py /usr/local/lib/python3.9/site-packages/
+COPY --from=build /usr/local/lib/python3.9/site-packages/osr.py /usr/local/lib/python3.9/site-packages/
+COPY --from=build /usr/local/lib/python3.9/site-packages/osgeo /usr/local/lib/python3.9/site-packages/osgeo
 
 ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
 

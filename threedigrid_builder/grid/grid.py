@@ -444,6 +444,29 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
+    def set_obstacles(self, obstacles):
+        """Set obstacles on 2D lines. 
+           Set kcu to 101 and changes dpumax to obstacle height.
+
+        Args: 
+            obstacles (Obstacles)
+        """
+        is_2d = np.isin(self.lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
+        coordinates = self.lines.line_coords[is_2d]
+        lines_tree = pygeos.STRtree(
+            pygeos.linestrings(coordinates.reshape(len(is_2d), 2, 2))
+        )
+
+        for i in range(len(obstacles.id)):
+            _, l_inscts = lines_tree.query_bulk(
+                obstacles.the_geom[i], predicate="intersects"
+            )
+            self.lines.kcu[l_inscts] = LineType.LINE_2D_OBSTACLE
+            self.lines.flod[l_inscts] = np.fmax(
+                self.lines.flod[l_inscts], obstacles.crest_level[i]
+            )
+            self.lines.flou[l_inscts] = self.lines.flod[l_inscts]
+
     def set_pumps(self, pumps):
         """Set the pumps on this grid object
 

@@ -10,5 +10,5 @@ jedi==0.17.2
 rasterio
 sqlalchemy
 geoalchemy2
-condenser[geo]
+git+https://github.com/nens/condenser#egg=condenser
 git+https://github.com/nens/threedi-modelchecker#egg=threedi-modelchecker
