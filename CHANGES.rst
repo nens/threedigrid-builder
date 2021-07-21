@@ -1,12 +1,20 @@
 Changelog of threedigrid-builder
 ================================
 
-0.2.1 (unreleased)
+0.2.2 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
+0.2.1 (2021-07-20)
 ------------------
 
 - Fixed issue when reprojecting 0 grid refinements with pyproj 2.*
 
 - Fixed issue when writing 0 pumps with h5py 2.*
+
+- Fixed missing transpose when writing pumps.coordinates to HDF5.
 
 - Added obstacles.
 

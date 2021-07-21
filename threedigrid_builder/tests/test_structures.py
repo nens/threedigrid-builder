@@ -1,10 +1,12 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Weirs
+from unittest import mock
 
 import itertools
 import numpy as np
@@ -107,3 +109,31 @@ def test_culverts_compute_bottom_level_raises_out_of_bounds(culvert_ids, ds, cul
     culverts.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
     with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
         culverts.compute_bottom_level(culvert_ids, ds)
+
+
+def test_culverts_1d2d_properties(culverts):
+    nodes = Nodes(
+        id=[0, 2, 5, 7],
+        content_pk=[1, 1, 2, 2],
+        ds1d=[12.0, 13.0, 14.0, 15.0],
+    )
+    node_idx = [0, 1, 3]
+
+    connection_nodes = mock.Mock()
+
+    with mock.patch.object(culverts, "compute_drain_level") as compute_drain_level:
+        compute_drain_level.return_value = np.array([1.8, 2.5, 3.2])
+        is_closed, dpumax = culverts.get_1d2d_properties(
+            nodes, node_idx, connection_nodes
+        )
+
+        _, kwargs = compute_drain_level.call_args
+        assert_array_equal(kwargs["ids"], [1, 1, 2])  # the content pk
+        assert_array_equal(kwargs["ds"], [12.0, 13.0, 15.0])  # the ds1d
+        assert kwargs["connection_nodes"] is connection_nodes
+
+    # culverts are closed
+    assert_array_equal(is_closed, True)
+
+    # interpolation between manhole drain levels is further tested elsewhere
+    assert_array_equal(dpumax, [1.8, 2.5, 3.2])
