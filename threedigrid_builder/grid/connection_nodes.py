@@ -67,7 +67,7 @@ class ConnectionNodes:
         return nodes
 
     def get_1d2d_properties(self, nodes, node_idx):
-        """Compute properties (is_sewerage, dpumax) of 1D-2D flowlines.
+        """Compute properties (is_closed, dpumax) of 1D-2D connection node flowlines.
 
         Args:
             nodes (Nodes): All nodes
@@ -75,7 +75,7 @@ class ConnectionNodes:
 
         Returns:
             tuple of:
-            - is_sewerage (array of bool): based on self.manhole_id
+            - is_closed (array of bool): based on self.manhole_id
             - dpumax (array of float): based on self.drain_level or nodes.dmax
         """
         # get the corresponding connection node indexes

@@ -122,7 +122,7 @@ def _make_grid(
         grid.set_pumps(db.get_pumps())
         grid.set_cross_sections(db.get_cross_section_definitions())
 
-    if grid.meta.has_1d and grid.meta.has_2d:
+    if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D elements...")
         grid.add_1d2d(
             connection_nodes=connection_nodes,

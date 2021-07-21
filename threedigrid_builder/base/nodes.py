@@ -37,6 +37,16 @@ class Node:
 class Nodes:
     """Calculation node."""
 
+    @property
+    def has_1d(self):
+        return np.isin(
+            self.node_type, (NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE)
+        ).any()
+
+    @property
+    def has_2d(self):
+        return np.any(self.node_type == NodeType.NODE_2D_OPEN_WATER)
+
     def get_extent_1d(self):
         is_1d = np.isin(
             self.node_type, (NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE)

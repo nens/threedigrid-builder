@@ -45,6 +45,7 @@ def connection_nodes():
     return ConnectionNodes(
         id=np.array([21, 25, 33, 42]),
         the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+        drain_level=[0.0, 20.0, 30.0, 10.0],
     )
 
 
@@ -336,3 +337,38 @@ def test_interpolate_nodes_no_geometries(two_linear_objects):
     two_linear_objects.the_geom[:] = None
     with pytest.raises(ValueError, match=".*encountered without a geometry."):
         two_linear_objects.interpolate_nodes(None, None)
+
+
+@pytest.mark.parametrize(
+    "ids,ds,expected",
+    [
+        ([1], [10.0], [5.0]),  # halfway the first object
+        ([2], [100.0], [25.0]),  # halfway the second object
+        ([1, 2], [10.0, 100.0], [5.0, 25.0]),
+        ([2, 1], [100.0, 10.0], [25.0, 5.0]),
+        ([1, 1, 1], [0.0, 5.0, 20.0], [0.0, 2.5, 10.0]),  # at 0%, 25%, 100%
+        ([1, 2, 1], [0.0, 150.0, 20.0], [0.0, 27.5, 10.0]),  # mixed
+    ],
+)
+def test_compute_drain_level(ids, ds, expected, two_linear_objects, connection_nodes):
+    actual = two_linear_objects.compute_drain_level(ids, ds, connection_nodes)
+
+    assert_almost_equal(actual, expected)
+
+
+def test_compute_drain_level_with_one_nan(two_linear_objects, connection_nodes):
+    connection_nodes.drain_level[:] = [0.0, np.nan, 1.0, np.nan]
+    actual = two_linear_objects.compute_drain_level(
+        [1, 2], [3.0, 4.0], connection_nodes
+    )
+
+    assert_almost_equal(actual, [0.0, 1.0])
+
+
+def test_compute_drain_level_with_two_nan(two_linear_objects, connection_nodes):
+    connection_nodes.drain_level[:] = [np.nan, 1.0, 1.0, np.nan]
+    actual = two_linear_objects.compute_drain_level(
+        [1, 2], [3.0, 4.0], connection_nodes
+    )
+
+    assert_almost_equal(actual, [np.nan, 1.0])

@@ -203,6 +203,44 @@ class BaseLinear:
 
         return weights * right + (1 - weights) * left
 
+    def compute_drain_level(self, ids, ds, connection_nodes):
+        """Compute the drain level by interpolating between Manhole drain levels
+
+        This function is to be used for interpolated nodes on pipes and culverts.
+
+        Args:
+            ids (ndarray of int): the id (content_pk) of the object
+            ds (ndarray of float): the position of the node measured along the object
+            connection_nodes (ConnectionNodes): to obtain drain levels
+
+        Returns:
+            an array of the same shape as ids and ds containing the interpolated values
+        """
+        if pygeos.is_missing(self.the_geom).any():
+            raise ValueError(
+                f"{self.__class__.__name__} found without a geometry. Call "
+                f"set_geometries first."
+            )
+        lengths = pygeos.length(self.the_geom)
+        idx = self.id_to_index(ids)
+        weights = ds / lengths[idx]
+        if np.any(weights < 0.0) or np.any(weights > 1.0):
+            raise ValueError("Encountered nodes outside of the linear object bounds")
+
+        # convert connection_node_start_id to index to get the drain level
+        left_cn_idx = connection_nodes.id_to_index(self.connection_node_start_id)[idx]
+        right_cn_idx = connection_nodes.id_to_index(self.connection_node_end_id)[idx]
+
+        left = connection_nodes.drain_level[left_cn_idx]
+        right = connection_nodes.drain_level[right_cn_idx]
+
+        result = weights * right + (1 - weights) * left
+
+        # fix cases with nan on one side
+        result[np.isnan(result)] = left[np.isnan(result)]
+        result[np.isnan(result)] = right[np.isnan(result)]
+        return result
+
 
 def counts_to_ranges(counts):
     """Convert an array of list-of-lists counts to ranges.
