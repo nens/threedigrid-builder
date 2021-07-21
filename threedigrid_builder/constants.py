@@ -82,10 +82,10 @@ class FrictionType(IntEnum):
 
 @unique
 class CrossSectionShape(IntEnum):
-    CLOSED_RECTANGLE = 0  # --> tabulated rectangle
+    CLOSED_RECTANGLE = 0  # --> only user input, convert to tabulated rectangle
     RECTANGLE = 1
     CIRCLE = 2
-    EGG = 3  # --> tabulated trapezium
+    EGG = 3  # --> only user input, convert to tabulated trapezium
     TABULATED_RECTANGLE = 5
     TABULATED_TRAPEZIUM = 6
 
