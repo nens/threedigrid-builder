@@ -12,7 +12,13 @@ else:
     from typing import _Union
     from typing import TupleMeta
 
-__all__ = ["array_of", "is_tuple_type", "is_int_enum", "unpack_optional_type", "IdNotFound"]
+__all__ = [
+    "array_of",
+    "is_tuple_type",
+    "is_int_enum",
+    "unpack_optional_type",
+    "IdNotFound",
+]
 
 
 class IdNotFound(IndexError):
