@@ -380,7 +380,6 @@ class SQLite:
                 session.query(
                     models.Obstacle.the_geom,
                     models.Obstacle.id,
-                    models.Obstacle.code,
                     models.Obstacle.crest_level,
                 )
                 .order_by(models.Obstacle.id)
@@ -390,7 +389,6 @@ class SQLite:
                 session.query(
                     models.Levee.the_geom,
                     models.Levee.id,
-                    models.Levee.code,
                     models.Levee.crest_level,
                 )
                 .order_by(models.Levee.id)
