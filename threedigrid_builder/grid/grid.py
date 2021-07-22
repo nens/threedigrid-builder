@@ -448,13 +448,15 @@ class Grid:
         cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
 
     def set_obstacles(self, obstacles):
-        """Set obstacles on 2D lines.
+        """Set obstacles on 2D lines by determining intersection between
+           line_coords and obstacle geometry.
            Set kcu to 101 and changes flod and flou to crest_level.
 
         Args:
             obstacles (Obstacles)
         """
-        obstacles_module.apply_obstacles(self.lines, obstacles)
+        if len(obstacles) > 0:
+            obstacles_module.apply_obstacles(self.lines, obstacles)
 
     def set_pumps(self, pumps):
         """Set the pumps on this grid object

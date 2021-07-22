@@ -34,8 +34,8 @@ def apply_obstacles(lines, obstacles):
     inscts = lines_tree.query_bulk(obstacles.the_geom, predicate="intersects")
     lines.kcu[inscts[1, :]] = LineType.LINE_2D_OBSTACLE
     for i in range(len(obstacles.id)):
-        indices = np.where(inscts[0, :] == i)
-        lines.flod[inscts[1, indices]] = np.fmax(
-            lines.flod[inscts[1, indices]], obstacles.crest_level[i]
+        indices = inscts[1, np.where(inscts[0, :] == i)]
+        lines.flod[indices] = np.fmax(
+            lines.flod[indices], obstacles.crest_level[i]
         )
-        lines.flou[inscts[1, indices]] = lines.flod[inscts[1, indices]]
+        lines.flou[indices] = lines.flod[indices]

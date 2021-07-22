@@ -69,8 +69,7 @@ def _make_grid(
             line_id_counter=line_id_counter,
         )
         obstacles = db.get_obstacles()
-        if len(obstacles) > 0:
-            grid.set_obstacles(obstacles)
+        grid.set_obstacles(obstacles)
 
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
