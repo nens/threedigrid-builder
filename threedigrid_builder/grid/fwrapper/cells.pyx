@@ -1,5 +1,7 @@
 import numpy as np
+
 cimport numpy as np
+
 
 def set_2d_computational_nodes_lines(
     double[:] origin,

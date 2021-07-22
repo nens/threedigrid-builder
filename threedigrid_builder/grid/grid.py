@@ -1,4 +1,5 @@
 from . import connection_nodes as connection_nodes_module
+from . import obstacles as obstacles_module
 from . import cross_section_locations as csl_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
@@ -187,6 +188,7 @@ class Grid:
             y0p=quadtree.origin[1],
         )
 
+        lines.set_line_coords(nodes)
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
@@ -475,6 +477,17 @@ class Grid:
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         csl_module.fix_dpumax(self.lines, self.nodes, cross_section_locations)
+
+    def set_obstacles(self, obstacles):
+        """Set obstacles on 2D lines by determining intersection between
+           line_coords (these must be knows at this point) and obstacle geometry.
+           Set kcu to 101 and changes flod and flou to crest_level.
+
+        Args:
+            obstacles (Obstacles)
+        """
+        if len(obstacles) > 0:
+            obstacles_module.apply_obstacles(self.lines, obstacles)
 
     def set_pumps(self, pumps):
         """Set the pumps on this grid object

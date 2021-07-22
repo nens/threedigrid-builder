@@ -1,7 +1,10 @@
 import numpy as np
+
 cimport numpy as np
+
 from enum import Enum
 from enum import unique
+
 
 @unique
 class RefineType(Enum):

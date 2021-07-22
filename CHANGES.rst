@@ -20,6 +20,8 @@ Changelog of threedigrid-builder
 
 - Fixed missing transpose when writing pumps.coordinates to HDF5.
 
+- Added obstacles.
+
 
 0.2.0 (2021-07-15)
 ------------------

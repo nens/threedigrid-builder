@@ -1,28 +1,22 @@
 version: '3.5'
 
 services:
-  lib:
-    image: threedigrid_builder:dev
+  threedigrid-builder:
+    image: threedigrid-builder:dev
     build:
       context: .
-      dockerfile: Dockerfile-dev
+      dockerfile: Dockerfile
     ports: 
-      - 8888:8080
+      - 8888:8888
     volumes:
-    #  - vscode-extenstions:/root/.vscode-server/extensions
+      - vscode-extenstions:/root/.vscode-server/extensions
       - ../models:/models
-      - ./:/gridgenerator
-    #  - /mnt/d/tmp:/mnt/d/tmp
-    working_dir: /gridgenerator
+      - ./:/threedigrid-builder
+      - /mnt/d/tmp:/mnt/d/tmp
+    working_dir: /threedigrid-builder
     command: ["/usr/local/bin/python3", "/usr/local/bin/jupyter", "lab", 
-                "--port=8080", "--ip=0.0.0.0", "--allow-root", "--no-browser"]
+                "--port=8888", "--ip=0.0.0.0", "--allow-root", "--no-browser"]
     privileged: true
-    networks:
-      - backend
       
 volumes:
   vscode-extenstions:
-
-networks:
-  backend:
-    name: threedi_backend
