@@ -10,6 +10,8 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionDefinitions
+from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid import QuadtreeStats
@@ -186,13 +188,14 @@ def test_from_channels():
     channels.interpolate_nodes.assert_called_with(counter, 100.0)
     channels.get_lines.assert_called_with(
         connection_nodes,
+        None,
         nodes,
         counter,
         connection_node_offset=connection_node_offset,
     )
 
 
-@mock.patch("threedigrid_builder.grid.cross_sections.compute_weights")
+@mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")
 def test_set_channel_weights(compute_weights):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
@@ -208,12 +211,18 @@ def test_set_channel_weights(compute_weights):
         ds1d=[2.0, 12.0, 21.0],
     )
     grid = Grid(nodes=nodes, lines=lines)
-    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # cross1, cross2, weights
-    locations = mock.Mock()
+    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # csl1, csl2, weights
+    locations = CrossSectionLocations(
+        id=[0, 1, 2],
+        definition_id=[5, 4, 3],
+    )
+    definitions = CrossSectionDefinitions(
+        id=[3, 4, 5],
+    )
     channels = mock.Mock()
 
     # execute the method
-    grid.set_channel_weights(locations, channels)
+    grid.set_channel_weights(locations, definitions, channels)
 
     # compute_weights was called correctly
     assert compute_weights.call_count == 2
@@ -223,15 +232,19 @@ def test_set_channel_weights(compute_weights):
     assert args[2] is locations
     assert args[3] is channels
 
-    # node attributes cross1, cross2, cross_weight are adapted correctly
-    assert_array_equal(nodes.cross1, [0, -9999, 1])
-    assert_array_equal(nodes.cross2, [1, -9999, 2])
+    # node attributes cross_loc1, cross_loc2, cross_weight are adapted correctly
+    assert_array_equal(nodes.cross_loc1, [0, -9999, 1])
+    assert_array_equal(nodes.cross_loc2, [1, -9999, 2])
     assert_array_equal(nodes.cross_weight, [0.2, np.nan, 0.4])
 
-    # line attributes cross1, cross2, cross_weight are adapted correctly
-    assert_array_equal(lines.cross1, [0, -9999, 1])
-    assert_array_equal(lines.cross2, [1, -9999, 2])
+    # line attributes cross_loc1, cross_loc2, cross_weight are adapted correctly
+    assert_array_equal(lines.cross_loc1, [0, -9999, 1])
+    assert_array_equal(lines.cross_loc2, [1, -9999, 2])
     assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
+
+    # line attributes cross1, cross2 are adapted correctly
+    assert_array_equal(lines.cross1, [2, -9999, 1])
+    assert_array_equal(lines.cross2, [1, -9999, 0])
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_calculation_types")
@@ -240,10 +253,10 @@ def test_set_calculation_types(set_calculation_types, grid):
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.cross_sections.interpolate")
+@mock.patch("threedigrid_builder.grid.cross_section_locations.interpolate")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
-@mock.patch("threedigrid_builder.grid.cross_sections.fix_dpumax")
+@mock.patch("threedigrid_builder.grid.cross_section_locations.fix_dpumax")
 def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
@@ -258,8 +271,8 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
         content_pk=[1, 1, 3, 2, 5],
         ds1d=[2.0, 12.0, 21.0, 15.0, 0.5],
         dmax=[np.nan, 12.0, np.nan, np.nan, np.nan],
-        cross1=[5, -9999, 7, -9999, -9999],
-        cross2=[6, -9999, 8, -9999, -9999],
+        cross_loc1=[5, -9999, 7, -9999, -9999],
+        cross_loc2=[6, -9999, 8, -9999, -9999],
         cross_weight=[0.2, np.nan, 0.8, np.nan, np.nan],
     )
     lines = Lines(id=[])
@@ -278,8 +291,8 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
 
     # cross section interpolate was called correctly
     args, _ = cs_interpolate.call_args
-    assert_array_equal(args[0], [5, 7])  # cross1
-    assert_array_equal(args[1], [6, 8])  # cross2
+    assert_array_equal(args[0], [5, 7])  # cross_loc1
+    assert_array_equal(args[1], [6, 8])  # cross_loc2
     assert_array_equal(args[2], [0.2, 0.8])  # weights
     assert args[3] is locations
     assert args[4] == "reference_level"

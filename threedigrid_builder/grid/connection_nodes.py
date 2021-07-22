@@ -1,4 +1,4 @@
-from .cross_sections import compute_bottom_level
+from .cross_section_locations import compute_bottom_level
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType

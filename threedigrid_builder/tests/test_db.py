@@ -84,8 +84,8 @@ def test_get_cross_section_definitions(db):
     assert len(definitions.id) == 11
     assert definitions.id[8] == 97
     assert definitions.shape[7] == CrossSectionShape.RECTANGLE
-    assert definitions.height[10] == 0.4
-    assert definitions.width[2] == 0.315
+    assert definitions.height[10] == "0.4"
+    assert definitions.width[2] == "0.315"
 
 
 def test_get_cross_section_locations(db):

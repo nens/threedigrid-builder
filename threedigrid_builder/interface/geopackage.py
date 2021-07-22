@@ -128,3 +128,6 @@ class GeopackageOut(OutputInterface):
         df_pumps = geopandas.GeoDataFrame(pump_data, geometry=lines, crs=epsg_code)
 
         df_pumps.to_file(self.path, layer="pumps", driver="GPKG")
+
+    def write_cross_sections(self, cross_sections):
+        pass
