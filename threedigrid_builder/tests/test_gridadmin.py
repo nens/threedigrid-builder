@@ -3,8 +3,8 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
+from threedigrid_builder.grid import CrossSections
 from threedigrid_builder.grid import GridMeta
-from threedigrid_builder.grid import InternalCrossSectionDefinitions
 from threedigrid_builder.grid import QuadtreeStats
 from threedigrid_builder.interface import GridAdminOut
 
@@ -69,7 +69,7 @@ def h5_out():
             "y0p": 10.0,
         }
     )
-    cross_sections = InternalCrossSectionDefinitions(
+    cross_sections = CrossSections(
         id=[0, 1, 2],
         width_1d=[0.2, 1.5, 3.1],
         count=[4, 2, -9999],
@@ -317,7 +317,7 @@ def test_write_pumps(h5_out, dataset, shape, dtype):
         ("width_1d", (4,), "float64"),
         ("offset", (4,), "int32"),
         ("count", (4,), "int32"),
-        ("tables", (2, 7), "float64"),
+        ("tables", (2, 6), "float64"),
     ],
 )
 def test_write_cross_sections(h5_out, dataset, shape, dtype):
@@ -336,7 +336,7 @@ def test_write_cross_sections(h5_out, dataset, shape, dtype):
         ("pumps", "capacity", 0.1),
         ("cross_sections", "id", 1),
         ("cross_sections", "width_1d", 0.2),
-        ("cross_sections", "offset", 1),  # reference to tables dataset
+        ("cross_sections", "offset", 0),  # reference to tables dataset, not increased
         ("lines", "line", [1, 2]),  # reference to node
         ("lines", "cross1", 1),  # reference to cross section
         ("lines", "cross2", -9999),  # reference to cross section

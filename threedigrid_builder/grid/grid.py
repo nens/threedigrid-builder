@@ -1,6 +1,6 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
-from .cross_section_definitions import InternalCrossSectionDefinitions
+from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -88,7 +88,7 @@ class Grid:
         nodes: Nodes,
         lines: Lines,
         pumps: Optional[Pumps] = None,
-        cross_sections: Optional[InternalCrossSectionDefinitions] = None,
+        cross_sections: Optional[CrossSections] = None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -101,10 +101,10 @@ class Grid:
         elif not isinstance(pumps, Pumps):
             raise TypeError(f"Expected Pumps instance, got {type(pumps)}")
         if cross_sections is None:
-            cross_sections = InternalCrossSectionDefinitions(id=[])
-        elif not isinstance(cross_sections, InternalCrossSectionDefinitions):
+            cross_sections = CrossSections(id=[])
+        elif not isinstance(cross_sections, CrossSections):
             raise TypeError(
-                f"Expected InternalCrossSectionDefinitions instance, got {type(cross_sections)}"
+                f"Expected CrossSections instance, got {type(cross_sections)}"
             )
         self.nodes = nodes
         self.lines = lines
@@ -493,7 +493,8 @@ class Grid:
         Args:
             definitions (CrossSectionDefinitions)
         """
-        self.cross_sections = definitions.to_internal()
+        # TODO Skip definitions that are not used (and remap cross1 and cross2)
+        self.cross_sections = definitions.convert()
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

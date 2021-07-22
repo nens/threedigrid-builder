@@ -1,6 +1,7 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.constants import CrossSectionShape
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid.cross_section_definitions import tabulate_builtin
 from threedigrid_builder.grid.cross_section_definitions import (
@@ -30,7 +31,7 @@ def cross_section_definitions():
     )
 
 
-def test_to_internal_multiple(cross_section_definitions):
+def test_convert_multiple(cross_section_definitions):
     table_1 = np.random.random((9, 2))
     table_2 = np.random.random((4, 2))
     with mock.patch.dict(
@@ -41,7 +42,7 @@ def test_to_internal_multiple(cross_section_definitions):
             SHP.TABULATED_RECTANGLE: mock.Mock(return_value=(6, 11.0, table_2)),
         },
     ):
-        actual = cross_section_definitions.to_internal()
+        actual = cross_section_definitions.convert()
 
         assert len(actual) == 3
         assert_array_equal(actual.id, [0, 1, 2])
@@ -50,8 +51,8 @@ def test_to_internal_multiple(cross_section_definitions):
         assert_array_equal(actual.shape, [1, 5, 6])  # see mocks
         assert_array_equal(actual.width_1d, [0.1, 15.0, 11.0])  # see mocks
 
-        assert_array_equal(actual.offset, [-9999, 0, 9])
-        assert_array_equal(actual.count, [-9999, 9, 4])
+        assert_array_equal(actual.offset, [0, 0, 9])
+        assert_array_equal(actual.count, [0, 9, 4])
         assert_array_equal(actual.tables, np.concatenate([table_1, table_2], axis=0))
 
 
@@ -104,3 +105,20 @@ def test_tabulate_tabulated():
     assert shape == "my-shape"
     assert width_1d == 3.0  # the max
     assert_almost_equal(table, np.array([[0, 1], [1, 2], [2, 3]], dtype=float))
+
+
+@pytest.mark.parametrize(
+    "shape,width,height",
+    [
+        (CrossSectionShape.TABULATED_RECTANGLE, "", "1"),
+        (CrossSectionShape.TABULATED_RECTANGLE, "1", ""),
+        (CrossSectionShape.TABULATED_RECTANGLE, "", ""),
+        (CrossSectionShape.TABULATED_RECTANGLE, "1", "1 2"),
+        (CrossSectionShape.TABULATED_RECTANGLE, "1 2", "1"),
+        (CrossSectionShape.TABULATED_RECTANGLE, "1 1", "2 1"),
+        (CrossSectionShape.TABULATED_RECTANGLE, "0 1", "1 2"),
+    ],
+)
+def test_tabulate_tabulated_err(shape, width, height):
+    with pytest.raises(SchematisationError):
+        tabulate_tabulated(shape, width, height)

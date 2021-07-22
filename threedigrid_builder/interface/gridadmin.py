@@ -422,9 +422,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "shape", cross_sections.shape)
         self.write_dataset(group, "content_pk", cross_sections.content_pk)
         self.write_dataset(group, "width_1d", cross_sections.width_1d)
-        self.write_dataset(group, "offset", increase(cross_sections.offset))
+        self.write_dataset(group, "offset", cross_sections.offset)
         self.write_dataset(group, "count", cross_sections.count)
-        self.write_dataset(group, "tables", cross_sections.tables.T)
+
+        # do not use self.write_dataset as we don't want a dummy element
+        group.create_dataset("tables", data=cross_sections.tables.T)
 
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and

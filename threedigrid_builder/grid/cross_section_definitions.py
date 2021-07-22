@@ -5,7 +5,7 @@ from threedigrid_builder.exceptions import SchematisationError
 import numpy as np
 
 
-__all__ = ["CrossSectionDefinitions", "InternalCrossSectionDefinitions"]
+__all__ = ["CrossSectionDefinitions", "CrossSections"]
 
 
 class CrossSectionDefinition:
@@ -16,7 +16,41 @@ class CrossSectionDefinition:
     width: str  # space-separated list of floats
 
 
-class InternalCrossSectionDefinition:
+@array_of(CrossSectionDefinition)
+class CrossSectionDefinitions:
+    def convert(self):
+        """Convert to CrossSections."""
+        result = CrossSections(
+            id=range(len(self.id)),
+            content_pk=self.id,
+            code=self.code,
+            count=0,
+        )
+        offset = 0
+        tables = []
+        for i, shape in enumerate(self.shape):
+            tabulator = tabulators[shape]
+            result.shape[i], result.width_1d[i], table = tabulator(
+                shape, self.width[i], self.height[i]
+            )
+            if table is not None:
+                result.count[i] = len(table)
+                result.offset[i] = offset
+                offset += len(table)
+                tables.append(table)
+
+        result.offset[:] = np.roll(np.cumsum(result.count), 1)
+        result.offset[0] = 0
+
+        if len(tables) > 0:
+            result.tables = np.concatenate(tables, axis=0)
+        else:
+            result.tables = np.empty((0, 2))
+
+        return result
+
+
+class CrossSection:
     id: int
     code: str
     shape: CrossSectionShape
@@ -24,49 +58,11 @@ class InternalCrossSectionDefinition:
     width_1d: float
     offset: int
     count: int
+    # tables: Tuple[float, float] has different length so is specified on CrossSections
 
 
-@array_of(CrossSectionDefinition)
-class CrossSectionDefinitions:
-    def to_internal(self):
-        """Convert to InternalCrossSectionDefinitions."""
-        internal = InternalCrossSectionDefinitions(
-            id=range(len(self.id)),
-            content_pk=self.id,
-            code=self.code,
-        )
-        offset = 0
-        tables = []
-        errored = []
-        for i, shape in enumerate(self.shape):
-            tabulator = tabulators[shape]
-            try:
-                internal.shape[i], internal.width_1d[i], table = tabulator(
-                    shape, self.width[i], self.height[i]
-                )
-            except ValueError:
-                errored.append(self.id[i])
-            if table is not None:
-                internal.count[i] = len(table)
-                internal.offset[i] = offset
-                offset += len(table)
-                tables.append(table)
-
-        if errored:
-            raise SchematisationError(
-                f"Unable to parse cross section definitions {errored}."
-            )
-
-        if len(tables) > 0:
-            internal.tables = np.concatenate(tables, axis=0)
-        else:
-            internal.tables = np.empty((0, 2), order="F")
-
-        return internal
-
-
-@array_of(InternalCrossSectionDefinition)
-class InternalCrossSectionDefinitions:
+@array_of(CrossSection)
+class CrossSections:
     tables = None
 
 
@@ -83,6 +79,12 @@ def tabulate_builtin(shape, width, height):
     Returns:
         tuple of TABULATED_TRAPEZIUM, width_1d (float), table (ndarray of shape (M, 2))
     """
+    try:
+        width = float(width)
+    except ValueError:
+        raise SchematisationError(
+            f"Unable to parse cross section definition width (got: '{width}')."
+        )
     return shape, float(width), None
 
 
@@ -100,6 +102,12 @@ def tabulate_egg(shape, width, height):
     NUM_INCREMENTS = 16
 
     # width is the only constant; height derives from width
+    try:
+        width = float(width)
+    except ValueError:
+        raise SchematisationError(
+            f"Unable to parse cross section definition width (got: '{width}')."
+        )
     width = float(width)
     height = width * 1.5
     position = height / 3.0  # some parameter for the 'egg' curve
@@ -115,8 +123,7 @@ def tabulate_egg(shape, width, height):
     widths = np.sqrt(p / q) * 2
 
     table = np.array([heights, widths]).T
-    width_1d = np.max(table[:, 1])
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, table
+    return CrossSectionShape.TABULATED_TRAPEZIUM, width, table
 
 
 def tabulate_closed_rectangle(shape, width, height):
@@ -130,8 +137,14 @@ def tabulate_closed_rectangle(shape, width, height):
     Returns:
         tuple of TABULATED_RECTANGLE, width_1d (float), table (ndarray of shape (M, 2))
     """
-    width = float(width)
-    height = float(height)
+    try:
+        width = float(width)
+        height = float(height)
+    except ValueError:
+        raise SchematisationError(
+            f"Unable to parse cross section definition width and/or height "
+            f"(got: '{width}', '{height}')."
+        )
     table = np.array([[0.0, width], [height, 0.0]], order="F")
     return CrossSectionShape.TABULATED_RECTANGLE, width, table
 
@@ -147,14 +160,35 @@ def tabulate_tabulated(shape, width, height):
     Returns:
         tuple of shape, width_1d (float), table (ndarray of shape (M, 2))
     """
-    table = np.array(
-        [
-            [float(x) for x in height.split(" ")],
-            [float(x) for x in width.split(" ")],
-        ]
-    ).T
-    width_1d = np.max(table[:, 1])
-    return shape, width_1d, table
+    try:
+        heights = [float(x) for x in height.split(" ")]
+        widths = [float(x) for x in width.split(" ")]
+    except ValueError:
+        raise SchematisationError(
+            f"Unable to parse cross section definition width and/or height "
+            f"(got: '{width}', '{height}')."
+        )
+    if len(heights) == 0:
+        raise SchematisationError(
+            f"Cross section definitions of tabulated type must have at least one "
+            f"height element (got: {height})."
+        )
+    if len(heights) != len(widths):
+        raise SchematisationError(
+            f"Cross section definitions of tabulated type must have equal number of "
+            f"height and width elements (got: {height}, {width})."
+        )
+    if len(heights) > 1 and np.any(np.diff(heights) <= 0.0):
+        raise SchematisationError(
+            f"Cross section definitions of tabulated type must have increasing heights "
+            f"(got: {height})."
+        )
+    if shape == CrossSectionShape.TABULATED_RECTANGLE and np.isclose(widths[0], 0.0):
+        raise SchematisationError(
+            f"Cross section definitions of type 'tabulated rectangle' must start with "
+            f"a nonzero width (got: {width})."
+        )
+    return shape, np.max(widths), np.array([heights, widths]).T
 
 
 tabulators = {
