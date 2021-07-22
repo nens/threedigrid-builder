@@ -2,7 +2,6 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
 
-import math
 import numpy as np
 
 
@@ -98,24 +97,22 @@ def tabulate_egg(shape, width, height):
     Returns:
         tuple of shape, width_1d (float), table (ndarray of shape (M, 2))
     """
+    # width is the only constant; height derives from width
     width = float(width)
-
-    # width is the only constant
     height = width * 1.5
-    increment = height / 15
+
+    heights = np.linspace(height / 15, height, num=15, endpoint=True)
+
     position = height / 6
-
-    pre_heights = np.arange(start=(height / 2) - increment, stop=-(height / 2) - increment, step=-increment)
-    #pre_heights = heights / 2 - pre_heights
-
+    pre_heights = (height / 2) - heights
     left = ((height / 2) ** 2 - (pre_heights ** 2)) * (width / 2) ** 2
     right = (height / 2) ** 2 + 2 * position * pre_heights + position ** 2
-    width_list = np.round(np.sqrt(left / right), 3) * 2
+    widths = np.sqrt(left / right) * 2
 
     table = np.empty((16, 2))
     table[0] = 0.0
-    table[1:, 0] = np.round(height / 2 - pre_heights, 3)
-    table[1:, 1] = width_list
+    table[1:, 0] = np.round(heights, 3)
+    table[1:, 1] = np.round(widths, 3)
     width_1d = np.max(table[:, 1])
 
     return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, table
