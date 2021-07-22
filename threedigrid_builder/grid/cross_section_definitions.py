@@ -97,24 +97,25 @@ def tabulate_egg(shape, width, height):
     Returns:
         tuple of shape, width_1d (float), table (ndarray of shape (M, 2))
     """
+    NUM_INCREMENTS = 16
+
     # width is the only constant; height derives from width
     width = float(width)
     height = width * 1.5
+    position = height / 3.0  # some parameter for the 'egg' curve
+    heights = np.linspace(0, height, num=NUM_INCREMENTS, endpoint=True)
 
-    heights = np.linspace(height / 15, height, num=15, endpoint=True)
+    # here comes the formulation of the "egg" curve, simplified from inpy
+    h = height / 2
+    w = width / 2
+    a = position / 2
+    x = h - heights
+    p = (h ** 2 - (x ** 2)) * w ** 2
+    q = h ** 2 + 2 * a * x + a ** 2
+    widths = np.sqrt(p / q) * 2
 
-    position = height / 6
-    pre_heights = (height / 2) - heights
-    left = ((height / 2) ** 2 - (pre_heights ** 2)) * (width / 2) ** 2
-    right = (height / 2) ** 2 + 2 * position * pre_heights + position ** 2
-    widths = np.sqrt(left / right) * 2
-
-    table = np.empty((16, 2))
-    table[0] = 0.0
-    table[1:, 0] = np.round(heights, 3)
-    table[1:, 1] = np.round(widths, 3)
+    table = np.array([heights, widths]).T
     width_1d = np.max(table[:, 1])
-
     return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, table
 
 
