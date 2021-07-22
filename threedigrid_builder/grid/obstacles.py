@@ -7,7 +7,6 @@ import pygeos
 
 class Obstacle:
     id: int
-    code: str
     crest_level: float
     the_geom: pygeos.Geometry
 
@@ -19,9 +18,10 @@ class Obstacles:
 
 def apply_obstacles(lines, obstacles):
     """Set obstacles on 2D lines by calculating intersection between
-    2D flowline obstacle linestring. In case of an intersection the flowline
-    becomes and LINE_2D_OBSTACLE. The LINE_2D_OBSTACLE is set on kcu.
-    Also flod and flou of lines is set to crest_level.
+    2D flowline line_coords and obstacle linestring. In case of an
+    intersection the flowline becomes and LINE_2D_OBSTACLE.
+    The LINE_2D_OBSTACLE is set on kcu. Also flod and flou of lines is set to
+    crest_level.
 
     Args:
         lines (Lines)

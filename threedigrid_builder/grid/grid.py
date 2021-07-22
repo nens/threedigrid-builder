@@ -449,7 +449,7 @@ class Grid:
 
     def set_obstacles(self, obstacles):
         """Set obstacles on 2D lines by determining intersection between
-           line_coords and obstacle geometry.
+           line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to 101 and changes flod and flou to crest_level.
 
         Args:
