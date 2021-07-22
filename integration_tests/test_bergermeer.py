@@ -68,8 +68,12 @@ def test_integration(tmp_path):
 
         ## PUMPS
         assert f["pumps"]["id"].shape == (20,)
+        assert_array_equal(f["pumps"]["id"][:], np.arange(f["pumps"]["id"].shape[0]))
 
         ## CROSS SECTIONS
+        assert_array_equal(
+            f["cross_sections"]["id"][:], np.arange(f["cross_sections"]["id"].shape[0])
+        )
         assert count_unique(f["cross_sections"]["shape"]) == {
             -9999: 1,
             CrossSectionShape.CIRCLE: 8,
