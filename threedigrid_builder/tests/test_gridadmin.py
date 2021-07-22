@@ -18,11 +18,13 @@ import tempfile
 @pytest.fixture(scope="session")
 def h5_out():
     nodes = Nodes(
-        id=[1, 2, 3],
+        id=[0, 1, 2],
+        dmax=[1.2, 2.2, 3.3],
     )
     lines = Lines(
-        id=[1, 2, 3, 4, 5],
-        line=[[1, 2], [2, 3], [3, 1], [1, 3], [3, 2]],
+        id=[0, 1, 2, 3, 4],
+        dpumax=[1.2, 2.2, 3.3, 4.2, 5.1],
+        line=[[0, 1], [1, 2], [2, 0], [0, 2], [2, 1]],
         line_geometries=[
             pygeos.linestrings([[1, 1], [2, 2]]),
             pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
@@ -30,10 +32,13 @@ def h5_out():
             None,
             None,
         ],
+        cross1=[0, -9999, 1, 1, 2],
+        cross2=[-9999, -9999, -9999, -9999, 3],
     )
     pumps = Pumps(
-        id=[1, 2, 3],
-        line=[[1, 2], [2, 3], [3, 4]],
+        id=[0, 1, 2],
+        capacity=[0.1, 1.2, 2.5],
+        line=[[0, 1], [1, 2], [2, 3]],
     )
     meta = GridMeta(
         epsg_code=12432634,
@@ -65,9 +70,10 @@ def h5_out():
         }
     )
     cross_sections = InternalCrossSectionDefinitions(
-        id=[1, 2, 3],
-        count=[-9999, 4, 2],
-        offset=[-9999, 0, 4],
+        id=[0, 1, 2],
+        width_1d=[0.2, 1.5, 3.1],
+        count=[4, 2, -9999],
+        offset=[0, 4, -9999],
     )
     cross_sections.tables = np.random.random((6, 2))
 
@@ -116,6 +122,7 @@ def h5_out():
         ("z_coordinate", (4,), "float64"),
         ("zoom_category", (4,), "int32"),
         ("code", (4,), "|S32"),  # added
+        ("dmax", (4,), "float64"),  # added
     ],
 )
 def test_write_nodes(h5_out, dataset, shape, dtype):
@@ -310,9 +317,34 @@ def test_write_pumps(h5_out, dataset, shape, dtype):
         ("width_1d", (4,), "float64"),
         ("offset", (4,), "int32"),
         ("count", (4,), "int32"),
-        ("tables", (2, 6), "float64"),
+        ("tables", (2, 7), "float64"),
     ],
 )
 def test_write_cross_sections(h5_out, dataset, shape, dtype):
     assert h5_out["cross_sections"][dataset].shape == shape
     assert h5_out["cross_sections"][dataset].dtype == np.dtype(dtype)
+
+
+@pytest.mark.parametrize(
+    "group,dataset,expected",
+    [
+        ("nodes", "id", 1),
+        ("nodes", "dmax", 1.2),
+        ("lines", "id", 1),
+        ("lines", "dpumax", 1.2),
+        ("pumps", "id", 1),
+        ("pumps", "capacity", 0.1),
+        ("cross_sections", "id", 1),
+        ("cross_sections", "width_1d", 0.2),
+        ("cross_sections", "offset", 1),  # reference to tables dataset
+        ("lines", "line", [1, 2]),  # reference to node
+        ("lines", "cross1", 1),  # reference to cross section
+        ("lines", "cross2", -9999),  # reference to cross section
+        ("pumps", "node1_id", 1),  # reference to node
+        ("pumps", "node2_id", 2),  # reference to node
+    ],
+)
+def test_not_off_by_one(h5_out, group, dataset, expected):
+    # gridadmin contains a dummy element at index 0 (so index 1 is the first)
+    # references should also be increased by one
+    assert h5_out[group][dataset][..., 1].tolist() == expected

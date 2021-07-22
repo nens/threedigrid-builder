@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Read and convert cross section definitions.
 
+- Solve gridadmin off-by-one errors for pumps.
+
 
 0.2.1 (2021-07-20)
 ------------------
