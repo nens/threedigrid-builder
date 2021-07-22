@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Solve gridadmin off-by-one errors for pumps.
 
+- Add 'dmax' to nodes output.
+
 
 0.2.1 (2021-07-20)
 ------------------
