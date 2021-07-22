@@ -29,6 +29,8 @@ def apply_obstacles(lines, obstacles):
     """
     is_2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
     coordinates = lines.line_coords[is_2d]
+    if not np.isfinite(coordinates).all():
+        raise ValueError(f"{lines.__class__.__name__} object has inclomplete line_coords.")
     lines_tree = pygeos.STRtree(pygeos.linestrings(coordinates.reshape(-1, 2, 2)))
 
     inscts = lines_tree.query_bulk(obstacles.the_geom, predicate="intersects")

@@ -54,7 +54,8 @@ def test_integration(tmp_path):
             LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED: 23,
             LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 1512,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 396,
-            LineType.LINE_2D: 11037,
+            LineType.LINE_2D: 9544,
+            LineType.LINE_2D_OBSTACLE: 1493,
         }
         assert count_unique(f["lines"]["content_type"]) == {
             b"": 12969,

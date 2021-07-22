@@ -5,7 +5,6 @@ services:
     image: threedigrid-builder:dev
     build:
       context: .
-      target: build
       dockerfile: Dockerfile
     ports: 
       - 8888:8888
