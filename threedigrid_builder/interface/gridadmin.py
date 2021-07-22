@@ -104,6 +104,11 @@ def dataclass_to_h5(group, datacls, mode="attrs"):
         field_to_h5(group, field.name, field.type, getattr(datacls, field.name), mode)
 
 
+def increase(arr):
+    """Increase arr by one where arr is not -9999"""
+    return np.add(arr, 1 * (arr != -9999), dtype=arr.dtype)
+
+
 class GridAdminOut(OutputInterface):
     def __init__(self, path):
         if h5py is None:
@@ -219,6 +224,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "nodm", nodes.nodm)
         self.write_dataset(group, "nodn", nodes.nodn)
         self.write_dataset(group, "storage_area", nodes.storage_area)
+        self.write_dataset(group, "dmax", nodes.dmax)
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")
@@ -322,8 +328,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "dpumax", lines.dpumax)
         self.write_dataset(group, "flod", lines.flod)
         self.write_dataset(group, "flou", lines.flou)
-        self.write_dataset(group, "cross1", lines.cross1)
-        self.write_dataset(group, "cross2", lines.cross2)
+        self.write_dataset(group, "cross1", increase(lines.cross1))
+        self.write_dataset(group, "cross2", increase(lines.cross2))
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(group, "line_coords", lines.line_coords.T)
         self.write_dataset(
@@ -382,9 +388,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "bottom_level", pumps.bottom_level)
         self.write_dataset(group, "code", pumps.code.astype("S32"), fill=b"")
         self.write_dataset(group, "content_pk", pumps.content_pk)
-        self.write_dataset(group, "id", pumps.id)
-        self.write_dataset(group, "node1_id", pumps.line[:, 0])
-        self.write_dataset(group, "node2_id", pumps.line[:, 1])
+        self.write_dataset(group, "id", pumps.id + 1)
+        self.write_dataset(group, "node1_id", increase(pumps.line[:, 0]))
+        self.write_dataset(group, "node2_id", increase(pumps.line[:, 1]))
         self.write_dataset(group, "node_coordinates", pumps.line_coords.T)
         self.write_dataset(group, "capacity", pumps.capacity)
         self.write_dataset(
@@ -406,6 +412,21 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
+
+    def write_cross_sections(self, cross_sections):
+        group = self._file.create_group("cross_sections")
+
+        # Datasets that match directly to a lines attribute:
+        self.write_dataset(group, "id", cross_sections.id + 1)
+        self.write_dataset(group, "code", cross_sections.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "shape", cross_sections.shape)
+        self.write_dataset(group, "content_pk", cross_sections.content_pk)
+        self.write_dataset(group, "width_1d", cross_sections.width_1d)
+        self.write_dataset(group, "offset", cross_sections.offset)
+        self.write_dataset(group, "count", cross_sections.count)
+
+        # do not use self.write_dataset as we don't want a dummy element
+        group.create_dataset("tables", data=cross_sections.tables.T)
 
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and

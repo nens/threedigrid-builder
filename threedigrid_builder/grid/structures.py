@@ -80,11 +80,14 @@ class WeirOrifice:  # NL: stuw / doorlaat
 class WeirOrifices:
     content_type = None  # subclasses need to define this
 
-    def get_lines(self, connection_nodes, line_id_counter, connection_node_offset=0):
+    def get_lines(
+        self, connection_nodes, definitions, line_id_counter, connection_node_offset=0
+    ):
         """Convert weirs (or orifices) into lines
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
+            definitions (CrossSectionDefinitions): to map definition ids
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
@@ -97,12 +100,17 @@ class WeirOrifices:
             - content_pk: the id of the structure from which this line originates
             - kcu: the crest_type of the structure
             - dpumax: the crest_level of the structure
+            - cross1: the index of the cross section definition
+            - cross_weight: 1.0 (which means that cross2 should be ignored)
         """
         # map connection node IDs to node indices
         line = np.empty((len(self), 2), dtype=np.int32, order="F")
         line[:, 0] = connection_nodes.id_to_index(self.connection_node_start_id)
         line[:, 1] = connection_nodes.id_to_index(self.connection_node_end_id)
         line += connection_node_offset
+        cross1 = definitions.id_to_index(
+            self.cross_section_definition_id, check_exists=True
+        )
         return Lines(
             id=itertools.islice(line_id_counter, len(self)),
             line=line,
@@ -110,6 +118,8 @@ class WeirOrifices:
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType
             dpumax=self.crest_level,
+            cross1=cross1,
+            cross_weight=1.0,
         )
 
 

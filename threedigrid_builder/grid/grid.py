@@ -1,6 +1,7 @@
 from . import connection_nodes as connection_nodes_module
-from . import cross_sections as cross_sections_module
 from . import obstacles as obstacles_module
+from . import cross_section_locations as csl_module
+from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -88,6 +89,7 @@ class Grid:
         nodes: Nodes,
         lines: Lines,
         pumps: Optional[Pumps] = None,
+        cross_sections: Optional[CrossSections] = None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -99,11 +101,18 @@ class Grid:
             pumps = Pumps(id=[])
         elif not isinstance(pumps, Pumps):
             raise TypeError(f"Expected Pumps instance, got {type(pumps)}")
+        if cross_sections is None:
+            cross_sections = CrossSections(id=[])
+        elif not isinstance(cross_sections, CrossSections):
+            raise TypeError(
+                f"Expected CrossSections instance, got {type(cross_sections)}"
+            )
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
+        self.cross_sections = cross_sections
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -241,51 +250,64 @@ class Grid:
         nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = channels.get_lines(
             connection_nodes,
+            None,
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
         )
         return cls(nodes, lines)
 
-    def set_channel_weights(self, cross_sections, channels):
+    def set_channel_weights(self, locations, definitions, channels):
         """Set cross section weights to channel nodes and lines.
 
-        The attributes cross1, cross2, cross_weight are changed in place for nodes and
-        lines whose content_type equals TYPE_V2_CHANNEL.
+        The attributes cross_loc1, cross_loc2, cross1, cross2, and cross_weight are
+        changed in place for nodes and lines whose content_type equals TYPE_V2_CHANNEL.
 
         Args:
-            cross_sections (CrossSectionLocations)
+            locations (CrossSectionLocations)
+            definitions (CrossSectionDefinitions)
             channels (Channels): Used to lookup the channel geometry
         """
         # Mask the nodes to only the Channel nodes
         node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
+        cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.nodes.content_pk[node_mask],
             self.nodes.ds1d[node_mask],
-            cross_sections,
+            locations,
             channels,
         )
-        self.nodes.cross1[node_mask] = cross1
-        self.nodes.cross2[node_mask] = cross2
+        self.nodes.cross_loc1[node_mask] = cross_loc1
+        self.nodes.cross_loc2[node_mask] = cross_loc2
         self.nodes.cross_weight[node_mask] = cross_weight
 
         # Mask the lines to only the Channel lines
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross1, cross2, cross_weight = cross_sections_module.compute_weights(
+        cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.lines.content_pk[line_mask],
             self.lines.ds1d[line_mask],
-            cross_sections,
+            locations,
             channels,
         )
-        self.lines.cross1[line_mask] = cross1
-        self.lines.cross2[line_mask] = cross2
+        self.lines.cross_loc1[line_mask] = cross_loc1
+        self.lines.cross_loc2[line_mask] = cross_loc2
         self.lines.cross_weight[line_mask] = cross_weight
+
+        # Also fill cross1 and cross2
+        self.lines.cross1[line_mask] = definitions.id_to_index(
+            locations.definition_id[locations.id_to_index(cross_loc1)],
+            check_exists=True,
+        )
+        self.lines.cross2[line_mask] = definitions.id_to_index(
+            locations.definition_id[locations.id_to_index(cross_loc2)],
+            check_exists=True,
+        )
 
     @classmethod
     def from_pipes(
         cls,
         connection_nodes,
         pipes,
+        definitions,
         global_dist_calc_points,
         node_id_counter,
         line_id_counter,
@@ -296,6 +318,7 @@ class Grid:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             pipes (Pipes)
+            definitions (CrossSectionDefinitions): to map definition ids
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
@@ -317,11 +340,14 @@ class Grid:
             - lines.content_pk: the id of the Pipe from which this line originates
             - lines.kcu: from the pipe's calculation_type
             - lines.line_geometries: a segment of the pipe geometry
+            - lines.cross1: the index of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
         """
         pipes.set_geometries(connection_nodes)
         nodes = pipes.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = pipes.get_lines(
             connection_nodes,
+            definitions,
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
@@ -335,6 +361,7 @@ class Grid:
         culverts,
         weirs,
         orifices,
+        definitions,
         global_dist_calc_points,
         node_id_counter,
         line_id_counter,
@@ -347,6 +374,7 @@ class Grid:
             culverts (Culverts)
             weirs (Weirs)
             orifices (Orifices)
+            definitions (CrossSectionDefinitions)
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
@@ -367,21 +395,24 @@ class Grid:
             - lines.content_pk: the id of the object from which this line originates
             - lines.kcu: from the object's calculation_type
             - lines.line_geometries: a segment of the culvert's geometry or none
+            - lines.cross1: the index of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
         """
         culverts.set_geometries(connection_nodes)
 
         nodes = culverts.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = culverts.get_lines(
             connection_nodes,
+            definitions,
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
         )
         lines += weirs.get_lines(
-            connection_nodes, line_id_counter, connection_node_offset
+            connection_nodes, definitions, line_id_counter, connection_node_offset
         )
         lines += orifices.get_lines(
-            connection_nodes, line_id_counter, connection_node_offset
+            connection_nodes, definitions, line_id_counter, connection_node_offset
         )
         return cls(nodes, lines)
 
@@ -393,7 +424,7 @@ class Grid:
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
     def set_bottom_levels(
-        self, cross_sections, channels, pipes, weirs, orifices, culverts
+        self, cross_section_locations, channels, pipes, weirs, orifices, culverts
     ):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
@@ -409,11 +440,11 @@ class Grid:
         """
         # Channels, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = cross_sections_module.interpolate(
-            self.nodes.cross1[mask],
-            self.nodes.cross2[mask],
+        self.nodes.dmax[mask] = csl_module.interpolate(
+            self.nodes.cross_loc1[mask],
+            self.nodes.cross_loc2[mask],
             self.nodes.cross_weight[mask],
-            cross_sections,
+            cross_section_locations,
             "reference_level",
         )
 
@@ -433,7 +464,7 @@ class Grid:
         connection_nodes_module.set_bottom_levels(
             self.nodes,
             self.lines,
-            cross_sections,
+            cross_section_locations,
             channels,
             pipes,
             weirs,
@@ -445,7 +476,7 @@ class Grid:
         self.lines.set_bottom_levels(self.nodes, allow_nan=True)
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
-        cross_sections_module.fix_dpumax(self.lines, self.nodes, cross_sections)
+        csl_module.fix_dpumax(self.lines, self.nodes, cross_section_locations)
 
     def set_obstacles(self, obstacles):
         """Set obstacles on 2D lines by determining intersection between
@@ -468,6 +499,15 @@ class Grid:
         self.pumps.renumber()
         self.pumps.set_lines(self.nodes)
         self.pumps.set_node_data(self.nodes)
+
+    def set_cross_sections(self, definitions):
+        """Set the cross sections on this grid object
+
+        Args:
+            definitions (CrossSectionDefinitions)
+        """
+        # TODO Skip definitions that are not used (and remap cross1 and cross2)
+        self.cross_sections = definitions.convert()
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

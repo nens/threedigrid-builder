@@ -90,6 +90,7 @@ class BaseLinear:
     def get_lines(
         self,
         connection_nodes,
+        definitions,
         nodes,
         line_id_counter,
         connection_node_offset=0,
@@ -102,9 +103,11 @@ class BaseLinear:
         - connection_node_start_id
         - connection_node_end_id
         - calculation_type
+        - cross_section_definition_id (pipes and culverts only)
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
+            definitions (CrossSectionDefinitions): to map definition ids
             nodes (Nodes): interpolated nodes (see interpolate_nodes)
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
@@ -118,6 +121,8 @@ class BaseLinear:
             - ds1d: the arclength of the line
             - kcu: the calculation_type of the linear object
             - line_geometries: the linestrings (segments of self.the_geom)
+            - cross1: the index of the cross section definition
+            - cross_weight: 1.0 (which means that cross2 should be ignored)
             The lines are ordered by content_pk and then by position on the linestring.
         """
         # count the number of segments per object
@@ -154,6 +159,17 @@ class BaseLinear:
         mask[last_idx] = False
         line[mask, 1] = nodes.id
 
+        # conditionally add the cross section definition (for pipes and culverts only)
+        try:
+            cross1 = definitions.id_to_index(
+                self.cross_section_definition_id[segment_idx],
+                check_exists=True,
+            )
+            cross_weight = 1.0
+        except AttributeError:
+            cross1 = -9999
+            cross_weight = np.nan
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -163,6 +179,8 @@ class BaseLinear:
             content_pk=self.id[segment_idx],
             ds1d=end_s - start_s,
             kcu=self.calculation_type[segment_idx],
+            cross1=cross1,
+            cross_weight=cross_weight,
         )
 
     def compute_bottom_level(self, ids, ds):

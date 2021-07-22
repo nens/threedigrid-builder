@@ -1,6 +1,7 @@
 from enum import IntEnum
 from numpy.testing import assert_equal
 from threedigrid_builder.base import array_of
+from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
 
 import itertools
@@ -152,7 +153,19 @@ def test_repr():
 def test_id_to_index(id, expected):
     records = Records(id=[1, 3, 5])
 
-    assert_equal(records.id_to_index(id), expected)
+    assert_equal(records.id_to_index(id, check_exists=True), expected)
+
+
+def test_id_to_index_check_exists():
+    records = Records(id=[1, 3, 5])
+
+    with pytest.raises(SchematisationError, match=r".*missing: \[2\].*"):
+        records.id_to_index([1, 2, 3], check_exists=True)
+
+    with pytest.raises(SchematisationError, match=r".*missing: \[2\].*"):
+        records.id_to_index([1, 1, 2, 2], check_exists=True)
+
+    records.id_to_index([1, 1, 2, 2])  # no check, no error
 
 
 @pytest.mark.parametrize(

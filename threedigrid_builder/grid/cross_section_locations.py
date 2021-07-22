@@ -1,13 +1,12 @@
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 
 import numpy as np
 import pygeos
 
 
-__all__ = ["CrossSectionLocations", "CrossSectionDefinitions"]
+__all__ = ["CrossSectionLocations"]
 
 
 class CrossSectionLocation:
@@ -24,19 +23,6 @@ class CrossSectionLocation:
 
 @array_of(CrossSectionLocation)
 class CrossSectionLocations:
-    pass
-
-
-class CrossSectionDefinition:
-    id: int
-    code: str
-    shape: CrossSectionShape
-    height: float
-    width: float
-
-
-@array_of(CrossSectionDefinition)
-class CrossSectionDefinitions:
     pass
 
 
@@ -57,7 +43,7 @@ def compute_weights(channel_id, ds, cs, channels):
         channels (Channels): Used to lookup the channel geometry
 
     Returns:
-        tuple of cross1, cross2, cross_weight
+        tuple of cross_loc1, cross_loc2, cross_weight
 
     See also:
         Channels.get_lines: computes the lines in the correct order
@@ -136,8 +122,8 @@ def compute_weights(channel_id, ds, cs, channels):
     cs_idx_1[equalize] += 1
 
     # Map index to id and create the array that matches the input channel_id and ds
-    cross1 = cs.id[cs_sorter][cs_idx_1]
-    cross2 = cs.id[cs_sorter][cs_idx_2]
+    cross_loc1 = cs.id[cs_sorter][cs_idx_1]
+    cross_loc2 = cs.id[cs_sorter][cs_idx_2]
 
     # Compute the weights. For each line, we have 3 times ds:
     # 1. the ds of the CrossSectionLocation before it (ds_1)
@@ -153,28 +139,28 @@ def compute_weights(channel_id, ds, cs, channels):
         cross_weight = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
 
-    return cross1, cross2, cross_weight
+    return cross_loc1, cross_loc2, cross_weight
 
 
-def interpolate(cross1, cross2, cross_weight, cs, cs_attr):
+def interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr):
     """Interpolate an attribute of CrossSectionLocation using known weights.
 
     Args:
-        cross1 (ndarray of int): see compute_weights
-        cross2 (ndarray of int): see compute_weights
+        cross_loc1 (ndarray of int): see compute_weights
+        cross_loc2 (ndarray of int): see compute_weights
         cross_weight (ndarray of float): see compute_weights
         cs (CrossSectionLocations)
         cs_attr ({"reference_level", "bank_level"}): see compute_weights
 
     Returns:
-        an array of the same shape cross1 containing the interpolated values
+        an array of the same shape cross_loc1 containing the interpolated values
 
     See also:
         compute_weights: computes the interpolation weights
     """
     values = getattr(cs, cs_attr)
-    left = values.take(cs.id_to_index(cross1))
-    right = values.take(cs.id_to_index(cross2))
+    left = values.take(cs.id_to_index(cross_loc1))
+    right = values.take(cs.id_to_index(cross_loc2))
     return cross_weight * left + (1 - cross_weight) * right
 
 
@@ -195,8 +181,8 @@ def compute_bottom_level(channel_id, ds, cs, channels):
     See also:
         compute_weights: computes the interpolation weights
     """
-    cross1, cross2, cross_weight = compute_weights(channel_id, ds, cs, channels)
-    return interpolate(cross1, cross2, cross_weight, cs, "reference_level")
+    cross_loc1, cross_loc2, cross_weight = compute_weights(channel_id, ds, cs, channels)
+    return interpolate(cross_loc1, cross_loc2, cross_weight, cs, "reference_level")
 
 
 def fix_dpumax(lines, nodes, cs, allow_nan=False):
@@ -211,7 +197,7 @@ def fix_dpumax(lines, nodes, cs, allow_nan=False):
 
     Args:
         nodes (Nodes)
-        lines (Lines): the dpumax is adjusted where necessary. needs the cross1, cross2
+        lines (Lines): the dpumax is adjusted where necessary. needs the cross_loc1, cross_loc2
             and cross_weight attributes (see compute_weights)
         cs (CrossSectionLocations): the reference_level is taken
     """
@@ -222,8 +208,8 @@ def fix_dpumax(lines, nodes, cs, allow_nan=False):
     line_idx = line_idx[is_cn.all(axis=1)]
 
     # collect the associated crosssection reference_levels and interpolate
-    left = cs.reference_level.take(cs.id_to_index(lines.cross1[line_idx]))
-    right = cs.reference_level.take(cs.id_to_index(lines.cross2[line_idx]))
+    left = cs.reference_level.take(cs.id_to_index(lines.cross_loc1[line_idx]))
+    right = cs.reference_level.take(cs.id_to_index(lines.cross_loc2[line_idx]))
     weights = lines.cross_weight[line_idx]
     new_dpumax = weights * left + (1 - weights) * right
 

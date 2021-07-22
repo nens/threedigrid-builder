@@ -278,6 +278,13 @@ class SQLite:
                 .as_structarray()
             )
 
+        # map shape 10 to 1 (circle) to match CrossSectionShape enum
+        arr["shape"][arr["shape"] == 10] = 1
+        # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
+        arr["shape"][arr["shape"] == 11] = 5
+        # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
+        arr["shape"][arr["shape"] == 12] = 6
+
         # transform to a CrossSectionDefinitions object
         return CrossSectionDefinitions(**{name: arr[name] for name in arr.dtype.names})
 

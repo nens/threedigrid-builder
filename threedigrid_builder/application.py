@@ -90,12 +90,14 @@ def _make_grid(
             connection_node_offset=connection_node_first_id,
         )
 
-        cross_section_locations = db.get_cross_section_locations()
-        grid.set_channel_weights(cross_section_locations, channels)
+        locations = db.get_cross_section_locations()
+        definitions = db.get_cross_section_definitions()
+        grid.set_channel_weights(locations, definitions, channels)
 
         pipes = db.get_pipes()
         grid += Grid.from_pipes(
             connection_nodes=connection_nodes,
+            definitions=definitions,
             pipes=pipes,
             global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
@@ -111,6 +113,7 @@ def _make_grid(
             culverts=culverts,
             weirs=weirs,
             orifices=orifices,
+            definitions=definitions,
             global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
@@ -118,9 +121,8 @@ def _make_grid(
         )
 
         grid.set_calculation_types()
-        grid.set_bottom_levels(
-            cross_section_locations, channels, pipes, weirs, orifices, culverts
-        )
+        grid.set_bottom_levels(locations, channels, pipes, weirs, orifices, culverts)
+        grid.set_cross_sections(definitions)
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
@@ -129,7 +131,7 @@ def _make_grid(
             connection_nodes=connection_nodes,
             channels=channels,
             pipes=pipes,
-            locations=cross_section_locations,
+            locations=locations,
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
@@ -154,6 +156,7 @@ def _grid_to_hdf5(grid, path):
         out.write_nodes(grid.nodes)
         out.write_lines(grid.lines)
         out.write_pumps(grid.pumps)
+        out.write_cross_sections(grid.cross_sections)
 
 
 def make_grid(
