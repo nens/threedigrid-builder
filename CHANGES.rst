@@ -10,6 +10,8 @@ Changelog of threedigrid-builder
 
 - Add 'dmax' to nodes output.
 
+- Changed external API function name to "make_gridadmin".
+
 
 0.2.1 (2021-07-20)
 ------------------
