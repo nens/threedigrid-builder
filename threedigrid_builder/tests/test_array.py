@@ -205,3 +205,21 @@ def test_reorder_by():
 
     assert_equal(records.number, [3, 2])  # reordered
     assert_equal(records.id, [5, 7])  # kept the same
+
+
+@pytest.mark.parametrize(
+    "mask,expected",
+    [
+        ([True, True], [2, 3]),
+        ([False, True], [3]),
+        ([True, False], [2]),
+        ([False, False], []),
+        ([0, 1], [2, 3]),
+        ([0], [2]),
+        ([1], [3]),
+        ([], []),
+    ],
+)
+def test_indexing(mask, expected):
+    records = Records(id=[5, 7], number=[2, 3])
+    assert_equal(records[mask].number, records.number[mask])

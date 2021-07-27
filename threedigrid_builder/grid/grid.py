@@ -263,8 +263,9 @@ class Grid:
             - lines.kcu: from the channel's calculation_type
             - lines.line_geometries: a segment of the channel geometry
         """
-        nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
-        lines = channels.get_lines(
+        not_embedded = channels[channels.calculation_type != CalculationType.EMBEDDED]
+        nodes = not_embedded.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = not_embedded.get_lines(
             connection_nodes,
             None,
             nodes,

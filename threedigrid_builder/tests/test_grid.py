@@ -164,14 +164,16 @@ def test_concatenate_grid(grid2d, grid1d):
 
 def test_from_channels():
     connection_nodes = mock.Mock()
-    channels = mock.Mock()
+    channels = mock.MagicMock()
     counter = mock.Mock()
     connection_node_offset = mock.Mock()
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    channels.interpolate_nodes.return_value = nodes
-    channels.get_lines.return_value = lines
+    not_embedded = mock.Mock()
+    channels.__getitem__.return_value = not_embedded
+    not_embedded.interpolate_nodes.return_value = nodes
+    not_embedded.get_lines.return_value = lines
     grid = Grid.from_channels(
         connection_nodes,
         channels,
@@ -185,8 +187,8 @@ def test_from_channels():
     assert grid.nodes is nodes
     assert grid.lines is lines
 
-    channels.interpolate_nodes.assert_called_with(counter, 100.0)
-    channels.get_lines.assert_called_with(
+    not_embedded.interpolate_nodes.assert_called_with(counter, 100.0)
+    not_embedded.get_lines.assert_called_with(
         connection_nodes,
         None,
         nodes,
