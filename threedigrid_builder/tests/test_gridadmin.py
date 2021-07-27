@@ -123,6 +123,7 @@ def h5_out():
         ("zoom_category", (4,), "int32"),
         ("code", (4,), "|S32"),  # added
         ("dmax", (4,), "float64"),  # added
+        ("ds1d", (4,), "float64"),  # added
     ],
 )
 def test_write_nodes(h5_out, dataset, shape, dtype):

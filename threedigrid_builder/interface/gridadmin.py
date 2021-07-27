@@ -225,6 +225,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "nodn", nodes.nodn)
         self.write_dataset(group, "storage_area", nodes.storage_area)
         self.write_dataset(group, "dmax", nodes.dmax)
+        self.write_dataset(group, "ds1d", nodes.ds1d)
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")
