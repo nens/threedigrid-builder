@@ -1,6 +1,6 @@
 from . import connection_nodes as connection_nodes_module
-from . import obstacles as obstacles_module
 from . import cross_section_locations as csl_module
+from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
@@ -113,6 +113,7 @@ class Grid:
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
+        self._cell_tree = None
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -122,15 +123,30 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for k, v in other.__dict__.items():
-            if isinstance(v, Nodes) or isinstance(v, Lines):
-                new_attrs[k] = getattr(self, k) + v
+        for name in ("nodes", "lines"):
+            new_attrs[name] = getattr(self, name) + getattr(other, name)
+        for name in ("meta", "quadtree_stats", "pumps", "cross_sections"):
+            if getattr(other, name) is None:
+                new_attrs[name] = getattr(self, name)
             else:
-                new_attrs[k] = v if v is not None else getattr(self, k)
+                new_attrs[name] = getattr(other, name)
         return self.__class__(**new_attrs)
 
     def __repr__(self):
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
+
+    @property
+    def cell_tree(self):
+        """A pygeos STRtree of the cells in this grid
+
+        The indices in the tree equal the node indices.
+        """
+        if self._cell_tree is None:
+            is_2d_open = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+            geoms = np.empty(len(self.nodes), dtype=object)
+            geoms[is_2d_open] = pygeos.box(*self.nodes.bounds[is_2d_open].T)
+            self._cell_tree = pygeos.STRtree(geoms)
+        return self._cell_tree
 
     @classmethod
     def from_meta(cls, **kwargs):
@@ -521,6 +537,7 @@ class Grid:
         (bottom level) are computed.
         """
         self.lines += get_1d2d_lines(
+            self.cell_tree,
             self.nodes,
             connection_nodes,
             channels,
@@ -544,7 +561,14 @@ class Grid:
 
 
 def get_1d2d_lines(
-    nodes, connection_nodes, channels, pipes, locations, culverts, line_id_counter
+    cell_tree,
+    nodes,
+    connection_nodes,
+    channels,
+    pipes,
+    locations,
+    culverts,
+    line_id_counter,
 ):
     """Compute 1D-2D flowlines for (double) connected 1D nodes.
 
@@ -560,8 +584,10 @@ def get_1d2d_lines(
     which cells are connected to. This is currently unimplemented.
 
     Args:
+        cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into
+          the STRtree must be equal to the indices into the nodes.
         nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
-            the 1D nodes already have a dmax and calculation_type set.
+          the 1D nodes already have a dmax and calculation_type set.
         connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
         channels (Channels)
         pipes (Pipes)
@@ -575,10 +601,6 @@ def get_1d2d_lines(
         - kcu: LINE_1D2D_* type (see above)
         - dpumax: based on drain_level or dmax (see above)
     """
-    is_2d_open = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-    cell_ids = nodes.id[is_2d_open]
-    cell_tree = pygeos.STRtree(pygeos.box(*nodes.bounds[is_2d_open].T))
-
     HAS_1D2D_CONTENT_TYPES = (
         ContentType.TYPE_V2_CONNECTION_NODES,
         ContentType.TYPE_V2_CHANNEL,
@@ -624,7 +646,7 @@ def get_1d2d_lines(
         return Lines(id=[])
     node_idx = connected_idx[idx[0]]  # convert to node indexes
     node_id = nodes.index_to_id(node_idx)  # convert to node ids
-    cell_id = cell_ids[idx[1]]  # convert to cell ids
+    cell_id = nodes.index_to_id(idx[1])  # convert to cell ids
 
     # create a 'duplicator' array that duplicates lines from double connected nodes
     is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
