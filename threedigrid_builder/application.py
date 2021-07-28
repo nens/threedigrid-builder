@@ -135,6 +135,8 @@ def _make_grid(
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
+        # grid.add_embedded_channels(channels, line_id_counter)
+        # grid.convert_embedded_nodes()
 
     grid.finalize()
     return grid
