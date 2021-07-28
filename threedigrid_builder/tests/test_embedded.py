@@ -39,7 +39,6 @@ def test_embed_nodes(grid2d):
             calculation_type=[EMB, ISO, EMB, EMB],
             coordinates=[(1.0, 0.2), (0.9, 0.9), (1.3, 0.3), (1.6, 0.7)],
             dmax=[1.0, 2.0, 3.0, 4.0],
-            storage_area=[10.0, 0.0, 5.0, 9.0],
         ),
         lines=Lines(id=[1, 2, 3], line=[(2, 3), (2, 4), (3, 4)]),
     )
@@ -47,8 +46,6 @@ def test_embed_nodes(grid2d):
 
     assert_array_equal(grid.nodes.id, [0, 1, 2])
     assert_array_equal(grid.nodes.node_type, [NODE_2D] * 2 + [NODE_1D])
-    assert_array_equal(grid.nodes.dmax, [1.0, 3.0, 2.0])
-    assert_array_equal(grid.nodes.storage_area, [10.0, 14.0, 0.0])
     assert_array_equal(grid.lines.line, [(0, 1), (0, 2), (0, 1), (2, 1)])
 
 
