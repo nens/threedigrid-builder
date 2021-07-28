@@ -20,7 +20,7 @@ import itertools
 import logging
 
 
-__all__ = ["make_grid"]
+__all__ = ["make_grid", "make_gridadmin"]
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def _default_progress_callback(progress: float, message: str):
     logger.info("Progress: %d, Message: %s", progress * 100, message)
 
 
-def _make_grid(
+def _make_gridadmin(
     sqlite_path,
     dem_path=None,
     model_area_path=None,
@@ -48,14 +48,14 @@ def _make_grid(
     grid_settings = settings["grid_settings"]
 
     if grid_settings.use_2d:
-        progress_callback(0.1, "Constructing subgrid...")
+        progress_callback(0.1, "Reading subgrid input...")
         if not dem_path:
             raise SchematisationError("DEM file expected")
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
         subgrid = Subgrid(dem_path, model_area=model_area_path)
         subgrid_meta = subgrid.get_meta()
         refinements = db.get_grid_refinements()
-        progress_callback(0.7, "Constructing quadtree...")
+        progress_callback(0.7, "Constructing 2D computational grid...")
         quadtree = QuadTree(
             subgrid_meta,
             grid_settings.kmax,
@@ -73,7 +73,7 @@ def _make_grid(
 
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
-        progress_callback(0.8, "Constructing 1D network...")
+        progress_callback(0.8, "Constructing 1D computational grid...")
         cn_grid = Grid.from_connection_nodes(
             connection_nodes=connection_nodes, node_id_counter=node_id_counter
         )
@@ -126,7 +126,7 @@ def _make_grid(
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
-        progress_callback(0.9, "Connecting 1D and 2D elements...")
+        progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,
@@ -159,7 +159,7 @@ def _grid_to_hdf5(grid, path):
         out.write_cross_sections(grid.cross_sections)
 
 
-def make_grid(
+def make_gridadmin(
     sqlite_path: Path,
     dem_path: Path,
     out_path: Path,
@@ -204,7 +204,7 @@ def make_grid(
     if progress_callback is None:
         progress_callback = _default_progress_callback
 
-    grid = _make_grid(
+    grid = _make_gridadmin(
         sqlite_path,
         dem_path,
         model_area_path,
@@ -214,3 +214,7 @@ def make_grid(
 
     progress_callback(0.95, "Writing gridadmin...")
     writer(grid, out_path)
+
+
+# Legacy
+make_grid = make_gridadmin

@@ -132,11 +132,11 @@ class GridAdminOut(OutputInterface):
         """
         dataclass_to_h5(self._file, meta, "attrs")
 
-        make_grid = self._file.create_group("grid_settings")
-        dataclass_to_h5(make_grid, meta.grid_settings, mode="datasets")
+        grid_settings = self._file.create_group("grid_settings")
+        dataclass_to_h5(grid_settings, meta.grid_settings, mode="datasets")
 
-        make_tables = self._file.create_group("tables_settings")
-        dataclass_to_h5(make_tables, meta.tables_settings, mode="datasets")
+        tables_settings = self._file.create_group("tables_settings")
+        dataclass_to_h5(tables_settings, meta.tables_settings, mode="datasets")
 
     def write_grid_counts(self, nodes, lines):
         """Write the "meta" group in the gridadmin file.

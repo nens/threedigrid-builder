@@ -181,15 +181,15 @@ class SQLite:
             _set_initialization_type(groundwater, "infiltration_decay_period")
             _set_initialization_type(groundwater, "groundwater_hydro_connectivity")
 
-        make_grid = GridSettings.from_dict(global_)
-        make_tables = TablesSettings.from_dict(
+        grid_settings = GridSettings.from_dict(global_)
+        tables_settings = TablesSettings.from_dict(
             {**groundwater, **interflow, **infiltration, **global_}
         )
         return {
             "epsg_code": global_["epsg_code"],
             "model_name": global_["name"],
-            "grid_settings": make_grid,
-            "tables_settings": make_tables,
+            "grid_settings": grid_settings,
+            "tables_settings": tables_settings,
         }
 
     @property
