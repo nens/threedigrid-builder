@@ -4,6 +4,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import embed_nodes
 from threedigrid_builder.grid import Grid
 
@@ -49,3 +50,36 @@ def test_embed_nodes(grid2d):
     assert_array_equal(grid.nodes.dmax, [1.0, 3.0, 2.0])
     assert_array_equal(grid.nodes.storage_area, [10.0, 14.0, 0.0])
     assert_array_equal(grid.lines.line, [(0, 1), (0, 2), (0, 1), (2, 1)])
+
+
+def test_embed_node_outside_2D(grid2d):
+    grid = grid2d + Grid(
+        nodes=Nodes(
+            id=[2, 3],
+            node_type=NODE_1D,
+            content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+            content_pk=[15, 16],
+            calculation_type=CalculationType.EMBEDDED,
+            coordinates=[(0.5, 1.2), (0.5, 0.5)],
+        ),
+        lines=Lines(id=[]),
+    )
+
+    with pytest.raises(SchematisationError, match=r".*\[15\] are outside the 2D cells"):
+        embed_nodes(grid)
+
+
+def test_embed_node_two_interconnected(grid2d):
+    grid = grid2d + Grid(
+        nodes=Nodes(
+            id=[2, 3],
+            node_type=NODE_1D,
+            content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+            calculation_type=CalculationType.EMBEDDED,
+            coordinates=[(0.8, 0.8), (0.5, 0.5)],
+        ),
+        lines=Lines(id=[2], line=[(2, 3)]),
+    )
+
+    with pytest.raises(SchematisationError):
+        embed_nodes(grid)

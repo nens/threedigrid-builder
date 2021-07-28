@@ -34,7 +34,7 @@ def embed_nodes(grid):
     # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
     # and one with indices into the cells.
     idx = grid.cell_tree.query_bulk(pygeos.points(grid.nodes.coordinates[embedded_idx]))
-    # Address edge cases of multiple cells per embedded node: just take the one
+    # Address edge cases of multiple cells per embedded node: just take the first cell
     _, first_unique_index = np.unique(idx[0], return_index=True)
     idx = idx[:, first_unique_index]
     combs_embedded_idx = embedded_idx[idx[0]]
@@ -42,8 +42,10 @@ def embed_nodes(grid):
 
     unique_cell_idx, counts = np.unique(combs_cell_idx, return_counts=True)
     if counts.sum() != n_embedded:
+        missing_idx = embedded_idx[~np.isin(embedded_idx, combs_embedded_idx)]
+        missing_cn_id = grid.nodes.content_pk[missing_idx].tolist()
         raise SchematisationError(
-            "Some embedded connection nodes are outside the 2D domain."
+            f"Embedded connection nodes {missing_cn_id} are outside the 2D cells"
         )
 
     # Create an N x M array of embedded node indices where N is the number of cells with
@@ -74,3 +76,9 @@ def embed_nodes(grid):
     # map node indices (fixes node replacement and node renumbering in one go)
     grid.nodes.id = np.arange(n_embedded)
     grid.lines.line = np.take(new_ids, grid.lines.line)
+
+    # check if there are no cells connecting to itself
+    if np.any(grid.lines.line[:, 0] == grid.lines.line[:, 1]):
+        raise SchematisationError(
+            "There are embedded nodes connected to each other within the same 2D cell."
+        )
