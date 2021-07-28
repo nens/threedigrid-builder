@@ -31,6 +31,7 @@ class Node:
     cross_loc1: int  # the id of the cross section location
     cross_loc2: int  # the id of the cross section location
     cross_weight: float
+    embedded_in: int  # the id of the node in which this node is embedded
 
 
 @array_of(Node)

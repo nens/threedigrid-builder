@@ -42,11 +42,15 @@ def test_embed_nodes(grid2d):
         ),
         lines=Lines(id=[1, 2, 3], line=[(2, 3), (2, 4), (3, 4)]),
     )
-    embed_nodes(grid)
+    embedded = embed_nodes(grid)
 
     assert_array_equal(grid.nodes.id, [0, 1, 2])
     assert_array_equal(grid.nodes.node_type, [NODE_2D] * 2 + [NODE_1D])
     assert_array_equal(grid.lines.line, [(0, 1), (0, 2), (0, 1), (2, 1)])
+
+    assert_array_equal(embedded.id, [0, 1, 2])  # new ids
+    assert_array_equal(embedded.calculation_type, EMB)
+    assert_array_equal(embedded.embedded_in, [0, 1, 1])
 
 
 def test_embed_node_outside_2D(grid2d):
@@ -72,11 +76,12 @@ def test_embed_node_two_interconnected(grid2d):
             id=[2, 3],
             node_type=NODE_1D,
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+            content_pk=[4, 5],
             calculation_type=CalculationType.EMBEDDED,
             coordinates=[(0.8, 0.8), (0.5, 0.5)],
         ),
         lines=Lines(id=[2], line=[(2, 3)]),
     )
 
-    with pytest.raises(SchematisationError):
+    with pytest.raises(SchematisationError, match=r".*\[4, 5\] connect to.*"):
         embed_nodes(grid)

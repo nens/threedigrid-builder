@@ -127,6 +127,7 @@ def _make_grid(
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D elements...")
+        grid.embed_nodes()
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,
@@ -135,8 +136,6 @@ def _make_grid(
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
-        # grid.add_embedded_channels(channels, line_id_counter)
-        # grid.convert_embedded_nodes()
 
     grid.finalize()
     return grid

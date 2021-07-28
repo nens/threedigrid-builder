@@ -20,6 +20,8 @@ def embed_nodes(grid):
     """Integrate embedded connection nodes into the 2D cells.
 
     This changes the grid (nodes as well as lines) inplace.
+
+    Returned are the removed (embedded) nodes.
     """
     is_embedded = (grid.nodes.calculation_type == CalculationType.EMBEDDED) & (
         grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
@@ -50,7 +52,10 @@ def embed_nodes(grid):
     new_ids[~is_embedded] = np.arange(n_embedded)
     new_ids[combs_embedded_idx] = grid.nodes.id[combs_cell_idx]
 
-    # drop the embedded nodes
+    # cut out the embedded nodes
+    embedded_nodes = grid.nodes[combs_embedded_idx]
+    embedded_nodes.id[:] = np.arange(len(embedded_nodes))
+    embedded_nodes.embedded_in = new_ids[combs_cell_idx]
     grid.nodes = grid.nodes[~is_embedded]
 
     # map node indices (fixes node replacement and node renumbering in one go)
@@ -58,7 +63,15 @@ def embed_nodes(grid):
     grid.lines.line = np.take(new_ids, grid.lines.line)
 
     # check if there are no cells connecting to itself
-    if np.any(grid.lines.line[:, 0] == grid.lines.line[:, 1]):
-        raise SchematisationError(
-            "There are embedded nodes connected to each other within the same 2D cell."
+    # TODO Include the offending connection node ids in the error message
+    is_self_connected = grid.lines.line[:, 0] == grid.lines.line[:, 1]
+    if np.any(is_self_connected):
+        mask = np.isin(
+            embedded_nodes.embedded_in, grid.lines.line[is_self_connected, 0]
         )
+        raise SchematisationError(
+            f"Embedded connection nodes {embedded_nodes.content_pk[mask].tolist()} connect to "
+            f"one another within the same 2D cell."
+        )
+
+    return embedded_nodes

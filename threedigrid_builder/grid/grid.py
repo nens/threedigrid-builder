@@ -2,6 +2,7 @@ from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
+from .embedded import embed_nodes
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -90,6 +91,7 @@ class Grid:
         lines: Lines,
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
+        embedded_nodes=None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -107,12 +109,17 @@ class Grid:
             raise TypeError(
                 f"Expected CrossSections instance, got {type(cross_sections)}"
             )
+        if embedded_nodes is None:
+            embedded_nodes = Nodes(id=[])
+        elif not isinstance(embedded_nodes, Nodes):
+            raise TypeError(f"Expected Nodes instance, got {type(embedded_nodes)}")
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
+        self.embedded_nodes = embedded_nodes
         self._cell_tree = None
 
     def __add__(self, other):
@@ -123,7 +130,7 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines"):
+        for name in ("nodes", "lines", "embedded_nodes"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in ("meta", "quadtree_stats", "pumps", "cross_sections"):
             if getattr(other, name) is None:
@@ -525,6 +532,13 @@ class Grid:
         """
         # TODO Skip definitions that are not used (and remap cross1 and cross2)
         self.cross_sections = definitions.convert()
+
+    def embed_nodes(self):
+        """Integrate embedded connection nodes into the 2D cells.
+
+        grid.embedded_nodes will contain the removed (embedded) nodes.
+        """
+        self.embedded_nodes = embed_nodes(self)
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter
