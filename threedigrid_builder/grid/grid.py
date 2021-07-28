@@ -617,8 +617,6 @@ def get_1d2d_lines(
     if n_connected_nodes == 0:
         return Lines(id=[])
 
-    # TODO Error if a node is not in a 2D cell.
-
     # The query_bulk returns 2 1D arrays: one with indices into the supplied node
     # geometries and one with indices into the tree of cells.
     idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))

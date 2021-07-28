@@ -1,36 +1,76 @@
+from .linear import counts_to_column_index
+from .linear import counts_to_row_index
+from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.exceptions import SchematisationError
+
 import numpy as np
 import pygeos
 
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["embed_nodes"]
 
 
-def embed_nodes(nodes, lines, cell_tree):
-    is_embedded = nodes.calculation_type == CalculationType.EMBEDDED
-    idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[is_embedded]))
-    cell_ids = nodes.id[idx[0]]
-    embedded_ids = nodes.id[is_embedded][idx[1]]
+def take(arr, idx):
+    """Take values at idx from arr, filling NaN where idx is -9999"""
+    result = np.take(arr, idx, mode="clip")
+    result[idx == -9999] = np.nan
+    return result
 
-    # go through an N x M array where N is the number of cells with embedded nodes and
-    # M the max number of neighbors for 1 node
-    unique_vals, counts = np.unique(cell_ids, return_counts=True)
-    n = unique_vals.shape[0]
+
+def embed_nodes(grid):
+    """Integrate embedded connection nodes into the 2D cells.
+
+    This changes the grid (nodes as well as lines) inplace.
+    """
+    is_embedded = (grid.nodes.calculation_type == CalculationType.EMBEDDED) & (
+        grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+    )
+    embedded_idx = np.where(is_embedded)[0]
+    n_embedded = len(embedded_idx)
+    if n_embedded == 0:
+        return
+
+    # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
+    # and one with indices into the cells.
+    idx = grid.cell_tree.query_bulk(pygeos.points(grid.nodes.coordinates[embedded_idx]))
+    # Address edge cases of multiple cells per embedded node: just take the one
+    _, first_unique_index = np.unique(idx[0], return_index=True)
+    idx = idx[:, first_unique_index]
+    combs_embedded_idx = embedded_idx[idx[0]]
+    combs_cell_idx = idx[1]
+
+    unique_cell_idx, counts = np.unique(combs_cell_idx, return_counts=True)
+    if counts.sum() != n_embedded:
+        raise SchematisationError(
+            "Some embedded connection nodes are outside the 2D domain."
+        )
+
+    # Create an N x M array of embedded node indices where N is the number of cells with
+    # embedded nodes and M the max number of neighbors for 1 node
+    n = len(unique_cell_idx)
     m = counts.max()
+    embedded_idx_arr = np.full((n, m), -9999, dtype=int)
+    i = counts_to_row_index(counts)
+    j = counts_to_column_index(counts)
+    embedded_idx_arr[(i, j)] = combs_embedded_idx
 
-    embedded_ids_arr = np.full((n, m), -9999, dtype=embedded_ids.dtype)
-    embedded_ids_arr
+    # copy some properties from the 1D (embedded) nodes to the 2D nodes (cells)
+    grid.nodes.dmax[unique_cell_idx] = np.nanmin(
+        take(grid.nodes.dmax, embedded_idx_arr), axis=1
+    )
+    grid.nodes.storage_area[unique_cell_idx] = np.nansum(
+        take(grid.nodes.storage_area, embedded_idx_arr), axis=1
+    )
 
-    # some checks
-    # if len(unique_vals) != np.count_nonzero(is_embedded):
-    #     ids_err = set(nodes.id[is_embedded]) - set(embedded_ids)
-    #     content_pks = nodes.content_pk[nodes.id_to_index(ids_err)]
-    #     raise SchematisationError(
-    #         f"Connection nodes {content_pks.tolist()} are embedded outside of the 2D domain."
-    #     )
+    # create a mapping with new node ids on the position of the old node indices
+    new_ids = np.full_like(grid.nodes.id, fill_value=-9999)
+    new_ids[~is_embedded] = np.arange(n_embedded)
+    new_ids[combs_embedded_idx] = grid.nodes.id[combs_cell_idx]
 
-   
+    # drop the embedded nodes
+    grid.nodes = grid.nodes[~is_embedded]
 
-
-    pass
+    # map node indices (fixes node replacement and node renumbering in one go)
+    grid.nodes.id = np.arange(n_embedded)
+    grid.lines.line = np.take(new_ids, grid.lines.line)
