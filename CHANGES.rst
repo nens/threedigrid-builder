@@ -1,7 +1,13 @@
 Changelog of threedigrid-builder
 ================================
 
-0.3.0 (unreleased)
+0.3.1 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
+0.3.0 (2021-07-28)
 ------------------
 
 - Read and convert cross section definitions.
@@ -9,6 +15,8 @@ Changelog of threedigrid-builder
 - Solve gridadmin off-by-one errors for pumps.
 
 - Add 'dmax' to nodes output.
+
+- Changed external API function name to "make_gridadmin".
 
 
 0.2.1 (2021-07-20)
