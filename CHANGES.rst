@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.3.0 (unreleased)
+0.3.0 (2021-07-28)
 ------------------
 
 - Read and convert cross section definitions.
