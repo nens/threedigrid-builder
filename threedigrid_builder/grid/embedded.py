@@ -119,7 +119,7 @@ def embed_channels(
     # TODO integrate cutoff_threshold somewhere here
     idx = idx[:, pygeos.length(segments) > 0.0]  # filters out points and empties
     ch_n_segments = np.bincount(idx[0], minlength=len(channels))
-    ch_segment_start, _ = counts_to_ranges(ch_n_segments)
+    ch_segment_start, ch_segment_end = counts_to_ranges(ch_n_segments)
 
     # Get segment_count - 1 points per channel, these are the velocity points
     # TODO handle channels with 0 segments (filtered out above)
@@ -132,10 +132,16 @@ def embed_channels(
 
     # The virtual nodes are halfway
     node_s = (line_s + np.roll(line_s, 1)) / 2
-    ech_node_start, _ = counts_to_ranges(ch_n_segments - 1)
-    node_s = np.delete(node_s, ech_node_start)
-    node_ch_idx = np.delete(line_ch_idx, ech_node_start)
+    ch_node_start, _ = counts_to_ranges(ch_n_segments - 1)
+    node_s = np.delete(node_s, ch_node_start)
+    node_ch_idx = np.delete(line_ch_idx, ch_node_start)
     node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)
+
+    # Cells related to the added nodes are all the cells with segments, minus the
+    # ones that contain channel start or ends
+    node_cell_idx = np.delete(
+        idx[1], np.concatenate([ch_segment_start, ch_segment_end - 1])
+    )
 
     # Now we create the virtual nodes
     embedded_nodes = Nodes(
@@ -145,6 +151,7 @@ def embed_channels(
         content_pk=channels.id[node_ch_idx],
         calculation_type=CalculationType.EMBEDDED,
         s1d=node_s,
+        embedded_in=node_cell_idx,  # cell_tree is constructed such that idx == ids
     )
 
     lines = channels.get_lines(
@@ -153,6 +160,7 @@ def embed_channels(
         embedded_nodes,
         line_id_counter,
         connection_node_offset=connection_node_offset,
+        line_id_attr="embedded_in",  # take .embedded_in for filling lines.line
     )
     # override the velocity point locations (the defaulted to the line midpoint, while
     # for embedded channels we force them to the cell edges)

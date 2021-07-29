@@ -294,6 +294,26 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
 
 
+def test_get_lines_custom_attr(connection_nodes, two_linear_objects, definitions):
+    nodes = Nodes(
+        id=[10, 11, 12],
+        content_pk=[1, 2, 2],
+        s1d=[0.1] * 3,  # anything that isn't NaN
+        embedded_in=[5, 4, 1],
+    )
+
+    lines = two_linear_objects.get_lines(
+        connection_nodes,
+        definitions,
+        nodes,
+        itertools.count(start=0),
+        connection_node_offset=100,
+        line_id_attr="embedded_in",
+    )
+
+    assert_array_equal(lines.line, [(100, 5), (5, 103), (101, 4), (4, 1), (1, 102)])
+
+
 @pytest.mark.parametrize(
     "linear_object_idx,expected",
     [

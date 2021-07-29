@@ -7,6 +7,9 @@ Changelog of threedigrid-builder
 - Handle embedded connection nodes. These are removed from the grid and written to a
   new dataset "nodes_embedded".
 
+- Handle embedded channels. Embedded channels result in "nodes_embedded" and lines
+  between 2D cells.
+
 - Fixed a bug with lines that connect nodes to themselves in quadtree generation.
 
 

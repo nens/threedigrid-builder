@@ -128,9 +128,10 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
     assert_array_equal(nodes.coordinates, [(1.8, 0.2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
     assert_array_equal(nodes.s1d, [1.1])  # halfway the 2 velocity points (see below)
+    assert_array_equal(nodes.embedded_in, [1])
 
     assert_array_equal(lines.id, [3, 4, 5])
-    assert_array_equal(lines.line, [(10, 13), (11, 2), (2, 12)])
+    assert_array_equal(lines.line, [(10, 13), (11, 1), (1, 12)])  # connect to cell 1
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
     assert_array_equal(lines.content_pk, [0, 1, 1])
     assert_array_equal(lines.kcu, EMBEDDED)

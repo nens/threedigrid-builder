@@ -94,6 +94,7 @@ class BaseLinear:
         nodes,
         line_id_counter,
         connection_node_offset=0,
+        line_id_attr="id",
     ):
         """Compute the grid lines for the linear objects.
 
@@ -112,11 +113,13 @@ class BaseLinear:
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
+            line_id_attr (str): which attribute on nodes to take as the node id
+              in the returned lines.line
 
         Returns:
             Lines with data in the following columns:
             - id: counter generated from line_id_counter
-            - line: 2 node ids per line
+            - line: 2 node ids per line (or a different attribute, see line_id_attr)
             - content_pk: the id of the linear from which this line originates
             - s1d: the positon of the line center along the linear object
             - ds1d: the arclength of the line
@@ -154,11 +157,11 @@ class BaseLinear:
         # set node indices to line start where segment start is not a conn. node
         mask = np.ones(len(segments), dtype=bool)
         mask[first_idx] = False
-        line[mask, 0] = nodes.id
+        line[mask, 0] = getattr(nodes, line_id_attr)
         # set node indices to line end where segment end is not a conn. node
         mask = np.ones(len(segments), dtype=bool)
         mask[last_idx] = False
-        line[mask, 1] = nodes.id
+        line[mask, 1] = getattr(nodes, line_id_attr)
 
         # conditionally add the cross section definition (for pipes and culverts only)
         try:
