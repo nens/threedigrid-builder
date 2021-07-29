@@ -7,7 +7,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import embed_channel_nodes
+from threedigrid_builder.grid import embed_channels
 from threedigrid_builder.grid import embed_nodes
 from threedigrid_builder.grid import Grid
 
@@ -89,7 +89,7 @@ def test_embed_node_two_interconnected(grid2d):
         embed_nodes(grid)
 
 
-def test_embed_channel_nodes(grid2d):
+def test_embed_channels(grid2d):
     channels = Channels(
         id=[0, 1],
         calculation_type=EMBEDDED,
@@ -99,7 +99,7 @@ def test_embed_channel_nodes(grid2d):
         ],
     )
 
-    nodes = embed_channel_nodes(grid2d.cell_tree, channels, count(2))
+    nodes, lines = embed_channels(grid2d.cell_tree, channels, count(2))
 
     assert_array_equal(nodes.id, [2])
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CHANNEL)

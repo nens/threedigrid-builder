@@ -163,10 +163,10 @@ def test_concatenate_grid(grid2d, grid1d):
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)
 
 
-@mock.patch("threedigrid_builder.grid.embedded.embed_channel_nodes")
+@mock.patch("threedigrid_builder.grid.embedded.embed_channels")
 @mock.patch.object(Channels, "interpolate_nodes")
 @mock.patch.object(Channels, "get_lines")
-def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channel_nodes_m):
+def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channels_m):
     connection_nodes = mock.Mock()
     cell_tree = mock.Mock()
     channels = Channels(
@@ -178,7 +178,7 @@ def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channel_nodes_m):
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    embed_channel_nodes_m.return_value = nodes
+    embed_channels_m.return_value = nodes, lines
     interpolate_nodes_m.return_value = nodes
     get_lines_m.return_value = lines
     grid = Grid.from_channels(
@@ -195,13 +195,8 @@ def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channel_nodes_m):
 
     interpolate_nodes_m.assert_called_with(node_id_counter, 100.0)
 
-    args, _ = embed_channel_nodes_m.call_args
-    assert args[0] is cell_tree
-    assert isinstance(args[1], Channels)
-    assert_array_equal(args[1].id, [1])
-    assert args[2] is node_id_counter
-
-    assert get_lines_m.call_count == 2
+    assert embed_channels_m.called
+    assert get_lines_m.called
 
 
 @mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")

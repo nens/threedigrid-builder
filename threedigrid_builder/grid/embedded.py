@@ -1,4 +1,5 @@
 from .linear import counts_to_ranges
+from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -9,7 +10,7 @@ import numpy as np
 import pygeos
 
 
-__all__ = ["embed_nodes", "embed_channel_nodes"]
+__all__ = ["embed_nodes", "embed_channels"]
 
 
 def take(arr, idx):
@@ -80,55 +81,55 @@ def embed_nodes(grid):
     return embedded_nodes
 
 
-def embed_channel_nodes(cell_tree, channels, node_id_counter):
-    """Create embedded nodes for channels"""
+def embed_channels(cell_tree, channels, node_id_counter):
+    """Create embedded nodes for channels
+
+    All channels are expected to be of EMBEDDED calculation type.
+    """
     # variable shorthands:
     # - ch_ channels
     # - ech_ embedded channels
-    ch_is_embedded = channels.calculation_type == CalculationType.EMBEDDED
-    ech_ch_idx = np.where(ch_is_embedded)[0]
-    ech_n = len(ech_ch_idx)
-    if ech_n == 0:
-        return Nodes(id=[])
+    if len(channels) == 0:
+        return Nodes(id=[]), Lines(id=[])
 
     if cell_tree is None or len(cell_tree) == 0:
         raise SchematisationError(
-            f"Channels {channels.id[ech_ch_idx]} have an embedded calculation type "
+            f"Channels {channels.id} have an embedded calculation type "
             f"while there is no 2D domain."
         )
 
     # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
     # and one with indices into the cells.
-    idx = cell_tree.query_bulk(channels.the_geom[ech_ch_idx], "intersects")
+    idx = cell_tree.query_bulk(channels.the_geom, "intersects")
 
     # Get the channel segments (1 segment is the part of a channel within 1 cell)
     segments = pygeos.intersection(
-        channels.the_geom[ech_ch_idx[idx[0]]],
+        channels.the_geom[idx[0]],
         cell_tree.geometries[idx[1]],
     )
     # TODO integrate cutoff_threshold somewhere here
     idx = idx[:, pygeos.length(segments) > 0.0]  # filters out points and empties
-    ech_n_segments = np.bincount(idx[0], minlength=ech_n)
-    ech_segment_start, _ = counts_to_ranges(ech_n_segments)
+    ch_n_segments = np.bincount(idx[0], minlength=len(channels))
+    ch_segment_start, _ = counts_to_ranges(ch_n_segments)
 
     # Get segment_count - 1 points per channel, these are the velocity points
     # TODO handle channels with 0 segments (filtered out above)
     # TODO handle channels with 1 segment (entirely inside a cell or filtered out above)
-    line_vpoint = pygeos.get_point(np.delete(segments, ech_segment_start), 0)
-    line_ch_idx = np.delete(ech_ch_idx[idx[0]], ech_segment_start)
+    line_vpoint = pygeos.get_point(np.delete(segments, ch_segment_start), 0)
+    line_ch_idx = np.delete(idx[0], ch_segment_start)
 
     # Measure the location of the velocity points along the channels
     line_s = pygeos.line_locate_point(channels.the_geom[line_ch_idx], line_vpoint)
 
     # The virtual nodes are halfway
     node_s = (line_s + np.roll(line_s, 1)) / 2
-    ech_node_start, _ = counts_to_ranges(ech_n_segments - 1)
+    ech_node_start, _ = counts_to_ranges(ch_n_segments - 1)
     node_s = np.delete(node_s, ech_node_start)
     node_ch_idx = np.delete(line_ch_idx, ech_node_start)
     node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)
 
     # Now we create the virtual nodes
-    return Nodes(
+    embedded_nodes = Nodes(
         id=itertools.islice(node_id_counter, len(node_ch_idx)),
         coordinates=pygeos.get_coordinates(node_point),
         content_type=ContentType.TYPE_V2_CHANNEL,
@@ -136,3 +137,5 @@ def embed_channel_nodes(cell_tree, channels, node_id_counter):
         calculation_type=CalculationType.EMBEDDED,
         s1d=node_s,
     )
+
+    return embedded_nodes, None

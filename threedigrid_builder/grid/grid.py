@@ -283,20 +283,19 @@ class Grid:
         )
 
         embedded = channels[channels.calculation_type == CalculationType.EMBEDDED]
+
         if len(embedded) > 0:
-            nodes_embedded = embedded_module.embed_channel_nodes(
-                cell_tree, embedded, node_id_counter
-            )
-            lines += embedded.get_lines(
+            nodes_embedded, lines_embedded = embedded_module.embed_channels(
+                cell_tree,
+                embedded,
                 connection_nodes,
-                None,
-                nodes_embedded,
+                node_id_counter,
                 line_id_counter,
                 connection_node_offset=connection_node_offset,
             )
+            return cls(nodes, lines + lines_embedded, nodes_embedded=nodes_embedded)
         else:
-            nodes_embedded = None
-        return cls(nodes, lines, nodes_embedded=nodes_embedded)
+            return cls(nodes, lines)
 
     def set_channel_weights(self, locations, definitions, channels):
         """Set cross section weights to channel nodes and lines.
