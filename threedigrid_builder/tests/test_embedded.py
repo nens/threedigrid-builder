@@ -9,7 +9,7 @@ from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import embed_channel_nodes
 from threedigrid_builder.grid import embed_nodes
-from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import Grid, ConnectionNodes
 
 import pygeos
 import pytest
@@ -99,7 +99,7 @@ def test_embed_channel_nodes(grid2d):
         ],
     )
 
-    nodes = embed_channel_nodes(grid2d, channels, count(2))
+    nodes = embed_channel_nodes(grid2d.cell_tree, channels, count(2))
 
     assert_array_equal(nodes.id, [2])
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CHANNEL)

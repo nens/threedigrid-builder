@@ -80,7 +80,7 @@ def embed_nodes(grid):
     return embedded_nodes
 
 
-def embed_channel_nodes(grid, channels, node_id_counter):
+def embed_channel_nodes(cell_tree, channels, node_id_counter):
     """Create embedded nodes for channels"""
     # variable shorthands:
     # - ch_ channels
@@ -91,19 +91,25 @@ def embed_channel_nodes(grid, channels, node_id_counter):
     if ech_n == 0:
         return Nodes(id=[])
 
+    if cell_tree is None or len(cell_tree) == 0:
+        raise SchematisationError(
+            f"Channels {channels.id[ech_ch_idx]} have an embedded calculation type "
+            f"while there is no 2D domain."
+        )
+
     # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
     # and one with indices into the cells.
-    idx = grid.cell_tree.query_bulk(channels.the_geom[ech_ch_idx], "intersects")
+    idx = cell_tree.query_bulk(channels.the_geom[ech_ch_idx], "intersects")
 
     # Get the channel segments (1 segment is the part of a channel within 1 cell)
     segments = pygeos.intersection(
         channels.the_geom[ech_ch_idx[idx[0]]],
-        grid.cell_tree.geometries[idx[1]],
+        cell_tree.geometries[idx[1]],
     )
     # TODO integrate cutoff_threshold somewhere here
     idx = idx[:, pygeos.length(segments) > 0.0]  # filters out points and empties
     ech_n_segments = np.bincount(idx[0], minlength=ech_n)
-    ech_segment_start, ech_segment_end = counts_to_ranges(ech_n_segments)
+    ech_segment_start, _ = counts_to_ranges(ech_n_segments)
 
     # Get segment_count - 1 points per channel, these are the velocity points
     # TODO handle channels with 0 segments (filtered out above)
