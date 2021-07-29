@@ -1,4 +1,5 @@
 from itertools import count
+from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
@@ -7,10 +8,12 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import embed_channels
 from threedigrid_builder.grid import embed_nodes
 from threedigrid_builder.grid import Grid
 
+import numpy as np
 import pygeos
 import pytest
 
@@ -44,13 +47,13 @@ def test_embed_nodes(grid2d):
         ),
         lines=Lines(id=[1, 2, 3], line=[(4, 5), (4, 6), (5, 6)]),
     )
-    embedded = embed_nodes(grid)
+    embedded = embed_nodes(grid, count(10))
 
     assert_array_equal(grid.nodes.id, [0, 1, 2, 3, 4])
     assert_array_equal(grid.nodes.node_type, [NODE_2D] * 4 + [NODE_1D])
     assert_array_equal(grid.lines.line, [(0, 1), (0, 4), (0, 1), (4, 1)])
 
-    assert_array_equal(embedded.id, [0, 1, 2])  # new ids
+    assert_array_equal(embedded.id, [10, 11, 12])  # new ids
     assert_array_equal(embedded.calculation_type, EMBEDDED)
     assert_array_equal(embedded.embedded_in, [0, 1, 1])
 
@@ -69,7 +72,7 @@ def test_embed_node_outside_2D(grid2d):
     )
 
     with pytest.raises(SchematisationError, match=r".*\[15\] are outside the 2D cells"):
-        embed_nodes(grid)
+        embed_nodes(grid, count(10))
 
 
 def test_embed_node_two_interconnected(grid2d):
@@ -86,24 +89,63 @@ def test_embed_node_two_interconnected(grid2d):
     )
 
     with pytest.raises(SchematisationError, match=r".*\[4, 5\] connect to.*"):
-        embed_nodes(grid)
+        embed_nodes(grid, count(10))
 
 
-def test_embed_channels(grid2d):
+@pytest.fixture
+def connection_nodes():
+    # Used to map connection_node_start/end_id to an index (sequence id)
+    return ConnectionNodes(
+        id=[21, 25, 33, 42],
+        the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+    )
+
+
+def test_embed_channels_multiple(grid2d, connection_nodes):
     channels = Channels(
         id=[0, 1],
         calculation_type=EMBEDDED,
         the_geom=[
-            pygeos.linestrings([(0.1, 0.1), (1.9, 0.1)]),
-            pygeos.linestrings([(0.2, 0.2), (1.8, 0.2), (1.8, 1.8)]),
+            pygeos.linestrings([(0.1, 0.1), (1.5, 0.1)]),
+            pygeos.linestrings([(0.7, 0.2), (1.8, 0.2), (1.8, 0.9), (1.8, 1.8)]),
         ],
+        connection_node_start_id=[21, 25],
+        connection_node_end_id=[42, 33],
     )
 
-    nodes, lines = embed_channels(grid2d.cell_tree, channels, count(2))
+    nodes, lines = embed_channels(
+        channels,
+        connection_nodes,
+        grid2d.cell_tree,
+        count(2),
+        count(3),
+        connection_node_offset=10,
+    )
 
     assert_array_equal(nodes.id, [2])
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CHANNEL)
     assert_array_equal(nodes.content_pk, [1])
     assert_array_equal(nodes.coordinates, [(1.8, 0.2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
-    assert_array_equal(nodes.s1d, [1.6])
+    assert_array_equal(nodes.s1d, [1.1])  # halfway the 2 velocity points (see below)
+
+    assert_array_equal(lines.id, [3, 4, 5])
+    assert_array_equal(lines.line, [(10, 13), (11, 2), (2, 12)])
+    assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
+    assert_array_equal(lines.content_pk, [0, 1, 1])
+    assert_array_equal(lines.kcu, EMBEDDED)
+    assert_array_equal(lines.cross1, -9999)
+    assert_array_equal(lines.cross2, -9999)
+    assert_array_equal(lines.cross_weight, np.nan)
+    assert_almost_equal(lines.s1d, [0.9, 0.3, 1.9])
+    assert_almost_equal(lines.ds1d, [1.4, 1.1, 1.6])
+    assert_almost_equal(
+        pygeos.get_coordinates(lines.line_geometries[0]), [(0.1, 0.1), (1.5, 0.1)]
+    )
+    assert_almost_equal(
+        pygeos.get_coordinates(lines.line_geometries[1]), [(0.7, 0.2), (1.8, 0.2)]
+    )
+    assert_almost_equal(
+        pygeos.get_coordinates(lines.line_geometries[2]),
+        [(1.8, 0.2), (1.8, 0.9), (1.8, 1.8)],
+    )

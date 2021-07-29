@@ -20,7 +20,7 @@ def take(arr, idx):
     return result
 
 
-def embed_nodes(grid):
+def embed_nodes(grid, embedded_node_id_counter):
     """Integrate embedded connection nodes into the 2D cells.
 
     This changes the grid (nodes as well as lines) inplace.
@@ -58,7 +58,9 @@ def embed_nodes(grid):
 
     # cut out the embedded nodes
     embedded_nodes = grid.nodes[combs_embedded_idx]
-    embedded_nodes.id[:] = np.arange(len(embedded_nodes))
+    embedded_nodes.id[:] = list(
+        itertools.islice(embedded_node_id_counter, len(embedded_nodes))
+    )
     embedded_nodes.node_type[:] = -9999  # clear the node_type; these are not calc nodes
     embedded_nodes.embedded_in[:] = new_ids[combs_cell_idx]
     grid.nodes = grid.nodes[~is_embedded]
@@ -81,7 +83,14 @@ def embed_nodes(grid):
     return embedded_nodes
 
 
-def embed_channels(cell_tree, channels, node_id_counter):
+def embed_channels(
+    channels,
+    connection_nodes,
+    cell_tree,
+    embedded_node_id_counter,
+    line_id_counter,
+    connection_node_offset=0,
+):
     """Create embedded nodes for channels
 
     All channels are expected to be of EMBEDDED calculation type.
@@ -130,7 +139,7 @@ def embed_channels(cell_tree, channels, node_id_counter):
 
     # Now we create the virtual nodes
     embedded_nodes = Nodes(
-        id=itertools.islice(node_id_counter, len(node_ch_idx)),
+        id=itertools.islice(embedded_node_id_counter, len(node_ch_idx)),
         coordinates=pygeos.get_coordinates(node_point),
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=channels.id[node_ch_idx],
@@ -138,4 +147,15 @@ def embed_channels(cell_tree, channels, node_id_counter):
         s1d=node_s,
     )
 
-    return embedded_nodes, None
+    lines = channels.get_lines(
+        connection_nodes,
+        None,
+        embedded_nodes,
+        line_id_counter,
+        connection_node_offset=connection_node_offset,
+    )
+    # override the velocity point locations (the defaulted to the line midpoint, while
+    # for embedded channels we force them to the cell edges)
+    lines.s1d = line_s
+
+    return embedded_nodes, lines

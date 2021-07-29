@@ -173,8 +173,8 @@ def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channels_m):
         id=[0, 1], calculation_type=[CalculationType.ISOLATED, CalculationType.EMBEDDED]
     )
     node_id_counter = mock.Mock()
+    embedded_node_id_counter = mock.Mock()
     line_id_counter = mock.Mock()
-    connection_node_offset = mock.Mock()
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
@@ -187,16 +187,27 @@ def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channels_m):
         cell_tree=cell_tree,
         global_dist_calc_points=100.0,
         node_id_counter=node_id_counter,
+        embedded_node_id_counter=embedded_node_id_counter,
         line_id_counter=line_id_counter,
-        connection_node_offset=connection_node_offset,
+        connection_node_offset=11,
     )
 
     assert isinstance(grid, Grid)
 
     interpolate_nodes_m.assert_called_with(node_id_counter, 100.0)
+    get_lines_m.assert_called_with(
+        connection_nodes, None, nodes, line_id_counter, connection_node_offset=11
+    )
 
-    assert embed_channels_m.called
-    assert get_lines_m.called
+    args, kwargs = embed_channels_m.call_args
+    assert args[0].id.tolist() == [1]  # the embedded channel
+    assert args[1:] == (
+        connection_nodes,
+        cell_tree,
+        embedded_node_id_counter,
+        line_id_counter,
+    )
+    assert kwargs["connection_node_offset"] == 11
 
 
 @mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")

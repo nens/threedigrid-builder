@@ -42,6 +42,7 @@ def _make_gridadmin(
 
     node_id_counter = itertools.count()
     line_id_counter = itertools.count()
+    embedded_node_id_counter = itertools.count()
 
     settings = db.get_settings()
     grid = Grid.from_meta(**settings, **(meta or {}))
@@ -87,6 +88,7 @@ def _make_gridadmin(
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
+            embedded_node_id_counter=embedded_node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
@@ -128,7 +130,7 @@ def _make_gridadmin(
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
-        grid.embed_nodes()
+        grid.embed_nodes(embedded_node_id_counter)
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,

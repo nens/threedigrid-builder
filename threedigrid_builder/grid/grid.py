@@ -241,6 +241,7 @@ class Grid:
         cell_tree,
         global_dist_calc_points,
         node_id_counter,
+        embedded_node_id_counter,
         line_id_counter,
         connection_node_offset=0,
     ):
@@ -252,6 +253,7 @@ class Grid:
             cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
+            embedded_node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
@@ -283,13 +285,12 @@ class Grid:
         )
 
         embedded = channels[channels.calculation_type == CalculationType.EMBEDDED]
-
         if len(embedded) > 0:
             nodes_embedded, lines_embedded = embedded_module.embed_channels(
-                cell_tree,
                 embedded,
                 connection_nodes,
-                node_id_counter,
+                cell_tree,
+                embedded_node_id_counter,
                 line_id_counter,
                 connection_node_offset=connection_node_offset,
             )
@@ -549,7 +550,7 @@ class Grid:
         # TODO Skip definitions that are not used (and remap cross1 and cross2)
         self.cross_sections = definitions.convert()
 
-    def embed_nodes(self):
+    def embed_nodes(self, embedded_node_id_counter):
         """Integrate embedded connection nodes into the 2D cells.
 
         grid.nodes_embedded will contain the removed (embedded) nodes.
@@ -558,7 +559,9 @@ class Grid:
         # original coordinate of the embedded nodes:
         self.lines.set_line_coords(self.nodes)
 
-        self.nodes_embedded = embedded_module.embed_nodes(self)
+        self.nodes_embedded = embedded_module.embed_nodes(
+            self, embedded_node_id_counter
+        )
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

@@ -132,7 +132,7 @@ class BaseLinear:
 
         # cut the channel geometries into segment geometries
         start_s, end_s, segment_idx = linear.segment_start_end(
-            self.the_geom, segment_counts
+            self.the_geom, segment_counts, nodes.s1d
         )
         segments = linear.line_substring(self.the_geom, start_s, end_s, segment_idx)
 
@@ -440,12 +440,15 @@ def line_substring(linestrings, start, end, index=None):
     return segments
 
 
-def segment_start_end(linestrings, segment_counts):
+def segment_start_end(linestrings, segment_counts, dist_to_start):
     """Utility function to use the output of segmentize as input of line_substrings.
 
     Args:
         linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
         segment_counts (ndarray of int): the number of segments per linestring
+        dist_to_start (ndarray of float): the location of added nodes, measured along
+          the linestring. The length of this array is such that:
+          ``len(linestrings) + len(dist_to_start) = segment_counts.sum()``
 
     Returns:
         tuple of:
@@ -453,12 +456,15 @@ def segment_start_end(linestrings, segment_counts):
         - segment_end (ndarray of float): The segment end, measured along the line.
         - segment_index (ndarray of int): Indices mapping segments to input linestrings.
     """
-    i = counts_to_row_index(segment_counts)  # e.g. [0, 0, 0, 1, 1, 3]
-    j = counts_to_column_index(segment_counts)  # e.g. [0, 1, 2, 0, 1, 0]
+    start_idx, last_idx = counts_to_ranges(segment_counts)
+    last_idx -= 1
 
-    lengths = pygeos.length(linestrings)
-    segment_size = lengths / segment_counts
-    mapped_segment_size = (segment_size)[i]
-    start = j * mapped_segment_size
-    end = start + mapped_segment_size
-    return start, end, i
+    start_s = np.full(segment_counts.sum(), np.nan)
+    end_s = np.full(segment_counts.sum(), np.nan)
+    # every first start_s is 0.0, the rest are added nodes with an s1d
+    start_s[start_idx] = 0.0
+    start_s[np.isnan(start_s)] = dist_to_start
+    # every last end_s equals to the length, the rest are added nodes with an s1d
+    end_s[last_idx] = pygeos.length(linestrings)
+    end_s[np.isnan(end_s)] = dist_to_start
+    return start_s, end_s, counts_to_row_index(segment_counts)
