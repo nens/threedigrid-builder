@@ -309,7 +309,7 @@ class Grid:
         node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
         cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.nodes.content_pk[node_mask],
-            self.nodes.ds1d[node_mask],
+            self.nodes.s1d[node_mask],
             locations,
             channels,
         )
@@ -321,7 +321,7 @@ class Grid:
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
         cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.lines.content_pk[line_mask],
-            self.lines.ds1d[line_mask],
+            self.lines.s1d[line_mask],
             locations,
             channels,
         )
@@ -488,13 +488,13 @@ class Grid:
         # Pipes, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_PIPE
         self.nodes.dmax[mask] = pipes.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
+            self.nodes.content_pk[mask], self.nodes.s1d[mask]
         )
 
         # Culverts, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CULVERT
         self.nodes.dmax[mask] = culverts.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
+            self.nodes.content_pk[mask], self.nodes.s1d[mask]
         )
 
         # Connection nodes: complex logic based on the connected objects

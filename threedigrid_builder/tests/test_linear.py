@@ -242,7 +242,7 @@ def test_interpolate_nodes_one_linear_object(dist, expected, one_linear_object):
     assert_array_equal(nodes.calculation_type, 2)
 
     expected_size = 12.0 / (len(expected) + 1)
-    assert_array_equal(nodes.ds1d, np.arange(1, len(expected) + 1) * expected_size)
+    assert_array_equal(nodes.s1d, np.arange(1, len(expected) + 1) * expected_size)
 
 
 def test_interpolate_nodes_two_linear_objects(two_linear_objects):
@@ -272,6 +272,7 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     )
 
     expected_line = [(100, 10), (10, 103), (101, 11), (11, 12), (12, 102)]
+    expected_centers = [5.0, 15.0, 200.0 / 6, 100.0, 1000.0 / 6]
     expected_sizes = [20.0 / 2.0] * 2 + [200.0 / 3.0] * 3
 
     assert_array_equal(lines.id, range(5))
@@ -282,6 +283,7 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_array_equal(lines.cross1, [0, 0, 1, 1, 1])
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, 1.0)
+    assert_almost_equal(lines.s1d, expected_centers)
     assert_almost_equal(lines.ds1d, expected_sizes)
     assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
 

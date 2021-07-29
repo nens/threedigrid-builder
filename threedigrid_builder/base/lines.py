@@ -20,6 +20,7 @@ class Line:
     lik: int  # quadtree grid coordinate z of the line start
     lim: int  # quadtree grid coordinate x of the line start
     lin: int  # quadtree grid coordinate y of the line start
+    s1d: float  # position (arclength) along a 1D element
     ds1d: float  # arclength
     line_geometries: pygeos.Geometry
     line_coords: Tuple[float, float, float, float]

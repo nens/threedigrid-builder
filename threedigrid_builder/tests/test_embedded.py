@@ -106,4 +106,4 @@ def test_embed_channel_nodes(grid2d):
     assert_array_equal(nodes.content_pk, [1])
     assert_array_equal(nodes.coordinates, [(1.8, 0.2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
-    assert_array_equal(nodes.ds1d, [1.6])
+    assert_array_equal(nodes.s1d, [1.6])

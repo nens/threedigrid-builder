@@ -19,7 +19,7 @@ class Node:
     content_type: ContentType
     content_pk: int
     coordinates: Tuple[float, float]
-    ds1d: float  # position (arclength) along a 1D element
+    s1d: float  # position (arclength) along a 1D element
     bounds: Tuple[float, float, float, float]  # cell_coords in gridadmin
     pixel_coords: Tuple[int, int, int, int]  # pixel_coords in gridadmin
     dmax: float  # bottom_level or z_coordinate (?) in gridadmin

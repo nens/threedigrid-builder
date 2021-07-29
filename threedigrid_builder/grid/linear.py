@@ -59,7 +59,7 @@ class BaseLinear:
             - content_pk: the id of the linear object from which the node originates
             - node_type: NodeType.NODE_1D_NO_STORAGE
             - calculation_type: the calculation type copied from the linear object
-            - ds1d: distance (along the linestring) to the start of the linestring
+            - s1d: distance (along the linestring) to the start of the linestring
             The nodes are ordered by content_pk and then by position on the linestring.
         """
         if pygeos.is_missing(self.the_geom).any():
@@ -83,7 +83,7 @@ class BaseLinear:
             content_pk=self.index_to_id(index),
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[index],
-            ds1d=dist_to_start,
+            s1d=dist_to_start,
         )
         return nodes
 
@@ -118,6 +118,7 @@ class BaseLinear:
             - id: counter generated from line_id_counter
             - line: 2 node ids per line
             - content_pk: the id of the linear from which this line originates
+            - s1d: the positon of the line center along the linear object
             - ds1d: the arclength of the line
             - kcu: the calculation_type of the linear object
             - line_geometries: the linestrings (segments of self.the_geom)
@@ -177,6 +178,7 @@ class BaseLinear:
             line=line,
             content_type=self.content_type,
             content_pk=self.id[segment_idx],
+            s1d=(start_s + end_s) / 2,
             ds1d=end_s - start_s,
             kcu=self.calculation_type[segment_idx],
             cross1=cross1,

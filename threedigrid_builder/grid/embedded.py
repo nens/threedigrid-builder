@@ -134,5 +134,5 @@ def embed_channel_nodes(cell_tree, channels, node_id_counter):
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=channels.id[node_ch_idx],
         calculation_type=CalculationType.EMBEDDED,
-        ds1d=node_s,
+        s1d=node_s,
     )

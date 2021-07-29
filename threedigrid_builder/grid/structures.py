@@ -52,7 +52,7 @@ class Culverts(linear.BaseLinear):
         # dpumax is interpolated between drain levels of adjacent manholes (conn nodes)
         dpumax = self.compute_drain_level(
             ids=nodes.content_pk[node_idx],
-            ds=nodes.ds1d[node_idx],
+            ds=nodes.s1d[node_idx],
             connection_nodes=connection_nodes,
         )
 
