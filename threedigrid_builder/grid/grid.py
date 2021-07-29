@@ -1,8 +1,8 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
+from . import embedded as embedded_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
-from . import embedded as embedded_module
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -282,16 +282,20 @@ class Grid:
             connection_node_offset=connection_node_offset,
         )
 
-        nodes_embedded = embedded_module.embed_channel_nodes(
-            cell_tree, channels, node_id_counter
-        )
-        lines += channels.get_lines(
-            connection_nodes,
-            None,
-            nodes_embedded,
-            line_id_counter,
-            connection_node_offset=connection_node_offset,
-        )
+        embedded = channels[channels.calculation_type == CalculationType.EMBEDDED]
+        if len(embedded) > 0:
+            nodes_embedded = embedded_module.embed_channel_nodes(
+                cell_tree, embedded, node_id_counter
+            )
+            lines += embedded.get_lines(
+                connection_nodes,
+                None,
+                nodes_embedded,
+                line_id_counter,
+                connection_node_offset=connection_node_offset,
+            )
+        else:
+            nodes_embedded = None
         return cls(nodes, lines, nodes_embedded=nodes_embedded)
 
     def set_channel_weights(self, locations, definitions, channels):

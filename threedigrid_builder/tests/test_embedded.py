@@ -9,7 +9,7 @@ from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import embed_channel_nodes
 from threedigrid_builder.grid import embed_nodes
-from threedigrid_builder.grid import Grid, ConnectionNodes
+from threedigrid_builder.grid import Grid
 
 import pygeos
 import pytest

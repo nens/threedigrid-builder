@@ -9,6 +9,7 @@ from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
@@ -162,40 +163,45 @@ def test_concatenate_grid(grid2d, grid1d):
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)
 
 
-def test_from_channels():
+@mock.patch("threedigrid_builder.grid.embedded.embed_channel_nodes")
+@mock.patch.object(Channels, "interpolate_nodes")
+@mock.patch.object(Channels, "get_lines")
+def test_from_channels(get_lines_m, interpolate_nodes_m, embed_channel_nodes_m):
     connection_nodes = mock.Mock()
-    channels = mock.MagicMock()
-    counter = mock.Mock()
+    cell_tree = mock.Mock()
+    channels = Channels(
+        id=[0, 1], calculation_type=[CalculationType.ISOLATED, CalculationType.EMBEDDED]
+    )
+    node_id_counter = mock.Mock()
+    line_id_counter = mock.Mock()
     connection_node_offset = mock.Mock()
     nodes = Nodes(id=[])
     lines = Lines(id=[])
 
-    not_embedded = mock.Mock()
-    channels.__getitem__.return_value = not_embedded
-    not_embedded.interpolate_nodes.return_value = nodes
-    not_embedded.get_lines.return_value = lines
+    embed_channel_nodes_m.return_value = nodes
+    interpolate_nodes_m.return_value = nodes
+    get_lines_m.return_value = lines
     grid = Grid.from_channels(
         connection_nodes,
         channels,
-        cell_tree=None,
+        cell_tree=cell_tree,
         global_dist_calc_points=100.0,
-        node_id_counter=counter,
-        line_id_counter=counter,
+        node_id_counter=node_id_counter,
+        line_id_counter=line_id_counter,
         connection_node_offset=connection_node_offset,
     )
 
     assert isinstance(grid, Grid)
-    assert grid.nodes is nodes
-    assert grid.lines is lines
 
-    not_embedded.interpolate_nodes.assert_called_with(counter, 100.0)
-    not_embedded.get_lines.assert_called_with(
-        connection_nodes,
-        None,
-        nodes,
-        counter,
-        connection_node_offset=connection_node_offset,
-    )
+    interpolate_nodes_m.assert_called_with(node_id_counter, 100.0)
+
+    args, _ = embed_channel_nodes_m.call_args
+    assert args[0] is cell_tree
+    assert isinstance(args[1], Channels)
+    assert_array_equal(args[1].id, [1])
+    assert args[2] is node_id_counter
+
+    assert get_lines_m.call_count == 2
 
 
 @mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")
