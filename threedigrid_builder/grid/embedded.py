@@ -126,22 +126,23 @@ def embed_channels(
     # TODO handle channels with 1 segment (entirely inside a cell or filtered out above)
     line_vpoint = pygeos.get_point(np.delete(segments, ch_segment_start), 0)
     line_ch_idx = np.delete(idx[0], ch_segment_start)
+    line_cell_idx = np.delete(idx[1], ch_segment_start)
 
     # Measure the location of the velocity points along the channels
     line_s = pygeos.line_locate_point(channels.the_geom[line_ch_idx], line_vpoint)
 
-    # The virtual nodes are halfway
-    node_s = (line_s + np.roll(line_s, 1)) / 2
-    ch_node_start, _ = counts_to_ranges(ch_n_segments - 1)
-    node_s = np.delete(node_s, ch_node_start)
-    node_ch_idx = np.delete(line_ch_idx, ch_node_start)
-    node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)
+    # sort by position on channel
+    sorter = np.lexsort((line_s, line_ch_idx))
+    line_s = line_s[sorter]
+    line_cell_idx = line_cell_idx[sorter]
 
-    # Cells related to the added nodes are all the cells with segments, minus the
-    # ones that contain channel start or ends
-    node_cell_idx = np.delete(
-        idx[1], np.concatenate([ch_segment_start, ch_segment_end - 1])
-    )
+    # The virtual nodes are halfway
+    node_s = (line_s + np.roll(line_s, -1)) / 2
+    _, ch_node_end = counts_to_ranges(ch_n_segments - 1)
+    node_s = np.delete(node_s, ch_node_end - 1)
+    node_ch_idx = np.delete(line_ch_idx, ch_node_end - 1)
+    node_cell_idx = np.delete(line_cell_idx, ch_node_end - 1)
+    node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)
 
     # Now we create the virtual nodes
     embedded_nodes = Nodes(

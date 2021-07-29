@@ -559,7 +559,7 @@ class Grid:
         # original coordinate of the embedded nodes:
         self.lines.set_line_coords(self.nodes)
 
-        self.nodes_embedded = embedded_module.embed_nodes(
+        self.nodes_embedded += embedded_module.embed_nodes(
             self, embedded_node_id_counter
         )
 
