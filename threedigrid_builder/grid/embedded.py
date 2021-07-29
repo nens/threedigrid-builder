@@ -64,7 +64,6 @@ def embed_nodes(grid):
     grid.lines.line[:] = np.take(new_ids, grid.lines.line)
 
     # check if there are no cells connecting to itself
-    # TODO Include the offending connection node ids in the error message
     is_self_connected = grid.lines.line[:, 0] == grid.lines.line[:, 1]
     if np.any(is_self_connected):
         mask = np.isin(
