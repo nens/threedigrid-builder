@@ -84,6 +84,7 @@ def _make_gridadmin(
         grid += Grid.from_channels(
             connection_nodes=connection_nodes,
             channels=channels,
+            cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,

@@ -2,7 +2,7 @@ from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
-from .embedded import embed_nodes
+from . import embedded as embedded_module
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -238,6 +238,7 @@ class Grid:
         cls,
         connection_nodes,
         channels,
+        cell_tree,
         global_dist_calc_points,
         node_id_counter,
         line_id_counter,
@@ -248,6 +249,7 @@ class Grid:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             channels (Channels)
+            cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
@@ -279,7 +281,18 @@ class Grid:
             line_id_counter,
             connection_node_offset=connection_node_offset,
         )
-        return cls(nodes, lines)
+
+        nodes_embedded = embedded_module.embed_channel_nodes(
+            cell_tree, channels, node_id_counter
+        )
+        lines += channels.get_lines(
+            connection_nodes,
+            None,
+            nodes_embedded,
+            line_id_counter,
+            connection_node_offset=connection_node_offset,
+        )
+        return cls(nodes, lines, nodes_embedded=nodes_embedded)
 
     def set_channel_weights(self, locations, definitions, channels):
         """Set cross section weights to channel nodes and lines.
@@ -542,7 +555,7 @@ class Grid:
         # original coordinate of the embedded nodes:
         self.lines.set_line_coords(self.nodes)
 
-        self.nodes_embedded = embed_nodes(self)
+        self.nodes_embedded = embedded_module.embed_nodes(self)
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

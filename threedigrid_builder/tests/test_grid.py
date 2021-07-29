@@ -177,6 +177,7 @@ def test_from_channels():
     grid = Grid.from_channels(
         connection_nodes,
         channels,
+        cell_tree=None,
         global_dist_calc_points=100.0,
         node_id_counter=counter,
         line_id_counter=counter,
@@ -204,13 +205,13 @@ def test_set_channel_weights(compute_weights):
         id=[1, 2, 3],
         content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
         content_pk=[1, 1, 3],
-        ds1d=[2.0, 12.0, 21.0],
+        s1d=[2.0, 12.0, 21.0],
     )
     lines = Lines(
         id=[1, 2, 3],
         content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
         content_pk=[1, 1, 3],
-        ds1d=[2.0, 12.0, 21.0],
+        s1d=[2.0, 12.0, 21.0],
     )
     grid = Grid(nodes=nodes, lines=lines)
     compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # csl1, csl2, weights
@@ -230,7 +231,7 @@ def test_set_channel_weights(compute_weights):
     assert compute_weights.call_count == 2
     args, kwargs = compute_weights.call_args
     assert_array_equal(args[0], [1, 3])  # channel_id
-    assert_array_equal(args[1], [2.0, 21.0])  # ds
+    assert_array_equal(args[1], [2.0, 21.0])  # s1d
     assert args[2] is locations
     assert args[3] is channels
 
@@ -271,7 +272,7 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
             ContentType.TYPE_V2_CULVERT,
         ],
         content_pk=[1, 1, 3, 2, 5],
-        ds1d=[2.0, 12.0, 21.0, 15.0, 0.5],
+        s1d=[2.0, 12.0, 21.0, 15.0, 0.5],
         dmax=[np.nan, 12.0, np.nan, np.nan, np.nan],
         cross_loc1=[5, -9999, 7, -9999, -9999],
         cross_loc2=[6, -9999, 8, -9999, -9999],
