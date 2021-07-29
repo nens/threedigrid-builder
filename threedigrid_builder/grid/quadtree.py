@@ -10,6 +10,7 @@ import itertools
 import math
 import numpy as np
 import pygeos
+import warnings
 
 
 __all__ = ["QuadTree"]
@@ -141,7 +142,6 @@ class QuadTree:
 
         # Create all line array for filling in external Fortran routine
         total_lines = self.n_lines[0] + self.n_lines[1]
-        id_l = itertools.islice(line_id_counter, total_lines)
 
         # Line type is always openwater at first init
         kcu = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
@@ -189,8 +189,21 @@ class QuadTree:
             pixel_coords=pixel_coords,
         )
 
+        # Pragmatic fix: drop self-connected lines
+        is_self_connected = line[:, 0] == line[:, 1]
+        if np.any(is_self_connected):
+            n = np.count_nonzero(is_self_connected)
+            warnings.warn(f"Quadtree produced {n} self-connected lines")
+            mask = ~is_self_connected
+            kcu = kcu[mask]
+            line = line[mask]
+            lik = lik[mask]
+            lim = lim[mask]
+            lin = lin[mask]
+            cross_pix_coords = cross_pix_coords[mask]
+
         lines = Lines(
-            id=id_l,
+            id=itertools.islice(line_id_counter, len(line)),
             kcu=kcu,
             line=line,
             lik=lik,

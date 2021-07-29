@@ -76,6 +76,11 @@ def h5_out():
         offset=[0, 4, -9999],
     )
     cross_sections.tables = np.random.random((6, 2))
+    nodes_embedded = Nodes(
+        id=[0, 1],
+        embedded_in=[1, 2],
+        dmax=[2.3, 0.2],
+    )
 
     with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
         path = tmpfile.name
@@ -84,6 +89,7 @@ def h5_out():
             out.write_grid_counts(nodes, lines)
             out.write_quadtree(quadtree_stats)
             out.write_nodes(nodes)
+            out.write_nodes_embedded(nodes_embedded)
             out.write_lines(lines)
             out.write_pumps(pumps)
             out.write_cross_sections(cross_sections)
@@ -124,11 +130,49 @@ def h5_out():
         ("code", (4,), "|S32"),  # added
         ("dmax", (4,), "float64"),  # added
         ("ds1d", (4,), "float64"),  # added
+        ("embedded_in", (4,), "int32"),  # added
     ],
 )
 def test_write_nodes(h5_out, dataset, shape, dtype):
     assert h5_out["nodes"][dataset].shape == shape
     assert h5_out["nodes"][dataset].dtype == np.dtype(dtype)
+
+
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("bottom_level", (3,), "float64"),
+        ("calculation_type", (3,), "int32"),
+        ("cell_coords", (4, 3), "float64"),
+        ("content_pk", (3,), "int32"),
+        ("coordinates", (2, 3), "float64"),
+        ("display_name", (3,), "|S64"),
+        ("drain_level", (3,), "float64"),
+        ("id", (3,), "int32"),
+        ("initial_waterlevel", (3,), "float64"),
+        ("is_manhole", (3,), "int32"),
+        ("manhole_indicator", (3,), "int32"),
+        ("node_type", (3,), "int32"),
+        ("pixel_coords", (4, 3), "int32"),
+        ("pixel_width", (3,), "int32"),
+        ("shape", (3,), "|S4"),
+        ("storage_area", (3,), "float64"),
+        ("sumax", (3,), "float64"),
+        ("surface_level", (3,), "float64"),
+        ("width", (3,), "float64"),
+        ("x_coordinate", (3,), "float64"),
+        ("y_coordinate", (3,), "float64"),
+        ("z_coordinate", (3,), "float64"),
+        ("zoom_category", (3,), "int32"),
+        ("code", (3,), "|S32"),  # added
+        ("dmax", (3,), "float64"),  # added
+        ("ds1d", (3,), "float64"),  # added
+        ("embedded_in", (3,), "int32"),  # added
+    ],
+)
+def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
+    assert h5_out["nodes_embedded"][dataset].shape == shape
+    assert h5_out["nodes_embedded"][dataset].dtype == np.dtype(dtype)
 
 
 # obtained from bergermeer gridadmin.h5, edited:
@@ -331,6 +375,8 @@ def test_write_cross_sections(h5_out, dataset, shape, dtype):
     [
         ("nodes", "id", 1),
         ("nodes", "dmax", 1.2),
+        ("nodes_embedded", "embedded_in", 2),
+        ("nodes_embedded", "dmax", 2.3),
         ("lines", "id", 1),
         ("lines", "dpumax", 1.2),
         ("pumps", "id", 1),

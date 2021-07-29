@@ -1,3 +1,4 @@
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.exceptions import SchematisationError
@@ -29,7 +30,7 @@ def embed_nodes(grid):
     embedded_idx = np.where(is_embedded)[0]
     n_embedded = len(embedded_idx)
     if n_embedded == 0:
-        return
+        return Nodes(id=[])
 
     # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
     # and one with indices into the cells.

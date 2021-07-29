@@ -50,11 +50,12 @@ class Lines:
             arr[np.isnan(arr)] = 1.0
 
     def set_line_coords(self, nodes):
-        """Set line_coords from the node coordinates"""
-        start = nodes.coordinates[nodes.id_to_index(self.line[:, 0])]
-        end = nodes.coordinates[nodes.id_to_index(self.line[:, 1])]
-        self.line_coords[:, :2] = start
-        self.line_coords[:, 2:] = end
+        """Set line_coords from the node coordinates where necessary"""
+        to_fix = np.isnan(self.line_coords).any(axis=1)
+        start = nodes.coordinates[nodes.id_to_index(self.line[to_fix, 0])]
+        end = nodes.coordinates[nodes.id_to_index(self.line[to_fix, 1])]
+        self.line_coords[to_fix, :2] = start
+        self.line_coords[to_fix, 2:] = end
 
     def set_bottom_levels(self, nodes, allow_nan=False):
         """Set bottom levels (dpumax) for lines.

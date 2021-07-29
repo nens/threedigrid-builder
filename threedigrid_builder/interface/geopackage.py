@@ -77,6 +77,62 @@ class GeopackageOut(OutputInterface):
         df_nodes.to_file(self.path, layer="nodes", driver="GPKG")
         df_cells.to_file(self.path, layer="cells", driver="GPKG")
 
+    def write_nodes_embedded(self, nodes_embedded, nodes, epsg_code=None, **kwargs):
+        """Write "nodes_embedded" and "nodes_embedded_lines" layer to a geopackage
+
+        The nodes_embedded_lines show to what node the embedded node belongs.
+
+        Args:
+            nodes_embedded (Nodes)
+            nodes (Nodes): for looking up the coordinate
+            epsg_code (int)
+        """
+        node_data = nodes_embedded.to_dict()
+
+        # construct points from nodes.coordinates
+        node_geometries = np.empty(len(nodes_embedded), dtype=object)
+        coordinates = node_data.pop("coordinates")
+        has_coord = np.isfinite(coordinates).all(axis=1)
+        node_geometries[has_coord] = pygeos.points(coordinates[has_coord])
+
+        # convert enums to strings
+        node_data["node_type"] = _enum_to_str(node_data["node_type"], NodeType)
+        node_data["content_type"] = _enum_to_str(node_data["content_type"], ContentType)
+        node_data["calculation_type"] = _enum_to_str(
+            node_data["calculation_type"], CalculationType
+        )
+
+        # Attribute data must only be 1D
+        node_data.pop("pixel_coords")
+        node_data.pop("bounds")
+
+        # construct the geodataframe for the nodes
+        df_nodes = geopandas.GeoDataFrame(
+            node_data, geometry=node_geometries, crs=epsg_code
+        )
+
+        line_data = {
+            "node_1d_id": nodes_embedded.id,
+            "node_2d_id": nodes_embedded.embedded_in,
+        }
+        line_geometries = pygeos.linestrings(
+            np.stack(
+                [
+                    nodes_embedded.coordinates,
+                    nodes.coordinates[nodes.id_to_index(nodes_embedded.embedded_in)],
+                ],
+                axis=1,
+            )
+        )
+        df_embedded_lines = geopandas.GeoDataFrame(
+            line_data, geometry=line_geometries, crs=epsg_code
+        )
+
+        df_nodes.to_file(self.path, layer="nodes_embedded", driver="GPKG")
+        df_embedded_lines.to_file(
+            self.path, layer="nodes_embedded_to_cells", driver="GPKG"
+        )
+
     def write_lines(self, lines, epsg_code=None, **kwargs):
         """Write "lines" layer to a geopackage
 

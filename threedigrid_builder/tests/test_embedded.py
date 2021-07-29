@@ -38,7 +38,6 @@ def test_embed_nodes(grid2d):
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             calculation_type=[EMB, ISO, EMB, EMB],
             coordinates=[(1.0, 0.2), (0.9, 0.9), (1.3, 0.3), (1.6, 0.7)],
-            dmax=[1.0, 2.0, 3.0, 4.0],
         ),
         lines=Lines(id=[1, 2, 3], line=[(4, 5), (4, 6), (5, 6)]),
     )

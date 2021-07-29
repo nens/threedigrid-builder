@@ -4,7 +4,10 @@ Changelog of threedigrid-builder
 0.3.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Handle embedded connection nodes. These are removed from the grid and written to a
+  new dataset "nodes_embedded".
+
+- Fixed a bug with lines that connect nodes to themselves in quadtree generation.
 
 
 0.3.0 (2021-07-28)
