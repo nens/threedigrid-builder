@@ -49,18 +49,18 @@ def embed_nodes(grid):
 
     # create a mapping with new node ids on the position of the old node indices
     new_ids = np.full_like(grid.nodes.id, fill_value=-9999)
-    new_ids[~is_embedded] = np.arange(n_embedded)
+    new_ids[~is_embedded] = np.arange(len(grid.nodes) - n_embedded)
     new_ids[combs_embedded_idx] = grid.nodes.id[combs_cell_idx]
 
     # cut out the embedded nodes
     embedded_nodes = grid.nodes[combs_embedded_idx]
     embedded_nodes.id[:] = np.arange(len(embedded_nodes))
-    embedded_nodes.embedded_in = new_ids[combs_cell_idx]
+    embedded_nodes.embedded_in[:] = new_ids[combs_cell_idx]
     grid.nodes = grid.nodes[~is_embedded]
 
     # map node indices (fixes node replacement and node renumbering in one go)
-    grid.nodes.id = np.arange(n_embedded)
-    grid.lines.line = np.take(new_ids, grid.lines.line)
+    grid.nodes.id[:] = np.arange(len(grid.nodes))
+    grid.lines.line[:] = np.take(new_ids, grid.lines.line)
 
     # check if there are no cells connecting to itself
     # TODO Include the offending connection node ids in the error message
