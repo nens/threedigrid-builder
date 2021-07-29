@@ -191,7 +191,14 @@ class GridAdminOut(OutputInterface):
         group = self._file.create_group("grid_coordinate_attributes")
         dataclass_to_h5(group, quadtree_statistics, mode="datasets")
 
-    def write_nodes(self, nodes, **kwargs):
+    def write_nodes_embedded(self, nodes_embedded):
+        """Write the "nodes_embedded" group in the gridadmin file
+
+        See write_nodes.
+        """
+        return self.write_nodes(nodes_embedded, group_name="nodes_embedded")
+
+    def write_nodes(self, nodes, group_name="nodes"):
         """Write the "nodes" group in the gridadmin file
 
         Raises a ValueError if it exists already.
@@ -204,7 +211,7 @@ class GridAdminOut(OutputInterface):
         Args:
             nodes (Nodes)
         """
-        group = self._file.create_group("nodes")
+        group = self._file.create_group(group_name)
         shape = (len(nodes),)
 
         # Some convenient masks:
@@ -225,6 +232,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "nodn", nodes.nodn)
         self.write_dataset(group, "storage_area", nodes.storage_area)
         self.write_dataset(group, "dmax", nodes.dmax)
+        self.write_dataset(group, "ds1d", nodes.ds1d)
+        self.write_dataset(group, "embedded_in", nodes.embedded_in + 1)
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")
@@ -278,7 +287,7 @@ class GridAdminOut(OutputInterface):
         # unknown
         self.write_dataset(group, "sumax", np.full(shape, -9999, dtype=np.float64))
 
-    def write_lines(self, lines, **kwargs):
+    def write_lines(self, lines):
         """Write the "lines" group in the gridadmin file
 
         Raises a ValueError if it exists already.

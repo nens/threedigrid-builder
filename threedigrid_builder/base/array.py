@@ -235,6 +235,13 @@ class ArrayDataClass:
         fields = self.data_class.__annotations__
         return {field: getattr(self, field) for field in fields}
 
+    def __getitem__(self, idx):
+        """Create a masked copy of this arraay dataclass"""
+        args = {}
+        for field in self.data_class.__annotations__:
+            args[field] = getattr(self, field)[idx]
+        return self.__class__(**args)
+
     def reorder_by(self, idx):
         """Reorder self by given idx, inplace.
 

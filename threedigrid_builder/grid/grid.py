@@ -1,7 +1,8 @@
 from . import connection_nodes as connection_nodes_module
-from . import obstacles as obstacles_module
 from . import cross_section_locations as csl_module
+from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
+from .embedded import embed_nodes
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -90,6 +91,7 @@ class Grid:
         lines: Lines,
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
+        nodes_embedded=None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -107,12 +109,18 @@ class Grid:
             raise TypeError(
                 f"Expected CrossSections instance, got {type(cross_sections)}"
             )
+        if nodes_embedded is None:
+            nodes_embedded = Nodes(id=[])
+        elif not isinstance(nodes_embedded, Nodes):
+            raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
+        self.nodes_embedded = nodes_embedded
+        self._cell_tree = None
 
     def __add__(self, other):
         """Concatenate two grids without renumbering nodes."""
@@ -122,15 +130,30 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for k, v in other.__dict__.items():
-            if isinstance(v, Nodes) or isinstance(v, Lines):
-                new_attrs[k] = getattr(self, k) + v
+        for name in ("nodes", "lines", "nodes_embedded"):
+            new_attrs[name] = getattr(self, name) + getattr(other, name)
+        for name in ("meta", "quadtree_stats", "pumps", "cross_sections"):
+            if getattr(other, name) is None:
+                new_attrs[name] = getattr(self, name)
             else:
-                new_attrs[k] = v if v is not None else getattr(self, k)
+                new_attrs[name] = getattr(other, name)
         return self.__class__(**new_attrs)
 
     def __repr__(self):
         return f"<Grid object with {len(self.nodes)} nodes and {len(self.lines)} lines>"
+
+    @property
+    def cell_tree(self):
+        """A pygeos STRtree of the cells in this grid
+
+        The indices in the tree equal the node indices.
+        """
+        if self._cell_tree is None:
+            is_2d_open = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+            geoms = np.empty(len(self.nodes), dtype=object)
+            geoms[is_2d_open] = pygeos.box(*self.nodes.bounds[is_2d_open].T)
+            self._cell_tree = pygeos.STRtree(geoms)
+        return self._cell_tree
 
     @classmethod
     def from_meta(cls, **kwargs):
@@ -247,8 +270,9 @@ class Grid:
             - lines.kcu: from the channel's calculation_type
             - lines.line_geometries: a segment of the channel geometry
         """
-        nodes = channels.interpolate_nodes(node_id_counter, global_dist_calc_points)
-        lines = channels.get_lines(
+        not_embedded = channels[channels.calculation_type != CalculationType.EMBEDDED]
+        nodes = not_embedded.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = not_embedded.get_lines(
             connection_nodes,
             None,
             nodes,
@@ -509,6 +533,17 @@ class Grid:
         # TODO Skip definitions that are not used (and remap cross1 and cross2)
         self.cross_sections = definitions.convert()
 
+    def embed_nodes(self):
+        """Integrate embedded connection nodes into the 2D cells.
+
+        grid.nodes_embedded will contain the removed (embedded) nodes.
+        """
+        # before connecting lines to 2D nodes, first set the line_coords based on the
+        # original coordinate of the embedded nodes:
+        self.lines.set_line_coords(self.nodes)
+
+        self.nodes_embedded = embed_nodes(self)
+
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter
     ):
@@ -521,6 +556,7 @@ class Grid:
         (bottom level) are computed.
         """
         self.lines += get_1d2d_lines(
+            self.cell_tree,
             self.nodes,
             connection_nodes,
             channels,
@@ -544,7 +580,14 @@ class Grid:
 
 
 def get_1d2d_lines(
-    nodes, connection_nodes, channels, pipes, locations, culverts, line_id_counter
+    cell_tree,
+    nodes,
+    connection_nodes,
+    channels,
+    pipes,
+    locations,
+    culverts,
+    line_id_counter,
 ):
     """Compute 1D-2D flowlines for (double) connected 1D nodes.
 
@@ -560,8 +603,10 @@ def get_1d2d_lines(
     which cells are connected to. This is currently unimplemented.
 
     Args:
+        cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into
+          the STRtree must be equal to the indices into the nodes.
         nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
-            the 1D nodes already have a dmax and calculation_type set.
+          the 1D nodes already have a dmax and calculation_type set.
         connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
         channels (Channels)
         pipes (Pipes)
@@ -575,10 +620,6 @@ def get_1d2d_lines(
         - kcu: LINE_1D2D_* type (see above)
         - dpumax: based on drain_level or dmax (see above)
     """
-    is_2d_open = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-    cell_ids = nodes.id[is_2d_open]
-    cell_tree = pygeos.STRtree(pygeos.box(*nodes.bounds[is_2d_open].T))
-
     HAS_1D2D_CONTENT_TYPES = (
         ContentType.TYPE_V2_CONNECTION_NODES,
         ContentType.TYPE_V2_CHANNEL,
@@ -593,8 +634,6 @@ def get_1d2d_lines(
     n_connected_nodes = connected_idx.shape[0]
     if n_connected_nodes == 0:
         return Lines(id=[])
-
-    # TODO Error if a node is not in a 2D cell.
 
     # The query_bulk returns 2 1D arrays: one with indices into the supplied node
     # geometries and one with indices into the tree of cells.
@@ -624,7 +663,7 @@ def get_1d2d_lines(
         return Lines(id=[])
     node_idx = connected_idx[idx[0]]  # convert to node indexes
     node_id = nodes.index_to_id(node_idx)  # convert to node ids
-    cell_id = cell_ids[idx[1]]  # convert to cell ids
+    cell_id = nodes.index_to_id(idx[1])  # convert to cell ids
 
     # create a 'duplicator' array that duplicates lines from double connected nodes
     is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED

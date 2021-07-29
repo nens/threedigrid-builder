@@ -15,3 +15,4 @@ from .grid import *  # NOQA
 from .quadtree import *  # NOQA
 from .structures import *  # NOQA
 from .obstacles import *  # NOQA
+from .embedded import *  # NOQA

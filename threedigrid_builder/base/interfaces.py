@@ -39,3 +39,7 @@ class OutputInterface(ABC):
     @abstractmethod
     def write_cross_sections(self, cross_sections):
         pass
+
+    @abstractmethod
+    def write_nodes_embedded(self, nodes_embedded: Nodes):
+        pass

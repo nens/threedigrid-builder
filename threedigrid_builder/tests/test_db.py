@@ -11,7 +11,6 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs

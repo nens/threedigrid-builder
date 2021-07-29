@@ -29,6 +29,14 @@ def test_set_line_coords(nodes, lines):
     assert_equal(lines.line_coords, [[1, 1, 2, 2], [2, 2, 3, 3], [1, 1, 3, 3]])
 
 
+def test_set_line_coords_skips_already_set(nodes, lines):
+    lines.line_coords[0] = (9, 9, 10, 10)
+    lines.line_coords[1] = (1, 1, 1, np.nan)  # should be recomputed
+    lines.set_line_coords(nodes)
+
+    assert_equal(lines.line_coords[:2], [[9, 9, 10, 10], [2, 2, 3, 3]])
+
+
 def test_fix_line_geometries(nodes, lines):
     lines.line_coords = np.array(
         [[1, 1, 2, 2], [np.nan, np.nan, np.nan, np.nan], [1, 1, 3, 3]]

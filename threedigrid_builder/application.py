@@ -127,6 +127,7 @@ def _make_gridadmin(
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
+        grid.embed_nodes()
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,
@@ -143,6 +144,10 @@ def _make_gridadmin(
 def _grid_to_gpkg(grid, path):
     with GeopackageOut(path) as out:
         out.write_nodes(grid.nodes, epsg_code=grid.meta.epsg_code)
+        if grid.nodes_embedded is not None:
+            out.write_nodes_embedded(
+                grid.nodes_embedded, grid.nodes, epsg_code=grid.meta.epsg_code
+            )
         out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
         out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
 
@@ -154,6 +159,7 @@ def _grid_to_hdf5(grid, path):
         if grid.quadtree_stats is not None:
             out.write_quadtree(grid.quadtree_stats)
         out.write_nodes(grid.nodes)
+        out.write_nodes_embedded(grid.nodes_embedded)
         out.write_lines(grid.lines)
         out.write_pumps(grid.pumps)
         out.write_cross_sections(grid.cross_sections)
