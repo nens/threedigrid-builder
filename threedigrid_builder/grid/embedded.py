@@ -110,39 +110,36 @@ def embed_channels(
     # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
     # and one with indices into the cells.
     idx = cell_tree.query_bulk(channels.the_geom, "intersects")
-
-    # Get the channel segments (1 segment is the part of a channel within 1 cell)
-    segments = pygeos.intersection(
+    # Get the velocity points (unique per channel) where the channel crosses a cell edge
+    _points = pygeos.intersection(
         channels.the_geom[idx[0]],
-        cell_tree.geometries[idx[1]],
+        pygeos.get_exterior_ring(cell_tree.geometries[idx[1]]),
     )
-    # TODO integrate cutoff_threshold somewhere here
-    idx = idx[:, pygeos.length(segments) > 0.0]  # filters out points and empties
-    ch_n_segments = np.bincount(idx[0], minlength=len(channels))
-    ch_segment_start, ch_segment_end = counts_to_ranges(ch_n_segments)
+    line_vp, line_ch_idx = pygeos.get_parts(
+        pygeos.extract_unique_points(
+            pygeos.geometrycollections(_points, indices=idx[0])
+        ),
+        return_index=True,
+    )
+    ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
 
-    # Get segment_count - 1 points per channel, these are the velocity points
-    # TODO handle channels with 0 segments (filtered out above)
-    # TODO handle channels with 1 segment (entirely inside a cell or filtered out above)
-    line_vpoint = pygeos.get_point(np.delete(segments, ch_segment_start), 0)
-    line_ch_idx = np.delete(idx[0], ch_segment_start)
-    line_cell_idx = np.delete(idx[1], ch_segment_start)
-
-    # Measure the location of the velocity points along the channels
-    line_s = pygeos.line_locate_point(channels.the_geom[line_ch_idx], line_vpoint)
-
-    # sort by position on channel
-    sorter = np.lexsort((line_s, line_ch_idx))
-    line_s = line_s[sorter]
-    line_cell_idx = line_cell_idx[sorter]
+    # Measure the location of the velocity points along the channels and sort by it
+    line_s = pygeos.line_locate_point(channels.the_geom[line_ch_idx], line_vp)
+    _sorter = np.lexsort((line_s, line_ch_idx))
+    line_s = line_s[_sorter]
+    line_ch_idx = line_ch_idx[_sorter]
 
     # The virtual nodes are halfway
     node_s = (line_s + np.roll(line_s, -1)) / 2
     _, ch_node_end = counts_to_ranges(ch_n_segments - 1)
     node_s = np.delete(node_s, ch_node_end - 1)
     node_ch_idx = np.delete(line_ch_idx, ch_node_end - 1)
-    node_cell_idx = np.delete(line_cell_idx, ch_node_end - 1)
     node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)
+
+    # Lookup the cell indices by using the tree again
+    idx = cell_tree.query_bulk(node_point)
+    assert (idx[0] == np.arange(len(node_point))).all()
+    node_cell_idx = idx[1]
 
     # Now we create the virtual nodes
     embedded_nodes = Nodes(

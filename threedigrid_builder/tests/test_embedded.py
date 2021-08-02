@@ -12,6 +12,7 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import embed_channels
 from threedigrid_builder.grid import embed_nodes
 from threedigrid_builder.grid import Grid
+from unittest import mock
 
 import numpy as np
 import pygeos
@@ -150,3 +151,33 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
         pygeos.get_coordinates(lines.line_geometries[2]),
         [(1.8, 0.2), (1.8, 0.9), (1.8, 1.8)],
     )
+
+
+@pytest.mark.parametrize(
+    "channel,lines_s1d,embedded_in",
+    [
+        ([(0.5, 0.5), (1.8, 0.5)], [0.5], []),
+        ([(1.8, 0.5), (0.5, 0.5)], [0.8], []),
+        ([(0.5, 0.5), (0.5, 1.8)], [0.5], []),
+        ([(0.5, 1.8), (0.5, 0.5)], [0.8], []),
+    ],
+)
+@mock.patch.object(Channels, "get_lines")
+def test_embed_channel(get_lines_m, grid2d, channel, lines_s1d, embedded_in):
+    channels = Channels(
+        id=[0],
+        calculation_type=EMBEDDED,
+        the_geom=[pygeos.linestrings(channel)],
+    )
+
+    nodes, lines = embed_channels(
+        channels,
+        None,
+        grid2d.cell_tree,
+        count(2),
+        count(3),
+        connection_node_offset=10,
+    )
+
+    assert_array_equal(nodes.embedded_in, embedded_in)
+    assert_almost_equal(lines.s1d, lines_s1d)
