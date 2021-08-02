@@ -136,8 +136,50 @@ def embed_channels(
     # 2) the velocity point 'touches' a cell edge but does not cross it
     pnt_a = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s - 1e-7)
     pnt_b = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s + 1e-7)
-    _, line_cell_idx_a = cell_tree.query_bulk(pnt_a)
-    _, line_cell_idx_b = cell_tree.query_bulk(pnt_b)
+    _line_idx_a, line_cell_idx_a = cell_tree.query_bulk(pnt_a)
+    _line_idx_b, line_cell_idx_b = cell_tree.query_bulk(pnt_b)
+    if len(line_cell_idx_a) != len(line_s) or len(line_cell_idx_b) != len(line_s):
+        # 2.2) A side of a velocity point is parallel to the cell edge.
+        # For example, the following situation:
+        #  line_s = [5., 11.]
+        #  _line_idx_a, line_cell_idx_a = [0, 1, 1], [6, 6, 8]
+        #  _line_idx_b, line_cell_idx_b = [0, 0, 1], [6, 8, 8]
+        # Means that line 0 goes from cell 6 to ? and line 1 goes from cell ? to 8
+        #
+        # Such an undetermined crossings should be merged so that
+        #  line_s = [8.]  # halfway
+        #  _line_idx_a, line_cell_idx_a = [0], [6]
+        #  _line_idx_b, line_cell_idx_b = [0], [8]
+        #
+        # In general we can have lines that are
+        # - n -> ? (type X), ? -> n (type Y), ? -> ? (type Z)
+        # Theoretically you would expect first X, then 0-x times Z, then Y.
+        #
+        # We are going to do the following:
+        # 1. Fix all lines of type X by finding the next Y and merging with that
+        # 2. Remove all lines of type Z en Y.
+        type_yz = np.where(np.bincount(_line_idx_a) > 1)[0]
+        type_xz = np.where(np.bincount(_line_idx_b) > 1)[0]
+        type_y = np.setdiff1d(type_yz, type_xz)
+        type_x = np.setdiff1d(type_xz, type_yz)
+        for i in type_x:
+            to_fix = np.where(_line_idx_b == i)[0]
+            for j in itertools.count(i + 1):
+                if j >= len(line_s) or line_ch_idx[i] != line_ch_idx[j]:
+                    # This is a type x crossing without a type Y afterwards. This could
+                    # happen when the channel end is on the cell edge. Ignore this
+                    # crossing.
+                    type_yz = np.append(type_yz, i)
+                    break
+                if j in type_y:
+                    line_cell_idx_b[to_fix[0]] = line_cell_idx_b[_line_idx_b == j]
+                    _line_idx_b[to_fix[1:]] = j  # so that this is deleted later
+                    line_s[i] = 0.5 * (line_s[i] + line_s[j])
+                    break
+        line_s = np.delete(line_s, type_yz)
+        line_ch_idx = np.delete(line_ch_idx, type_yz)
+        line_cell_idx_a = line_cell_idx_a[~np.isin(_line_idx_a, type_yz)]
+        line_cell_idx_b = line_cell_idx_b[~np.isin(_line_idx_b, type_yz)]
     line_touches = np.where(line_cell_idx_a == line_cell_idx_b)[0]
     if len(line_touches) > 0:
         line_s = np.delete(line_s, line_touches)
