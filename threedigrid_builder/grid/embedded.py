@@ -134,28 +134,38 @@ def embed_channels(
     line_s = line_s[mask]
     line_ch_idx = line_ch_idx[mask]
     # 2) the velocity point 'touches' a cell edge but does not cross it
-    pnt_a = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s - 1E-7)
-    pnt_b = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s + 1E-7)
-    _, cell_idx_a = cell_tree.query_bulk(pnt_a)
-    _, cell_idx_b = cell_tree.query_bulk(pnt_b)
-    mask = cell_idx_a != cell_idx_b
-    line_s = line_s[mask]
-    line_ch_idx = line_ch_idx[mask]
+    pnt_a = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s - 1e-7)
+    pnt_b = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s + 1e-7)
+    _, line_cell_idx_a = cell_tree.query_bulk(pnt_a)
+    _, line_cell_idx_b = cell_tree.query_bulk(pnt_b)
+    line_touches = np.where(line_cell_idx_a == line_cell_idx_b)[0]
+    if len(line_touches) > 0:
+        line_s = np.delete(line_s, line_touches)
+        line_ch_idx = np.delete(line_ch_idx, line_touches)
+        line_cell_idx_a = np.delete(line_cell_idx_a, line_touches)
+        line_cell_idx_b = np.delete(line_cell_idx_b, line_touches)
+    # 3) there is no velocity point (embedded channel completely in 1 cell)
+    # --> add the velocity point halfway the channel (it is not at a cell edge)
+    ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
+    ch_no_segments = np.where(ch_n_segments == 0)[0]
+    if len(ch_no_segments) > 0:
+        insert_where = np.searchsorted(line_ch_idx, ch_no_segments)
+        line_s = np.insert(
+            line_s,
+            insert_where,
+            0.5 * pygeos.length(channels.the_geom[ch_no_segments]),
+        )
+        line_ch_idx = np.insert(line_ch_idx, insert_where, ch_no_segments)
+        line_cell_idx_a = np.insert(line_cell_idx_a, insert_where, -9999)
+        line_cell_idx_b = np.insert(line_cell_idx_b, insert_where, -9999)
+        ch_n_segments[ch_no_segments] = 1
 
     # The virtual nodes are halfway
-    ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
-    ch_start, ch_end = counts_to_ranges(ch_n_segments[ch_n_segments > 0])
+    ch_start, ch_end = counts_to_ranges(ch_n_segments)
     node_s = (np.delete(line_s, ch_start) + np.delete(line_s, ch_end - 1)) / 2
     node_ch_idx = np.delete(line_ch_idx, ch_start)
     node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)
-
-    # Lookup the cell indices by using the tree again
-    idx = cell_tree.query_bulk(node_point)
-    if not (idx[0] == np.arange(len(node_point))).all():
-        # Edge case: virtual node is at a cell edge. This means that a channel is going
-        # along the cell edge.
-        raise RuntimeError("Virtual nodes in embedded channels must be in the cell interior")
-    node_cell_idx = idx[1]
+    node_cell_idx = np.delete(line_cell_idx_a, ch_start)
 
     # Now we create the virtual nodes
     embedded_nodes = Nodes(
@@ -178,6 +188,6 @@ def embed_channels(
     )
     # override the velocity point locations (the defaulted to the line midpoint, while
     # for embedded channels we force them to the cell edges)
-    lines.s1d = line_s
+    lines.s1d[:] = line_s
 
     return embedded_nodes, lines

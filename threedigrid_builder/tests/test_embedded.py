@@ -12,7 +12,6 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import embed_channels
 from threedigrid_builder.grid import embed_nodes
 from threedigrid_builder.grid import Grid
-from unittest import mock
 
 import numpy as np
 import pygeos
@@ -104,14 +103,15 @@ def connection_nodes():
 
 def test_embed_channels_multiple(grid2d, connection_nodes):
     channels = Channels(
-        id=[0, 1],
+        id=[0, 1, 2],
         calculation_type=EMBEDDED,
         the_geom=[
             pygeos.linestrings([(1, 1), (15, 1)]),
+            pygeos.linestrings([(11, 1), (15, 1)]),
             pygeos.linestrings([(7, 2), (18, 2), (18, 9), (18, 18)]),
         ],
-        connection_node_start_id=[21, 25],
-        connection_node_end_id=[42, 33],
+        connection_node_start_id=[21, 21, 25],
+        connection_node_end_id=[42, 33, 33],
     )
 
     nodes, lines = embed_channels(
@@ -125,30 +125,33 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
 
     assert_array_equal(nodes.id, [2])
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CHANNEL)
-    assert_array_equal(nodes.content_pk, [1])
+    assert_array_equal(nodes.content_pk, [2])
     assert_array_equal(nodes.coordinates, [(18, 2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
     assert_array_equal(nodes.s1d, [11])  # halfway the 2 velocity points (see below)
     assert_array_equal(nodes.embedded_in, [1])
 
-    assert_array_equal(lines.id, [3, 4, 5])
-    assert_array_equal(lines.line, [(10, 13), (11, 1), (1, 12)])  # connect to cell 1
+    assert_array_equal(lines.id, [3, 4, 5, 6])
+    assert_array_equal(lines.line, [(10, 13), (10, 12), (11, 1), (1, 12)])
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
-    assert_array_equal(lines.content_pk, [0, 1, 1])
+    assert_array_equal(lines.content_pk, [0, 1, 2, 2])
     assert_array_equal(lines.kcu, EMBEDDED)
     assert_array_equal(lines.cross1, -9999)
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, np.nan)
-    assert_almost_equal(lines.s1d, [9, 3, 19])
-    assert_almost_equal(lines.ds1d, [14, 11, 16])
+    assert_almost_equal(lines.s1d, [9, 2, 3, 19])
+    assert_almost_equal(lines.ds1d, [14, 4, 11, 16])
     assert_almost_equal(
         pygeos.get_coordinates(lines.line_geometries[0]), [(1, 1), (15, 1)]
     )
     assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[1]), [(7, 2), (18, 2)]
+        pygeos.get_coordinates(lines.line_geometries[1]), [(11, 1), (15, 1)]
     )
     assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[2]),
+        pygeos.get_coordinates(lines.line_geometries[2]), [(7, 2), (18, 2)]
+    )
+    assert_almost_equal(
+        pygeos.get_coordinates(lines.line_geometries[3]),
         [(18, 2), (18, 9), (18, 18)],
     )
 
@@ -157,7 +160,7 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
 @pytest.mark.parametrize(
     "channel,lines_s1d,embedded_in",
     [
-        ([(5, 5), (9, 5)], [], []),  # no cell crossing --> no nodes and lines
+        ([(5, 5), (9, 5)], [2], []),  # no cell crossing --> no nodes and 1 line
         ([(5, 5), (18, 5)], [5], []),  # horizontal, 1 crossing
         ([(5, 5), (5, 18)], [5], []),  # vertical, 1 crossing
         ([(5, 5), (5, 9), (15, 9)], [9], []),  # 1 crossing, more coords
@@ -174,9 +177,11 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
         ([(8, 1), (12, 4), (8, 7), (12, 7)], [2.5, 7.5, 12.0], [1, 0]),  # 0 - 1 - 0 - 1
         ([(5, 5), (18, 5), (18, 10)], [5], []),  # 1 crossing, end at edge
         ([(5, 15), (5, 1), (18, 1), (18, 10)], [5, 19], [0]),  # corner, end at edge
-        ([(6, 1), (10, 4), (6, 7)], [], []),  # 0 - touch 1
+        ([(6, 1), (10, 4), (6, 7)], [5.0], []),  # 0 - touch 1
+        ([(14, 1), (10, 4), (14, 7)], [5.0], []),  # 1 - touch 0
         ([(12, 7), (6, 7), (10, 4), (6, 1)], [2], []),  # 2 - 0 - touch 1
         ([(6, 1), (10, 4), (6, 7), (12, 7)], [14], []),  # 0 - touch 1 - 2
+        ([(1, 5), (1, 14), (4, 10), (7, 14), (7, 5)], [5, 23], [2]),  # M (0 - 2)
         # ([(5, 2), (10, 2), (10, 8), (5, 8)], [14], []),  # 0 - along edge - 0
         # ([(5, 2), (10, 2), (10, 8), (15, 8)], [14], []),  # 0 - along edge - 1
     ],
