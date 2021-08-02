@@ -31,7 +31,7 @@ def grid2d():
         nodes=Nodes(
             id=[0, 1, 2, 3],
             node_type=NODE_2D,
-            bounds=[(0, 0, 1, 1), (1, 0, 2, 1), (0, 1, 1, 2), (1, 1, 2, 2)],
+            bounds=[(0, 0, 10, 10), (10, 0, 20, 10), (0, 10, 10, 20), (10, 10, 20, 20)],
         ),
         lines=Lines(id=[0], line=[[0, 1]]),
     )
@@ -44,7 +44,7 @@ def test_embed_nodes(grid2d):
             node_type=NODE_1D,
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             calculation_type=[EMBEDDED, ISOLATED, EMBEDDED, EMBEDDED],
-            coordinates=[(1.0, 0.2), (0.9, 0.9), (1.3, 0.3), (1.6, 0.7)],
+            coordinates=[(10, 2), (9, 9), (13, 3), (16, 7)],
         ),
         lines=Lines(id=[1, 2, 3], line=[(4, 5), (4, 6), (5, 6)]),
     )
@@ -67,7 +67,7 @@ def test_embed_node_outside_2D(grid2d):
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             content_pk=[15, 16],
             calculation_type=EMBEDDED,
-            coordinates=[(0.5, 2.2), (0.5, 0.5)],
+            coordinates=[(5, 22), (5, 5)],
         ),
         lines=Lines(id=[]),
     )
@@ -84,7 +84,7 @@ def test_embed_node_two_interconnected(grid2d):
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             content_pk=[4, 5],
             calculation_type=EMBEDDED,
-            coordinates=[(0.8, 0.8), (0.5, 0.5)],
+            coordinates=[(8, 8), (5, 5)],
         ),
         lines=Lines(id=[2], line=[(4, 5)]),
     )
@@ -107,8 +107,8 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
         id=[0, 1],
         calculation_type=EMBEDDED,
         the_geom=[
-            pygeos.linestrings([(0.1, 0.1), (1.5, 0.1)]),
-            pygeos.linestrings([(0.7, 0.2), (1.8, 0.2), (1.8, 0.9), (1.8, 1.8)]),
+            pygeos.linestrings([(1, 1), (15, 1)]),
+            pygeos.linestrings([(7, 2), (18, 2), (18, 9), (18, 18)]),
         ],
         connection_node_start_id=[21, 25],
         connection_node_end_id=[42, 33],
@@ -126,9 +126,9 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
     assert_array_equal(nodes.id, [2])
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CHANNEL)
     assert_array_equal(nodes.content_pk, [1])
-    assert_array_equal(nodes.coordinates, [(1.8, 0.2)])
+    assert_array_equal(nodes.coordinates, [(18, 2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
-    assert_array_equal(nodes.s1d, [1.1])  # halfway the 2 velocity points (see below)
+    assert_array_equal(nodes.s1d, [11])  # halfway the 2 velocity points (see below)
     assert_array_equal(nodes.embedded_in, [1])
 
     assert_array_equal(lines.id, [3, 4, 5])
@@ -139,17 +139,17 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
     assert_array_equal(lines.cross1, -9999)
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, np.nan)
-    assert_almost_equal(lines.s1d, [0.9, 0.3, 1.9])
-    assert_almost_equal(lines.ds1d, [1.4, 1.1, 1.6])
+    assert_almost_equal(lines.s1d, [9, 3, 19])
+    assert_almost_equal(lines.ds1d, [14, 11, 16])
     assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[0]), [(0.1, 0.1), (1.5, 0.1)]
+        pygeos.get_coordinates(lines.line_geometries[0]), [(1, 1), (15, 1)]
     )
     assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[1]), [(0.7, 0.2), (1.8, 0.2)]
+        pygeos.get_coordinates(lines.line_geometries[1]), [(7, 2), (18, 2)]
     )
     assert_almost_equal(
         pygeos.get_coordinates(lines.line_geometries[2]),
-        [(1.8, 0.2), (1.8, 0.9), (1.8, 1.8)],
+        [(18, 2), (18, 9), (18, 18)],
     )
 
 
@@ -157,16 +157,23 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
 @pytest.mark.parametrize(
     "channel,lines_s1d,embedded_in",
     [
-        # ([(0.5, 0.5), (0.9, 0.5)], [], []),  # no cell crossing, errors
-        ([(0.5, 0.5), (1.8, 0.5)], [0.5], []),  # horizontal, 1 crossing
-        ([(0.5, 0.5), (0.5, 1.8)], [0.5], []),  # vertical, 1 crossing
-        ([(0.5, 0.5), (0.5, 0.9), (1.5, 0.9)], [0.9], []),  # 1 crossing, more coords
-        ([(0.5, 0.5), (1.8, 0.5), (1.8, 0.9)], [0.5], []),  # 1 crossing, more coords
-        ([(0.5, 1.5), (0.5, 0.1), (1.8, 0.1)], [0.5, 1.9], [0]),  # corner, bottomleft
-        ([(0.5, 0.5), (1.8, 0.5), (1.8, 1.3)], [0.5, 1.8], [1]),  # corner, bottomright
-        ([(0.5, 0.5), (0.5, 1.4), (1.8, 1.4)], [0.5, 1.4], [2]),  # corner, bottomright
-        ([(1.8, 0.5), (1.8, 1.3), (0.9, 1.3)], [0.5, 1.6], [3]),  # corner, topright
-        ([(0.5, 1.5), (0.5, 0.2), (1.9, 0.2), (1.9, 1.5)], [0.5, 1.8, 3.5], [0, 1]),
+        # ([(5, 5), (9, 5)], [], []),  # no cell crossing, errors
+        ([(5, 5), (18, 5)], [5], []),  # horizontal, 1 crossing
+        ([(5, 5), (5, 18)], [5], []),  # vertical, 1 crossing
+        ([(5, 5), (5, 9), (15, 9)], [9], []),  # 1 crossing, more coords
+        ([(5, 5), (18, 5), (18, 9)], [5], []),  # 1 crossing, more coords
+        ([(5, 15), (5, 1), (18, 1)], [5, 19], [0]),  # corner, bottomleft
+        ([(5, 5), (18, 5), (18, 13)], [5, 18], [1]),  # corner, bottomright
+        ([(5, 5), (5, 14), (18, 14)], [5, 14], [2]),  # corner, bottomright
+        ([(18, 5), (18, 13), (9, 13)], [5, 16], [3]),  # corner, topright
+        ([(5, 15), (5, 2), (19, 2), (19, 15)], [5, 18, 35], [0, 1]),  # U
+        ([(5, 2), (19, 2), (19, 15), (5, 15)], [5, 22, 36], [1, 3]),  # U, on left side
+        ([(19, 2), (19, 15), (5, 15), (5, 2)], [8, 22, 32], [3, 2]),  # U, upside down
+        ([(19, 15), (5, 15), (5, 2), (19, 2)], [9, 19, 32], [2, 0]),  # U, on right side
+        ([(8, 1), (12, 4), (8, 7)], [2.5, 7.5], [1]),  # 0 - 1 - 0
+        ([(8, 1), (12, 4), (8, 7), (12, 7)], [2.5, 7.5, 12.0], [1, 0]),  # 0 - 1 - 0 - 1
+        ([(5, 5), (18, 5), (18, 10)], [5], []),  # 1 crossing, end at edge
+        ([(5, 15), (5, 1), (18, 1), (18, 10)], [5, 19], [0]),  # corner, end at edge
     ],
 )
 @mock.patch.object(Channels, "get_lines")

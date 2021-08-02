@@ -121,15 +121,6 @@ def embed_channels(
         ),
         return_index=True,
     )
-    ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
-
-    # Filter out channels with 0 segments
-    if np.any(ch_n_segments == 0):
-        channel_id = channels.index_to_id(np.where(ch_n_segments == 0)[0])
-        raise SchematisationError(
-            f"Channels {channel_id} have an embedded calculation type "
-            f"and are entirely inside a single 2D cell."
-        )
 
     # Measure the location of the velocity points along the channels and sort by it
     line_s = pygeos.line_locate_point(channels.the_geom[line_ch_idx], line_vp)
@@ -137,7 +128,13 @@ def embed_channels(
     line_s = line_s[_sorter]
     line_ch_idx = line_ch_idx[_sorter]
 
+    # Filter edge cases: the start/end node of a channel is exactly at a cell edge
+    mask = (line_s > 0.0) & (line_s < pygeos.length(channels.the_geom)[line_ch_idx])
+    line_s = line_s[mask]
+    line_ch_idx = line_ch_idx[mask]
+
     # The virtual nodes are halfway
+    ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
     ch_start, ch_end = counts_to_ranges(ch_n_segments)
     node_s = (np.delete(line_s, ch_start) + np.delete(line_s, ch_end - 1)) / 2
     node_ch_idx = np.delete(line_ch_idx, ch_start)
