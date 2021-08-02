@@ -135,7 +135,7 @@ def embed_channels(
 
     # The virtual nodes are halfway
     ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
-    ch_start, ch_end = counts_to_ranges(ch_n_segments)
+    ch_start, ch_end = counts_to_ranges(ch_n_segments[ch_n_segments > 0])
     node_s = (np.delete(line_s, ch_start) + np.delete(line_s, ch_end - 1)) / 2
     node_ch_idx = np.delete(line_ch_idx, ch_start)
     node_point = pygeos.line_interpolate_point(channels.the_geom[node_ch_idx], node_s)

@@ -157,7 +157,7 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
 @pytest.mark.parametrize(
     "channel,lines_s1d,embedded_in",
     [
-        # ([(5, 5), (9, 5)], [], []),  # no cell crossing, errors
+        ([(5, 5), (9, 5)], [], []),  # no cell crossing --> no nodes and lines
         ([(5, 5), (18, 5)], [5], []),  # horizontal, 1 crossing
         ([(5, 5), (5, 18)], [5], []),  # vertical, 1 crossing
         ([(5, 5), (5, 9), (15, 9)], [9], []),  # 1 crossing, more coords
