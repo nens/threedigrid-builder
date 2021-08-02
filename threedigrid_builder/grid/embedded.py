@@ -128,8 +128,17 @@ def embed_channels(
     line_s = line_s[_sorter]
     line_ch_idx = line_ch_idx[_sorter]
 
-    # Filter edge cases: the start/end node of a channel is exactly at a cell edge
+    # EDGE CASES
+    # 1) the start/end node of a channel is exactly at a cell edge
     mask = (line_s > 0.0) & (line_s < pygeos.length(channels.the_geom)[line_ch_idx])
+    line_s = line_s[mask]
+    line_ch_idx = line_ch_idx[mask]
+    # 2) the velocity point 'touches' a cell edge but does not cross it
+    pnt_a = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s - 1E-7)
+    pnt_b = pygeos.line_interpolate_point(channels.the_geom[line_ch_idx], line_s + 1E-7)
+    _, cell_idx_a = cell_tree.query_bulk(pnt_a)
+    _, cell_idx_b = cell_tree.query_bulk(pnt_b)
+    mask = cell_idx_a != cell_idx_b
     line_s = line_s[mask]
     line_ch_idx = line_ch_idx[mask]
 
@@ -142,7 +151,10 @@ def embed_channels(
 
     # Lookup the cell indices by using the tree again
     idx = cell_tree.query_bulk(node_point)
-    assert (idx[0] == np.arange(len(node_point))).all()
+    if not (idx[0] == np.arange(len(node_point))).all():
+        # Edge case: virtual node is at a cell edge. This means that a channel is going
+        # along the cell edge.
+        raise RuntimeError("Virtual nodes in embedded channels must be in the cell interior")
     node_cell_idx = idx[1]
 
     # Now we create the virtual nodes

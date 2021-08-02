@@ -174,23 +174,35 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
         ([(8, 1), (12, 4), (8, 7), (12, 7)], [2.5, 7.5, 12.0], [1, 0]),  # 0 - 1 - 0 - 1
         ([(5, 5), (18, 5), (18, 10)], [5], []),  # 1 crossing, end at edge
         ([(5, 15), (5, 1), (18, 1), (18, 10)], [5, 19], [0]),  # corner, end at edge
+        ([(6, 1), (10, 4), (6, 7)], [], []),  # 0 - touch 1
+        ([(12, 7), (6, 7), (10, 4), (6, 1)], [2], []),  # 2 - 0 - touch 1
+        ([(6, 1), (10, 4), (6, 7), (12, 7)], [14], []),  # 0 - touch 1 - 2
+        # ([(5, 2), (10, 2), (10, 8), (5, 8)], [14], []),  # 0 - along edge - 0
+        # ([(5, 2), (10, 2), (10, 8), (15, 8)], [14], []),  # 0 - along edge - 1
     ],
 )
-@mock.patch.object(Channels, "get_lines")
-def test_embed_channel(get_lines_m, grid2d, channel, lines_s1d, embedded_in, reverse):
+def test_embed_channel(grid2d, channel, lines_s1d, embedded_in, reverse):
     if reverse:
         channel = channel[::-1]
         embedded_in = embedded_in[::-1]
         lines_s1d = pygeos.length(pygeos.linestrings(channel)) - lines_s1d[::-1]
+
+    connection_nodes = ConnectionNodes(
+        id=[21, 42],
+        the_geom=pygeos.points([channel[0], channel[-1]]),
+    )
+
     channels = Channels(
         id=[0],
         calculation_type=EMBEDDED,
         the_geom=[pygeos.linestrings(channel)],
+        connection_node_start_id=[21],
+        connection_node_end_id=[42],
     )
 
     nodes, lines = embed_channels(
         channels,
-        None,
+        connection_nodes,
         grid2d.cell_tree,
         count(2),
         count(3),
