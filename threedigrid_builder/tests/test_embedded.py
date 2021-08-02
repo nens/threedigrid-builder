@@ -153,17 +153,28 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
     )
 
 
+@pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize(
     "channel,lines_s1d,embedded_in",
     [
-        ([(0.5, 0.5), (1.8, 0.5)], [0.5], []),
-        ([(1.8, 0.5), (0.5, 0.5)], [0.8], []),
-        ([(0.5, 0.5), (0.5, 1.8)], [0.5], []),
-        ([(0.5, 1.8), (0.5, 0.5)], [0.8], []),
+        # ([(0.5, 0.5), (0.9, 0.5)], [], []),  # no cell crossing, errors
+        ([(0.5, 0.5), (1.8, 0.5)], [0.5], []),  # horizontal, 1 crossing
+        ([(0.5, 0.5), (0.5, 1.8)], [0.5], []),  # vertical, 1 crossing
+        ([(0.5, 0.5), (0.5, 0.9), (1.5, 0.9)], [0.9], []),  # 1 crossing, more coords
+        ([(0.5, 0.5), (1.8, 0.5), (1.8, 0.9)], [0.5], []),  # 1 crossing, more coords
+        ([(0.5, 1.5), (0.5, 0.1), (1.8, 0.1)], [0.5, 1.9], [0]),  # corner, bottomleft
+        ([(0.5, 0.5), (1.8, 0.5), (1.8, 1.3)], [0.5, 1.8], [1]),  # corner, bottomright
+        ([(0.5, 0.5), (0.5, 1.4), (1.8, 1.4)], [0.5, 1.4], [2]),  # corner, bottomright
+        ([(1.8, 0.5), (1.8, 1.3), (0.9, 1.3)], [0.5, 1.6], [3]),  # corner, topright
+        ([(0.5, 1.5), (0.5, 0.2), (1.9, 0.2), (1.9, 1.5)], [0.5, 1.8, 3.5], [0, 1]),
     ],
 )
 @mock.patch.object(Channels, "get_lines")
-def test_embed_channel(get_lines_m, grid2d, channel, lines_s1d, embedded_in):
+def test_embed_channel(get_lines_m, grid2d, channel, lines_s1d, embedded_in, reverse):
+    if reverse:
+        channel = channel[::-1]
+        embedded_in = embedded_in[::-1]
+        lines_s1d = pygeos.length(pygeos.linestrings(channel)) - lines_s1d[::-1]
     channels = Channels(
         id=[0],
         calculation_type=EMBEDDED,
