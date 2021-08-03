@@ -1,19 +1,19 @@
 from itertools import count
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
+from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import embed_channels
+from threedigrid_builder.grid import embed_linear_objects
 from threedigrid_builder.grid import embed_nodes
 from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid.linear import BaseLinear
 
-import numpy as np
 import pygeos
 import pytest
 
@@ -22,6 +22,19 @@ NODE_2D = NodeType.NODE_2D_OPEN_WATER
 NODE_1D = NodeType.NODE_1D_STORAGE
 EMBEDDED = CalculationType.EMBEDDED
 ISOLATED = CalculationType.ISOLATED
+
+
+class LinearObject:
+    id: int
+    the_geom: pygeos.Geometry
+    calculation_type: CalculationType
+    connection_node_start_id: int
+    connection_node_end_id: int
+
+
+@array_of(LinearObject)
+class LinearObjects(BaseLinear):
+    content_type = ContentType.TYPE_V2_WINDSHIELD  # just pick one for the test
 
 
 @pytest.fixture
@@ -101,8 +114,8 @@ def connection_nodes():
     )
 
 
-def test_embed_channels_multiple(grid2d, connection_nodes):
-    channels = Channels(
+def test_embed_linear_objects_multiple(grid2d, connection_nodes):
+    linear_objects = LinearObjects(
         id=[0, 1, 2],
         calculation_type=EMBEDDED,
         the_geom=[
@@ -110,55 +123,28 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
             pygeos.linestrings([(11, 1), (15, 1)]),
             pygeos.linestrings([(7, 2), (18, 2), (18, 9), (18, 18)]),
         ],
-        connection_node_start_id=[21, 21, 25],
-        connection_node_end_id=[42, 33, 33],
     )
 
-    nodes, lines = embed_channels(
-        channels,
-        connection_nodes,
+    nodes, lines_s1d = embed_linear_objects(
+        linear_objects,
         grid2d.cell_tree,
-        count(2),
-        count(3),
-        connection_node_offset=10,
+        embedded_cutoff_threshold=1,
+        embedded_node_id_counter=count(2),
     )
 
     assert_array_equal(nodes.id, [2])
-    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CHANNEL)
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_WINDSHIELD)
     assert_array_equal(nodes.content_pk, [2])
     assert_array_equal(nodes.coordinates, [(18, 2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
     assert_array_equal(nodes.s1d, [11])  # halfway the 2 velocity points (see below)
     assert_array_equal(nodes.embedded_in, [1])
-
-    assert_array_equal(lines.id, [3, 4, 5, 6])
-    assert_array_equal(lines.line, [(10, 13), (10, 12), (11, 1), (1, 12)])
-    assert_array_equal(lines.content_type, ContentType.TYPE_V2_CHANNEL)
-    assert_array_equal(lines.content_pk, [0, 1, 2, 2])
-    assert_array_equal(lines.kcu, EMBEDDED)
-    assert_array_equal(lines.cross1, -9999)
-    assert_array_equal(lines.cross2, -9999)
-    assert_array_equal(lines.cross_weight, np.nan)
-    assert_almost_equal(lines.s1d, [9, 2, 3, 19])
-    assert_almost_equal(lines.ds1d, [14, 4, 11, 16])
-    assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[0]), [(1, 1), (15, 1)]
-    )
-    assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[1]), [(11, 1), (15, 1)]
-    )
-    assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[2]), [(7, 2), (18, 2)]
-    )
-    assert_almost_equal(
-        pygeos.get_coordinates(lines.line_geometries[3]),
-        [(18, 2), (18, 9), (18, 18)],
-    )
+    assert_almost_equal(lines_s1d, [9, 2, 3, 19])
 
 
 @pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize(
-    "channel,lines_s1d,embedded_in",
+    "geometry,lines_s1d,embedded_in",
     [
         ([(5, 5), (9, 5)], [2], []),  # no cell crossing --> no nodes and 1 line
         ([(5, 5), (18, 5)], [5], []),  # horizontal, 1 crossing
@@ -193,34 +179,24 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
         ([(5.6, 7), (10, 10.3), (14.4, 7)], [5.5], []),  # 0 to 1, 2&3 are below thresh
     ],
 )
-def test_embed_channel(grid2d, channel, lines_s1d, embedded_in, reverse):
+def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
     if reverse:
-        channel = channel[::-1]
+        geometry = geometry[::-1]
         embedded_in = embedded_in[::-1]
-        lines_s1d = pygeos.length(pygeos.linestrings(channel)) - lines_s1d[::-1]
+        lines_s1d = pygeos.length(pygeos.linestrings(geometry)) - lines_s1d[::-1]
 
-    connection_nodes = ConnectionNodes(
-        id=[21, 42],
-        the_geom=pygeos.points([channel[0], channel[-1]]),
-    )
-
-    channels = Channels(
+    linear_objects = LinearObjects(
         id=[0],
         calculation_type=EMBEDDED,
-        the_geom=[pygeos.linestrings(channel)],
-        connection_node_start_id=[21],
-        connection_node_end_id=[42],
+        the_geom=[pygeos.linestrings(geometry)],
     )
 
-    nodes, lines = embed_channels(
-        channels,
-        connection_nodes,
+    nodes, actual_lines_s1d = embed_linear_objects(
+        linear_objects,
         grid2d.cell_tree,
-        count(2),
-        count(3),
-        connection_node_offset=10,
         embedded_cutoff_threshold=1,
+        embedded_node_id_counter=count(2),
     )
 
     assert_array_equal(nodes.embedded_in, embedded_in)
-    assert_almost_equal(lines.s1d, lines_s1d)
+    assert_almost_equal(actual_lines_s1d, lines_s1d)

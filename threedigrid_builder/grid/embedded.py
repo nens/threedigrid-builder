@@ -1,5 +1,4 @@
 from .linear import counts_to_ranges
-from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -14,7 +13,7 @@ import pygeos
 VPOINT_EPSILON = 1e-7
 
 
-__all__ = ["embed_nodes", "embed_channels"]
+__all__ = ["embed_nodes", "embed_linear_objects"]
 
 
 def take(arr, idx):
@@ -87,20 +86,20 @@ def embed_nodes(grid, embedded_node_id_counter):
     return embedded_nodes
 
 
-class EmbeddedChannels:
-    """Embedded channels
+class EmbeddedObjects:
+    """Embedded linear objects
 
     Attributes:
-        channels (Channels): the channels (input)
-        vpoint_s (ndarray of float): positions of velocity points along channels
-        vpoint_ch_idx (ndarray of int): index into channels corresponding to vpoint_s
+        objects (LinearObjects): the linear objects (input)
+        vpoint_s (ndarray of float): positions of velocity points along objects
+        vpoint_ch_idx (ndarray of int): index into objects corresponding to vpoint_s
         vpoint_line (length-2 iterable of ndarrays of int): cell ids belonging
           to the velocity points. Each velocity point has two cell ids because the
           point is on a cell edge by definition.
     """
 
-    def __init__(self, channels, vpoint_s, vpoint_ch_idx, vpoint_line=None):
-        self.channels = channels
+    def __init__(self, objects, vpoint_s, vpoint_ch_idx, vpoint_line=None):
+        self.objects = objects
         self.vpoint_s = vpoint_s
         self.vpoint_ch_idx = vpoint_ch_idx
         self.vpoint_line = vpoint_line
@@ -108,12 +107,19 @@ class EmbeddedChannels:
     @property
     def counts(self):
         """The number of lines per channel"""
-        return np.bincount(self.vpoint_ch_idx, minlength=len(self.channels))
+        return np.bincount(self.vpoint_ch_idx, minlength=len(self.objects))
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__} object with "
+            f"{len(self.objects)} {self.objects.__class__.__name__} and "
+            f"{len(self.vpoint_s)} velocity points>"
+        )
 
     def __getitem__(self, index):
         """Get velocity points at ``index``"""
         return self.__class__(
-            self.channels,
+            self.objects,
             self.vpoint_s[index],
             self.vpoint_ch_idx[index],
             self.vpoint_line[:, index] if self.vpoint_line is not None else None,
@@ -126,7 +132,7 @@ class EmbeddedChannels:
         else:
             vpoint_line = None
         return self.__class__(
-            self.channels,
+            self.objects,
             np.delete(self.vpoint_s, index),
             np.delete(self.vpoint_ch_idx, index),
             vpoint_line,
@@ -139,21 +145,21 @@ class EmbeddedChannels:
         else:
             vpoint_line = None
         return self.__class__(
-            self.channels,
+            self.objects,
             np.insert(self.vpoint_s, where, vpoint_s),
             np.insert(self.vpoint_ch_idx, where, vpoint_ch_idx),
             vpoint_line,
         )
 
     @classmethod
-    def from_cell_tree(cls, channels, cell_tree):
-        """Construct the velocity points in the embedded channels from a cell tree."""
-        # The query_bulk returns 2 1D arrays: one with indices into the channels
+    def from_cell_tree(cls, objects, cell_tree):
+        """Construct the velocity points in the embedded objects from a cell tree."""
+        # The query_bulk returns 2 1D arrays: one with indices into the objects
         # and one with indices into the cells.
-        idx = cell_tree.query_bulk(channels.the_geom, "intersects")
-        # Get the intersections between channels and cell edges: these are the vpoints
+        idx = cell_tree.query_bulk(objects.the_geom, "intersects")
+        # Get the intersections between objects and cell edges: these are the vpoints
         _points = pygeos.intersection(
-            channels.the_geom[idx[0]],
+            objects.the_geom[idx[0]],
             pygeos.get_exterior_ring(cell_tree.geometries[idx[1]]),
         )
         # Get unique points per channel (there will be duplicates).
@@ -161,11 +167,11 @@ class EmbeddedChannels:
         multipoints = pygeos.extract_unique_points(
             pygeos.geometrycollections(_points, indices=idx[0])
         )
-        # Flatten into a 'ragged array' structure (points + indices into channels)
+        # Flatten into a 'ragged array' structure (points + indices into objects)
         vpoints, vpoint_ch_idx = pygeos.get_parts(multipoints, return_index=True)
-        # Measure the location along the channels
-        vpoint_s = pygeos.line_locate_point(channels.the_geom[vpoint_ch_idx], vpoints)
-        return cls(channels, vpoint_s, vpoint_ch_idx)
+        # Measure the location along the objects
+        vpoint_s = pygeos.line_locate_point(objects.the_geom[vpoint_ch_idx], vpoints)
+        return cls(objects, vpoint_s, vpoint_ch_idx)
 
     def get_nodes(self, node_id_counter):
         """Get the (virtual) Nodes corresponding to the velocity points"""
@@ -175,14 +181,14 @@ class EmbeddedChannels:
         ) / 2
         node_ch_idx = np.delete(self.vpoint_ch_idx, ch_start)
         node_point = pygeos.line_interpolate_point(
-            self.channels.the_geom[node_ch_idx], node_s
+            self.objects.the_geom[node_ch_idx], node_s
         )
         node_cell_id = np.delete(self.vpoint_line[0], ch_start)
         return Nodes(
             id=itertools.islice(node_id_counter, len(node_ch_idx)),
             coordinates=pygeos.get_coordinates(node_point),
-            content_type=ContentType.TYPE_V2_CHANNEL,
-            content_pk=self.channels.id[node_ch_idx],
+            content_type=self.objects.content_type,
+            content_pk=self.objects.id[node_ch_idx],
             calculation_type=CalculationType.EMBEDDED,
             s1d=node_s,
             embedded_in=node_cell_id,
@@ -195,10 +201,10 @@ class EmbeddedChannels:
     def clean_vpoints_channel_ending(self):
         """Solve an edge case where a channel ending is at a cell edge.
 
-        The EmbeddedChannels construction erroneously puts velocity points at channel
+        The EmbeddedObjects construction erroneously puts velocity points at channel
         endings if the ending is precisely at the cell edge. These are filtered out.
         """
-        ch_lengths = pygeos.length(self.channels.the_geom)
+        ch_lengths = pygeos.length(self.objects.the_geom)
         return self[
             (self.vpoint_s > 0.0) & (self.vpoint_s < ch_lengths[self.vpoint_ch_idx])
         ]
@@ -214,10 +220,10 @@ class EmbeddedChannels:
         # For each vpoint, see from which to which cell it goes. This is done by
         # going a bit before and after the vpoint and using the cell_tree.
         pnt_a = pygeos.line_interpolate_point(
-            self.channels.the_geom[self.vpoint_ch_idx], self.vpoint_s - VPOINT_EPSILON
+            self.objects.the_geom[self.vpoint_ch_idx], self.vpoint_s - VPOINT_EPSILON
         )
         pnt_b = pygeos.line_interpolate_point(
-            self.channels.the_geom[self.vpoint_ch_idx], self.vpoint_s + VPOINT_EPSILON
+            self.objects.the_geom[self.vpoint_ch_idx], self.vpoint_s + VPOINT_EPSILON
         )
         vp_idx_a, cell_idx_a = cell_tree.query_bulk(pnt_a)
         vp_idx_b, cell_idx_b = cell_tree.query_bulk(pnt_b)
@@ -256,7 +262,7 @@ class EmbeddedChannels:
         return copy.delete(line_too_short)
 
     def fix_zero_points(self):
-        """Add a velocity point for channels without any"""
+        """Add a velocity point for objects without any"""
         ch_no_lines = np.where(self.counts == 0)[0]
         if len(ch_no_lines) == 0:
             return self
@@ -264,7 +270,7 @@ class EmbeddedChannels:
         insert_where = np.searchsorted(self.vpoint_ch_idx, ch_no_lines)
         return self.insert(
             insert_where,
-            vpoint_s=0.5 * pygeos.length(self.channels.the_geom[ch_no_lines]),
+            vpoint_s=0.5 * pygeos.length(self.objects.the_geom[ch_no_lines]),
             vpoint_ch_idx=ch_no_lines,
         )
 
@@ -338,52 +344,37 @@ class EmbeddedChannels:
         return cell_idx_a, cell_idx_b
 
 
-def embed_channels(
-    channels,
-    connection_nodes,
+def embed_linear_objects(
+    objects,
     cell_tree,
+    embedded_cutoff_threshold,
     embedded_node_id_counter,
-    line_id_counter,
-    connection_node_offset=0,
-    embedded_cutoff_threshold=None,
 ):
-    """Create embedded nodes for channels
+    """Create embedded nodes for linear objects
 
-    All channels are expected to be of EMBEDDED calculation type.
+    All linear objects are expected to be of EMBEDDED calculation type.
     """
-    if len(channels) == 0:
-        return Nodes(id=[]), Lines(id=[])
+    if len(objects) == 0:
+        return Nodes(id=[]), np.empty((0,))
 
     if cell_tree is None or len(cell_tree) == 0:
         raise SchematisationError(
-            f"Channels {channels.id} have an embedded calculation type "
-            f"while there is no 2D domain."
+            f"{objects.__class__.__name__} {objects.id.tolist()} have an embedded "
+            f"calculation type while there is no 2D domain."
         )
 
-    embedded_channels = EmbeddedChannels.from_cell_tree(channels, cell_tree)
-    embedded_channels = embedded_channels.clean_vpoints_channel_ending()
-    embedded_channels = embedded_channels.sort()
-    embedded_channels.set_cell_ids(cell_tree)
-    embedded_channels = embedded_channels.clean_vpoints_not_crossing()
+    embedded_objects = EmbeddedObjects.from_cell_tree(objects, cell_tree)
+    embedded_objects = embedded_objects.clean_vpoints_channel_ending()
+    embedded_objects = embedded_objects.sort()
+    embedded_objects.set_cell_ids(cell_tree)
+    embedded_objects = embedded_objects.clean_vpoints_not_crossing()
     if embedded_cutoff_threshold:
-        embedded_channels = embedded_channels.merge_close_points(
+        embedded_objects = embedded_objects.merge_close_points(
             embedded_cutoff_threshold
         )
-    embedded_channels = embedded_channels.fix_zero_points()
+    embedded_objects = embedded_objects.fix_zero_points()
 
     # Now we create the virtual nodes
-    embedded_nodes = embedded_channels.get_nodes(embedded_node_id_counter)
-    # And construct the lines (also connecting to connection nodes)
-    lines = channels.get_lines(
-        connection_nodes,
-        None,
-        embedded_nodes,
-        line_id_counter,
-        connection_node_offset=connection_node_offset,
-        line_id_attr="embedded_in",  # take .embedded_in for filling lines.line
-    )
-    # Override the velocity point locations (the defaulted to the line midpoint, while
-    # for embedded channels we force them to the cell edges)
-    lines.s1d[:] = embedded_channels.vpoint_s
+    embedded_nodes = embedded_objects.get_nodes(embedded_node_id_counter)
 
-    return embedded_nodes, lines
+    return embedded_nodes, embedded_objects.vpoint_s
