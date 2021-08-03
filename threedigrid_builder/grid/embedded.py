@@ -90,6 +90,7 @@ def embed_channels(
     embedded_node_id_counter,
     line_id_counter,
     connection_node_offset=0,
+    embedded_cutoff_threshold=1e-7,
 ):
     """Create embedded nodes for channels
 
@@ -186,7 +187,27 @@ def embed_channels(
         line_ch_idx = np.delete(line_ch_idx, line_touches)
         line_cell_idx_a = np.delete(line_cell_idx_a, line_touches)
         line_cell_idx_b = np.delete(line_cell_idx_b, line_touches)
-    # 3) there is no velocity point (embedded channel completely in 1 cell)
+    # 3) velocity points are too close together
+    line_ds = np.diff(line_s)
+    line_too_short = (
+        np.where((line_ds < embedded_cutoff_threshold) & (np.diff(line_ch_idx) == 0))[0]
+        + 1
+    )
+    if len(line_too_short) > 0:
+        # get consecutive ranges of too short segments
+        _is_start = (line_too_short - np.roll(line_too_short, 1)) > 1
+        _is_start[0] = True
+        _first = line_too_short[_is_start] - 1
+        _last = line_too_short[np.roll(_is_start, -1)]
+        # fix the first of each consecutive range (change line_s and cell idx)
+        line_s[_first] = (line_s[_first] + line_s[_last]) / 2
+        line_cell_idx_b[_first] = line_cell_idx_b[_last]
+        # delete the non-first of each consecutive range
+        line_s = np.delete(line_s, line_too_short)
+        line_ch_idx = np.delete(line_ch_idx, line_too_short)
+        line_cell_idx_a = np.delete(line_cell_idx_a, line_too_short)
+        line_cell_idx_b = np.delete(line_cell_idx_b, line_too_short)
+    # 4) there is no velocity point (embedded channel completely in 1 cell)
     # --> add the velocity point halfway the channel (it is not at a cell edge)
     ch_n_segments = np.bincount(line_ch_idx, minlength=len(channels))
     ch_no_segments = np.where(ch_n_segments == 0)[0]

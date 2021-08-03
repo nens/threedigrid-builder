@@ -189,6 +189,8 @@ def test_embed_channels_multiple(grid2d, connection_nodes):
         ([(10, 2), (10, 5), (5, 5)], [4], []),  # start at edge
         ([(10, 2), (10, 5), (5, 5), (5, 15)], [13], []),  # start at edge - 0 - 2
         ([(10, 2), (10, 5), (5, 5), (5, 15), (15, 15)], [13, 23], [2]),
+        ([(5.6, 7), (10, 10.3), (15, 10.3)], [5.25], []),  # 0 to 3, 2 is below thresh
+        ([(5.6, 7), (10, 10.3), (14.4, 7)], [5.5], []),  # 0 to 1, 2&3 are below thresh
     ],
 )
 def test_embed_channel(grid2d, channel, lines_s1d, embedded_in, reverse):
@@ -217,6 +219,7 @@ def test_embed_channel(grid2d, channel, lines_s1d, embedded_in, reverse):
         count(2),
         count(3),
         connection_node_offset=10,
+        embedded_cutoff_threshold=1,
     )
 
     assert_array_equal(nodes.embedded_in, embedded_in)
