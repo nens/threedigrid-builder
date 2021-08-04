@@ -116,11 +116,12 @@ def connection_nodes():
 
 def test_embed_linear_objects_multiple(grid2d, connection_nodes):
     linear_objects = LinearObjects(
-        id=[0, 1, 2],
+        id=[0, 1, 2, 3],
         calculation_type=EMBEDDED,
         the_geom=[
             pygeos.linestrings([(1, 1), (15, 1)]),
             pygeos.linestrings([(11, 1), (15, 1)]),
+            pygeos.linestrings([(6, 7), (10, 10), (15, 10), (15, 15), (10, 15)]),
             pygeos.linestrings([(7, 2), (18, 2), (18, 9), (18, 18)]),
         ],
     )
@@ -134,12 +135,12 @@ def test_embed_linear_objects_multiple(grid2d, connection_nodes):
 
     assert_array_equal(nodes.id, [2])
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_WINDSHIELD)
-    assert_array_equal(nodes.content_pk, [2])
+    assert_array_equal(nodes.content_pk, [3])
     assert_array_equal(nodes.coordinates, [(18, 2)])
     assert_array_equal(nodes.calculation_type, EMBEDDED)
     assert_array_equal(nodes.s1d, [11])  # halfway the 2 velocity points (see below)
     assert_array_equal(nodes.embedded_in, [1])
-    assert_almost_equal(lines_s1d, [9, 2, 3, 19])
+    assert_almost_equal(lines_s1d, [9, 2, 5, 3, 19])
 
 
 @pytest.mark.parametrize("reverse", [False, True])
@@ -168,13 +169,14 @@ def test_embed_linear_objects_multiple(grid2d, connection_nodes):
         ([(12, 7), (6, 7), (10, 4), (6, 1)], [2], []),  # 2 - 0 - touch 1
         ([(6, 1), (10, 4), (6, 7), (12, 7)], [14], []),  # 0 - touch 1 - 2
         ([(1, 5), (1, 14), (4, 10), (7, 14), (7, 5)], [5, 23], [2]),  # M (0 - 2)
-        ([(5, 2), (10, 2), (10, 8), (5, 8)], [8], []),  # 0 - along edge - 0
-        ([(5, 2), (10, 2), (10, 8), (15, 8)], [8], []),  # 0 - along edge - 1
-        ([(5, 2), (10, 2), (10, 14), (14, 14)], [11], []),  # 0 - along edge - 2
-        ([(5, 2), (10, 2), (10, 10), (8, 10), (8, 8)], [8.5], []),
-        ([(10, 2), (10, 5), (5, 5)], [4], []),  # start at edge
-        ([(10, 2), (10, 5), (5, 5), (5, 15)], [13], []),  # start at edge - 0 - 2
-        ([(10, 2), (10, 5), (5, 5), (5, 15), (15, 15)], [13, 23], [2]),
+        ([(5, 2), (10, 2), (10, 8), (5, 8)], None, []),  # 0 - along edge - 0
+        ([(5, 2), (10, 2), (10, 8), (15, 8)], None, []),  # 0 - along edge - 1
+        ([(5, 2), (10, 2), (10, 14), (14, 14)], None, []),  # 0 - along edge - 2
+        ([(5, 2), (10, 2), (10, 10), (8, 10), (8, 8)], None, []),
+        ([(10, 2), (10, 5), (5, 5)], None, []),  # start at edge
+        ([(10, 2), (10, 5), (5, 5), (5, 15)], None, []),  # start at edge - 0 - 2
+        ([(10, 2), (10, 5), (5, 5), (5, 15), (15, 15)], None, [2]),
+        ([(5, 5), (5, 10), (7, 10), (7, 15), (10, 15), (10, 17), (15, 17)], None, [2]),
         ([(5.6, 7), (10, 10.3), (15, 10.3)], [5.25], []),  # 0 to 3, 2 is below thresh
         ([(5.6, 7), (10, 10.3), (14.4, 7)], [5.5], []),  # 0 to 1, 2&3 are below thresh
     ],
@@ -183,7 +185,8 @@ def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
     if reverse:
         geometry = geometry[::-1]
         embedded_in = embedded_in[::-1]
-        lines_s1d = pygeos.length(pygeos.linestrings(geometry)) - lines_s1d[::-1]
+        if lines_s1d is not None:
+            lines_s1d = pygeos.length(pygeos.linestrings(geometry)) - lines_s1d[::-1]
 
     linear_objects = LinearObjects(
         id=[0],
@@ -199,4 +202,5 @@ def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
     )
 
     assert_array_equal(nodes.embedded_in, embedded_in)
-    assert_almost_equal(actual_lines_s1d, lines_s1d)
+    if lines_s1d is not None:
+        assert_almost_equal(actual_lines_s1d, lines_s1d)

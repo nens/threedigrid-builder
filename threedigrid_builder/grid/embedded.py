@@ -1,4 +1,6 @@
 from .linear import counts_to_ranges
+from collections import defaultdict
+from collections import deque
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -284,7 +286,7 @@ class EmbeddedObjects:
             cell_idx_b (ndarray of int): index of the cell after the velocity point
 
         Returns:
-            tuple of cell_idx_a, cell_idx_b with precisly 2 cell ids per velocity point
+            tuple of cell_idx_a, cell_idx_b, each with same length as self.vpoint_s
 
         Example:
             There is a channel that goes from cell 6 to the edge between 6 and 8 and
@@ -302,45 +304,71 @@ class EmbeddedObjects:
             >>> vpoint_idx_b, cell_idx_b = [0], [8]
 
         Notes:
-            In general we can have lines that are
-            - n -> ? (type X), ? -> n (type Y), ? -> ? (type Z)
-            Theoretically you would expect first X, then 0-x times Z, then Y.
-
-            This method does the following:
-            1. Fix all lines of type X by finding the next Y and merging with that
-            2. Remove all lines of type Z en Y.
+            To solve this connectivity problem, we recast the data structure into a
+            directed graph containing both the cells and the velocity points. A standard
+            shortest path algorithm is then used to get the path that crosses the
+            least amount of cells.
         """
-        if len(cell_idx_a) == len(self.vpoint_s) and len(cell_idx_b) == len(
-            self.vpoint_s
-        ):
+        n_vpoints = len(self.vpoint_s)
+        if len(cell_idx_a) == n_vpoints and len(cell_idx_b) == n_vpoints:
             return cell_idx_a, cell_idx_b
 
-        type_yz = np.where(np.bincount(vpoint_idx_a) > 1)[0]
-        type_xz = np.where(np.bincount(vpoint_idx_b) > 1)[0]
-        type_y = np.setdiff1d(type_yz, type_xz)
-        type_x = np.setdiff1d(type_xz, type_yz)
-        for i in type_x:
-            to_fix = np.where(vpoint_idx_b == i)[0]
-            for j in itertools.count(i + 1):
-                if (
-                    j >= len(self.vpoint_s)
-                    or self.vpoint_ch_idx[i] != self.vpoint_ch_idx[j]
-                ):
-                    # This is a type x crossing without a type Y afterwards. This could
-                    # happen when the channel end is on the cell edge. Ignore this
-                    # crossing.
-                    type_yz = np.append(type_yz, i)
-                    break
-                if j in type_y:
-                    cell_idx_b[to_fix[0]] = cell_idx_b[vpoint_idx_b == j]
-                    vpoint_idx_b[to_fix[1:]] = j  # so that this is deleted later
-                    self.vpoint_s[i] = 0.5 * (self.vpoint_s[i] + self.vpoint_s[j])
-                    break
+        # Check which vpoints could have multiple cell transitions
+        vpoint_has_mult_a = np.bincount(vpoint_idx_a, minlength=n_vpoints) > 1
+        vpoint_has_mult_b = np.bincount(vpoint_idx_b, minlength=n_vpoints) > 1
+        mult_vpoint_idx = np.where(vpoint_has_mult_a | vpoint_has_mult_b)[0]
+        mult_ch_idx = self.vpoint_ch_idx[mult_vpoint_idx]
 
-        self.vpoint_s = np.delete(self.vpoint_s, type_yz)
-        self.vpoint_ch_idx = np.delete(self.vpoint_ch_idx, type_yz)
-        cell_idx_a = cell_idx_a[~np.isin(vpoint_idx_a, type_yz)]
-        cell_idx_b = cell_idx_b[~np.isin(vpoint_idx_b, type_yz)]
+        # List consecutive ranges of vpoints with multiple cell transitions
+        is_first = ((mult_vpoint_idx - np.roll(mult_vpoint_idx, 1)) > 1) | (
+            mult_ch_idx != np.roll(mult_ch_idx, 1)
+        )
+        is_first[0] = True
+        is_last = np.roll(is_first, -1)
+
+        # Iterate over consecutive ranges (and keep a global mask of vpoints to keep)
+        vpoints_to_keep = np.ones(n_vpoints, dtype=bool)
+        for (_first, _last) in zip(mult_vpoint_idx[is_first], mult_vpoint_idx[is_last]):
+            vpoints_to_keep[_first : _last + 1] = False
+
+            # Construct the graph (e.g. {"c2": ["v1", "v2"], "v2": ["c1"], ...}
+            graph = defaultdict(list)
+            mask_a = np.where((vpoint_idx_a >= _first) & (vpoint_idx_a <= _last))[0]
+            for (vpoint_idx, cell_idx) in zip(vpoint_idx_a[mask_a], cell_idx_a[mask_a]):
+                graph[f"c{cell_idx}"].append(f"v{vpoint_idx}")
+            mask_b = np.where((vpoint_idx_b >= _first) & (vpoint_idx_b <= _last))[0]
+            for (vpoint_idx, cell_idx) in zip(vpoint_idx_b[mask_b], cell_idx_b[mask_b]):
+                graph[f"v{vpoint_idx}"].append(f"c{cell_idx}")
+
+            # Get the shortest path (e.g. ['c2', 'v2', 'c1'])
+            # Note: There could be multiple cell options to start/end with, loop over
+            # combinations and take the shortest outcome.
+            path = None
+            for a, b in itertools.product(
+                cell_idx_a[vpoint_idx_a == _first], cell_idx_b[vpoint_idx_b == _last]
+            ):
+                _path = shortest_path(graph, f"c{a}", f"c{b}")
+                if path is None or len(_path) < len(path):
+                    path = _path
+            n_links = int(len(path) / 2)  # len(path) is always odd, but int() floors
+
+            # Reduce the size of cell_idx_a/b, vpoint_idx_a/b
+            vpoint_idx_a = np.delete(vpoint_idx_a, mask_a[n_links:])
+            cell_idx_a = np.delete(cell_idx_a, mask_a[n_links:])
+            vpoint_idx_b = np.delete(vpoint_idx_b, mask_b[n_links:])
+            cell_idx_b = np.delete(cell_idx_b, mask_b[n_links:])
+
+            # Overwrite the cell_idx_a/b, vpoint_idx_a/b to connect the right cells
+            for i in range(n_links):
+                vpoint = int(path[2 * i + 1][1:])
+                vpoints_to_keep[vpoint] = True
+                vpoint_idx_a[mask_a[i]] = vpoint
+                cell_idx_a[mask_a[i]] = int(path[2 * i][1:])
+                vpoint_idx_b[mask_b[i]] = vpoint
+                cell_idx_b[mask_b[i]] = int(path[2 * i + 2][1:])
+
+        self.vpoint_s = self.vpoint_s[vpoints_to_keep]
+        self.vpoint_ch_idx = self.vpoint_ch_idx[vpoints_to_keep]
         return cell_idx_a, cell_idx_b
 
 
@@ -378,3 +406,36 @@ def embed_linear_objects(
     embedded_nodes = embedded_objects.get_nodes(embedded_node_id_counter)
 
     return embedded_nodes, embedded_objects.vpoint_s
+
+
+def _bfs(graph, start):
+    """See shortest_path"""
+    queue, enqueued = deque([(None, start)]), set([start])
+    while queue:
+        parent, n = queue.popleft()
+        yield parent, n
+        new = set(graph[n]) - enqueued
+        enqueued |= new
+        queue.extend([(n, child) for child in new])
+
+
+def shortest_path(graph, start, end):
+    """Find the shortest path in a directed graph using Breath First Search (BFS)
+
+    Source:
+       https://code.activestate.com/recipes/576675/, August 2021, MIT Licensed
+    """
+    if start == end:
+        return [start]
+    parents = {}
+    for parent, child in _bfs(graph, start):
+        parents[child] = parent
+        if child == end:
+            revpath = [end]
+            while True:
+                parent = parents[child]
+                revpath.append(parent)
+                if parent == start:
+                    break
+                child = parent
+            return list(reversed(revpath))
