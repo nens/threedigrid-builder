@@ -259,7 +259,7 @@ class EmbeddedObjects:
         # Adjust the first of each consecutive range (change vpoint_s and vpoint_line)
         copy = self[:]
         copy.vpoint_s[_first] = (copy.vpoint_s[_first] + copy.vpoint_s[_last]) / 2
-        copy.vpoint_line[1][_first] = copy.vpoint_line[0][_last]
+        copy.vpoint_line[1, _first] = copy.vpoint_line[1, _last]
         # Delete the rest
         return copy.delete(line_too_short)
 

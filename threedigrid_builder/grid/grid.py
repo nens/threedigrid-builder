@@ -309,9 +309,10 @@ class Grid:
             # Override the velocity point locations (the defaulted to the line midpoint,
             # while for embedded objects we force them to the cell edges)
             lines_embedded.s1d[:] = lines_s1d
-            return cls(nodes, lines + lines_embedded, nodes_embedded=nodes_embedded)
-        else:
-            return cls(nodes, lines)
+            lines += lines_embedded
+            # Later gridbuilder functions expect ordering by content_pk
+            lines.reorder_by("content_pk")
+        return cls(nodes, lines, nodes_embedded=nodes_embedded)
 
     def set_channel_weights(self, locations, definitions, channels):
         """Set cross section weights to channel nodes and lines.
