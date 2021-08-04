@@ -200,10 +200,10 @@ def test_concatenate_inplace():
 
 
 def test_reorder_by():
-    records = Records(id=[5, 7], number=[2, 3])
-    records.reorder_by([1, 0])
+    records = Records(id=[5, 7], number=[3, 2])
+    records.reorder_by("number")
 
-    assert_equal(records.number, [3, 2])  # reordered
+    assert_equal(records.number, [2, 3])  # reordered
     assert_equal(records.id, [5, 7])  # kept the same
 
 

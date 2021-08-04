@@ -129,7 +129,7 @@ def h5_out():
         ("zoom_category", (4,), "int32"),
         ("code", (4,), "|S32"),  # added
         ("dmax", (4,), "float64"),  # added
-        ("ds1d", (4,), "float64"),  # added
+        ("s1d", (4,), "float64"),  # added
         ("embedded_in", (4,), "int32"),  # added
     ],
 )
@@ -166,7 +166,7 @@ def test_write_nodes(h5_out, dataset, shape, dtype):
         ("zoom_category", (3,), "int32"),
         ("code", (3,), "|S32"),  # added
         ("dmax", (3,), "float64"),  # added
-        ("ds1d", (3,), "float64"),  # added
+        ("s1d", (3,), "float64"),  # added
         ("embedded_in", (3,), "int32"),  # added
     ],
 )
@@ -212,6 +212,7 @@ def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
         ("sewerage", (6,), "int32"),
         ("sewerage_type", (6,), "int32"),
         ("zoom_category", (6,), "int32"),
+        ("s1d", (6,), "float64"),  # added
         ("ds1d", (6,), "float64"),  # added
         ("dpumax", (6,), "float64"),  # added
         ("flod", (6,), "float64"),  # added

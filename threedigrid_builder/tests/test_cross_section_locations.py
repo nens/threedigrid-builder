@@ -46,7 +46,7 @@ def channel_lines():
         id=[0, 1, 2, 3, 4, 5, 6],
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=[51, 52, 53, 53, 53, 54, 54],
-        ds1d=[3, 5, 11, 11, 11, 7, 7],
+        s1d=[3, 5, 11, 11, 11, 7, 7],
         line=[(0, 1), (0, 2), (0, 3), (3, 4), (4, 5), (0, 6), (6, 7)],
         dpumax=[3.0, 3.0, 0, 0, 0, 0, 0],
     )
@@ -90,7 +90,7 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     expected_weight = [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
 
     cross_loc1, cross_loc2, cross_weights = compute_weights(
-        channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
+        channel_lines.content_pk, channel_lines.s1d, cross_section_locations, channels
     )
 
     assert_equal(cross_loc1, expected_cross_loc1)
@@ -103,7 +103,7 @@ def test_compute_bottom_level(cross_section_locations, channels, channel_lines):
     expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
 
     actual = compute_bottom_level(
-        channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
+        channel_lines.content_pk, channel_lines.s1d, cross_section_locations, channels
     )
 
     assert_almost_equal(actual, expected)
@@ -112,7 +112,7 @@ def test_compute_bottom_level(cross_section_locations, channels, channel_lines):
 @pytest.fixture
 def channel_lines_with_weights(channel_lines, cross_section_locations, channels):
     cross_loc1, cross_loc2, cross_weight = compute_weights(
-        channel_lines.content_pk, channel_lines.ds1d, cross_section_locations, channels
+        channel_lines.content_pk, channel_lines.s1d, cross_section_locations, channels
     )
     channel_lines.cross_loc1[:] = cross_loc1
     channel_lines.cross_loc2[:] = cross_loc2

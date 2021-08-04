@@ -176,9 +176,11 @@ def test_line_substring_two(two_lines):
 
 
 def test_line_substring_many(random_lines):
-    nodes, node_idx, _ = linear.segmentize(random_lines, 1.0)
+    nodes, node_idx, dist_to_start = linear.segmentize(random_lines, 1.0)
     segment_counts = np.bincount(node_idx, minlength=len(random_lines)) + 1
-    start, end, segment_idx = linear.segment_start_end(random_lines, segment_counts)
+    start, end, segment_idx = linear.segment_start_end(
+        random_lines, segment_counts, dist_to_start
+    )
     segments = linear.line_substring(random_lines, start, end, segment_idx)
 
     # the length of each line segment should equal the line length / number of segments
@@ -242,7 +244,7 @@ def test_interpolate_nodes_one_linear_object(dist, expected, one_linear_object):
     assert_array_equal(nodes.calculation_type, 2)
 
     expected_size = 12.0 / (len(expected) + 1)
-    assert_array_equal(nodes.ds1d, np.arange(1, len(expected) + 1) * expected_size)
+    assert_array_equal(nodes.s1d, np.arange(1, len(expected) + 1) * expected_size)
 
 
 def test_interpolate_nodes_two_linear_objects(two_linear_objects):
@@ -260,8 +262,23 @@ def test_interpolate_nodes_two_linear_objects(two_linear_objects):
     assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
 
 
+def test_interpolate_nodes_skips_embedded(two_linear_objects):
+    two_linear_objects.calculation_type[0] = CalculationType.EMBEDDED
+    nodes = two_linear_objects.interpolate_nodes(
+        itertools.count(start=2), global_dist_calc_points=50.0
+    )
+
+    assert_array_equal(nodes.coordinates, [(0, 50), (0, 100), (50, 100)])
+    assert_array_equal(nodes.content_pk, 2)
+    assert_array_equal(nodes.calculation_type, 1)
+
+
 def test_get_lines(connection_nodes, two_linear_objects, definitions):
-    nodes = Nodes(id=[10, 11, 12], content_pk=[1, 2, 2])
+    nodes = Nodes(
+        id=[10, 11, 12],
+        content_pk=[1, 2, 2],
+        s1d=[10.0, 50.0, 150.0],  # segments are not precisely the same size!
+    )
 
     lines = two_linear_objects.get_lines(
         connection_nodes,
@@ -272,7 +289,8 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     )
 
     expected_line = [(100, 10), (10, 103), (101, 11), (11, 12), (12, 102)]
-    expected_sizes = [20.0 / 2.0] * 2 + [200.0 / 3.0] * 3
+    expected_centers = [5.0, 15.0, 25.0, 100.0, 175.0]
+    expected_sizes = [10.0, 10.0, 50.0, 100.0, 50.0]
 
     assert_array_equal(lines.id, range(5))
     assert_array_equal(lines.line, expected_line)
@@ -282,8 +300,58 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_array_equal(lines.cross1, [0, 0, 1, 1, 1])
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, 1.0)
+    assert_almost_equal(lines.s1d, expected_centers)
     assert_almost_equal(lines.ds1d, expected_sizes)
     assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
+
+
+def test_get_lines_embedded_mode(connection_nodes, two_linear_objects, definitions):
+    nodes = Nodes(
+        id=[10, 11, 12],
+        content_pk=[1, 2, 2],
+        s1d=[0.1] * 3,  # anything that isn't NaN
+        embedded_in=[5, 4, 1],
+    )
+
+    two_linear_objects.calculation_type[:] = CalculationType.EMBEDDED
+    lines = two_linear_objects.get_lines(
+        connection_nodes,
+        definitions,
+        nodes,
+        itertools.count(start=0),
+        connection_node_offset=100,
+        embedded_mode=True,
+    )
+
+    assert_array_equal(lines.line, [(100, 5), (5, 103), (101, 4), (4, 1), (1, 102)])
+
+
+def test_get_lines_non_embedded_mode_skips(connection_nodes, two_linear_objects):
+    # embedded linear objects are skipped
+    two_linear_objects.calculation_type[1] = CalculationType.EMBEDDED
+    lines = two_linear_objects.get_lines(
+        connection_nodes,
+        None,
+        Nodes(id=[]),
+        itertools.count(start=0),
+        connection_node_offset=100,
+        embedded_mode=False,
+    )
+    assert_array_equal(lines.line, [(100, 103)])
+
+
+def test_get_lines_embedded_mode_skips(connection_nodes, two_linear_objects):
+    # non-embedded linear objects are skipped
+    two_linear_objects.calculation_type[1] = CalculationType.EMBEDDED
+    lines = two_linear_objects.get_lines(
+        connection_nodes,
+        None,
+        Nodes(id=[]),
+        itertools.count(start=0),
+        connection_node_offset=100,
+        embedded_mode=True,
+    )
+    assert_array_equal(lines.line, [(101, 102)])
 
 
 @pytest.mark.parametrize(
@@ -297,7 +365,11 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
 def test_get_lines_one_linear_object(
     linear_object_idx, expected, connection_nodes, one_linear_object
 ):
-    nodes = Nodes(id=range(4, 4 + len(linear_object_idx)), content_pk=linear_object_idx)
+    nodes = Nodes(
+        id=range(4, 4 + len(linear_object_idx)),
+        content_pk=linear_object_idx,
+        s1d=[0.1] * (len(linear_object_idx)),  # some number, doesn't matter
+    )
     lines = one_linear_object.get_lines(
         connection_nodes, None, nodes, itertools.count(start=0)
     )
@@ -320,7 +392,11 @@ def test_get_lines_one_linear_object(
 def test_get_lines_two_linear_objects(
     linear_object_idx, expected, connection_nodes, two_linear_objects
 ):
-    nodes = Nodes(id=range(4, 4 + len(linear_object_idx)), content_pk=linear_object_idx)
+    nodes = Nodes(
+        id=range(4, 4 + len(linear_object_idx)),
+        content_pk=linear_object_idx,
+        s1d=[0.1] * (len(linear_object_idx)),  # some number, doesn't matter
+    )
 
     lines = two_linear_objects.get_lines(
         connection_nodes, None, nodes, itertools.count(start=0)

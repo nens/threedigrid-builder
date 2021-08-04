@@ -232,7 +232,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "nodn", nodes.nodn)
         self.write_dataset(group, "storage_area", nodes.storage_area)
         self.write_dataset(group, "dmax", nodes.dmax)
-        self.write_dataset(group, "ds1d", nodes.ds1d)
+        self.write_dataset(group, "s1d", nodes.s1d)
         self.write_dataset(group, "embedded_in", nodes.embedded_in + 1)
 
         # content pk is only set for connection nodes, otherwise 0
@@ -322,6 +322,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "calculation_type", calculation_type)
         self.write_dataset(group, "line", lines.line.T + 1)
         self.write_dataset(group, "cross_pix_coords", lines.cross_pix_coords.T)
+        self.write_dataset(group, "s1d", lines.s1d)
         self.write_dataset(group, "ds1d", lines.ds1d)
         self.write_dataset(group, "lik", lines.lik)
         self.write_dataset(group, "lim", lines.lim)

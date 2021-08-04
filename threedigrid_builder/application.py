@@ -42,6 +42,7 @@ def _make_gridadmin(
 
     node_id_counter = itertools.count()
     line_id_counter = itertools.count()
+    embedded_node_id_counter = itertools.count()
 
     settings = db.get_settings()
     grid = Grid.from_meta(**settings, **(meta or {}))
@@ -81,11 +82,15 @@ def _make_gridadmin(
         grid += cn_grid
 
         channels = db.get_channels()
-        grid += Grid.from_channels(
+        grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
-            channels=channels,
+            objects=channels,
+            definitions=None,
+            cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
+            embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
             node_id_counter=node_id_counter,
+            embedded_node_id_counter=embedded_node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
@@ -95,27 +100,40 @@ def _make_gridadmin(
         grid.set_channel_weights(locations, definitions, channels)
 
         pipes = db.get_pipes()
-        grid += Grid.from_pipes(
+        grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
+            objects=pipes,
             definitions=definitions,
-            pipes=pipes,
+            cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
+            embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
             node_id_counter=node_id_counter,
+            embedded_node_id_counter=embedded_node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
 
         culverts = db.get_culverts()
+        grid += Grid.from_linear_objects(
+            connection_nodes=connection_nodes,
+            objects=culverts,
+            definitions=definitions,
+            cell_tree=grid.cell_tree if grid_settings.use_2d else None,
+            global_dist_calc_points=grid_settings.dist_calc_points,
+            embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
+            node_id_counter=node_id_counter,
+            embedded_node_id_counter=embedded_node_id_counter,
+            line_id_counter=line_id_counter,
+            connection_node_offset=connection_node_first_id,
+        )
+
         weirs = db.get_weirs()
         orifices = db.get_orifices()
         grid += grid.from_structures(
             connection_nodes=connection_nodes,
-            culverts=culverts,
             weirs=weirs,
             orifices=orifices,
             definitions=definitions,
-            global_dist_calc_points=grid_settings.dist_calc_points,
-            node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
@@ -127,7 +145,7 @@ def _make_gridadmin(
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
-        grid.embed_nodes()
+        grid.embed_nodes(embedded_node_id_counter)
         grid.add_1d2d(
             connection_nodes=connection_nodes,
             channels=channels,

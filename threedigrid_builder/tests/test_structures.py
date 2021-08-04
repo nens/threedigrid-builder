@@ -126,7 +126,7 @@ def test_culverts_1d2d_properties(culverts):
     nodes = Nodes(
         id=[0, 2, 5, 7],
         content_pk=[1, 1, 2, 2],
-        ds1d=[12.0, 13.0, 14.0, 15.0],
+        s1d=[12.0, 13.0, 14.0, 15.0],
     )
     node_idx = [0, 1, 3]
 
@@ -140,7 +140,7 @@ def test_culverts_1d2d_properties(culverts):
 
         _, kwargs = compute_drain_level.call_args
         assert_array_equal(kwargs["ids"], [1, 1, 2])  # the content pk
-        assert_array_equal(kwargs["ds"], [12.0, 13.0, 15.0])  # the ds1d
+        assert_array_equal(kwargs["ds"], [12.0, 13.0, 15.0])  # the s1d
         assert kwargs["connection_nodes"] is connection_nodes
 
     # culverts are closed

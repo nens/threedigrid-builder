@@ -7,7 +7,14 @@ Changelog of threedigrid-builder
 - Handle embedded connection nodes. These are removed from the grid and written to a
   new dataset "nodes_embedded".
 
+- Handle embedded channels, pipes and culverts. Embedded objects result in
+  embedded nodes and and lines with kcu LINE_1D_EMBEDDED between between 2D cells.
+
 - Fixed a bug with lines that connect nodes to themselves in quadtree generation.
+
+- Fixed a bug with wrong usage of lines.ds1d in bottom level and cross section weights
+  computation. The added attribute lines.s1d is now used, and for clarity nodes.ds1d
+  was renamed to nodes.s1d.
 
 
 0.3.0 (2021-07-28)

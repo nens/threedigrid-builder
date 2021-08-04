@@ -1,7 +1,7 @@
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import linear
 
 import itertools
 import numpy as np
@@ -59,33 +59,51 @@ class BaseLinear:
             - content_pk: the id of the linear object from which the node originates
             - node_type: NodeType.NODE_1D_NO_STORAGE
             - calculation_type: the calculation type copied from the linear object
-            - ds1d: distance (along the linestring) to the start of the linestring
+            - s1d: distance (along the linestring) to the start of the linestring
             The nodes are ordered by content_pk and then by position on the linestring.
         """
+        # Do not add nodes for embedded objects
+        not_embedded = self.calculation_type != CalculationType.EMBEDDED
+        if np.all(not_embedded):
+            not_embedded = slice(None)  # faster than bool mask
+
         if pygeos.is_missing(self.the_geom).any():
             raise ValueError(
                 f"{self.__class__.__name__} encountered without a geometry."
             )
 
         # insert default dist_calc_points where necessary
-        dists = self.dist_calc_points.copy()  # copy because of inplace edits
+        dists = self.dist_calc_points[not_embedded].copy()
         dists[~np.isfinite(dists)] = global_dist_calc_points
         dists[dists <= 0] = global_dist_calc_points
 
         # interpolate the node geometries
-        points, index, dist_to_start = linear.segmentize(self.the_geom, dists)
+        points, index, dist_to_start = segmentize(self.the_geom[not_embedded], dists)
 
         # construct the nodes with available attributes
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points),
             content_type=self.content_type,
-            content_pk=self.index_to_id(index),
+            content_pk=self.id[not_embedded][index],
             node_type=NodeType.NODE_1D_NO_STORAGE,
-            calculation_type=self.calculation_type[index],
-            ds1d=dist_to_start,
+            calculation_type=self.calculation_type[not_embedded][index],
+            s1d=dist_to_start,
         )
         return nodes
+
+    def get_embedded(
+        self, cell_tree, embedded_cutoff_threshold, embedded_node_id_counter
+    ):
+        """"""
+        from threedigrid_builder.grid import embed_linear_objects
+
+        return embed_linear_objects(
+            self[self.calculation_type == CalculationType.EMBEDDED],
+            cell_tree,
+            embedded_cutoff_threshold,
+            embedded_node_id_counter,
+        )
 
     def get_lines(
         self,
@@ -94,6 +112,7 @@ class BaseLinear:
         nodes,
         line_id_counter,
         connection_node_offset=0,
+        embedded_mode=False,
     ):
         """Compute the grid lines for the linear objects.
 
@@ -112,12 +131,15 @@ class BaseLinear:
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
+            embedded_mode (bool): whether to get lines for embedded objects
+              if embedded_mode is true, the line.line come from node.embedded_in
 
         Returns:
             Lines with data in the following columns:
             - id: counter generated from line_id_counter
-            - line: 2 node ids per line
+            - line: 2 node ids per line (or a different attribute, see line_id_attr)
             - content_pk: the id of the linear from which this line originates
+            - s1d: the positon of the line center along the linear object
             - ds1d: the arclength of the line
             - kcu: the calculation_type of the linear object
             - line_geometries: the linestrings (segments of self.the_geom)
@@ -125,44 +147,49 @@ class BaseLinear:
             - cross_weight: 1.0 (which means that cross2 should be ignored)
             The lines are ordered by content_pk and then by position on the linestring.
         """
+        if embedded_mode:
+            objs = self[self.calculation_type == CalculationType.EMBEDDED]
+        else:
+            objs = self[self.calculation_type != CalculationType.EMBEDDED]
+
         # count the number of segments per object
-        node_line_idx = self.id_to_index(nodes.content_pk)
-        segment_counts = np.bincount(node_line_idx, minlength=len(self)) + 1
+        node_line_idx = objs.id_to_index(nodes.content_pk)
+        segment_counts = np.bincount(node_line_idx, minlength=len(objs)) + 1
 
         # cut the channel geometries into segment geometries
-        start_s, end_s, segment_idx = linear.segment_start_end(
-            self.the_geom, segment_counts
+        start_s, end_s, segment_idx = segment_start_end(
+            objs.the_geom, segment_counts, nodes.s1d
         )
-        segments = linear.line_substring(self.the_geom, start_s, end_s, segment_idx)
+        segments = line_substring(objs.the_geom, start_s, end_s, segment_idx)
 
         # set the right node indices for each segment
-        first_idx, last_idx = linear.counts_to_ranges(segment_counts)
+        first_idx, last_idx = counts_to_ranges(segment_counts)
         last_idx -= 1  # convert slice end into last index
         line = np.full((len(segments), 2), -9999, dtype=np.int32)
 
         # convert connection_node_start_id to index and put it at first segments' start
         line[first_idx, 0] = (
-            connection_nodes.id_to_index(self.connection_node_start_id)
+            connection_nodes.id_to_index(objs.connection_node_start_id)
             + connection_node_offset
         )
         # convert connection_node_end_id to index and put it at last segments' end
         line[last_idx, 1] = (
-            connection_nodes.id_to_index(self.connection_node_end_id)
+            connection_nodes.id_to_index(objs.connection_node_end_id)
             + connection_node_offset
         )
         # set node indices to line start where segment start is not a conn. node
         mask = np.ones(len(segments), dtype=bool)
         mask[first_idx] = False
-        line[mask, 0] = nodes.id
+        line[mask, 0] = nodes.id if not embedded_mode else nodes.embedded_in
         # set node indices to line end where segment end is not a conn. node
         mask = np.ones(len(segments), dtype=bool)
         mask[last_idx] = False
-        line[mask, 1] = nodes.id
+        line[mask, 1] = nodes.id if not embedded_mode else nodes.embedded_in
 
         # conditionally add the cross section definition (for pipes and culverts only)
         try:
             cross1 = definitions.id_to_index(
-                self.cross_section_definition_id[segment_idx],
+                objs.cross_section_definition_id[segment_idx],
                 check_exists=True,
             )
             cross_weight = 1.0
@@ -175,10 +202,11 @@ class BaseLinear:
             id=itertools.islice(line_id_counter, len(segments)),
             line_geometries=segments,
             line=line,
-            content_type=self.content_type,
-            content_pk=self.id[segment_idx],
+            content_type=objs.content_type,
+            content_pk=objs.id[segment_idx],
+            s1d=(start_s + end_s) / 2,
             ds1d=end_s - start_s,
-            kcu=self.calculation_type[segment_idx],
+            kcu=objs.calculation_type[segment_idx],
             cross1=cross1,
             cross_weight=cross_weight,
         )
@@ -438,12 +466,15 @@ def line_substring(linestrings, start, end, index=None):
     return segments
 
 
-def segment_start_end(linestrings, segment_counts):
+def segment_start_end(linestrings, segment_counts, dist_to_start):
     """Utility function to use the output of segmentize as input of line_substrings.
 
     Args:
         linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
         segment_counts (ndarray of int): the number of segments per linestring
+        dist_to_start (ndarray of float): the location of added nodes, measured along
+          the linestring. The length of this array is such that:
+          ``len(linestrings) + len(dist_to_start) = segment_counts.sum()``
 
     Returns:
         tuple of:
@@ -451,12 +482,15 @@ def segment_start_end(linestrings, segment_counts):
         - segment_end (ndarray of float): The segment end, measured along the line.
         - segment_index (ndarray of int): Indices mapping segments to input linestrings.
     """
-    i = counts_to_row_index(segment_counts)  # e.g. [0, 0, 0, 1, 1, 3]
-    j = counts_to_column_index(segment_counts)  # e.g. [0, 1, 2, 0, 1, 0]
+    start_idx, last_idx = counts_to_ranges(segment_counts)
+    last_idx -= 1
 
-    lengths = pygeos.length(linestrings)
-    segment_size = lengths / segment_counts
-    mapped_segment_size = (segment_size)[i]
-    start = j * mapped_segment_size
-    end = start + mapped_segment_size
-    return start, end, i
+    start_s = np.full(segment_counts.sum(), np.nan)
+    end_s = np.full(segment_counts.sum(), np.nan)
+    # every first start_s is 0.0, the rest are added nodes with an s1d
+    start_s[start_idx] = 0.0
+    start_s[np.isnan(start_s)] = dist_to_start
+    # every last end_s equals to the length, the rest are added nodes with an s1d
+    end_s[last_idx] = pygeos.length(linestrings)
+    end_s[np.isnan(end_s)] = dist_to_start
+    return start_s, end_s, counts_to_row_index(segment_counts)

@@ -1,8 +1,8 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
+from . import embedded as embedded_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
-from .embedded import embed_nodes
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -234,22 +234,30 @@ class Grid:
         return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
 
     @classmethod
-    def from_channels(
+    def from_linear_objects(
         cls,
         connection_nodes,
-        channels,
+        objects,
+        definitions,
+        cell_tree,
         global_dist_calc_points,
+        embedded_cutoff_threshold,
         node_id_counter,
+        embedded_node_id_counter,
         line_id_counter,
         connection_node_offset=0,
     ):
-        """Construct a grid for the channels
+        """Construct a grid for linear objects (channels, pipes, culverts)
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
-            channels (Channels)
+            objects (Channels, Pipes, Culverts)
+            definitions (CrossSectionDefinitions): to map definition ids
+            cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
+            embedded_cutoff_threshold (float): The min length of an embedded line.
             node_id_counter (iterable): an iterable yielding integers
+            embedded_node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
@@ -258,28 +266,53 @@ class Grid:
             Grid with data in the following columns:
             - nodes.id: integer generated from node_id_counter
             - nodes.coordinates
-            - nodes.content_type: ContentType.TYPE_V2_CHANNEL
-            - nodes.content_pk: the id of the Channel from which this node originates
+            - nodes.content_type: depends on linear object type
+            - nodes.content_pk: the id of the object from which this node originates
             - nodes.node_type: NODE_1D_NO_STORAGE
-            - nodes.calculation_type: from the channel
+            - nodes.calculation_type: copied from the object
+            - nodes.s1d: the node's position along the channel
             - lines.id: integer generated from line_id_counter
-            - lines.line: lines between connection nodes and added channel
-              nodes. The indices are offset using the respective parameters.
-            - lines.content_type: ContentType.TYPE_V2_CHANNEL
-            - lines.content_pk: the id of the Channel from which this line originates
-            - lines.kcu: from the channel's calculation_type
+            - lines.line: lines between nodes (including connection nodes)
+            - lines.content_type: depends on linear object type
+            - lines.content_pk: the id of the object from which this line originates
+            - lines.kcu: from the object's calculation_type
             - lines.line_geometries: a segment of the channel geometry
+            - lines.ds1d: the length of the line
+            - lines.s1d: the position of the line's velocity point along the object
+            - lines.cross1: the cross section definition id of the line (pipe/culvert)
+            - lines.cross_weight: always 1.0 (pipe/culvert)
         """
-        not_embedded = channels[channels.calculation_type != CalculationType.EMBEDDED]
-        nodes = not_embedded.interpolate_nodes(node_id_counter, global_dist_calc_points)
-        lines = not_embedded.get_lines(
+        objects.set_geometries(connection_nodes)
+        nodes = objects.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        lines = objects.get_lines(
             connection_nodes,
-            None,
+            definitions,
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
         )
-        return cls(nodes, lines)
+        nodes_embedded, lines_s1d = objects.get_embedded(
+            cell_tree,
+            embedded_cutoff_threshold,
+            embedded_node_id_counter,
+        )
+        if len(lines_s1d) > 0:
+            # And construct the lines (also connecting to connection nodes)
+            lines_embedded = objects.get_lines(
+                connection_nodes,
+                definitions,
+                nodes_embedded,
+                line_id_counter,
+                connection_node_offset=connection_node_offset,
+                embedded_mode=True,
+            )
+            # Override the velocity point locations (the defaulted to the line midpoint,
+            # while for embedded objects we force them to the cell edges)
+            lines_embedded.s1d[:] = lines_s1d
+            lines += lines_embedded
+            # Later gridbuilder functions expect ordering by content_pk
+            lines.reorder_by("content_pk")
+        return cls(nodes, lines, nodes_embedded=nodes_embedded)
 
     def set_channel_weights(self, locations, definitions, channels):
         """Set cross section weights to channel nodes and lines.
@@ -296,7 +329,7 @@ class Grid:
         node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
         cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.nodes.content_pk[node_mask],
-            self.nodes.ds1d[node_mask],
+            self.nodes.s1d[node_mask],
             locations,
             channels,
         )
@@ -308,7 +341,7 @@ class Grid:
         line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
         cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
             self.lines.content_pk[line_mask],
-            self.lines.ds1d[line_mask],
+            self.lines.s1d[line_mask],
             locations,
             channels,
         )
@@ -327,75 +360,19 @@ class Grid:
         )
 
     @classmethod
-    def from_pipes(
-        cls,
-        connection_nodes,
-        pipes,
-        definitions,
-        global_dist_calc_points,
-        node_id_counter,
-        line_id_counter,
-        connection_node_offset=0,
-    ):
-        """Construct a grid for the pipes
-
-        Args:
-            connection_nodes (ConnectionNodes): used to map ids to indices
-            pipes (Pipes)
-            definitions (CrossSectionDefinitions): to map definition ids
-            global_dist_calc_points (float): Default node interdistance.
-            node_id_counter (iterable): an iterable yielding integers
-            line_id_counter (iterable): an iterable yielding integers
-            connection_node_offset (int): offset to give connection node
-              indices in the returned lines.line. Default 0.
-
-        Returns:
-            Grid with data in the following columns:
-            - nodes.id: integer generated from node_id_counter
-            - nodes.coordinates
-            - nodes.content_type: ContentType.TYPE_V2_PIPE
-            - nodes.content_pk: the id of the Pipe from which this node originates
-            - nodes.node_type: NODE_1D_NO_STORAGE
-            - nodes.calculation_type: from the pipe
-            - lines.id: integer generated from line_id_counter
-            - lines.line: lines between connection nodes and added pipe
-              nodes. The indices are offset using the respective parameters.
-            - lines.content_type: ContentType.TYPE_V2_PIPE
-            - lines.content_pk: the id of the Pipe from which this line originates
-            - lines.kcu: from the pipe's calculation_type
-            - lines.line_geometries: a segment of the pipe geometry
-            - lines.cross1: the index of the cross section definition
-            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
-        """
-        pipes.set_geometries(connection_nodes)
-        nodes = pipes.interpolate_nodes(node_id_counter, global_dist_calc_points)
-        lines = pipes.get_lines(
-            connection_nodes,
-            definitions,
-            nodes,
-            line_id_counter,
-            connection_node_offset=connection_node_offset,
-        )
-        return cls(nodes, lines)
-
-    @classmethod
     def from_structures(
         cls,
         connection_nodes,
-        culverts,
         weirs,
         orifices,
         definitions,
-        global_dist_calc_points,
-        node_id_counter,
         line_id_counter,
         connection_node_offset=0,
     ):
-        """Construct a grid for the culverts, weirs, and orifices
+        """Construct a grid for the weirs and orifices
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
-            culverts (Culverts)
             weirs (Weirs)
             orifices (Orifices)
             definitions (CrossSectionDefinitions)
@@ -419,26 +396,14 @@ class Grid:
             - lines.content_pk: the id of the object from which this line originates
             - lines.kcu: from the object's calculation_type
             - lines.line_geometries: a segment of the culvert's geometry or none
-            - lines.cross1: the index of the cross section definition
-            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
         """
-        culverts.set_geometries(connection_nodes)
-
-        nodes = culverts.interpolate_nodes(node_id_counter, global_dist_calc_points)
-        lines = culverts.get_lines(
-            connection_nodes,
-            definitions,
-            nodes,
-            line_id_counter,
-            connection_node_offset=connection_node_offset,
-        )
-        lines += weirs.get_lines(
+        lines = weirs.get_lines(
             connection_nodes, definitions, line_id_counter, connection_node_offset
         )
         lines += orifices.get_lines(
             connection_nodes, definitions, line_id_counter, connection_node_offset
         )
-        return cls(nodes, lines)
+        return cls(Nodes(id=[]), lines)
 
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
@@ -475,13 +440,13 @@ class Grid:
         # Pipes, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_PIPE
         self.nodes.dmax[mask] = pipes.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
+            self.nodes.content_pk[mask], self.nodes.s1d[mask]
         )
 
         # Culverts, interpolated nodes
         mask = self.nodes.content_type == ContentType.TYPE_V2_CULVERT
         self.nodes.dmax[mask] = culverts.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.ds1d[mask]
+            self.nodes.content_pk[mask], self.nodes.s1d[mask]
         )
 
         # Connection nodes: complex logic based on the connected objects
@@ -533,7 +498,7 @@ class Grid:
         # TODO Skip definitions that are not used (and remap cross1 and cross2)
         self.cross_sections = definitions.convert()
 
-    def embed_nodes(self):
+    def embed_nodes(self, embedded_node_id_counter):
         """Integrate embedded connection nodes into the 2D cells.
 
         grid.nodes_embedded will contain the removed (embedded) nodes.
@@ -542,7 +507,9 @@ class Grid:
         # original coordinate of the embedded nodes:
         self.lines.set_line_coords(self.nodes)
 
-        self.nodes_embedded = embed_nodes(self)
+        self.nodes_embedded += embedded_module.embed_nodes(
+            self, embedded_node_id_counter
+        )
 
     def add_1d2d(
         self, connection_nodes, channels, pipes, locations, culverts, line_id_counter

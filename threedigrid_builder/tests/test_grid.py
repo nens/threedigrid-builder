@@ -162,41 +162,6 @@ def test_concatenate_grid(grid2d, grid1d):
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)
 
 
-def test_from_channels():
-    connection_nodes = mock.Mock()
-    channels = mock.MagicMock()
-    counter = mock.Mock()
-    connection_node_offset = mock.Mock()
-    nodes = Nodes(id=[])
-    lines = Lines(id=[])
-
-    not_embedded = mock.Mock()
-    channels.__getitem__.return_value = not_embedded
-    not_embedded.interpolate_nodes.return_value = nodes
-    not_embedded.get_lines.return_value = lines
-    grid = Grid.from_channels(
-        connection_nodes,
-        channels,
-        global_dist_calc_points=100.0,
-        node_id_counter=counter,
-        line_id_counter=counter,
-        connection_node_offset=connection_node_offset,
-    )
-
-    assert isinstance(grid, Grid)
-    assert grid.nodes is nodes
-    assert grid.lines is lines
-
-    not_embedded.interpolate_nodes.assert_called_with(counter, 100.0)
-    not_embedded.get_lines.assert_called_with(
-        connection_nodes,
-        None,
-        nodes,
-        counter,
-        connection_node_offset=connection_node_offset,
-    )
-
-
 @mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")
 def test_set_channel_weights(compute_weights):
     # set an input grid and mock the compute_weights return value
@@ -204,13 +169,13 @@ def test_set_channel_weights(compute_weights):
         id=[1, 2, 3],
         content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
         content_pk=[1, 1, 3],
-        ds1d=[2.0, 12.0, 21.0],
+        s1d=[2.0, 12.0, 21.0],
     )
     lines = Lines(
         id=[1, 2, 3],
         content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
         content_pk=[1, 1, 3],
-        ds1d=[2.0, 12.0, 21.0],
+        s1d=[2.0, 12.0, 21.0],
     )
     grid = Grid(nodes=nodes, lines=lines)
     compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # csl1, csl2, weights
@@ -230,7 +195,7 @@ def test_set_channel_weights(compute_weights):
     assert compute_weights.call_count == 2
     args, kwargs = compute_weights.call_args
     assert_array_equal(args[0], [1, 3])  # channel_id
-    assert_array_equal(args[1], [2.0, 21.0])  # ds
+    assert_array_equal(args[1], [2.0, 21.0])  # s1d
     assert args[2] is locations
     assert args[3] is channels
 
@@ -271,7 +236,7 @@ def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
             ContentType.TYPE_V2_CULVERT,
         ],
         content_pk=[1, 1, 3, 2, 5],
-        ds1d=[2.0, 12.0, 21.0, 15.0, 0.5],
+        s1d=[2.0, 12.0, 21.0, 15.0, 0.5],
         dmax=[np.nan, 12.0, np.nan, np.nan, np.nan],
         cross_loc1=[5, -9999, 7, -9999, -9999],
         cross_loc2=[6, -9999, 8, -9999, -9999],
