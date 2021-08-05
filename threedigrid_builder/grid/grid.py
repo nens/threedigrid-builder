@@ -369,9 +369,7 @@ class Grid:
         """
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(
-        self, cross_section_locations, channels, pipes, weirs, orifices, culverts
-    ):
+    def set_bottom_levels(self):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         This assumes that the channel weights have been computed already.
@@ -387,8 +385,11 @@ class Grid:
         PI = ContentType.TYPE_V2_PIPE
         CV = ContentType.TYPE_V2_CULVERT
 
-        # Channels, Pipes, Culverts, interpolated nodes
-        mask = np.isin(self.nodes.content_type, [CH, PI, CV])
+        # Channels, Pipes, Culverts, interpolated nodes which require dmax update:
+        mask = (
+            np.isin(self.nodes.content_type, [CH, PI, CV])
+            & ~np.isfinite(self.nodes.dmax)
+        )
 
         # Get the invert level from the connecting line. Each interpolated node has
         # by definition exactly one line going from it. So we can do this:

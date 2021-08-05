@@ -4,6 +4,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid.cross_section_locations import (
     compute_bottom_level,
@@ -46,43 +47,50 @@ def channel_lines():
         id=[0, 1, 2, 3, 4, 5, 6],
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=[51, 52, 53, 53, 53, 54, 54],
-        s1d=[3, 5, 11, 11, 11, 7, 7],
+        ds1d=[3, 5, 11, 11, 11, 7, 7],
+        s1d=[1.5, 2.5, 5.5, 16.5, 27.5, 3.5, 10.5],
         line=[(0, 1), (0, 2), (0, 3), (3, 4), (4, 5), (0, 6), (6, 7)],
         dpumax=[3.0, 3.0, 0, 0, 0, 0, 0],
     )
 
 
 @pytest.fixture
-def cross_section_locations():
+def locations():
     return CrossSectionLocations(
         id=[1, 2, 3, 5, 6],
         the_geom=pygeos.points([(1, 0), (26, 1), (16, 1), (58, 3), (49, 2)]),
         channel_id=[51, 53, 53, 52, 54],
         reference_level=[1.0, 2.0, 3.0, 5.0, 6.0],
+        definition_id=[3, 3, 4, 4, 5],
     )
 
 
-def test_compute_weights(cross_section_locations, channels, channel_lines):
+@pytest.fixture
+def definitions():
+    return CrossSectionDefinitions(id=[3, 4, 5])
+
+
+def test_compute_weights(locations, channels, channel_lines):
     """The test set has the following situation:
 
     - channel 51 with no added nodes and with 1 cs location
       O 1-X-- O
-    - channel 53 with 2 added nodes, with 2 cs locations, extrapolation:
-      O --X-- O 3-X-- O 2-X-- O
-    - channel 54 with 1 added node, with 1 cs location, no extrapolation:
-      O --X-- O 6-X-- O
     - channel 52 with no added nodes and with 1 cs location:
       O --X-5 O
+    - channel 53 with 2 added nodes, with 2 cs locations, extrapolation:
+      O --X-- O 2-X-- O 3-X-- O
+    - channel 54 with 1 added node, with 1 cs location, no extrapolation:
+      O --X-- O 6-X-- O
     Here O means connection nodes, --X-- a line with a velocity point, and
     CS locations are given as numbers (ids).
 
     The 7 lines (velocity points) cover all possible situations:
     0. Only 1 CS location in the channel, extrapolation would lead to index -1
-    1. Extrapolation on the left
-    2. Interpolation
-    3. Extrapolation on the right
-    4. Equalization on the left
-    5. Equalization on the right
+    1. Equalization on the right
+    2. Extrapolation on the left
+    3. Interpolation
+    4. Extrapolation on the right
+    5. Equalization on the left
     6. Only 1 CS location in the channel, extrapol. lead to too large index
     """
     expected_cross_loc1 = [1, 5, 3, 3, 3, 6, 6]
@@ -90,7 +98,7 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     expected_weight = [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
 
     cross_loc1, cross_loc2, cross_weights = compute_weights(
-        channel_lines.content_pk, channel_lines.s1d, cross_section_locations, channels
+        channel_lines.content_pk, channel_lines.s1d, locations, channels
     )
 
     assert_equal(cross_loc1, expected_cross_loc1)
@@ -98,33 +106,41 @@ def test_compute_weights(cross_section_locations, channels, channel_lines):
     assert_almost_equal(cross_weights, expected_weight)
 
 
-def test_compute_bottom_level(cross_section_locations, channels, channel_lines):
+def test_compute_bottom_level(locations, channels, channel_lines):
     """Same setup as test_compute_weights, but now testing the derived bottom levels"""
     expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
 
     actual = compute_bottom_level(
-        channel_lines.content_pk, channel_lines.s1d, cross_section_locations, channels
+        channel_lines.content_pk, channel_lines.s1d, locations, channels
     )
 
     assert_almost_equal(actual, expected)
 
 
-@pytest.fixture
-def channel_lines_with_weights(channel_lines, cross_section_locations, channels):
-    cross_loc1, cross_loc2, cross_weight = compute_weights(
-        channel_lines.content_pk, channel_lines.s1d, cross_section_locations, channels
-    )
-    channel_lines.cross_loc1[:] = cross_loc1
-    channel_lines.cross_loc2[:] = cross_loc2
-    channel_lines.cross_weight[:] = cross_weight
-    return channel_lines
-
-
-def test_fix_dpumax(cross_section_locations, channel_nodes, channel_lines_with_weights):
+def test_fix_dpumax(channel_nodes, channel_lines):
     """For the channels that have no interpolated nodes, set dpumax if it is higher"""
-    fix_dpumax(channel_lines_with_weights, channel_nodes, cross_section_locations)
+    channel_lines.invert_level_start_point[:] = [2, 4, 9, 9, 9, 9, 9]
+    channel_lines.invert_level_end_point[:] = [3, 6, 9, 9, 9, 9, 9]
+
+    fix_dpumax(channel_lines, channel_nodes)
 
     # The first two lines are from channels with no interpolated nodes, there the
-    # reference level of the crosssection location is taken. The other lines have
+    # dpumax is updated in case it becomes higher. The other lines have
     # interpolated nodes; they are untouched
-    assert_almost_equal(channel_lines_with_weights.dpumax, [3.0, 5.0, 0, 0, 0, 0, 0])
+    assert_almost_equal(channel_lines.dpumax, [3.0, 5.0, 0, 0, 0, 0, 0])
+
+
+def test_apply_to_lines(channels, channel_lines, locations, definitions):
+    locations.apply_to_lines(channel_lines, channels, definitions)
+
+    assert_equal(channel_lines.cross1, [0, 1, 1, 1, 1, 2, 2])
+    assert_equal(channel_lines.cross2, [0, 1, 0, 0, 0, 2, 2])
+    assert_almost_equal(
+        channel_lines.cross_weight, [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
+    )
+    assert_almost_equal(
+        channel_lines.invert_level_start_point, [1.0, 5.0, 4.3, 3.2, 2.1, 6.0, 6.0]
+    )
+    assert_almost_equal(
+        channel_lines.invert_level_end_point, [1.0, 5.0, 3.2, 2.1, 1.0, 6.0, 6.0]
+    )

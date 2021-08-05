@@ -140,7 +140,7 @@ def _make_gridadmin(
         )
 
         grid.set_calculation_types()
-        grid.set_bottom_levels(locations, channels, pipes, weirs, orifices, culverts)
+        grid.set_bottom_levels()
         grid.set_cross_sections(definitions)
         grid.set_pumps(db.get_pumps())
 
