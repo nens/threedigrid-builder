@@ -186,6 +186,9 @@ class BaseLinear:
         mask[last_idx] = False
         line[mask, 1] = nodes.id if not embedded_mode else nodes.embedded_in
 
+        # map to obj ids
+        content_pk = objs.id[segment_idx]
+
         # conditionally add the cross section definition (for pipes and culverts only)
         try:
             cross1 = definitions.id_to_index(
@@ -197,28 +200,37 @@ class BaseLinear:
             cross1 = -9999
             cross_weight = np.nan
 
+        # conditionally add the invert levels (for pipes and culverts only)
+        try:
+            invert_start = self.compute_bottom_level(content_pk, start_s)
+            invert_end = self.compute_bottom_level(content_pk, end_s)
+        except AttributeError:
+            invert_end = invert_start = np.nan
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
             line_geometries=segments,
             line=line,
             content_type=objs.content_type,
-            content_pk=objs.id[segment_idx],
+            content_pk=content_pk,
             s1d=(start_s + end_s) / 2,
             ds1d=end_s - start_s,
             kcu=objs.calculation_type[segment_idx],
             cross1=cross1,
             cross_weight=cross_weight,
+            invert_level_start_point=invert_start,
+            invert_level_end_point=invert_end,
         )
 
-    def compute_bottom_level(self, ids, ds):
+    def compute_bottom_level(self, ids, s):
         """Compute the bottom level by interpolating between invert levels
 
-        This function is to be used for interpolated nodes on pipes and culverts.
+        This function is to be used on nodes and lines between on pipes and culverts.
 
         Args:
             ids (ndarray of int): the id (content_pk) of the object
-            ds (ndarray of float): the position of the node measured along the object
+            s (ndarray of float): the position of the node/line along the object
 
         Returns:
             an array of the same shape as ids and ds containing the interpolated values
@@ -230,7 +242,7 @@ class BaseLinear:
             )
         lengths = pygeos.length(self.the_geom)
         idx = self.id_to_index(ids)
-        weights = ds / lengths[idx]
+        weights = s / lengths[idx]
         if np.any(weights < 0.0) or np.any(weights > 1.0):
             raise ValueError("Encountered nodes outside of the linear object bounds")
 
@@ -239,14 +251,14 @@ class BaseLinear:
 
         return weights * right + (1 - weights) * left
 
-    def compute_drain_level(self, ids, ds, connection_nodes):
+    def compute_drain_level(self, ids, s, connection_nodes):
         """Compute the drain level by interpolating between Manhole drain levels
 
         This function is to be used for interpolated nodes on pipes and culverts.
 
         Args:
             ids (ndarray of int): the id (content_pk) of the object
-            ds (ndarray of float): the position of the node measured along the object
+            s (ndarray of float): the position of the node measured along the object
             connection_nodes (ConnectionNodes): to obtain drain levels
 
         Returns:
@@ -259,7 +271,7 @@ class BaseLinear:
             )
         lengths = pygeos.length(self.the_geom)
         idx = self.id_to_index(ids)
-        weights = ds / lengths[idx]
+        weights = s / lengths[idx]
         if np.any(weights < 0.0) or np.any(weights > 1.0):
             raise ValueError("Encountered nodes outside of the linear object bounds")
 

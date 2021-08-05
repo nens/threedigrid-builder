@@ -33,8 +33,6 @@ class Line:
     flou: float  # obstacle height
     cross1: int  # the id of the cross section definition
     cross2: int  # the id of the cross section definition
-    cross_loc1: int  # the id of the cross section location
-    cross_loc2: int  # the id of the cross section location
     cross_weight: float
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
