@@ -15,7 +15,6 @@ from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
 from threedigrid_builder.grid.connection_nodes import set_bottom_levels
 from threedigrid_builder.grid.connection_nodes import set_calculation_types
-from unittest import mock
 
 import itertools
 import numpy as np
@@ -129,6 +128,7 @@ def test_set_calculation_types_multiple_nodes(content_type):
     assert nodes.calculation_type[1] == CalculationType.CONNECTED
     assert nodes.calculation_type[2] == CalculationType.EMBEDDED
 
+
 @pytest.mark.parametrize("_type", [Pipes, Culverts, Channels, Weirs, Orifices])
 @pytest.mark.parametrize(
     "line,invert_levels,expected",
@@ -141,9 +141,7 @@ def test_set_calculation_types_multiple_nodes(content_type):
         ([(1, 2), (2, 1)], (4.0, 3.0), 3.0),  # both end and start; end is lower
     ],
 )
-def test_set_bottom_levels_single_node(
-    line, invert_levels, expected, _type
-):
+def test_set_bottom_levels_single_node(line, invert_levels, expected, _type):
     a, b = invert_levels
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
@@ -196,8 +194,8 @@ def test_bottom_levels_above_invert_level(structure_type):
         content_type=structure_type.content_type,
         content_pk=2,
         line=[[1, 2]],
-        invert_level_start_point=3.,
-        invert_level_end_point=3.
+        invert_level_start_point=3.0,
+        invert_level_end_point=3.0,
     )
 
     # assert the resulting value of dmax

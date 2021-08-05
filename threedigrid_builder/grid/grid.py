@@ -386,9 +386,8 @@ class Grid:
         CV = ContentType.TYPE_V2_CULVERT
 
         # Channels, Pipes, Culverts, interpolated nodes which require dmax update:
-        mask = (
-            np.isin(self.nodes.content_type, [CH, PI, CV])
-            & ~np.isfinite(self.nodes.dmax)
+        mask = np.isin(self.nodes.content_type, [CH, PI, CV]) & ~np.isfinite(
+            self.nodes.dmax
         )
 
         # Get the invert level from the connecting line. Each interpolated node has
