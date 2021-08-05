@@ -16,6 +16,8 @@ Changelog of threedigrid-builder
   computation. The added attribute lines.s1d is now used, and for clarity nodes.ds1d
   was renamed to nodes.s1d.
 
+- Added invert_level_start_point and invert_level_end_point attributes to lines.
+
 
 0.3.0 (2021-07-28)
 ------------------
