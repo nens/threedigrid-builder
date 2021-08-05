@@ -26,7 +26,9 @@ class Line:
     line_coords: Tuple[float, float, float, float]
     content_type: ContentType
     content_pk: int
-    dpumax: float  # bottom_level
+    dpumax: float  # bottom_level at the velocity point
+    invert_level_start_point: float  # bottom level at line start
+    invert_level_end_point: float  # bottom level at line end
     flod: float  # obstacle height
     flou: float  # obstacle height
     cross1: int  # the id of the cross section definition
