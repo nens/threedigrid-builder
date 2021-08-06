@@ -112,7 +112,8 @@ def compute_weights(channel_id, points, cs, channels):
     cs_s = pygeos.line_locate_point(channels.the_geom[cs_channel_idx], cs.the_geom)
 
     # To each cs_s, add the length of all channels before it
-    ch_cum_length = np.cumsum(pygeos.length(channels.the_geom))
+    # the lengths are increased by a small number to mitigate overlapping start/ends
+    ch_cum_length = np.cumsum(pygeos.length(channels.the_geom) + 1e-6)
     ch_cum_length = np.roll(ch_cum_length, 1)
     ch_cum_length[0] = 0.0
     cs_s += ch_cum_length[cs_channel_idx]

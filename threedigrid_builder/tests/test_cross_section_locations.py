@@ -106,6 +106,25 @@ def test_compute_weights(locations, channels, channel_lines):
     assert_almost_equal(cross_weights, expected_weight)
 
 
+def test_compute_weights_edge_effects(channels):
+    locations = CrossSectionLocations(
+        id=range(3),
+        the_geom=pygeos.points([(0, 0), (55, 3), (3, 0)]),
+        channel_id=[51, 52, 51],
+    )
+    expected_cross_loc1 = [0, 0, 1, 1]
+    expected_cross_loc2 = [2, 2, 1, 1]
+    expected_weight = [1.0, 0.0, 1.0, 1.0]
+
+    cross_loc1, cross_loc2, cross_weights = compute_weights(
+        [51, 51, 52, 52], [0.0, 3.0, 0.0, 55.0], locations, channels[:2]
+    )
+
+    assert_equal(cross_loc1, expected_cross_loc1)
+    assert_equal(cross_loc2, expected_cross_loc2)
+    assert_almost_equal(cross_weights, expected_weight)
+
+
 def test_compute_bottom_level(locations, channels, channel_lines):
     """Same setup as test_compute_weights, but now testing the derived bottom levels"""
     expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
