@@ -364,12 +364,10 @@ class GridAdminOut(OutputInterface):
             lines.discharge_coefficient_positive,
         )
 
-        # Transform an array of linestrings to list of coordinate arrays (x,y,x,y,...)
-        coords = pygeos.get_coordinates(lines.line_geometries)
-        end = np.cumsum(pygeos.get_num_coordinates(lines.line_geometries))
-        start = np.roll(end, 1)
-        start[0] = 0
-        line_geometries = [coords[a:b].ravel() for a, b in zip(start, end)]
+        # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
+        line_geometries = [
+            pygeos.get_coordinates(x).T.ravel() for x in lines.line_geometries
+        ]
         line_geometries.insert(0, np.array([-9999.0, -9999.0]))
         # The dataset has a special "variable length" dtype. This one is special write method.
         vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))

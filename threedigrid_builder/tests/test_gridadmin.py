@@ -227,6 +227,14 @@ def test_write_lines(h5_out, dataset, shape, dtype):
     assert h5_out["lines"][dataset].dtype == np.dtype(dtype)
 
 
+def test_line_geometries(h5_out):
+    # line geometries are stored as a variable-length array [x, x, ..., y, y, ...]
+    data = h5_out["lines"]["line_geometries"][:]
+    assert data[0].tolist() == [-9999, -9999]
+    assert data[1].tolist() == [1, 2, 1, 2]
+    assert data[2].tolist() == [1, 2, 3, 1, 2, 3]
+
+
 @pytest.mark.parametrize(
     "dataset,shape,dtype",
     [
