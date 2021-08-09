@@ -33,7 +33,6 @@ class CrossSectionLocations:
         - cross_weight: the weight of the first cross section definition
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
-        - bank_level: 'bank_level' interpolated at the line centre
         """
         # Mask the lines to only the Channel lines
         cross_loc1, cross_loc2, cross_weight = compute_weights(

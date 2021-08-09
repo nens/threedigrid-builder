@@ -158,23 +158,17 @@ def set_bottom_levels(nodes, lines):
       - if not present: the lowest of all neigboring objects. we use
         lines.invert_level_start_point to get levels of channels, pipes, culverts,
         weirs, and orifices.
-          - (not implemented) if no storage: invert levels should not differ more than
-             cross section height! -> check this in threedi-modelchecker
+        - (not implemented) if no storage: invert levels should not differ more than
+          cross section height! -> check this in threedi-modelchecker
 
     Args:
         nodes (Nodes): the nodes, those with content_type == TYPE_V2_CONNECTION_NODES
           and without a dmax will get a new dmax
         lines (Lines): the lines, including channels, pipes, weirs, and culverts
-        locations (CrossSectionLocations): to interpolate over the channels
-        channels (Channels): to interpolate over the channels
-        pipes: to take invert levels
-        weirs: to take crest levels
-        orifices: to take crest levels
-        culverts: to take invert levels
     """
     # The connection node dmax will be the lowest of these object types:
     OBJECT_TYPES = [
-        # ContentType.TYPE_V2_CHANNEL,  channels go after the manhole-bottomlevel check
+        ContentType.TYPE_V2_CHANNEL,
         ContentType.TYPE_V2_PIPE,
         ContentType.TYPE_V2_CULVERT,
         ContentType.TYPE_V2_WEIR,
@@ -213,28 +207,7 @@ def set_bottom_levels(nodes, lines):
         ids = nodes.content_pk[is_manhole][has_lower_dmax]
         raise SchematisationError(
             f"Connection nodes {sorted(ids.tolist())} have a manhole with a "
-            f"bottom_level that is above a connected pipe invert level, weir crest "
-            f"level, or orifice crest level."
+            f"bottom_level that is above one ore more of the following connected "
+            f"objects: channel reference level, pipe/culvert invert level, "
+            f"weir/orifice crest level."
         )
-
-    # Get the indices and ids of the relevant nodes (now excluding manholes)
-    node_id = nodes.index_to_id(np.where(is_connection_node & ~is_manhole)[0])
-
-    # line_idx: relevant lines
-    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
-    # line_idx_1: lines for which the connection node is the start
-    line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
-    if line_idx_1.size > 0:
-        # get the dmax from the invert_level_start
-        dmax = lines.invert_level_start_point[line_idx_1]
-        # find the nodes that match to these lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
-        _put_if_less(nodes.dmax, _node_idx, dmax)
-    # line_idx_2: lines for which the connection node is the end
-    line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
-    if line_idx_2.size > 0:
-        # get the dmax from the invert_level_end
-        dmax = lines.invert_level_end_point[line_idx_2]
-        # find the nodes that match to these pipe lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
-        _put_if_less(nodes.dmax, _node_idx, dmax)

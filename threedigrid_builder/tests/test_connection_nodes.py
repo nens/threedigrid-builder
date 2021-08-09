@@ -142,7 +142,6 @@ def test_set_calculation_types_multiple_nodes(content_type):
     ],
 )
 def test_set_bottom_levels_single_node(line, invert_levels, expected, _type):
-    a, b = invert_levels
     nodes = Nodes(id=[1], content_type=ContentType.TYPE_V2_CONNECTION_NODES)
     lines = Lines(
         id=range(len(line)),
@@ -181,7 +180,7 @@ def test_set_bottom_levels_multiple_nodes(_type):
     assert_almost_equal(nodes.dmax, [3.0, 8.0, -24.0])
 
 
-@pytest.mark.parametrize("structure_type", [Weirs, Orifices, Pipes, Culverts])
+@pytest.mark.parametrize("structure_type", [Weirs, Orifices, Pipes, Culverts, Channels])
 def test_bottom_levels_above_invert_level(structure_type):
     nodes = Nodes(
         id=[1, 2],

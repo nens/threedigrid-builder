@@ -1,5 +1,6 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import CrossSectionLocations
 
@@ -25,13 +26,18 @@ def test_1d2d_properties(channels):
     nodes = Nodes(
         id=[0, 2, 5],
         s1d=[3, np.nan, 6],
-        content_pk=1,
+        content_type=[
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_CONNECTION_NODES,
+            ContentType.TYPE_V2_CHANNEL,
+        ],
+        content_pk=[1, 3, 1],
     )
     locations = CrossSectionLocations(
         id=[2, 5],
         the_geom=pygeos.points([(0, 0), [6, 6]]),
         bank_level=[1.0, 13.0],
-        channel_id=1,
+        channel_id=[1, 1],
     )
     node_idx = [0, 2]
 
