@@ -58,6 +58,8 @@ class LinearObject:
     connection_node_end_id: int
     dist_calc_points: float
     cross_section_definition_id: int
+    invert_level_start_point: float
+    invert_level_end_point: float
 
 
 @array_of(LinearObject)
@@ -84,12 +86,14 @@ def two_linear_objects():
         the_geom=pygeos.linestrings(
             [[(0, 0), (10, 0), (10, 10)], [(0, 0), (0, 100), (100, 100)]]
         ),
-        dist_calc_points=np.array([5.0, np.nan]),
-        id=np.array([1, 2]),
-        connection_node_start_id=np.array([21, 25]),
-        connection_node_end_id=np.array([42, 33]),
-        calculation_type=np.array([2, 1]),
+        dist_calc_points=[5.0, np.nan],
+        id=[1, 2],
+        connection_node_start_id=[21, 25],
+        connection_node_end_id=[42, 33],
+        calculation_type=[2, 1],
         cross_section_definition_id=[17, 18],
+        invert_level_start_point=[1.0, 2.0],
+        invert_level_end_point=[3.0, 4.0],
     )
 
 

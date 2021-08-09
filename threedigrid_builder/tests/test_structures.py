@@ -81,6 +81,8 @@ def test_get_lines(connection_nodes, two_weir_orifices, definitions):
     assert_array_equal(lines.cross2, -9999)
     assert_array_equal(lines.cross_weight, [1.0, 1.0])
     assert_array_equal(lines.dpumax, [2.3, 4.5])
+    assert_array_equal(lines.invert_level_start_point, [2.3, 4.5])
+    assert_array_equal(lines.invert_level_end_point, [2.3, 4.5])
 
 
 @pytest.mark.parametrize(
@@ -140,7 +142,7 @@ def test_culverts_1d2d_properties(culverts):
 
         _, kwargs = compute_drain_level.call_args
         assert_array_equal(kwargs["ids"], [1, 1, 2])  # the content pk
-        assert_array_equal(kwargs["ds"], [12.0, 13.0, 15.0])  # the s1d
+        assert_array_equal(kwargs["s"], [12.0, 13.0, 15.0])  # the s1d
         assert kwargs["connection_nodes"] is connection_nodes
 
     # culverts are closed

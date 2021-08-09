@@ -336,6 +336,12 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "content_type", content_type, fill=b"")
         self.write_dataset(group, "content_pk", lines.content_pk)
         self.write_dataset(group, "dpumax", lines.dpumax)
+        self.write_dataset(
+            group, "invert_level_start_point", lines.invert_level_start_point
+        )
+        self.write_dataset(
+            group, "invert_level_end_point", lines.invert_level_end_point
+        )
         self.write_dataset(group, "flod", lines.flod)
         self.write_dataset(group, "flou", lines.flou)
         self.write_dataset(group, "cross1", increase(lines.cross1))
@@ -384,8 +390,6 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "dist_calc_points", fill_float)
         self.write_dataset(group, "friction_type", fill_int)
         self.write_dataset(group, "friction_value", fill_float)
-        self.write_dataset(group, "invert_level_end_point", fill_float)
-        self.write_dataset(group, "invert_level_start_point", fill_float)
         self.write_dataset(group, "material", fill_int)
         self.write_dataset(group, "sewerage", fill_int)
         self.write_dataset(group, "sewerage_type", fill_int)

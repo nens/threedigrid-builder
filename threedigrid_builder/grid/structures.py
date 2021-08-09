@@ -52,7 +52,7 @@ class Culverts(linear.BaseLinear):
         # dpumax is interpolated between drain levels of adjacent manholes (conn nodes)
         dpumax = self.compute_drain_level(
             ids=nodes.content_pk[node_idx],
-            ds=nodes.s1d[node_idx],
+            s=nodes.s1d[node_idx],
             connection_nodes=connection_nodes,
         )
 
@@ -102,6 +102,8 @@ class WeirOrifices:
             - dpumax: the crest_level of the structure
             - cross1: the index of the cross section definition
             - cross_weight: 1.0 (which means that cross2 should be ignored)
+            - invert_level_start_point: the crest_level of the structure
+            - invert_level_end_point: the crest_level of the structure
         """
         # map connection node IDs to node indices
         line = np.empty((len(self), 2), dtype=np.int32, order="F")
@@ -120,6 +122,8 @@ class WeirOrifices:
             dpumax=self.crest_level,
             cross1=cross1,
             cross_weight=1.0,
+            invert_level_start_point=self.crest_level,
+            invert_level_end_point=self.crest_level,
         )
 
 

@@ -2,7 +2,9 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import linear
-from threedigrid_builder.grid.cross_section_locations import interpolate
+from threedigrid_builder.grid.cross_section_locations import (
+    compute_bottom_level,
+)
 
 import pygeos
 
@@ -38,11 +40,11 @@ class Channels(linear.BaseLinear):
             - dpumax (array of float): interpolated between CS location bank_levels
         """
         # dpumax is interpolated between cross section location bank levels
-        dpumax = interpolate(
-            nodes.cross_loc1[node_idx],
-            nodes.cross_loc2[node_idx],
-            nodes.cross_weight[node_idx],
+        dpumax = compute_bottom_level(
+            nodes.content_pk[node_idx],
+            nodes.s1d[node_idx],
             locations,
+            self,
             "bank_level",
         )
 

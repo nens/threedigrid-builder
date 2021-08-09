@@ -1,5 +1,6 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import CrossSectionLocations
 
@@ -23,22 +24,27 @@ def channels():
 
 def test_1d2d_properties(channels):
     nodes = Nodes(
-        id=[0, 2, 5, 7],
-        dmax=[1.0, 3.0, 2.0, 4.0],
-        cross_loc1=[2, 5, -9999, 10],
-        cross_loc2=[5, 10, -9999, 13],
-        cross_weight=[0.2, 0.5, np.nan, 0.8],
+        id=[0, 2, 5],
+        s1d=[3, np.nan, 6],
+        content_type=[
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_CONNECTION_NODES,
+            ContentType.TYPE_V2_CHANNEL,
+        ],
+        content_pk=[1, 3, 1],
     )
     locations = CrossSectionLocations(
-        id=[2, 5, 10, 13],
-        bank_level=[1.0, 2.0, 3.0, 4.0],
+        id=[2, 5],
+        the_geom=pygeos.points([(0, 0), [6, 6]]),
+        bank_level=[1.0, 13.0],
+        channel_id=[1, 1],
     )
-    node_idx = [0, 1, 3]
+    node_idx = [0, 2]
 
     is_closed, dpumax = channels.get_1d2d_properties(nodes, node_idx, locations)
 
     # channels are no sewerage
     assert_array_equal(is_closed, False)
 
-    # for the manholes, conn_node.drain_level is copied, otherwise, dmax is taken
-    assert_array_equal(dpumax, [1.8, 2.5, 3.2])
+    # bank levels are interpolated
+    assert_array_equal(dpumax, [4.0, 7.0])

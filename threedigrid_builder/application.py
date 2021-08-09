@@ -82,7 +82,7 @@ def _make_gridadmin(
         grid += cn_grid
 
         channels = db.get_channels()
-        grid += Grid.from_linear_objects(
+        channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=channels,
             definitions=None,
@@ -97,7 +97,8 @@ def _make_gridadmin(
 
         locations = db.get_cross_section_locations()
         definitions = db.get_cross_section_definitions()
-        grid.set_channel_weights(locations, definitions, channels)
+        locations.apply_to_lines(channel_grid.lines, channels, definitions)
+        grid += channel_grid
 
         pipes = db.get_pipes()
         grid += Grid.from_linear_objects(
@@ -139,7 +140,7 @@ def _make_gridadmin(
         )
 
         grid.set_calculation_types()
-        grid.set_bottom_levels(locations, channels, pipes, weirs, orifices, culverts)
+        grid.set_bottom_levels()
         grid.set_cross_sections(definitions)
         grid.set_pumps(db.get_pumps())
 

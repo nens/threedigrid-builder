@@ -23,10 +23,52 @@ class CrossSectionLocation:
 
 @array_of(CrossSectionLocation)
 class CrossSectionLocations:
-    pass
+    def apply_to_lines(self, lines, channels, definitions):
+        """Apply cross section locations to lines
+
+        The following lines attributes are changed inplace:
+
+        - cross1: the id of the first cross section definition
+        - cross2: the id of the second cross section definition
+        - cross_weight: the weight of the first cross section definition
+        - invert_level_start_point: 'reference_level' interpolated at the line end
+        - invert_level_end_point: 'reference_level' interpolated at the line start
+        """
+        # Mask the lines to only the Channel lines
+        cross_loc1, cross_loc2, cross_weight = compute_weights(
+            lines.content_pk,
+            lines.s1d,
+            self,
+            channels,
+        )
+
+        # Fill cross1 and cross2 by mapping to CrossSectionDefinitions
+        lines.cross1 = definitions.id_to_index(
+            self.definition_id[self.id_to_index(cross_loc1)],
+            check_exists=True,
+        )
+        lines.cross2 = definitions.id_to_index(
+            self.definition_id[self.id_to_index(cross_loc2)],
+            check_exists=True,
+        )
+        lines.cross_weight = cross_weight
+
+        # Compute invert levels and start and end
+        lines.invert_level_start_point = compute_bottom_level(
+            lines.content_pk,
+            lines.s1d - (lines.ds1d / 2),
+            self,
+            channels,
+        )
+        lines.invert_level_end_point = compute_bottom_level(
+            lines.content_pk,
+            lines.s1d + (lines.ds1d / 2),
+            self,
+            channels,
+        )
 
 
-def compute_weights(channel_id, ds, cs, channels):
+def compute_weights(channel_id, points, cs, channels):
     """Compute cross section weights for points on channels.
 
     Points on channels are specified with their channel id and the distance along that
@@ -36,7 +78,7 @@ def compute_weights(channel_id, ds, cs, channels):
         channel_id (ndarray of int): The channel ids for which to compute weights. Each
             id may occur multiple times, if there are multiple points on that channel
             to compute the weights on. This array must be in ascending order.
-        ds (ndarray of float): The location of the points to compute the weights for,
+        points (ndarray of float): The location of the points to compute the weights for,
             measured as a distance along the channel. Array must be the same size as
             channel_id and ordered (per channel) in ascending order.
         cs (CrossSectionLocations)
@@ -59,42 +101,39 @@ def compute_weights(channel_id, ds, cs, channels):
             np.empty((0,), dtype=float),
         )
 
-    # Make an array that sorts the cross section (cs) locations by channel_id
-    cs_sorter = np.argsort(cs.channel_id)
+    if np.any(~np.isfinite(points)):
+        raise ValueError("NaN values encountered in points")
 
-    # Count how many cs locations we have per channel
-    _, cs_per_channel = np.unique(cs.channel_id, return_counts=True)
+    cs_channel_idx = channels.id_to_index(cs.channel_id)
+    points_channel_idx = channels.id_to_index(channel_id)
 
     # Locate the position measured along the channel (ds) of the CS locations
-    cs_ds = pygeos.line_locate_point(
-        np.repeat(channels.the_geom, cs_per_channel), cs.the_geom[cs_sorter]
-    )
+    cs_s = pygeos.line_locate_point(channels.the_geom[cs_channel_idx], cs.the_geom)
 
-    # To each cs_ds, add the length of all channels before it
-    _cumulative = np.cumsum(pygeos.length(channels.the_geom))
-    _cumulative = np.roll(_cumulative, 1)
-    _cumulative[0] = 0
-    cs_ds += np.repeat(_cumulative, cs_per_channel)
+    # To each cs_s, add the length of all channels before it
+    # the lengths are increased by a small number to mitigate overlapping start/ends
+    ch_cum_length = np.cumsum(pygeos.length(channels.the_geom) + 1e-6)
+    ch_cum_length = np.roll(ch_cum_length, 1)
+    ch_cum_length[0] = 0.0
+    cs_s += ch_cum_length[cs_channel_idx]
 
-    # Make cs_ds monotonically increasing and update cs_sorter to match it
-    _cs_ds_sorter = np.argsort(cs_ds)
-    cs_ds = cs_ds[_cs_ds_sorter]
-    cs_sorter = cs_sorter[_cs_ds_sorter]
+    # Make cs_s monotonically increasing and update cs_sorter to match it
+    cs_sorter = np.argsort(cs_s)
+    cs_s = cs_s[cs_sorter]
+    cs_channel_idx = cs_channel_idx[cs_sorter]
 
-    # Compute the ds of the line midpoints, cumulative over all channels
-    _cumulative = np.cumsum(ds)
-    midpoint_ds = (_cumulative + np.roll(_cumulative, 1)) / 2
-    midpoint_ds[0] = _cumulative[0] / 2
+    # Compute the ds of the line points, cumulative over all channels
+    points_cum = points + ch_cum_length[points_channel_idx]
 
     # Find what CS location comes after and before each midpoint
-    cs_idx_2 = np.searchsorted(cs_ds, midpoint_ds)
+    cs_idx_2 = np.searchsorted(cs_s, points_cum)
     cs_idx_1 = cs_idx_2 - 1
     out_of_bounds_1 = cs_idx_1 < 0
     out_of_bounds_2 = cs_idx_2 >= len(cs)
     cs_idx_1[out_of_bounds_1] = 0
     cs_idx_2[out_of_bounds_2] = len(cs) - 1
 
-    # Extrapolation: if a midpoint does not have a cross section location
+    # Extrapolation: if a point does not have a cross section location
     # to its left (cs_idx_1 is invalid), assign to it the 2 cross_idx
     # to its right. And vice versa for cs_idx_2 that is invalid. Note
     # that because every channel has at least 1 crosssection, one the two
@@ -103,46 +142,42 @@ def compute_weights(channel_id, ds, cs, channels):
     # belong to the correct channel, we have only 1 crossection location
     # in the channel so we assign the same cross_idx to both 1 and 2.
 
-    # Create two matching channel id arrays
-    cs_ch_id = cs.channel_id[cs_sorter]
-    line_ch_id = channel_id
-
     # Fix situations where cs_idx_1 is incorrect
-    extrapolate = (cs_ch_id[cs_idx_1] != line_ch_id) | out_of_bounds_1
+    extrapolate = (cs_channel_idx[cs_idx_1] != points_channel_idx) | out_of_bounds_1
     cs_idx_1[extrapolate] = cs_idx_2[extrapolate]
     cs_idx_2[extrapolate] = np.clip(cs_idx_2[extrapolate] + 1, None, len(cs) - 1)
-    equalize = extrapolate & (cs_ch_id[cs_idx_2] != line_ch_id)
+    equalize = extrapolate & (cs_channel_idx[cs_idx_2] != points_channel_idx)
     cs_idx_2[equalize] -= 1
 
     # Fix situations where cs_idx_2 is incorrect
-    extrapolate = (cs_ch_id[cs_idx_2] != line_ch_id) | out_of_bounds_2
+    extrapolate = (cs_channel_idx[cs_idx_2] != points_channel_idx) | out_of_bounds_2
     cs_idx_2[extrapolate] = cs_idx_1[extrapolate]
     cs_idx_1[extrapolate] = np.clip(cs_idx_2[extrapolate] - 1, 0, None)
-    equalize = extrapolate & (cs_ch_id[cs_idx_1] != line_ch_id)
+    equalize = extrapolate & (cs_channel_idx[cs_idx_1] != points_channel_idx)
     cs_idx_1[equalize] += 1
 
     # Map index to id and create the array that matches the input channel_id and ds
     cross_loc1 = cs.id[cs_sorter][cs_idx_1]
     cross_loc2 = cs.id[cs_sorter][cs_idx_2]
 
-    # Compute the weights. For each line, we have 3 times ds:
-    # 1. the ds of the CrossSectionLocation before it (ds_1)
-    # 2. the ds of the CrossSectionLocation after it (ds_2)
-    # 3. the ds of the midpoint (velocity point) (midpoint_ds)
+    # Compute the weights. For each line, we have 3 times s:
+    # 1. the s of the CrossSectionLocation before it (s_1)
+    # 2. the s of the CrossSectionLocation after it (s_2)
+    # 3. the s of the midpoint (velocity point) (points)
     #
     # The weight is calculated such that a value at midpoint can be interpolated
     # as:   weight * v_1 + (1 - weight) * v_2
-    ds_1 = cs_ds[cs_idx_1]
-    ds_2 = cs_ds[cs_idx_2]
+    s_1 = cs_s[cs_idx_1]
+    s_2 = cs_s[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
-        cross_weight = (ds_2 - midpoint_ds) / (ds_2 - ds_1)
+        cross_weight = (s_2 - points_cum) / (s_2 - s_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
 
     return cross_loc1, cross_loc2, cross_weight
 
 
-def interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr):
+def interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr="reference_level"):
     """Interpolate an attribute of CrossSectionLocation using known weights.
 
     Args:
@@ -150,7 +185,7 @@ def interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr):
         cross_loc2 (ndarray of int): see compute_weights
         cross_weight (ndarray of float): see compute_weights
         cs (CrossSectionLocations)
-        cs_attr ({"reference_level", "bank_level"}): see compute_weights
+        cs_attr ({"reference_level", "bank_level"})
 
     Returns:
         an array of the same shape cross_loc1 containing the interpolated values
@@ -164,8 +199,8 @@ def interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr):
     return cross_weight * left + (1 - cross_weight) * right
 
 
-def compute_bottom_level(channel_id, ds, cs, channels):
-    """Compute the bottom level by interpolating/extrapolating between cross sections
+def compute_bottom_level(channel_id, ds, cs, channels, cs_attr="reference_level"):
+    """Compute levels by interpolating/extrapolating between cross sections
 
     This can be used at nodes (for dmax) or at line centres (for dpumax).
 
@@ -174,6 +209,7 @@ def compute_bottom_level(channel_id, ds, cs, channels):
         ds (ndarray of float): see compute_weights
         cs (CrossSectionLocations): the reference_level is inter/extrapolated
         channels (Channels): see compute_weights
+        cs_attr ({"reference_level", "bank_level"})
 
     Returns:
         an array of the same shape as channel_id containing the interpolated values
@@ -182,10 +218,10 @@ def compute_bottom_level(channel_id, ds, cs, channels):
         compute_weights: computes the interpolation weights
     """
     cross_loc1, cross_loc2, cross_weight = compute_weights(channel_id, ds, cs, channels)
-    return interpolate(cross_loc1, cross_loc2, cross_weight, cs, "reference_level")
+    return interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr)
 
 
-def fix_dpumax(lines, nodes, cs, allow_nan=False):
+def fix_dpumax(lines, nodes):
     """Fix the line bottom levels (dpumax) for channels that have no added nodes.
 
     The new value is the reference_level of the channel's cross section location
@@ -193,13 +229,12 @@ def fix_dpumax(lines, nodes, cs, allow_nan=False):
     multiple cs locations, inter/extrapolate on the line midpoint.
 
     This should be called *after* assigning dpumax to all lines and *after* computing
-    the cross section weights.
+    the invert levels of the lines.
 
     Args:
         nodes (Nodes)
-        lines (Lines): the dpumax is adjusted where necessary. needs the cross_loc1, cross_loc2
-            and cross_weight attributes (see compute_weights)
-        cs (CrossSectionLocations): the reference_level is taken
+        lines (Lines): the dpumax is adjusted where necessary. Needs the
+            invert_level_start_point and invert_level_end_point attributes.
     """
     # find the channel lines that connect 2 connection nodes
     line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
@@ -207,11 +242,11 @@ def fix_dpumax(lines, nodes, cs, allow_nan=False):
     is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
     line_idx = line_idx[is_cn.all(axis=1)]
 
-    # collect the associated crosssection reference_levels and interpolate
-    left = cs.reference_level.take(cs.id_to_index(lines.cross_loc1[line_idx]))
-    right = cs.reference_level.take(cs.id_to_index(lines.cross_loc2[line_idx]))
-    weights = lines.cross_weight[line_idx]
-    new_dpumax = weights * left + (1 - weights) * right
+    # average between the invert levels
+    new_dpumax = (
+        lines.invert_level_start_point[line_idx]
+        + lines.invert_level_end_point[line_idx]
+    ) / 2
 
     # set the new dpumax, including only the lines that have a lower dpumax
     mask = lines.dpumax[line_idx] < new_dpumax

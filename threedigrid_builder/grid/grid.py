@@ -281,6 +281,8 @@ class Grid:
             - lines.s1d: the position of the line's velocity point along the object
             - lines.cross1: the cross section definition id of the line (pipe/culvert)
             - lines.cross_weight: always 1.0 (pipe/culvert)
+            - lines.invert_level_start_point: invert level at line start (pipe/culvert)
+            - lines.invert_level_end_point: invert level at line end (pipe/culvert)
         """
         objects.set_geometries(connection_nodes)
         nodes = objects.interpolate_nodes(node_id_counter, global_dist_calc_points)
@@ -313,51 +315,6 @@ class Grid:
             # Later gridbuilder functions expect ordering by content_pk
             lines.reorder_by("content_pk")
         return cls(nodes, lines, nodes_embedded=nodes_embedded)
-
-    def set_channel_weights(self, locations, definitions, channels):
-        """Set cross section weights to channel nodes and lines.
-
-        The attributes cross_loc1, cross_loc2, cross1, cross2, and cross_weight are
-        changed in place for nodes and lines whose content_type equals TYPE_V2_CHANNEL.
-
-        Args:
-            locations (CrossSectionLocations)
-            definitions (CrossSectionDefinitions)
-            channels (Channels): Used to lookup the channel geometry
-        """
-        # Mask the nodes to only the Channel nodes
-        node_mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
-            self.nodes.content_pk[node_mask],
-            self.nodes.s1d[node_mask],
-            locations,
-            channels,
-        )
-        self.nodes.cross_loc1[node_mask] = cross_loc1
-        self.nodes.cross_loc2[node_mask] = cross_loc2
-        self.nodes.cross_weight[node_mask] = cross_weight
-
-        # Mask the lines to only the Channel lines
-        line_mask = self.lines.content_type == ContentType.TYPE_V2_CHANNEL
-        cross_loc1, cross_loc2, cross_weight = csl_module.compute_weights(
-            self.lines.content_pk[line_mask],
-            self.lines.s1d[line_mask],
-            locations,
-            channels,
-        )
-        self.lines.cross_loc1[line_mask] = cross_loc1
-        self.lines.cross_loc2[line_mask] = cross_loc2
-        self.lines.cross_weight[line_mask] = cross_weight
-
-        # Also fill cross1 and cross2
-        self.lines.cross1[line_mask] = definitions.id_to_index(
-            locations.definition_id[locations.id_to_index(cross_loc1)],
-            check_exists=True,
-        )
-        self.lines.cross2[line_mask] = definitions.id_to_index(
-            locations.definition_id[locations.id_to_index(cross_loc2)],
-            check_exists=True,
-        )
 
     @classmethod
     def from_structures(
@@ -412,60 +369,42 @@ class Grid:
         """
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
-    def set_bottom_levels(
-        self, cross_section_locations, channels, pipes, weirs, orifices, culverts
-    ):
+    def set_bottom_levels(self):
         """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
 
         This assumes that the channel weights have been computed already.
 
         The levels are based on:
-        1. channel nodes: interpolate between crosssection locations
-        2. pipe and culvert nodes: interpolate between invert level start & end
-        3. connection nodes: see connection_nodes.set_bottom_levels
-        4. lines: dpumax = greatest of the two neighboring nodes dmax
+        1. channel, pipe, culvert nodes: use invert level start & end of the lines
+        2. connection nodes: see connection_nodes.set_bottom_levels
+        3. lines: dpumax = greatest of the two neighboring nodes dmax
           - except for channels with no interpolated nodes: take reference level, but
             only if that is higher than the two neighboring nodes.
         """
-        # Channels, interpolated nodes
-        mask = self.nodes.content_type == ContentType.TYPE_V2_CHANNEL
-        self.nodes.dmax[mask] = csl_module.interpolate(
-            self.nodes.cross_loc1[mask],
-            self.nodes.cross_loc2[mask],
-            self.nodes.cross_weight[mask],
-            cross_section_locations,
-            "reference_level",
+        CH = ContentType.TYPE_V2_CHANNEL
+        PI = ContentType.TYPE_V2_PIPE
+        CV = ContentType.TYPE_V2_CULVERT
+
+        # Channels, Pipes, Culverts, interpolated nodes which require dmax update:
+        mask = np.isin(self.nodes.content_type, [CH, PI, CV]) & ~np.isfinite(
+            self.nodes.dmax
         )
 
-        # Pipes, interpolated nodes
-        mask = self.nodes.content_type == ContentType.TYPE_V2_PIPE
-        self.nodes.dmax[mask] = pipes.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.s1d[mask]
-        )
+        # Get the invert level from the connecting line. Each interpolated node has
+        # by definition exactly one line going from it. So we can do this:
+        sorter = np.argsort(self.lines.line[:, 0])
+        idx = np.searchsorted(self.lines.line[sorter, 0], self.nodes.id[mask])
+        assert np.all(self.lines.line[sorter, 0][idx] == self.nodes.id[mask])
+        self.nodes.dmax[mask] = self.lines.invert_level_start_point[sorter][idx]
 
-        # Culverts, interpolated nodes
-        mask = self.nodes.content_type == ContentType.TYPE_V2_CULVERT
-        self.nodes.dmax[mask] = culverts.compute_bottom_level(
-            self.nodes.content_pk[mask], self.nodes.s1d[mask]
-        )
-
-        # Connection nodes: complex logic based on the connected objects
-        connection_nodes_module.set_bottom_levels(
-            self.nodes,
-            self.lines,
-            cross_section_locations,
-            channels,
-            pipes,
-            weirs,
-            orifices,
-            culverts,
-        )
+        # Connection nodes: logic based on the connected objects
+        connection_nodes_module.set_bottom_levels(self.nodes, self.lines)
 
         # Lines: based on the nodes
         self.lines.set_bottom_levels(self.nodes, allow_nan=True)
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
-        csl_module.fix_dpumax(self.lines, self.nodes, cross_section_locations)
+        csl_module.fix_dpumax(self.lines, self.nodes)
 
     def set_obstacles(self, obstacles):
         """Set obstacles on 2D lines by determining intersection between

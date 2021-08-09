@@ -88,7 +88,7 @@ def test_1d2d_properties(pipes):
 
         _, kwargs = compute_drain_level.call_args
         assert_array_equal(kwargs["ids"], [1, 1, 2])  # the content pk
-        assert_array_equal(kwargs["ds"], [12.0, 13.0, 15.0])  # the s1d
+        assert_array_equal(kwargs["s"], [12.0, 13.0, 15.0])  # the s1d
         assert kwargs["connection_nodes"] is connection_nodes
 
     # pipes are closed

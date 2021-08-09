@@ -10,8 +10,6 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import CrossSectionDefinitions
-from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid import QuadtreeStats
@@ -162,131 +160,50 @@ def test_concatenate_grid(grid2d, grid1d):
     assert_array_equal(grid.nodes.id[2:], grid1d.nodes.id)
 
 
-@mock.patch("threedigrid_builder.grid.cross_section_locations.compute_weights")
-def test_set_channel_weights(compute_weights):
-    # set an input grid and mock the compute_weights return value
-    nodes = Nodes(
-        id=[1, 2, 3],
-        content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
-        content_pk=[1, 1, 3],
-        s1d=[2.0, 12.0, 21.0],
-    )
-    lines = Lines(
-        id=[1, 2, 3],
-        content_type=[ContentType.TYPE_V2_CHANNEL, -9999, ContentType.TYPE_V2_CHANNEL],
-        content_pk=[1, 1, 3],
-        s1d=[2.0, 12.0, 21.0],
-    )
-    grid = Grid(nodes=nodes, lines=lines)
-    compute_weights.return_value = [0, 1], [1, 2], [0.2, 0.4]  # csl1, csl2, weights
-    locations = CrossSectionLocations(
-        id=[0, 1, 2],
-        definition_id=[5, 4, 3],
-    )
-    definitions = CrossSectionDefinitions(
-        id=[3, 4, 5],
-    )
-    channels = mock.Mock()
-
-    # execute the method
-    grid.set_channel_weights(locations, definitions, channels)
-
-    # compute_weights was called correctly
-    assert compute_weights.call_count == 2
-    args, kwargs = compute_weights.call_args
-    assert_array_equal(args[0], [1, 3])  # channel_id
-    assert_array_equal(args[1], [2.0, 21.0])  # s1d
-    assert args[2] is locations
-    assert args[3] is channels
-
-    # node attributes cross_loc1, cross_loc2, cross_weight are adapted correctly
-    assert_array_equal(nodes.cross_loc1, [0, -9999, 1])
-    assert_array_equal(nodes.cross_loc2, [1, -9999, 2])
-    assert_array_equal(nodes.cross_weight, [0.2, np.nan, 0.4])
-
-    # line attributes cross_loc1, cross_loc2, cross_weight are adapted correctly
-    assert_array_equal(lines.cross_loc1, [0, -9999, 1])
-    assert_array_equal(lines.cross_loc2, [1, -9999, 2])
-    assert_array_equal(lines.cross_weight, [0.2, np.nan, 0.4])
-
-    # line attributes cross1, cross2 are adapted correctly
-    assert_array_equal(lines.cross1, [2, -9999, 1])
-    assert_array_equal(lines.cross2, [1, -9999, 0])
-
-
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_calculation_types")
 def test_set_calculation_types(set_calculation_types, grid):
     grid.set_calculation_types()
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
 
 
-@mock.patch("threedigrid_builder.grid.cross_section_locations.interpolate")
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
 @mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
 @mock.patch("threedigrid_builder.grid.cross_section_locations.fix_dpumax")
-def test_set_bottom_levels(fix_dpumax, cn_compute, cs_interpolate):
+def test_set_bottom_levels(fix_dpumax, cn_compute):
+    CH = ContentType.TYPE_V2_CHANNEL
+    CN = ContentType.TYPE_V2_CONNECTION_NODES
+    PI = ContentType.TYPE_V2_PIPE
+    CV = ContentType.TYPE_V2_CULVERT
+
     # set an input grid and mock the compute_weights return value
     nodes = Nodes(
-        id=[1, 2, 3, 4, 5],
-        content_type=[
-            ContentType.TYPE_V2_CHANNEL,
-            -9999,
-            ContentType.TYPE_V2_CHANNEL,
-            ContentType.TYPE_V2_PIPE,
-            ContentType.TYPE_V2_CULVERT,
-        ],
-        content_pk=[1, 1, 3, 2, 5],
-        s1d=[2.0, 12.0, 21.0, 15.0, 0.5],
-        dmax=[np.nan, 12.0, np.nan, np.nan, np.nan],
-        cross_loc1=[5, -9999, 7, -9999, -9999],
-        cross_loc2=[6, -9999, 8, -9999, -9999],
-        cross_weight=[0.2, np.nan, 0.8, np.nan, np.nan],
+        id=[1, 2, 3, 4, 5, 6, 7],
+        content_type=[CH, -9999, CH, PI, CV, CN, CN],
+        content_pk=[1, 1, 1, 2, 5, 1, 2],
+        s1d=[2.0, 12.0, 21.0, 15.0, 0.5, np.nan, np.nan],
+        dmax=[np.nan, 12.0, np.nan, np.nan, np.nan, np.nan, np.nan],
     )
-    lines = Lines(id=[])
-    cs_interpolate.return_value = [42.0, 43.0]
+    lines = Lines(
+        id=range(7),
+        content_type=[CH, CH, CH, PI, PI, CV, CV],
+        line=[(6, 1), (1, 3), (3, 7), (6, 4), (4, 7), (6, 5), (5, 7)],
+        invert_level_start_point=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+        invert_level_end_point=[2.0, 3.0, 3.0, 5.0, 6.0, 7.0, 8.0],
+    )
     grid = Grid(nodes=nodes, lines=lines)
-    locations = mock.Mock()
-    channels = mock.Mock()
-    pipes = mock.Mock()
-    pipes.compute_bottom_level.return_value = [44.0]
-    weirs = mock.Mock()
-    orifices = mock.Mock()
-    culverts = mock.Mock()
-    culverts.compute_bottom_level.return_value = [45.0]
-
-    grid.set_bottom_levels(locations, channels, pipes, weirs, orifices, culverts)
-
-    # cross section interpolate was called correctly
-    args, _ = cs_interpolate.call_args
-    assert_array_equal(args[0], [5, 7])  # cross_loc1
-    assert_array_equal(args[1], [6, 8])  # cross_loc2
-    assert_array_equal(args[2], [0.2, 0.8])  # weights
-    assert args[3] is locations
-    assert args[4] == "reference_level"
-
-    # pipes.compute_bottom_level was called correctly
-    args, _ = pipes.compute_bottom_level.call_args
-    assert_array_equal(args[0], [2])  # pipe_id
-    assert_array_equal(args[1], [15.0])  # ds
-
-    # culverts.compute_bottom_level was called correctly
-    args, _ = culverts.compute_bottom_level.call_args
-    assert_array_equal(args[0], [5])  # culvert_id
-    assert_array_equal(args[1], [0.5])  # ds
+    grid.set_bottom_levels()
 
     # node attribute dmax is adapted correctly
-    assert_array_equal(nodes.dmax, [42.0, 12.0, 43.0, 44.0, 45.0])
+    assert_array_equal(grid.nodes.dmax, [2.0, 12.0, 3.0, 5.0, 7.0, np.nan, np.nan])
 
     # connection node set_bottom_levels was called correctly
-    cn_compute.assert_called_with(
-        grid.nodes, grid.lines, locations, channels, pipes, weirs, orifices, culverts
-    )
+    cn_compute.assert_called_with(grid.nodes, grid.lines)
 
     # lines set_bottom_levels was called correctly
     lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=True)
 
     # fix_dpumax was called correctly
-    fix_dpumax.assert_called_with(grid.lines, grid.nodes, locations)
+    fix_dpumax.assert_called_with(grid.lines, grid.nodes)
 
 
 @pytest.mark.parametrize(
