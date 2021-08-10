@@ -17,7 +17,7 @@ RUN pip3 install -r /threedigrid-builder/requirements.txt \
     && pip3 install -r /threedigrid-builder/requirements.txt
 
 COPY . /threedigrid-builder
-RUN cd /threedigrid-builder && ./full_build.sh RELEASE
+RUN cd /threedigrid-builder && ./build.sh RELEASE
 # Doesnt work when done from Dockerfile. Run manually!
 # RUN cd /threedigrid-builder && python3 setup.py build_ext --inplace
 

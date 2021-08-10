@@ -36,7 +36,7 @@ jobs:
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
             pip install cmake &&
-            ./full_build.sh &&
+            ./build.sh &&
             cp -rv /project/libthreedigrid/lib/libthreedigrid*.so* /usr/local/lib/ &&
             cat WHEEL_LICENSE_LINUX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_LINUX >> LICENSE
