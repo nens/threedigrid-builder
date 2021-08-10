@@ -46,13 +46,16 @@ elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
     # Cython is required (except for sdist or the commands used by zest.releaser)
     if not cythonize:
         sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
-
+    if sys.platform == 'win32':
+        runtime_lib_dirs = []
+    else:
+        runtime_lib_dirs=["./libthreedigrid/lib"]
     cython_opts = dict(
         libraries=["threedigrid"],
         # We can enable this once Cython 0.3 is released:
         # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         library_dirs=["./libthreedigrid/lib"],
-        runtime_library_dirs=["./libthreedigrid/lib"],
+        runtime_library_dirs=runtime_lib_dirs,
     )
 
     cython_modules = [
