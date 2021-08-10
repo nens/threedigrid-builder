@@ -42,13 +42,6 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_LINUX >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\build\libthreedigrid -w {dest_dir} {wheel}
-          CIBW_TEST_REQUIRES: pytest
-          # The pytest command has the custom setting import-mode=importlib
-          # so that pytest does not mess up the PATH.
-          # If you do not do that, the (uncompiled) contents of
-          # {package}/pygeos will be tested against instead of the
-          # installed contents of the wheel that was built.
-          CIBW_TEST_COMMAND: pytest --import-mode=importlib {package}/pygeos/test
           # The tests can't be done always as some dependencies (rasterio, pyproj)
           # cannot be installed inside the manylinux1 docker.
           # CIBW_TEST_EXTRAS: test,gridadmin
