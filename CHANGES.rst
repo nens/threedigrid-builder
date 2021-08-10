@@ -18,6 +18,8 @@ Changelog of threedigrid-builder
 
 - Added invert_level_start_point and invert_level_end_point attributes to lines.
 
+- Fixed coordinate order in lines.line_geometries field in gridadmin.h5.
+
 
 0.3.0 (2021-07-28)
 ------------------
