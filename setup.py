@@ -53,7 +53,7 @@ elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
         libs = ["threedigrid"]
         runtime_lib_dirs=["./libthreedigrid/lib"]
     cython_opts = dict(
-        libraries=libs
+        libraries=libs,
         # We can enable this once Cython 0.3 is released:
         # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         library_dirs=["./libthreedigrid/lib"],
