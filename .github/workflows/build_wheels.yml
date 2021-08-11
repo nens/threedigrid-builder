@@ -17,7 +17,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
       # TODO investigate if this is necessary once we do the windows build:
       # - name: Install Visual C++ for Python 2.7
       #   if: runner.os == 'Windows'
@@ -32,6 +31,7 @@ jobs:
           # So that libquadmath and libz are not dynamically linked.
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
           CIBW_MANYLINUX_I686_IMAGE: manylinux1
+          CIBW_ARCHS_WINDOWS: native
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
