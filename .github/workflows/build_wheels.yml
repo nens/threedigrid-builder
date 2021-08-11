@@ -27,11 +27,11 @@ jobs:
         # to supply options, put them in 'env', like:
         env:
           CIBW_SKIP: pp*  # skips pypy
+          CIBW_SKIP: "*-win32" # skips 32-bit windows
           # Use the oldest manylinux docker (with fortran compiler version GNU 4.8.2)
           # So that libquadmath and libz are not dynamically linked.
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
           CIBW_MANYLINUX_I686_IMAGE: manylinux1
-          CIBW_ARCHS_WINDOWS: native
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
@@ -41,7 +41,7 @@ jobs:
             cat WHEEL_LICENSE_LINUX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_LINUX >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\libthreedigrid\lib -w {dest_dir} {wheel}
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\libthreedigrid\bin -w {dest_dir} {wheel}
           # The tests can't be done always as some dependencies (rasterio, pyproj)
           # cannot be installed inside the manylinux1 docker.
           # CIBW_TEST_EXTRAS: test,gridadmin
