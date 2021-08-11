@@ -101,8 +101,8 @@ configure_file (
 ###############################################################
 IF (Fortran_COMPILER_NAME MATCHES "gfortran*")
   # gfortran
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
+  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
+  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
 ELSEIF (Fortran_COMPILER_NAME MATCHES "ifort*")
   # ifort (UNFINISHED)
   # TODO
