@@ -439,7 +439,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "count", cross_sections.count)
 
         # do not use self.write_dataset as we don't want a dummy element
-        if cross_sections.tables:
+        if cross_sections.tables is not None:
             group.create_dataset("tables", data=cross_sections.tables.T)
 
     def write_dataset(self, group, name, values, fill=-9999):
