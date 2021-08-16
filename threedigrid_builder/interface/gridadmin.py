@@ -1,4 +1,5 @@
 from dataclasses import fields
+from threedigrid_builder.grid.cross_section_definitions import CrossSections
 from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import OutputInterface
@@ -425,7 +426,7 @@ class GridAdminOut(OutputInterface):
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
 
-    def write_cross_sections(self, cross_sections):
+    def write_cross_sections(self, cross_sections: CrossSections):
         group = self._file.create_group("cross_sections")
 
         # Datasets that match directly to a lines attribute:

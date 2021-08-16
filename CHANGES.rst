@@ -7,6 +7,8 @@ Changelog of threedigrid-builder
 - Handle embedded connection nodes. These are removed from the grid and written to a
   new dataset "nodes_embedded".
 
+- Fixed bug with cross sections tables being None in Grid instance
+
 - Handle embedded channels, pipes and culverts. Embedded objects result in
   embedded nodes and and lines with kcu LINE_1D_EMBEDDED between between 2D cells.
 
