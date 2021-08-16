@@ -171,7 +171,7 @@ def _grid_to_gpkg(grid, path):
         out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
 
 
-def _grid_to_hdf5(grid, path):
+def _grid_to_hdf5(grid: Grid, path):
     with GridAdminOut(path) as out:
         out.write_meta(grid.meta)
         out.write_grid_counts(grid.nodes, grid.lines)
@@ -181,7 +181,8 @@ def _grid_to_hdf5(grid, path):
         out.write_nodes_embedded(grid.nodes_embedded)
         out.write_lines(grid.lines)
         out.write_pumps(grid.pumps)
-        out.write_cross_sections(grid.cross_sections)
+        if grid.cross_sections.tables is not None:
+            out.write_cross_sections(grid.cross_sections)
 
 
 def make_gridadmin(
