@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.3.1 (unreleased)
+0.3.1 (2021-08-16)
 ------------------
 
 - Handle embedded connection nodes. These are removed from the grid and written to a
