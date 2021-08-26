@@ -6,11 +6,6 @@ PROJECT (3Di)
 ##CMAKE OUTPUT PATHS                                         ##
 ###############################################################
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
-SET(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/include)
-configure_file (
-  "${CMAKE_SOURCE_DIR}/version.inc.in"
-  "${CMAKE_Fortran_MODULE_DIRECTORY}/version.inc"
-  )
 
 
 enable_language(Fortran)
@@ -89,6 +84,11 @@ get_filename_component (default_prefix "./libthreedigrid" ABSOLUTE)
 set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
       "Choose the installation directory"
       FORCE)
+SET(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/include)
+configure_file (
+    "${CMAKE_SOURCE_DIR}/version.inc.in"
+    "${CMAKE_Fortran_MODULE_DIRECTORY}/version.inc"
+    )
 
 ###############################################################
 ##BUILD TYPE                                                 ##
@@ -101,8 +101,8 @@ set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
 ###############################################################
 IF (Fortran_COMPILER_NAME MATCHES "gfortran*")
   # gfortran
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
+  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
+  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
 ELSEIF (Fortran_COMPILER_NAME MATCHES "ifort*")
   # ifort (UNFINISHED)
   # TODO

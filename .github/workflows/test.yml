@@ -48,7 +48,7 @@ jobs:
 
       - name: Compile libthreedigrid
         shell: bash
-        run: ./full_build.sh
+        run: ./build.sh
 
       - name: Install python dependencies
         shell: bash
