@@ -29,7 +29,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
           CIBW_MANYLINUX_I686_IMAGE: manylinux1
           CIBW_ENVIRONMENT_MACOS: FC=gfortran-9 DYLD_FALLBACK_LIBRARY_PATH=/project/libthreedigrid/lib/
-          CIBW_ENVIRONMENT_LINUX: FC=gfortran-9 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
