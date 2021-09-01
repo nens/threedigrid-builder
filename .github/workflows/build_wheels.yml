@@ -28,7 +28,7 @@ jobs:
           # So that libquadmath and libz are not dynamically linked.
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
           CIBW_MANYLINUX_I686_IMAGE: manylinux1
-          CIBW_ENVIRONMENT_MACOS: FC=gfortran
+          CIBW_ENVIRONMENT_MACOS: FC=gfortran-9
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
