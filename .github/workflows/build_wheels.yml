@@ -28,13 +28,13 @@ jobs:
           # So that libquadmath and libz are not dynamically linked.
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
           CIBW_MANYLINUX_I686_IMAGE: manylinux1
-          CIBW_ENVIRONMENT_MACOS: FC=gfortran-9
+          CIBW_ENVIRONMENT_MACOS: FC=gfortran-9 DYLD_FALLBACK_LIBRARY_PATH=/project/libthreedigrid/lib/
+          CIBW_ENVIRONMENT_LINUX: FC=gfortran-9 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
             pip install cmake &&
             ./build.sh &&
-            cp -rv /project/libthreedigrid/lib/libthreedigrid*.so* /usr/local/lib/ &&
             cat WHEEL_LICENSE_LINUX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
