@@ -1,4 +1,5 @@
 from .array import array_of
+from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
@@ -29,6 +30,7 @@ class Node:
     nodn: int  # quadtree grid coordinate y
     storage_area: float
     embedded_in: int  # the id of the node in which this node is embedded
+    boundary_type: BoundaryType
 
 
 @array_of(Node)

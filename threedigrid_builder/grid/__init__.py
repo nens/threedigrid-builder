@@ -5,6 +5,7 @@ This layer contains all the entities and logic surrounding those entities.
 The domain layer does not depend on the interface or application layers.
 """
 
+from .boundary_conditions import *  # NOQA
 from .channels import *  # NOQA
 from .connection_nodes import *  # NOQA
 from .cross_section_definitions import *  # NOQA

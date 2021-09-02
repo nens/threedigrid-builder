@@ -1,5 +1,4 @@
 from dataclasses import fields
-from threedigrid_builder.grid.cross_section_definitions import CrossSections
 from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import OutputInterface
@@ -8,6 +7,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import GridMeta
+from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 import numpy as np
 import pygeos
@@ -235,6 +235,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "dmax", nodes.dmax)
         self.write_dataset(group, "s1d", nodes.s1d)
         self.write_dataset(group, "embedded_in", nodes.embedded_in + 1)
+        self.write_dataset(group, "boundary_type", nodes.boundary_type)
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")

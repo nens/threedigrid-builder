@@ -109,3 +109,11 @@ class InitializationType(IntEnum):
     AVERAGE = 2  # file present
     NO_AGG = 3  # file present
     GLOBAL = 9  # no file present, use global value
+
+
+@unique
+class BoundaryType(IntEnum):
+    WATERLEVEL = 1
+    VELOCITY = 2
+    DISCHARGE = 3
+    SOMMERFELD = 5
