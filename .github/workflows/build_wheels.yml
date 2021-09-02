@@ -28,7 +28,6 @@ jobs:
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-9
-            DYLD_FALLBACK_LIBRARY_PATH=/project/libthreedigrid/lib/
             LDFLAGS=-Wl,-rpath,${{ github.workspace }}/libthreedigrid/lib
           CIBW_ENVIRONMENT_LINUX:
             LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
