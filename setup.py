@@ -102,7 +102,6 @@ setup(
             "threedigrid_builder",
             "threedigrid_builder.*",
         ),
-        exclude=("threedigrid_builder.tests"),
     ),
     install_requires=install_requires,
     extras_require={

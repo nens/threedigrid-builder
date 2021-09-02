@@ -24,12 +24,12 @@ jobs:
         # to supply options, put them in 'env', like:
         env:
           CIBW_SKIP: "pp* *-win32"  # skips pypy, 32-bit windows
-          # Use the oldest manylinux docker (with fortran compiler version GNU 4.8.2)
-          # So that libquadmath and libz are not dynamically linked.
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux1
-          CIBW_MANYLINUX_I686_IMAGE: manylinux1
-          CIBW_ENVIRONMENT_MACOS: FC=gfortran-9 DYLD_FALLBACK_LIBRARY_PATH=/project/libthreedigrid/lib/
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
+          CIBW_ENVIRONMENT_MACOS:
+            FC=gfortran-9
+            DYLD_FALLBACK_LIBRARY_PATH=/project/libthreedigrid/lib/
+            LDFLAGS=-Wl,-rpath,${{ github.workspace }}/libthreedigrid/lib
+          CIBW_ENVIRONMENT_LINUX:
+            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
           # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
           # into /usr/local/bin
           CIBW_BEFORE_ALL: |
@@ -41,15 +41,8 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\libthreedigrid\bin -w {dest_dir} {wheel}
           # The tests can't be done always as some dependencies (rasterio, pyproj)
           # cannot be installed inside the manylinux1 docker.
-          # CIBW_TEST_EXTRAS: test,gridadmin
-          # The pytest command has two custom things:
-          # - --import-mode=importlib so that pytest does not mess up the PATH.
-          #   If you do not do that, the (uncompiled) contents of
-          #   {package}/threedigrid_builder will be tested against instead of the
-          #   installed contents of the wheel that was built.
-          # - We skip tests marked with 'spatialite' because we do not have the spatialite
-          #   extension installed inside the manylinux docker.
-          # CIBW_TEST_COMMAND: "pytest --import-mode=importlib -m 'not spatialite' {package}/threedigrid_builder/tests"
+          CIBW_TEST_EXTRAS: test,gridadmin
+          CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests
 
       - uses: actions/upload-artifact@v2
         with:

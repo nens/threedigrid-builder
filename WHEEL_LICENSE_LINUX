@@ -32,6 +32,11 @@ License: GPL 3 (with GCC Runtime Library Exception 3.1)
   see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
   <http://www.gnu.org/licenses/>.
 
+Name: The GCC Quad-Precision Math Library
+Files: .libs/libquadmath*.so
+Availability: https://gcc.gnu.org/
+License: LGPL 2.1
+
 -----
 
 GCC RUNTIME LIBRARY EXCEPTION
