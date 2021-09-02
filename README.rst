@@ -33,8 +33,8 @@ Installation
 ------------
 
 This package is distributed as binary only, because its (Fortran) source code
-is proprietary. The currently supported platforms are Windows 64-bit,
-Linux (x86_64 and i686), and OSX (x86_64).
+is proprietary. The currently supported platforms are Windows, Linux, and OSX, all
+64 bit versions only.
 
 First install sqlite and spatialite libraries, e.g. on Ubuntu::
 
