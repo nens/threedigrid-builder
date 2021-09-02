@@ -39,8 +39,6 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\libthreedigrid\bin -w {dest_dir} {wheel}
-          # The tests can't be done always as some dependencies (rasterio, pyproj)
-          # cannot be installed inside the manylinux1 docker.
           CIBW_TEST_EXTRAS: test,gridadmin
           CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests
 

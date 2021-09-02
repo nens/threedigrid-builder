@@ -1,8 +1,11 @@
-from rasterio import features as rasterio_features
-
 import json
 import numpy as np
-import rasterio
+
+try:
+    from rasterio import features as rasterio_features
+    import rasterio
+except ImportError:
+    rasterio = rasterio_features = None
 
 
 class Subgrid:
