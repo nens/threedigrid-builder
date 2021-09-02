@@ -242,16 +242,23 @@ class ArrayDataClass:
             args[field] = getattr(self, field)[idx]
         return self.__class__(**args)
 
+    def reorder(self, idx, **kwargs):
+        """Reorder self by given index, inplace.
+
+        Note that this skips self.id: the records are renumbered.
+        """
+        for field in self.data_class.__annotations__:
+            if field == "id":
+                continue
+            setattr(self, field, getattr(self, field)[idx])
+
     def reorder_by(self, attr, **kwargs):
         """Reorder self by given column, inplace.
 
         Note that this skips self.id: the records are renumbered.
         """
         idx = np.argsort(getattr(self, attr), **kwargs)
-        for field in self.data_class.__annotations__:
-            if field == "id":
-                continue
-            setattr(self, field, getattr(self, field)[idx])
+        self.reorder(idx)
 
 
 class array_of:

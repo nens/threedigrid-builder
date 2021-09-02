@@ -199,6 +199,14 @@ def test_concatenate_inplace():
     assert_equal(a.xyz, [[0, 0, 0], [1, 1, 1]])
 
 
+def test_reorder():
+    records = Records(id=[5, 7], number=[3, 2])
+    records.reorder([1, 0])
+
+    assert_equal(records.number, [2, 3])  # reordered
+    assert_equal(records.id, [5, 7])  # kept the same
+
+
 def test_reorder_by():
     records = Records(id=[5, 7], number=[3, 2])
     records.reorder_by("number")

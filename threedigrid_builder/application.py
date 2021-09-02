@@ -141,6 +141,7 @@ def _make_gridadmin(
 
         grid.set_calculation_types()
         grid.set_bottom_levels()
+        grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(definitions)
         grid.set_pumps(db.get_pumps())
 

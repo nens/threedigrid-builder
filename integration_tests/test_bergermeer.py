@@ -40,8 +40,9 @@ def test_integration(tmp_path):
         assert count_unique(f["nodes"]["node_type"]) == {
             -9999: 1,
             NodeType.NODE_2D_OPEN_WATER: 5374,
-            NodeType.NODE_1D_NO_STORAGE: 2489,
+            NodeType.NODE_1D_NO_STORAGE: 2485,
             NodeType.NODE_1D_STORAGE: 42,
+            NodeType.NODE_1D_BOUNDARIES: 4,
         }
 
         ## LINES

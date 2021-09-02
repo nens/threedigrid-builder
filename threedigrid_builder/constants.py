@@ -33,6 +33,7 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_1D_LONG_CRESTED = int(CalculationType.BROAD_CRESTED)
     LINE_1D_SHORT_CRESTED = int(CalculationType.SHORT_CRESTED)
     LINE_1D_DOUBLE_CONNECTED = int(CalculationType.DOUBLE_CONNECTED)
+    LINE_1D_BOUNDARY = 40  # for internal use
     LINE_1D2D_SINGLE_CONNECTED_CLOSED = 51
     LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER = 52
     LINE_1D2D_DOUBLE_CONNECTED_CLOSED = 53
