@@ -2,13 +2,13 @@
 --- Following are licenses for binary wheel distribution ---
 
 Name: Threedigrid builder library.
-Files: .libs/libthreedigrid*.so, .dylibs/libthreedigrid*.dylib
+Files: libthreedigrid*.so, libthreedigrid*.dylib
 License: Proprietary
   libthreedigrid cannot be copied and/or
   distributed without the express permission of Nelen & Schuurmans.
 
 Name: Fortran libraries from the GNU Compiler Collection (GCC)
-Files: .libs/libgfortran*.so, .dylibs/libgfortran*.dylib, .dylibs/libgcc*.dylib
+Files: libgfortran*.so, libgfortran*.dylib, libgcc*.dylib
 Availability: https://gcc.gnu.org/
 License: GPL 3 (with GCC Runtime Library Exception 3.1)
   Copyright (C) 2002-2017 Free Software Foundation, Inc.
@@ -33,12 +33,12 @@ License: GPL 3 (with GCC Runtime Library Exception 3.1)
   <http://www.gnu.org/licenses/>.
 
 Name: The GCC Quad-Precision Math Library
-Files: .libs/libquadmath*.so, .dylibs/libquadmath*.dylib
+Files: libquadmath*.so, libquadmath*.dylib
 Availability: https://gcc.gnu.org/
 License: LGPL 2.1
 
 Name: zlib software library
-Files: .libs/libz*.so
+Files: libz*.so
 Availability: https://zlib.net/
 License:
   Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
