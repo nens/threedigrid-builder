@@ -12,11 +12,10 @@ import h5py
 import numpy as np
 import pygeos
 import pytest
-import tempfile
 
 
 @pytest.fixture(scope="session")
-def h5_out():
+def h5_out(tmpdir_factory):
     nodes = Nodes(
         id=[0, 1, 2],
         dmax=[1.2, 2.2, 3.3],
@@ -82,20 +81,19 @@ def h5_out():
         dmax=[2.3, 0.2],
     )
 
-    with tempfile.NamedTemporaryFile(suffix=".h5") as tmpfile:
-        path = tmpfile.name
-        with GridAdminOut(path) as out:
-            out.write_meta(meta)
-            out.write_grid_counts(nodes, lines)
-            out.write_quadtree(quadtree_stats)
-            out.write_nodes(nodes)
-            out.write_nodes_embedded(nodes_embedded)
-            out.write_lines(lines)
-            out.write_pumps(pumps)
-            out.write_cross_sections(cross_sections)
+    path = tmpdir_factory.mktemp("h5") / "gridadmin.h5"
+    with GridAdminOut(path) as out:
+        out.write_meta(meta)
+        out.write_grid_counts(nodes, lines)
+        out.write_quadtree(quadtree_stats)
+        out.write_nodes(nodes)
+        out.write_nodes_embedded(nodes_embedded)
+        out.write_lines(lines)
+        out.write_pumps(pumps)
+        out.write_cross_sections(cross_sections)
 
-        with h5py.File(path, "r") as f:
-            yield f
+    with h5py.File(path, "r") as f:
+        yield f
 
 
 # obtained from bergermeer gridadmin.h5, edited:
