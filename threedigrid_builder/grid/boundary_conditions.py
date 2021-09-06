@@ -79,6 +79,8 @@ class BoundaryConditions1D:
 
         ## set node attributes
         grid.nodes.calculation_type[idx] = CalculationType.ISOLATED
+        grid.nodes.content_pk[idx] = self.id
+        grid.nodes.content_type[idx] = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
         grid.nodes.boundary_type[idx] = self.boundary_type
         grid.nodes.node_type[idx] = NodeType.NODE_1D_BOUNDARIES
         ## move the nodes to the end
