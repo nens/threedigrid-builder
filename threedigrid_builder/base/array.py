@@ -328,3 +328,16 @@ class array_of:
         Wrapper.__qualname__ = cls.__qualname__
         Wrapper.__module__ = cls.__module__
         return Wrapper
+
+
+def replace(arr, mapping, check_present=False):
+    """Return array with its values replaced according to ``mapping``.
+
+    If ``check_present`` is False, it is assumed that all elements in the array are keys
+    of ``mapping``.
+    """
+    keys, values = np.array(sorted(mapping.items())).T
+    indices = np.digitize(arr, keys, right=True)
+    if check_present and not np.all(keys[indices] == arr):
+        raise ValueError("Not all values are present in the replacement dict")
+    return values[indices]

@@ -472,6 +472,33 @@ class Grid:
             line_id_counter,
         )
 
+    def sort(self):
+        """Sort the nodes and lines in the order required by the calculation core.
+
+        Nodes (by node_type):
+        - NODE_2D_OPEN_WATER = 1
+        - NODE_2D_GROUNDWATER = 2
+        - NODE_1D_NO_STORAGE & NODE_1D_STORAGE (3, 4)
+        - NODE_2D_BOUNDARIES = 5
+        (TODO) - NODE_2D_GROUNDWATER_BOUNDARIES = 6
+        - NODE_1D_BOUNDARIES = 7
+
+        Lines (by kcu + calculation_type):
+        - LINE_2D (98, 99, 100, 101)
+        - LINE_2D_VERTICAL (150)
+        - LINE_2D_GROUNDWATER (-150)
+        - LINE_1D (0, 1, 2, 3, 4, 5)
+        - LINE_1D2D (51, 52, 53, 54, 55, 56)
+        - LINE_1D2D_GROUNDWATER (57, 58)
+        - LINE_2D_BOUNDARY (200, 300, 400, 500), order same as corresponding nodes
+        - LINE_2D_GROUNDWATER_BOUNDARY (TODO), order same as corresponding nodes
+        - LINE_1D with calculation_type = -1, order same as corresponding nodes
+
+
+        ? LINE_2D_VERTICAL
+        ? LINE_2D_GROUNDWATER
+        """
+
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
         self.lines.set_line_coords(self.nodes)
