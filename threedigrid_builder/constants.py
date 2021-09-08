@@ -33,7 +33,6 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_1D_LONG_CRESTED = int(CalculationType.BROAD_CRESTED)
     LINE_1D_SHORT_CRESTED = int(CalculationType.SHORT_CRESTED)
     LINE_1D_DOUBLE_CONNECTED = int(CalculationType.DOUBLE_CONNECTED)
-    LINE_1D_BOUNDARY = 40  # for internal use
     LINE_1D2D_SINGLE_CONNECTED_CLOSED = 51
     LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER = 52
     LINE_1D2D_DOUBLE_CONNECTED_CLOSED = 53
@@ -42,16 +41,17 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_1D2D_ACTIVE_BREACH = 56
     LINE_1D2D_GROUNDWATER_OPEN_WATER = 57
     LINE_1D2D_GROUNDWATER_SEWER = 58  # diff to 57?
-    LINE_2D_U = 98
-    LINE_2D_V = 99
+    LINE_2D_U = 98  # for internal use
+    LINE_2D_V = 99  # for internal use
     LINE_2D = 100
     LINE_2D_OBSTACLE = 101  # levee
     LINE_2D_VERTICAL = 150
     LINE_2D_GROUNDWATER = -150
-    LINE_2D_BOUNDARY_WEST = 200
-    LINE_2D_BOUNDARY_EAST = 300
-    LINE_2D_BOUNDARY_SOUTH = 400
-    LINE_2D_BOUNDARY_NORTH = 500
+    LINE_2D_BOUNDARY_200 = 200
+    LINE_2D_BOUNDARY_300 = 300
+    LINE_2D_BOUNDARY_400 = 400
+    LINE_2D_BOUNDARY_500 = 500
+    LINE_1D_BOUNDARY = 600  # for internal use
 
 
 @unique

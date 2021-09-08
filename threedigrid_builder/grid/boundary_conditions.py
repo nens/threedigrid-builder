@@ -24,12 +24,12 @@ class BoundaryConditions1D:
     def apply(self, grid):
         """Apply 1D boundary conditions to a Grid
 
-        Calculation nodes that have a boundary condition will be moved to the end of the
-        node list. The following fields are adjusted:
-        - id: the nodes are moved to the end, the ids are renumbered accordingly
-        - calculation_type: set (overridden) to ISOLATED
-        - boundary_type: from BoundaryConditions1D
-        - node_type: set to NODE_1D_BOUNDARIES
+        Fields on nodes/lines that have a boundary condition be adjusted:
+        - nodes.calculation_type: set (overridden) to BOUNDARY_NODE
+        - nodes.boundary_id: from BoundaryConditions1D.id
+        - nodes.boundary_type: from BoundaryConditions1D.boundary_type
+        - nodes.node_type: set to NODE_1D_BOUNDARIES
+        - lines.kcu: set to LINE_1D_BOUNDARY
 
         Note:
         - it is assumed that nodes.content_pk is sorted for connection nodes
@@ -78,24 +78,12 @@ class BoundaryConditions1D:
             )
 
         ## set node attributes
-        grid.nodes.calculation_type[idx] = CalculationType.ISOLATED
-        grid.nodes.content_pk[idx] = self.id
-        grid.nodes.content_type[idx] = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
+        grid.nodes.calculation_type[idx] = CalculationType.BOUNDARY_NODE
+        grid.nodes.boundary_id[idx] = self.id
         grid.nodes.boundary_type[idx] = self.boundary_type
         grid.nodes.node_type[idx] = NodeType.NODE_1D_BOUNDARIES
-        ## move the nodes to the end
-        x = np.arange(len(grid.nodes))
-        grid.nodes.reorder(np.concatenate([np.delete(x, idx), idx]))
         ## set line attributes
-        # note: the LINE_1D_BOUNDARY will be mapped back to LINE_1D_ISOLATED later
         grid.lines.kcu[line_idx] = LineType.LINE_1D_BOUNDARY
-        ## map lines.line according to node reordering
-        # create a mapping with new node idx on the position of the old node indices
-        is_bc = np.isin(np.arange(len(grid.nodes)), idx)
-        new_idx = np.full_like(grid.nodes.id, fill_value=-9999)
-        new_idx[~is_bc] = np.arange(len(grid.nodes) - len(self))
-        new_idx[idx] = np.arange(len(self)) + len(grid.nodes) - len(self)
-        grid.lines.line[:] = np.take(new_idx, grid.lines.line)
 
 
 class BoundaryCondition2D:

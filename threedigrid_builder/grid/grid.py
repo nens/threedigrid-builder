@@ -480,7 +480,6 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
-        self.lines.reorder_boundary_lines()
         if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
         self.meta.extent_1d = self.nodes.get_extent_1d()

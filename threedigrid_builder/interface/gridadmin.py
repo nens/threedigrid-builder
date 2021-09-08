@@ -235,6 +235,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "dmax", nodes.dmax)
         self.write_dataset(group, "s1d", nodes.s1d)
         self.write_dataset(group, "embedded_in", nodes.embedded_in + 1)
+        self.write_dataset(group, "boundary_id", nodes.boundary_id)
         self.write_dataset(group, "boundary_type", nodes.boundary_type)
 
         # content pk is only set for connection nodes, otherwise 0
@@ -318,6 +319,7 @@ class GridAdminOut(OutputInterface):
         )
 
         lines.kcu[l2d] = LineType.LINE_2D
+        lines.kcu[lines.kcu == LineType.LINE_1D_BOUNDARY] = LineType.LINE_1D_ISOLATED
         self.write_dataset(group, "kcu", lines.kcu)
         calculation_type = fill_int.copy()
         calculation_type[is_channel] = lines.kcu[is_channel] + 100

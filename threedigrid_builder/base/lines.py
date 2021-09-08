@@ -90,12 +90,3 @@ class Lines:
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
         self.ds1d[to_fix] = pygeos.length(self.line_geometries[to_fix])
-
-    def reorder_boundary_lines(self):
-        """Move boundary lines to the end and set their kcu to LINE_1D_ISOLATED"""
-        idx = np.where(self.kcu == LineType.LINE_1D_BOUNDARY)[0]
-        if len(idx) == 0:
-            return
-        self.kcu[idx] = LineType.LINE_1D_ISOLATED
-        x = np.arange(len(self))
-        self.reorder(np.concatenate([np.delete(x, idx), idx]))

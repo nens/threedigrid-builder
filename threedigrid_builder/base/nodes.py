@@ -30,6 +30,7 @@ class Node:
     nodn: int  # quadtree grid coordinate y
     storage_area: float
     embedded_in: int  # the id of the node in which this node is embedded
+    boundary_id: int  # referring to the id of the boundary condition
     boundary_type: BoundaryType
 
 
