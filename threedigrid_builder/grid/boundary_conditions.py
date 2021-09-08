@@ -1,4 +1,6 @@
 from threedigrid_builder.base import array_of
+from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -95,4 +97,63 @@ class BoundaryCondition2D:
 
 @array_of(BoundaryCondition2D)
 class BoundaryConditions2D:
-    pass
+    def get_nodes(self, grid, node_id_counter):
+        min_length = grid.quadtree.dx[0] / 2
+        max_aspect_ratio = 0.0875  # 5 degree slope
+
+        nodes = Nodes(id=[])
+        for bc_idx in range(len(self)):
+            x1, y1, x2, y2 = pygeos.bounds(self.the_geom[bc_idx])
+            is_horizontal = (x2 - x1) > (y2 - y1)
+            if is_horizontal:
+                length = x2 - x1
+                width = y2 - y1
+            else:
+                length = y2 - y1
+                width = x2 - x1
+            if length < min_length:
+                raise SchematisationError(
+                    f"Boundary condition {self.id[bc_idx]} is too small."
+                )
+            if width / length > max_aspect_ratio:
+                raise SchematisationError(
+                    f"Boundary condition {self.id[bc_idx]} is has incorrect angle."
+                )
+            node_idx = np.sort(grid.cell_tree.query(self.the_geom[bc_idx]))
+            nodk = grid.nodes.nodk[node_idx]
+            sz = 2 ** (nodk - 1)
+            nodm = grid.nodes.nodm[node_idx] - 1  # nodm indexes 1-based into quad_idx
+            nodn = grid.nodes.nodn[node_idx] - 1  # nodn indexes 1-based into quad_idx
+            quad_idx = grid.quadtree.quad_idx - 1  # indexes in quad_idx are 1-based
+            assert np.all(quad_idx[nodm * sz, nodn * sz] == node_idx)
+
+            if is_horizontal:
+                b = nodn > 0
+                b[b] = quad_idx[nodm[b] * sz[b], nodn[b] * sz[b] - 1] != -1
+                b[b] = quad_idx[(nodm[b] + 1) * sz[b] - 1, nodn[b] * sz[b] - 1] != -1
+                a = nodn + sz < quad_idx.shape[1]
+                a[a] = quad_idx[nodm[a] * sz[a], (nodn[a] + 1) * sz[a]] != -1
+                a[a] = quad_idx[(nodm[a] + 1) * sz[a] - 1, (nodn[a] + 1) * sz[a]] != -1
+            else:
+                b = nodm > 0
+                b[b] = quad_idx[nodm[b] * sz[b] - 1, nodn[b] * sz[b]] != -1
+                b[b] = quad_idx[nodm[b] * sz[b] - 1, (nodn[b] + 1) * sz[b] - 1] != -1
+                a = (nodm + 1) * sz < quad_idx.shape[0]
+                a[a] = quad_idx[(nodm[a] + 1) * sz[a], nodn[a] * sz[a]] != -1
+                a[a] = quad_idx[(nodm[a] + 1) * sz[a], (nodn[a] + 1) * sz[a] - 1] != -1
+
+            # the edge of the boundary is whichever side has the most edges
+            if np.count_nonzero(a) > np.count_nonzero(b):
+                is_edge = a
+                kcu = (
+                    LineType.LINE_2D_BOUNDARY_SOUTH
+                    if is_horizontal
+                    else LineType.LINE_2D_BOUNDARY_WEST
+                )
+            else:
+                is_edge = b
+                kcu = (
+                    LineType.LINE_2D_BOUNDARY_NORTH
+                    if is_horizontal
+                    else LineType.LINE_2D_BOUNDARY_EAST
+                )
