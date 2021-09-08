@@ -1,11 +1,14 @@
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
+from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import SewerageType
+from threedigrid_builder.grid import BoundaryConditions1D
+from threedigrid_builder.grid import BoundaryConditions2D
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -32,6 +35,24 @@ def test_init():
     )
 
     assert sqlite.db is db.return_value
+
+
+def test_get_boundary_conditions_1d(db):
+    boundary_conditions_1d = db.get_boundary_conditions_1d()
+    assert isinstance(boundary_conditions_1d, BoundaryConditions1D)
+
+    # some test samples
+    assert len(boundary_conditions_1d) == 4
+    assert boundary_conditions_1d.id[1] == 2
+    assert boundary_conditions_1d.boundary_type[2] == BoundaryType.DISCHARGE
+    assert boundary_conditions_1d.connection_node_id[3] == 59
+
+
+def test_get_boundary_conditions_2d(db):
+    boundary_conditions_2d = db.get_boundary_conditions_2d()
+    assert isinstance(boundary_conditions_2d, BoundaryConditions2D)
+
+    assert len(boundary_conditions_2d) == 0
 
 
 def test_get_channels(db):

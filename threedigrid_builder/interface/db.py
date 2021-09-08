@@ -17,6 +17,8 @@ from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import InitializationType
+from threedigrid_builder.grid import BoundaryConditions1D
+from threedigrid_builder.grid import BoundaryConditions2D
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
@@ -210,6 +212,39 @@ class SQLite:
         target_epsg = self.epsg_code
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
         return pygeos.apply(geometries, func)
+
+    def get_boundary_conditions_1d(self) -> BoundaryConditions1D:
+        """Return BoundaryConditions1D"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.BoundaryCondition1D.id,
+                    models.BoundaryCondition1D.boundary_type,
+                    models.BoundaryCondition1D.connection_node_id,
+                )
+                .order_by(models.BoundaryCondition1D.id)
+                .as_structarray()
+            )
+
+        # transform to a BoundaryConditions1D object
+        return BoundaryConditions1D(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_boundary_conditions_2d(self) -> BoundaryConditions2D:
+        """Return BoundaryConditions2D"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.BoundaryConditions2D.id,
+                    models.BoundaryConditions2D.boundary_type,
+                    models.BoundaryConditions2D.the_geom,
+                )
+                .order_by(models.BoundaryConditions2D.id)
+                .as_structarray()
+            )
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # transform to a BoundaryConditions1D object
+        return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
     def get_channels(self) -> Channels:
         """Return Channels"""

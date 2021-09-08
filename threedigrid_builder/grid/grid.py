@@ -461,6 +461,9 @@ class Grid:
         if len(obstacles) > 0:
             obstacles_module.apply_obstacles(self.lines, obstacles)
 
+    def set_boundary_conditions_1d(self, boundary_conditions_1d):
+        boundary_conditions_1d.apply(self)
+
     def set_pumps(self, pumps):
         """Set the pumps on this grid object
 
@@ -526,6 +529,8 @@ class Grid:
         """
         node_sorter = np.argsort(replace(self.nodes.node_type, NODE_ORDER))
         line_sorter = np.argsort(replace(self.lines.kcu, LINE_ORDER))
+
+        # TODO Sort boundary noes & lines so that they are internally in the same order
 
         # now sort the nodes and lines and reset their ids
         old_node_ids = self.nodes.id.copy()

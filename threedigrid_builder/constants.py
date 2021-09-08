@@ -41,8 +41,8 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_1D2D_ACTIVE_BREACH = 56
     LINE_1D2D_GROUNDWATER_OPEN_WATER = 57
     LINE_1D2D_GROUNDWATER_SEWER = 58  # diff to 57?
-    LINE_2D_U = 98
-    LINE_2D_V = 99
+    LINE_2D_U = 98  # for internal use
+    LINE_2D_V = 99  # for internal use
     LINE_2D = 100
     LINE_2D_OBSTACLE = 101  # levee
     LINE_2D_VERTICAL = 150
@@ -51,7 +51,7 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_2D_BOUNDARY_EAST = 300
     LINE_2D_BOUNDARY_SOUTH = 400
     LINE_2D_BOUNDARY_NORTH = 500
-    LINE_1D_BOUNDARY = 600
+    LINE_1D_BOUNDARY = 600  # for internal use
 
 
 @unique
@@ -110,3 +110,11 @@ class InitializationType(IntEnum):
     AVERAGE = 2  # file present
     NO_AGG = 3  # file present
     GLOBAL = 9  # no file present, use global value
+
+
+@unique
+class BoundaryType(IntEnum):
+    WATERLEVEL = 1
+    VELOCITY = 2
+    DISCHARGE = 3
+    SOMMERFELD = 5
