@@ -18,6 +18,7 @@ __all__ = [
     "is_tuple_type",
     "is_int_enum",
     "unpack_optional_type",
+    "replace",
 ]
 
 
@@ -242,16 +243,23 @@ class ArrayDataClass:
             args[field] = getattr(self, field)[idx]
         return self.__class__(**args)
 
+    def reorder(self, idx):
+        """Reorder self by given index, inplace.
+
+        Note that this skips self.id: the records are renumbered.
+        """
+        for field in self.data_class.__annotations__:
+            if field == "id":
+                continue
+            setattr(self, field, getattr(self, field)[idx])
+
     def reorder_by(self, attr, **kwargs):
         """Reorder self by given column, inplace.
 
         Note that this skips self.id: the records are renumbered.
         """
         idx = np.argsort(getattr(self, attr), **kwargs)
-        for field in self.data_class.__annotations__:
-            if field == "id":
-                continue
-            setattr(self, field, getattr(self, field)[idx])
+        self.reorder(idx)
 
 
 class array_of:
@@ -328,3 +336,16 @@ class array_of:
         Wrapper.__qualname__ = cls.__qualname__
         Wrapper.__module__ = cls.__module__
         return Wrapper
+
+
+def replace(arr, mapping, check_present=False):
+    """Return array with its values replaced according to ``mapping``.
+
+    If ``check_present`` is False, it is assumed that all elements in the array are keys
+    of ``mapping``.
+    """
+    keys, values = np.array(sorted(mapping.items())).T
+    indices = np.digitize(arr, keys, right=True)
+    if check_present and not np.all(keys[indices] == arr):
+        raise ValueError("Not all values are present in the replacement dict")
+    return values[indices]

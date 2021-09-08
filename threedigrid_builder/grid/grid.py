@@ -8,6 +8,7 @@ from dataclasses import fields
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import replace
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import CalculationType
@@ -25,6 +26,49 @@ import threedigrid_builder
 
 
 __all__ = ["Grid", "GridMeta", "QuadtreeStats"]
+
+NODE_ORDER = {
+    NodeType.NODE_2D_OPEN_WATER: 1,
+    NodeType.NODE_2D_GROUNDWATER: 2,
+    NodeType.NODE_1D_NO_STORAGE: 3,
+    NodeType.NODE_1D_STORAGE: 3,
+    NodeType.NODE_2D_BOUNDARIES: 4,
+    NodeType.NODE_2D_GROUNDWATER_BOUNDARIES: 5,
+    NodeType.NODE_1D_BOUNDARIES: 6,
+}
+# failsafe for future adding of types:
+assert len(NodeType) == len(NODE_ORDER)
+
+LINE_ORDER = {
+    LineType.LINE_2D_U: 1,
+    LineType.LINE_2D_V: 1,
+    LineType.LINE_2D: 1,
+    LineType.LINE_2D_OBSTACLE: 1,
+    LineType.LINE_2D_VERTICAL: 2,
+    LineType.LINE_2D_GROUNDWATER: 3,
+    LineType.LINE_1D_EMBEDDED: 4,
+    LineType.LINE_1D_ISOLATED: 4,
+    LineType.LINE_1D_CONNECTED: 4,
+    LineType.LINE_1D_LONG_CRESTED: 4,
+    LineType.LINE_1D_SHORT_CRESTED: 4,
+    LineType.LINE_1D_DOUBLE_CONNECTED: 4,
+    LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED: 5,
+    LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 5,
+    LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED: 5,
+    LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 5,
+    LineType.LINE_1D2D_POSSIBLE_BREACH: 5,
+    LineType.LINE_1D2D_ACTIVE_BREACH: 5,
+    LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER: 6,
+    LineType.LINE_1D2D_GROUNDWATER_SEWER: 6,
+    LineType.LINE_2D_BOUNDARY_WEST: 7,
+    LineType.LINE_2D_BOUNDARY_EAST: 7,
+    LineType.LINE_2D_BOUNDARY_SOUTH: 7,
+    LineType.LINE_2D_BOUNDARY_NORTH: 7,
+    # LineType.LINE_2D_GROUNDWATER_BOUNDARY: 8, (to be implemented)
+    LineType.LINE_1D_BOUNDARY: 9,
+}
+# failsafe for future adding of types:
+assert len(LineType) == len(LINE_ORDER)
 
 
 @dataclass
@@ -475,8 +519,41 @@ class Grid:
             line_id_counter,
         )
 
+    def sort(self):
+        """Sort the nodes and lines into the order required by the calculation core.
+
+        Resets the nodes and lines ids to consecutive indices starting from 0.
+        Also maps lines.line and pumps.line according to the new nodes indices.
+
+        See NODE_ORDER and LINE_ORDER for the order.
+        """
+        node_sorter = np.argsort(replace(self.nodes.node_type, NODE_ORDER))
+        line_sorter = np.argsort(replace(self.lines.kcu, LINE_ORDER))
+
+        # now sort the nodes and lines and reset their ids
+        old_node_ids = self.nodes.id.copy()
+        self.nodes.reorder(node_sorter)
+        self.nodes.id[:] = np.arange(len(self.nodes))
+        self.lines.reorder(line_sorter)
+        self.lines.id[:] = np.arange(len(self.lines))
+
+        # create a mapping with new node ids on the position of the old node ids
+        new_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
+        new_ids[old_node_ids[node_sorter]] = self.nodes.id
+
+        # apply the mapping to lines.line and optionally to pumps and embedded nodes
+        self.lines.line[:] = np.take(new_ids, self.lines.line)
+        if self.pumps is not None:
+            mask = self.pumps.line != -9999
+            self.pumps.line[mask] = np.take(new_ids, self.pumps.line[mask])
+        if self.nodes_embedded is not None:
+            self.nodes_embedded.embedded_in = np.take(
+                new_ids, self.nodes_embedded.embedded_in
+            )
+
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
+        self.sort()
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
