@@ -465,7 +465,7 @@ class Grid:
         boundary_conditions_1d.apply(self)
 
     def set_boundary_conditions_2d(self, boundary_conditions_2d, node_id_counter):
-        nodes = boundary_conditions_2d.get_nodes(self, node_id_counter)
+        self.nodes += boundary_conditions_2d.get_nodes(self, node_id_counter)
 
     def set_pumps(self, pumps):
         """Set the pumps on this grid object
