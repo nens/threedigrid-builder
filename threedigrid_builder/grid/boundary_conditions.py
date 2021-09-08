@@ -53,9 +53,8 @@ class BoundaryConditions1D:
         ids = grid.nodes.index_to_id(idx)
         line_idx, start_or_end = np.where(np.isin(grid.lines.line, ids))
         bc_node_id = grid.lines.line[line_idx, start_or_end]
-        other_node_id = grid.lines.line[
-            line_idx, (~start_or_end.astype(bool)).astype(int)
-        ]
+        start_or_end_inv = (~(start_or_end.astype(bool))).astype(int)
+        other_node_id = grid.lines.line[line_idx, start_or_end_inv]
 
         if not np.isin(ids, bc_node_id).all():
             missing = ~np.isin(ids, bc_node_id)
@@ -77,12 +76,12 @@ class BoundaryConditions1D:
                 f"boundary conditions."
             )
 
-        ## set node attributes
+        # set node attributes
         grid.nodes.calculation_type[idx] = CalculationType.BOUNDARY_NODE
         grid.nodes.boundary_id[idx] = self.id
         grid.nodes.boundary_type[idx] = self.boundary_type
         grid.nodes.node_type[idx] = NodeType.NODE_1D_BOUNDARIES
-        ## set line attributes
+        # set line attributes
         grid.lines.kcu[line_idx] = LineType.LINE_1D_BOUNDARY
 
 
