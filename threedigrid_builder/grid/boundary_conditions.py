@@ -43,10 +43,10 @@ class BoundaryConditions1D:
             np.searchsorted(grid.nodes.content_pk[cn_idx], self.connection_node_id)
         ]
         if not np.all(grid.nodes.content_pk[idx] == self.connection_node_id):
-            missing = np.where(grid.nodes.content_pk[idx] == self.connection_node_id)[0]
+            missing = np.where(grid.nodes.content_pk[idx] != self.connection_node_id)[0]
             raise SchematisationError(
-                f"1D boundary conditions {self.id[missing]} refer to non-existing "
-                f"connection nodes {self.connection_node_id[missing]}."
+                f"1D boundary conditions {self.id[missing].tolist()} refer to missing "
+                f"connection nodes {self.connection_node_id[missing].tolist()}."
             )
 
         # check the lines connecting to these nodes
@@ -60,20 +60,20 @@ class BoundaryConditions1D:
         if not np.isin(ids, bc_node_id).all():
             missing = ~np.isin(ids, bc_node_id)
             raise SchematisationError(
-                f"1D boundary conditions {self.id[missing]} refer to connection nodes "
-                f"that have no attached objects ({self.connection_node_id[missing]})."
+                f"1D boundary conditions {self.id[missing].tolist()} refer to connection nodes "
+                f"that have no attached objects ({self.connection_node_id[missing].tolist()})."
             )
         if len(ids) != len(bc_node_id):
             sorted_cn_id, counts = np.unique(bc_node_id, return_counts=True)
             duplicate_cn_id = sorted_cn_id[counts > 1]
             raise SchematisationError(
                 f"Only one attached object is allowed for connection nodes "
-                f"{duplicate_cn_id} with a 1d boundary condition."
+                f"{duplicate_cn_id.tolist()} with a 1D boundary condition."
             )
         if np.isin(ids, other_node_id).any():
             both_sides = np.isin(ids, other_node_id)
             raise SchematisationError(
-                f"1D boundary conditions {self.id[both_sides]} are too close to other "
+                f"1D boundary conditions {self.id[both_sides].tolist()} are too close to other "
                 f"boundary conditions."
             )
 
