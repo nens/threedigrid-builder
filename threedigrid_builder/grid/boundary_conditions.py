@@ -49,10 +49,12 @@ class BoundaryConditions1D:
                 f"connection nodes {self.connection_node_id[missing].tolist()}."
             )
 
-        # check the lines connecting to these nodes
+        # lookup the lines connecting to these nodes
         ids = grid.nodes.index_to_id(idx)
         line_idx, start_or_end = np.where(np.isin(grid.lines.line, ids))
+        # lookup the boundary condition node and other node corresponding to these lines
         bc_node_id = grid.lines.line[line_idx, start_or_end]
+        # this trick transforms 0 to 1 and 1 to 0:
         start_or_end_inv = (~(start_or_end.astype(bool))).astype(int)
         other_node_id = grid.lines.line[line_idx, start_or_end_inv]
 

@@ -38,8 +38,9 @@ def test_apply(grid1d):
     )
     boundary_conditions_1d.apply(grid1d)
 
+    # note that apply does not reorder the nodes, this happens later at grid.sort()
     assert_array_equal(grid1d.nodes.boundary_id, [-9999, 22, 10, -9999])
-    assert_array_equal(grid1d.nodes.boundary_id, [-9999, 22, 10, -9999])
+    assert_array_equal(grid1d.nodes.boundary_type, [-9999, 3, 2, -9999])
     assert_array_equal(grid1d.nodes.node_type[[0, 3]], NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(grid1d.nodes.node_type[[1, 2]], NodeType.NODE_1D_BOUNDARIES)
     assert_array_equal(grid1d.nodes.calculation_type[[0, 3]], CalculationType.ISOLATED)
