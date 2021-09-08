@@ -538,7 +538,7 @@ class Grid:
         new_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
         new_ids[old_node_ids[node_sorter]] = self.nodes.id
 
-        # apply the mapping to lines.line and optionally pumps.line
+        # apply the mapping to lines.line and optionally to pumps and embedded nodes
         self.lines.line[:] = np.take(new_ids, self.lines.line)
         if self.pumps is not None:
             mask = self.pumps.line != -9999
