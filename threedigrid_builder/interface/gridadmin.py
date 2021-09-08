@@ -1,5 +1,4 @@
 from dataclasses import fields
-from threedigrid_builder.grid.cross_section_definitions import CrossSections
 from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import OutputInterface
@@ -8,6 +7,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import GridMeta
+from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 import numpy as np
 import pygeos

@@ -2,6 +2,7 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -348,3 +349,39 @@ def test_1d2d_multiple(grid2d):
     assert_array_equal(
         grid2d.lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0, 6.0, 7.0, 7.0, 8.0]
     )
+
+
+def test_sort():
+    grid = Grid(
+        Nodes(
+            id=[0, 1, 4, 5],
+            node_type=[
+                NodeType.NODE_1D_BOUNDARIES,
+                NodeType.NODE_2D_OPEN_WATER,
+                NodeType.NODE_1D_STORAGE,
+                NodeType.NODE_1D_NO_STORAGE,
+            ],
+            dmax=[0, 1, 4, 5],
+        ),
+        Lines(
+            id=[0, 1, 6],
+            kcu=[
+                LineType.LINE_1D_BOUNDARY,
+                LineType.LINE_1D_ISOLATED,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+            ],
+            line=[(0, 4), (4, 5), (5, 1)],
+            dpumax=[0, 1, 6],
+        ),
+        pumps=Pumps(id=[0], line=[(4, 5)]),
+        nodes_embedded=Nodes(id=[0], embedded_in=[1]),
+    )
+    grid.sort()
+
+    assert_array_equal(grid.nodes.id, [0, 1, 2, 3])
+    assert_array_equal(grid.nodes.dmax, [1, 4, 5, 0])
+    assert_array_equal(grid.lines.id, [0, 1, 2])
+    assert_array_equal(grid.lines.dpumax, [1, 6, 0])
+    assert_array_equal(grid.lines.line, [(1, 2), (2, 0), (3, 1)])
+    assert_array_equal(grid.pumps.line, [(1, 2)])
+    assert_array_equal(grid.nodes_embedded.embedded_in, [0])
