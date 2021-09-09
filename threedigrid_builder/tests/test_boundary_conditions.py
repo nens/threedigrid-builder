@@ -123,7 +123,9 @@ def grid2d():
         nodm=nodm,
         nodn=nodn,
     )
-    quad_idx = np.array(
+    grid = Grid(nodes=nodes, lines=Lines(id=[]))
+    grid.quadtree = mock.Mock()
+    grid.quadtree.quad_idx = np.array(
         [
             [0, 5, 2, 2],
             [3, 4, 2, 2],
@@ -131,10 +133,6 @@ def grid2d():
             [1, 1, 6, 0],
         ]
     )[::-1].T
-    grid = Grid(nodes=nodes, lines=Lines(id=[]))
-    grid.quadtree = mock.Mock()
-    grid.quadtree.dx = np.array([1.0, 2.0, 4.0, 8.0]) * min_cell_size
-    grid.quadtree.quad_idx = quad_idx
     return grid
 
 
@@ -171,7 +169,9 @@ def test_2d_boundary_condition(grid2d, bc_coords, expected_bounds):
         the_geom=pygeos.linestrings(bc_coords),
     )
 
-    nodes = boundary_conditions_2d.get_nodes(grid2d, itertools.count())
+    nodes = boundary_conditions_2d.get_nodes(
+        grid2d.nodes, grid2d.cell_tree, grid2d.quadtree, itertools.count()
+    )
     assert_array_equal(nodes.bounds, expected_bounds)
 
 
@@ -197,4 +197,6 @@ def test_2d_boundary_condition_err(grid2d, bc_coords, expected_message):
     )
 
     with pytest.raises(SchematisationError, match=expected_message):
-        boundary_conditions_2d.get_nodes(grid2d, itertools.count())
+        boundary_conditions_2d.get_nodes(
+            grid2d.nodes, grid2d.cell_tree, grid2d.quadtree, itertools.count()
+        )

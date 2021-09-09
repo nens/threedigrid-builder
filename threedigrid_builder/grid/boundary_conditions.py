@@ -98,24 +98,24 @@ class BoundaryCondition2D:
 
 @array_of(BoundaryCondition2D)
 class BoundaryConditions2D:
-    def get_nodes(self, grid, node_id_counter):
+    def get_nodes(self, nodes, cell_tree, quadtree, node_id_counter):
+        # we pad quad_idx to prevent out of bound errors later
+        quad_idx = np.pad(quadtree.quad_idx, 1)
         cells_done = np.empty((0,), dtype=int)
 
-        nodes = Nodes(id=[])
+        boundary_nodes = Nodes(id=[])
         for bc_idx in range(len(self)):
             x1, y1, x2, y2 = pygeos.bounds(self.the_geom[bc_idx])
             is_horizontal = (x2 - x1) > (y2 - y1)
 
-            node_idx = np.sort(grid.cell_tree.query(self.the_geom[bc_idx]))
-            nodk = grid.nodes.nodk[node_idx]
+            node_idx = np.sort(cell_tree.query(self.the_geom[bc_idx]))
+            nodk = nodes.nodk[node_idx]
             sz = 2 ** (nodk - 1)
             # nodm and nodn are 1-based indices into quad_idx. So we subtract 1 from it.
-            nodm = grid.nodes.nodm[node_idx] - 1
-            nodn = grid.nodes.nodn[node_idx] - 1
-            # we pad quad_idx to prevent out of bound errors later
-            quad_idx = np.pad(grid.quadtree.quad_idx, 1)
-            # correspondingly the indices of the resized nodm, nodn (called x, y) are
-            # increased by one
+            nodm = nodes.nodm[node_idx] - 1
+            nodn = nodes.nodn[node_idx] - 1
+            # Resized nodm, nodn (called x, y) so that they index into quad_idx.
+            # The +1 accounts for the padding of quad_idx.
             x = nodm * sz + 1
             y = nodn * sz + 1
             # just to be sure, can be removed later:
@@ -156,19 +156,19 @@ class BoundaryConditions2D:
             if is_horizontal and is_before:
                 kcu = LineType.LINE_2D_BOUNDARY_SOUTH
                 node_idx = node_idx[before]
-                edge_coord = grid.nodes.bounds[node_idx, 1]
+                edge_coord = nodes.bounds[node_idx, 1]
             elif is_horizontal:  # and not is_before
                 kcu = LineType.LINE_2D_BOUNDARY_NORTH
                 node_idx = node_idx[after]
-                edge_coord = grid.nodes.bounds[node_idx, 3]
+                edge_coord = nodes.bounds[node_idx, 3]
             elif is_before:  # and not is_horizontal
                 kcu = LineType.LINE_2D_BOUNDARY_WEST
                 node_idx = node_idx[before]
-                edge_coord = grid.nodes.bounds[node_idx, 0]
+                edge_coord = nodes.bounds[node_idx, 0]
             else:  # not is_horizontal and not is_before
                 kcu = LineType.LINE_2D_BOUNDARY_EAST
                 node_idx = node_idx[after]
-                edge_coord = grid.nodes.bounds[node_idx, 2]
+                edge_coord = nodes.bounds[node_idx, 2]
             if edge_coord.size > 1 and np.any(edge_coord[1:] != edge_coord[:-1]):
                 coords = np.unique(edge_coord)
                 axis = "y" if is_horizontal else "x"
@@ -179,7 +179,7 @@ class BoundaryConditions2D:
 
             # Copy the nodes and change the attributes into a boundary node
             node_idx = node_idx[~np.in1d(node_idx, cells_done)]
-            new_nodes = grid.nodes[node_idx]
+            new_nodes = nodes[node_idx]
             new_nodes.id[:] = list(itertools.islice(node_id_counter, len(new_nodes)))
             new_nodes.boundary_id[:] = self.id[bc_idx]
             new_nodes.boundary_type[:] = self.boundary_type[bc_idx]
@@ -200,6 +200,6 @@ class BoundaryConditions2D:
             new_nodes.pixel_coords[:, axes[1]] += size_px * add_or_subtract
 
             cells_done = np.append(cells_done, node_idx)
-            nodes += new_nodes
+            boundary_nodes += new_nodes
 
-        return nodes
+        return boundary_nodes
