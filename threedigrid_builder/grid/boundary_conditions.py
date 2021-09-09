@@ -102,7 +102,7 @@ class BoundaryConditions2D:
         self, nodes, cell_tree, quadtree, node_id_counter, line_id_counter
     ):
         # we pad quad_idx to prevent out of bound errors later
-        quad_idx = np.pad(quadtree.quad_idx, 1)
+        quad_idx = np.pad(quadtree.quad_idx, 1, mode="constant", constant_values=0)
         cells_done = np.empty((0,), dtype=int)
 
         boundary_nodes = Nodes(id=[])
