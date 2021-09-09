@@ -71,9 +71,11 @@ def _make_gridadmin(
         )
         obstacles = db.get_obstacles()
         grid.set_obstacles(obstacles)
-        grid.quadtree = quadtree
         grid.set_boundary_conditions_2d(
-            db.get_boundary_conditions_2d(), quadtree, node_id_counter
+            db.get_boundary_conditions_2d(),
+            quadtree,
+            node_id_counter,
+            line_id_counter,
         )
 
     connection_nodes = db.get_connection_nodes()

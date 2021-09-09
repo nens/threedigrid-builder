@@ -98,12 +98,15 @@ class BoundaryCondition2D:
 
 @array_of(BoundaryCondition2D)
 class BoundaryConditions2D:
-    def get_nodes(self, nodes, cell_tree, quadtree, node_id_counter):
+    def get_nodes_and_lines(
+        self, nodes, cell_tree, quadtree, node_id_counter, line_id_counter
+    ):
         # we pad quad_idx to prevent out of bound errors later
         quad_idx = np.pad(quadtree.quad_idx, 1)
         cells_done = np.empty((0,), dtype=int)
 
         boundary_nodes = Nodes(id=[])
+        boundary_lines = Lines(id=[])
         for bc_idx in range(len(self)):
             x1, y1, x2, y2 = pygeos.bounds(self.the_geom[bc_idx])
             is_horizontal = (x2 - x1) > (y2 - y1)
@@ -157,18 +160,23 @@ class BoundaryConditions2D:
                 kcu = LineType.LINE_2D_BOUNDARY_SOUTH
                 node_idx = node_idx[before]
                 edge_coord = nodes.bounds[node_idx, 1]
+                pix_coords_cols = (0, 1, 2, 1)
             elif is_horizontal:  # and not is_before
                 kcu = LineType.LINE_2D_BOUNDARY_NORTH
                 node_idx = node_idx[after]
                 edge_coord = nodes.bounds[node_idx, 3]
+                pix_coords_cols = (0, 3, 2, 3)
             elif is_before:  # and not is_horizontal
                 kcu = LineType.LINE_2D_BOUNDARY_WEST
                 node_idx = node_idx[before]
                 edge_coord = nodes.bounds[node_idx, 0]
+                pix_coords_cols = (0, 1, 0, 3)
             else:  # not is_horizontal and not is_before
                 kcu = LineType.LINE_2D_BOUNDARY_EAST
                 node_idx = node_idx[after]
                 edge_coord = nodes.bounds[node_idx, 2]
+                pix_coords_cols = (2, 1, 2, 3)
+
             if edge_coord.size > 1 and np.any(edge_coord[1:] != edge_coord[:-1]):
                 coords = np.unique(edge_coord)
                 axis = "y" if is_horizontal else "x"
@@ -179,27 +187,49 @@ class BoundaryConditions2D:
 
             # Copy the nodes and change the attributes into a boundary node
             node_idx = node_idx[~np.in1d(node_idx, cells_done)]
+            if len(node_idx) == 0:
+                continue
+
             new_nodes = nodes[node_idx]
             new_nodes.id[:] = list(itertools.islice(node_id_counter, len(new_nodes)))
             new_nodes.boundary_id[:] = self.id[bc_idx]
             new_nodes.boundary_type[:] = self.boundary_type[bc_idx]
             new_nodes.node_type[:] = NodeType.NODE_2D_BOUNDARIES
-            new_nodes.nodk[:] = -9999
+
+            # Get the cross_pix_coords before resetting the pixel_coords
+            cross_pix_coords = np.array(
+                [new_nodes.pixel_coords[:, x] for x in pix_coords_cols]
+            ).T
+
+            # a boundary cell has no real place on the nodgrid or on the pixels:
             new_nodes.nodm[:] = -9999
             new_nodes.nodn[:] = -9999
+            new_nodes.pixel_coords[:] = -9999
 
-            # Shift the bounds
+            # the bounds and coordinates are shifted:
             size = new_nodes.bounds[:, 2] - new_nodes.bounds[:, 0]
-            size_px = new_nodes.pixel_coords[:, 2] - new_nodes.pixel_coords[:, 0]
             axes = (1, 3) if is_horizontal else (0, 2)
             add_or_subtract = -1 if is_before else 1
             new_nodes.bounds[:, axes[0]] += size * add_or_subtract
             new_nodes.bounds[:, axes[1]] += size * add_or_subtract
             new_nodes.coordinates[:, axes[0]] += size * add_or_subtract
-            new_nodes.pixel_coords[:, axes[0]] += size_px * add_or_subtract
-            new_nodes.pixel_coords[:, axes[1]] += size_px * add_or_subtract
+
+            # Create new lines
+            if is_before:
+                line = np.array([new_nodes.id, nodes.index_to_id(node_idx)]).T
+            else:
+                line = np.array([nodes.index_to_id(node_idx), new_nodes.id]).T
+
+            new_lines = Lines(
+                id=itertools.islice(line_id_counter, len(new_nodes)),
+                kcu=kcu,
+                line=line,
+                cross_pix_coords=cross_pix_coords,
+                lik=new_nodes.nodk,
+            )
 
             cells_done = np.append(cells_done, node_idx)
             boundary_nodes += new_nodes
+            boundary_lines += new_lines
 
-        return boundary_nodes
+        return boundary_nodes, boundary_lines

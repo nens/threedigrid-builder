@@ -104,6 +104,7 @@ def grid2d():
     #   |       | 6 |
     #   + - - - + - +
     #
+    pixel_size = 5.0
     min_cell_size = 20.0  # the size of the smallest cell
     origin = 46.0, 47.0  # coordinate of the bottomleft corner
     nodk = np.array([2, 2, 1, 1, 1, 1, 1, 1])
@@ -115,10 +116,16 @@ def grid2d():
     bounds[:, 1] = (nodn - 1) * _size + origin[1]
     bounds[:, 2] = bounds[:, 0] + _size
     bounds[:, 3] = bounds[:, 1] + _size
+    pixel_coords = np.empty((len(nodk), 4), dtype=int)
+    pixel_coords[:, 0] = (nodm - 1) * _size / pixel_size
+    pixel_coords[:, 1] = (nodn - 1) * _size / pixel_size
+    pixel_coords[:, 2] = pixel_coords[:, 0] + _size / pixel_size
+    pixel_coords[:, 3] = pixel_coords[:, 1] + _size / pixel_size
     nodes = Nodes(
         id=range(1, 9),
         node_type=NodeType.NODE_2D_OPEN_WATER,
         bounds=bounds,
+        pixel_coords=pixel_coords,
         nodk=nodk,
         nodm=nodm,
         nodn=nodn,
@@ -146,33 +153,98 @@ top_5 = [66, 127, 86, 147]
 right_2 = [126, 87, 166, 127]
 right_8 = [126, 67, 146, 87]
 
+SOUTH = LineType.LINE_2D_BOUNDARY_SOUTH
+NORTH = LineType.LINE_2D_BOUNDARY_NORTH
+EAST = LineType.LINE_2D_BOUNDARY_EAST
+WEST = LineType.LINE_2D_BOUNDARY_WEST
+
 
 @pytest.mark.parametrize(
-    "bc_coords, expected_bounds",
+    "bc_coords, bounds, boundary_id, kcu, line, cross_pix_coords",
     [
-        ([[(46, 47), (106, 47)]], (bottom_1, bottom_6)),  # exact
-        ([[(50, 47), (120, 66)]], (bottom_1, bottom_6)),  # inexact
-        ([[(46, 47), (46, 107)]], (left_1, left_3)),  # exact
-        ([[(50, 50), (65, 113)]], (left_1, left_3)),  # inexact
-        ([[(66, 127), (126, 127)]], (top_2, top_5)),  # exact
-        ([[(56, 125), (100, 110)]], (top_2, top_5)),  # inexact
-        ([[(126, 67), (126, 127)]], (right_2, right_8)),  # exact
-        ([[(127, 70), (110, 140)]], (right_2, right_8)),  # inexact
-        ([[(46, 47), (106, 47)], [(46, 47), (46, 107)]], (bottom_1, bottom_6, left_3)),
-        ([[(46, 47), (46, 107)], [(46, 47), (106, 47)]], (left_1, left_3, bottom_6)),
+        (  # Boundary condition exactly at the bottom
+            [[(46, 47), (106, 47)]],
+            (bottom_1, bottom_6),
+            0,
+            SOUTH,
+            [(9, 1), (10, 6)],
+            [(0, 0, 8, 0), (8, 0, 12, 0)],
+        ),
+        (  # Boundary condition exactly at the left
+            [[(46, 47), (46, 107)]],
+            (left_1, left_3),
+            0,
+            WEST,
+            [(9, 1), (10, 3)],
+            [(0, 0, 0, 8), (0, 8, 0, 12)],
+        ),
+        (  # Boundary condition exactly at the top
+            [[(66, 127), (126, 127)]],
+            (top_2, top_5),
+            0,
+            NORTH,
+            [(2, 9), (5, 10)],
+            [(8, 16, 16, 16), (4, 16, 8, 16)],
+        ),
+        (  # Boundary condition exactly at the right
+            [[(126, 67), (126, 127)]],
+            (right_2, right_8),
+            0,
+            EAST,
+            [(2, 9), (8, 10)],
+            [(16, 8, 16, 16), (16, 4, 16, 8)],
+        ),
+        (  # Boundary condition exactly at the bottom and then one left (with overlap)
+            [[(46, 47), (106, 47)], [(46, 47), (46, 107)]],
+            (bottom_1, bottom_6, left_3),
+            (0, 0, 1),
+            [SOUTH, SOUTH, WEST],
+            [(9, 1), (10, 6), (11, 3)],
+            [(0, 0, 8, 0), (8, 0, 12, 0), (0, 8, 0, 12)],
+        ),
+        (  # Boundary condition exactly at the left and then one bottom (with overlap)
+            [[(46, 47), (46, 107)], [(46, 47), (106, 47)]],
+            (left_1, left_3, bottom_6),
+            (0, 0, 1),
+            [WEST, WEST, SOUTH],
+            [(9, 1), (10, 3), (11, 6)],
+            [(0, 0, 0, 8), (0, 8, 0, 12), (8, 0, 12, 0)],
+        ),
     ],
 )
-def test_2d_boundary_condition(grid2d, bc_coords, expected_bounds):
+def test_2d_boundary_condition(
+    grid2d,
+    bc_coords,
+    bounds,
+    kcu,
+    boundary_id,
+    line,
+    cross_pix_coords,
+):
     boundary_conditions_2d = BoundaryConditions2D(
         id=range(len(bc_coords)),
         boundary_type=[3] * len(bc_coords),
         the_geom=pygeos.linestrings(bc_coords),
     )
 
-    nodes = boundary_conditions_2d.get_nodes(
-        grid2d.nodes, grid2d.cell_tree, grid2d.quadtree, itertools.count()
+    nodes, lines = boundary_conditions_2d.get_nodes_and_lines(
+        grid2d.nodes,
+        grid2d.cell_tree,
+        grid2d.quadtree,
+        itertools.count(9),
+        itertools.count(),
     )
-    assert_array_equal(nodes.bounds, expected_bounds)
+
+    assert_array_equal(nodes.node_type, NodeType.NODE_2D_BOUNDARIES)
+    assert_array_equal(nodes.boundary_id, boundary_id)
+    assert_array_equal(nodes.boundary_type, 3)
+    assert_array_equal(nodes.bounds, bounds)
+    assert_array_equal(nodes.pixel_coords, -9999)
+    assert_array_equal(nodes.nodm, -9999)
+    assert_array_equal(nodes.nodn, -9999)
+    assert_array_equal(lines.kcu, kcu)
+    assert_array_equal(lines.line, line)
+    assert_array_equal(lines.cross_pix_coords, cross_pix_coords)
 
 
 @pytest.mark.parametrize(
@@ -197,6 +269,10 @@ def test_2d_boundary_condition_err(grid2d, bc_coords, expected_message):
     )
 
     with pytest.raises(SchematisationError, match=expected_message):
-        boundary_conditions_2d.get_nodes(
-            grid2d.nodes, grid2d.cell_tree, grid2d.quadtree, itertools.count()
+        boundary_conditions_2d.get_nodes_and_lines(
+            grid2d.nodes,
+            grid2d.cell_tree,
+            grid2d.quadtree,
+            itertools.count(),
+            itertools.count(),
         )

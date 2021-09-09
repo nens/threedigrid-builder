@@ -64,7 +64,12 @@ class GeopackageOut(OutputInterface):
         )
 
         # Attribute data must only be 1D
-        node_data.pop("pixel_coords")
+        (
+            node_data["pixel_coords_1"],
+            node_data["pixel_coords_2"],
+            node_data["pixel_coords_3"],
+            node_data["pixel_coords_4"],
+        ) = node_data.pop("pixel_coords").T
 
         # construct the geodataframes
         df_nodes = geopandas.GeoDataFrame(
@@ -149,7 +154,12 @@ class GeopackageOut(OutputInterface):
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays
         line_data["node_1"], line_data["node_2"] = line_data.pop("line").T
         line_data.pop("line_coords")
-        line_data.pop("cross_pix_coords")
+        (
+            line_data["cross_pix_coords_1"],
+            line_data["cross_pix_coords_2"],
+            line_data["cross_pix_coords_3"],
+            line_data["cross_pix_coords_4"],
+        ) = line_data.pop("cross_pix_coords").T
 
         # construct the geodataframe
         df_lines = geopandas.GeoDataFrame(
