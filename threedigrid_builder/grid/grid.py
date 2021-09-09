@@ -530,8 +530,6 @@ class Grid:
         node_sorter = np.argsort(replace(self.nodes.node_type, NODE_ORDER))
         line_sorter = np.argsort(replace(self.lines.kcu, LINE_ORDER))
 
-        # TODO Sort boundary noes & lines so that they are internally in the same order
-
         # now sort the nodes and lines and reset their ids
         old_node_ids = self.nodes.id.copy()
         self.nodes.reorder(node_sorter)
@@ -552,6 +550,32 @@ class Grid:
             self.nodes_embedded.embedded_in = np.take(
                 new_ids, self.nodes_embedded.embedded_in
             )
+
+        # sort boundary lines so that they internally match the boundary node order
+        BOUNDARY_NODE_TYPES = (
+            NodeType.NODE_1D_BOUNDARIES,
+            NodeType.NODE_2D_BOUNDARIES,
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
+        )
+        bc_node_ids = self.nodes.id[np.isin(self.nodes.node_type, BOUNDARY_NODE_TYPES)]
+        new_line_idx = np.arange(len(self.lines))
+
+        boundary_line_idx = np.where(self.lines.kcu == LineType.LINE_1D_BOUNDARY)[0]
+        boundary_line = self.lines.line[boundary_line_idx]
+        line_sorter = np.argsort(boundary_line[np.isin(boundary_line, bc_node_ids)])
+        new_line_idx[boundary_line_idx] = new_line_idx[boundary_line_idx][line_sorter]
+
+        BOUNDARY_LINE_2D_TYPES = (
+            LineType.LINE_2D_BOUNDARY_SOUTH,
+            LineType.LINE_2D_BOUNDARY_NORTH,
+            LineType.LINE_2D_BOUNDARY_EAST,
+            LineType.LINE_2D_BOUNDARY_WEST,
+        )
+        boundary_line_idx = np.where(np.isin(self.lines.kcu, BOUNDARY_LINE_2D_TYPES))[0]
+        boundary_line = self.lines.line[boundary_line_idx]
+        line_sorter = np.argsort(boundary_line[np.isin(boundary_line, bc_node_ids)])
+        new_line_idx[boundary_line_idx] = new_line_idx[boundary_line_idx][line_sorter]
+        self.lines.reorder(new_line_idx)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
