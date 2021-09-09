@@ -2,13 +2,13 @@
 --- Following are licenses for binary wheel distribution ---
 
 Name: Threedigrid builder library.
-Files: .libs/libthreedigrid*.dll
+Files: libthreedigrid*.dll
 License: Proprietary
   libthreedigrid cannot be copied and/or
   distributed without the express permission of Nelen & Schuurmans.
 
 Name: Fortran libraries from the GNU Compiler Collection (GCC)
-Files: .libs/libgcc*.dll
+Files: libgcc*.dll
 Availability: https://gcc.gnu.org/
 License: GPL 3 (with GCC Runtime Library Exception 3.1)
   Copyright (C) 2002-2017 Free Software Foundation, Inc.
@@ -33,12 +33,12 @@ License: GPL 3 (with GCC Runtime Library Exception 3.1)
   <http://www.gnu.org/licenses/>.
 
 Name: The GCC Quad-Precision Math Library
-Files: .libs/libquadmath*.dll
+Files: libquadmath*.dll
 Availability: https://gcc.gnu.org/
 License: LGPL 2.1
 
 Name: Posix Threads library for Microsoft Windows
-Files: .libs/libwinpthread*.dll
+Files: libwinpthread*.dll
 License:
   (C) 2010 Lockless Inc.
   All rights reserved.

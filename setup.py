@@ -81,7 +81,6 @@ install_requires = [
     "pygeos>=0.10",
     "pyproj",
     "condenser[geo]",
-    "rasterio",
     "sqlalchemy<1.4",
     "dataclasses ; python_version<'3.7'",
 ]
@@ -102,11 +101,11 @@ setup(
             "threedigrid_builder",
             "threedigrid_builder.*",
         ),
-        exclude=("threedigrid_builder.tests"),
     ),
     install_requires=install_requires,
     extras_require={
         "test": test_requires,
+        "rasters": ["rasterio"],
         "gridadmin": ["h5py>=2.7"],
         "gpkg": ["geopandas"],
     },

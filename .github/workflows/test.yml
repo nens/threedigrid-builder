@@ -55,7 +55,7 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
           pip install cython ${{ matrix.pins }}
-          pip install -e .[test,gridadmin] --no-build-isolation
+          pip install -e .[test,gridadmin,rasters] --no-build-isolation
           pip list
 
       - name: Run unittests

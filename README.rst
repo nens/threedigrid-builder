@@ -33,7 +33,8 @@ Installation
 ------------
 
 This package is distributed as binary only, because its (Fortran) source code
-is proprietary. The only currently supported platform is Linux.
+is proprietary. The currently supported platforms are Windows, Linux, and OSX, all
+64 bit versions only.
 
 First install sqlite and spatialite libraries, e.g. on Ubuntu::
 
@@ -41,12 +42,12 @@ First install sqlite and spatialite libraries, e.g. on Ubuntu::
 
 Then install the threedigrid-builder::
 
-  $ pip install threedigrid-builder
+  $ pip install threedigrid-builder[rasters]
 
 For output into a file for the 3Di calculationcore, enable gridadmin output::
 
-  $ pip install threedigrid-builder[gridadmin]
+  $ pip install threedigrid-builder[rasters,gridadmin]
 
 For output into Geopackage for display in e.g. QGis, enable gpkg output::
 
-  $ pip install threedigrid-builder[gpkg]
+  $ pip install threedigrid-builder[rasters,gpkg]
