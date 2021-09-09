@@ -99,70 +99,76 @@ class BoundaryCondition2D:
 @array_of(BoundaryCondition2D)
 class BoundaryConditions2D:
     def get_nodes(self, grid, node_id_counter):
-        min_length = grid.quadtree.dx[0] / 2
+        cells_done = np.empty((0,), dtype=int)
 
         nodes = Nodes(id=[])
         for bc_idx in range(len(self)):
             x1, y1, x2, y2 = pygeos.bounds(self.the_geom[bc_idx])
             is_horizontal = (x2 - x1) > (y2 - y1)
-            length = x2 - x1 if is_horizontal else y2 - y1
-            if length < min_length:
-                raise SchematisationError(
-                    f"Boundary condition {self.id[bc_idx]} is too small."
-                )
 
             node_idx = np.sort(grid.cell_tree.query(self.the_geom[bc_idx]))
             nodk = grid.nodes.nodk[node_idx]
             sz = 2 ** (nodk - 1)
-            nodm = grid.nodes.nodm[node_idx] - 1  # nodm indexes 1-based into quad_idx
-            nodn = grid.nodes.nodn[node_idx] - 1  # nodn indexes 1-based into quad_idx
-            quad_idx = grid.quadtree.quad_idx  # indexes in quad_idx are 1-based
-            assert np.all(quad_idx[nodm * sz, nodn * sz] == (node_idx + 1))
+            # nodm and nodn are 1-based indices into quad_idx. So we subtract 1 from it.
+            nodm = grid.nodes.nodm[node_idx] - 1
+            nodn = grid.nodes.nodn[node_idx] - 1
+            # we pad quad_idx to prevent out of bound errors later
+            quad_idx = np.pad(grid.quadtree.quad_idx, 1)
+            # correspondingly the indices of the resized nodm, nodn (called x, y) are
+            # increased by one
+            x = nodm * sz + 1
+            y = nodn * sz + 1
+            # just to be sure, can be removed later:
+            assert np.all(quad_idx[x, y] == (node_idx + 1))
 
-            if is_horizontal:
-                b = nodn > 0
-                b[b] = quad_idx[nodm[b] * sz[b], nodn[b] * sz[b] - 1] != 0
-                b[b] = quad_idx[(nodm[b] + 1) * sz[b] - 1, nodn[b] * sz[b] - 1] != 0
-                a = nodn + sz < quad_idx.shape[1]
-                a[a] = quad_idx[nodm[a] * sz[a], (nodn[a] + 1) * sz[a]] != 0
-                a[a] = quad_idx[(nodm[a] + 1) * sz[a] - 1, (nodn[a] + 1) * sz[a]] != 0
-            else:
-                b = nodm > 0
-                b[b] = quad_idx[nodm[b] * sz[b] - 1, nodn[b] * sz[b]] != 0
-                b[b] = quad_idx[nodm[b] * sz[b] - 1, (nodn[b] + 1) * sz[b] - 1] != 0
-                a = (nodm + 1) * sz < quad_idx.shape[0]
-                a[a] = quad_idx[(nodm[a] + 1) * sz[a], nodn[a] * sz[a]] != 0
-                a[a] = quad_idx[(nodm[a] + 1) * sz[a], (nodn[a] + 1) * sz[a] - 1] != 0
+            if is_horizontal:  # horizontal BC, looking at vertical neigbours
+                # A cell has no bottom neighbor if:
+                # - the nodgrid entry before (under) at the left & right sides is 0
+                before = (quad_idx[x, y - 1] == 0) & (quad_idx[x + sz - 1, y - 1] == 0)
+                # A cell has no top neighbor if:
+                # - the nodgrid entry after (above) at the left & right sides is 0
+                after = (quad_idx[x, y + sz] == 0) & (quad_idx[x + sz - 1, y + sz] == 0)
+            else:  # vertical BC, looking at horizontal neigbours
+                # A cell has no left neighbor if:
+                # - the nodgrid entry before (to the left) at bottom & top sides are 0
+                before = (quad_idx[x - 1, y] == 0) & (quad_idx[x - 1, y + sz - 1] == 0)
+                # A cell has no right neighbor if:
+                # - the nodgrid entry after (to the right) at bottom & top sides is 0
+                after = (quad_idx[x + sz, y] == 0) & (quad_idx[x + sz, y + sz - 1] == 0)
 
-            # the edge of the boundary is whichever side has the most edges
-            if np.count_nonzero(a) > np.count_nonzero(b):
-                node_idx = node_idx[a]
-                kcu = (
-                    LineType.LINE_2D_BOUNDARY_SOUTH
-                    if is_horizontal
-                    else LineType.LINE_2D_BOUNDARY_WEST
+            # The edge of the boundary is whichever side has the most edges
+            n_edges_before = np.count_nonzero(before)
+            n_edges_after = np.count_nonzero(after)
+            if n_edges_after == 0 and n_edges_before == 0:
+                raise SchematisationError(
+                    f"2D boundary condition {self.id[bc_idx]} does not touch any edge "
+                    f"cell."
                 )
-                is_before = False
-            else:
-                node_idx = node_idx[b]
-                kcu = (
-                    LineType.LINE_2D_BOUNDARY_NORTH
-                    if is_horizontal
-                    else LineType.LINE_2D_BOUNDARY_EAST
+            elif n_edges_after == n_edges_before:
+                s = "top and bottom" if is_horizontal else "right and left"
+                raise SchematisationError(
+                    f"2D boundary condition {self.id[bc_idx]} touches cells that have "
+                    f"equal numbers of {s} edges."
                 )
-                is_before = True
+            is_before = n_edges_before > n_edges_after
 
-            # check the edge location (coordinate should be the same for all cells)
-            bounds = grid.nodes.bounds[node_idx]
-            if kcu == LineType.LINE_2D_BOUNDARY_WEST:
-                edge_coord = bounds[:, 0]
-            elif kcu == LineType.LINE_2D_BOUNDARY_EAST:
-                edge_coord = bounds[:, 2]
-            elif kcu == LineType.LINE_2D_BOUNDARY_NORTH:
-                edge_coord = bounds[:, 3]
-            elif kcu == LineType.LINE_2D_BOUNDARY_SOUTH:
-                edge_coord = bounds[:, 1]
-
+            # Filter the nodes to nodes that have edges and check their edge coordinate
+            if is_horizontal and is_before:
+                kcu = LineType.LINE_2D_BOUNDARY_SOUTH
+                node_idx = node_idx[before]
+                edge_coord = grid.nodes.bounds[node_idx, 1]
+            elif is_horizontal:  # and not is_before
+                kcu = LineType.LINE_2D_BOUNDARY_NORTH
+                node_idx = node_idx[after]
+                edge_coord = grid.nodes.bounds[node_idx, 3]
+            elif is_before:  # and not is_horizontal
+                kcu = LineType.LINE_2D_BOUNDARY_WEST
+                node_idx = node_idx[before]
+                edge_coord = grid.nodes.bounds[node_idx, 0]
+            else:  # not is_horizontal and not is_before
+                kcu = LineType.LINE_2D_BOUNDARY_EAST
+                node_idx = node_idx[after]
+                edge_coord = grid.nodes.bounds[node_idx, 2]
             if edge_coord.size > 1 and np.any(edge_coord[1:] != edge_coord[:-1]):
                 coords = np.unique(edge_coord)
                 axis = "y" if is_horizontal else "x"
@@ -171,7 +177,8 @@ class BoundaryConditions2D:
                     f"different edge coordinates ({axis}={coords.tolist()})."
                 )
 
-            # now create the new nodes
+            # Copy the nodes and change the attributes into a boundary node
+            node_idx = node_idx[~np.in1d(node_idx, cells_done)]
             new_nodes = grid.nodes[node_idx]
             new_nodes.id[:] = list(itertools.islice(node_id_counter, len(new_nodes)))
             new_nodes.boundary_id[:] = self.id[bc_idx]
@@ -180,21 +187,19 @@ class BoundaryConditions2D:
             new_nodes.nodk[:] = -9999
             new_nodes.nodm[:] = -9999
             new_nodes.nodn[:] = -9999
-            size = new_nodes.bounds[:, 2] - new_nodes.bounds[:, 0]
-            size_px = new_nodes.pixel_coords[:, 0] - new_nodes.pixel_coords[:, 2]
-            if is_horizontal:
-                axes = (1, 3)
-            else:
-                axes = (0, 2)
-            if is_before:
-                size *= -1
-                size_px *= -1
-            new_nodes.bounds[:, axes[0]] -= size
-            new_nodes.bounds[:, axes[1]] -= size
-            new_nodes.coordinates[:, axes[0]] -= size
-            new_nodes.pixel_coords[:, axes[0]] -= size_px
-            new_nodes.pixel_coords[:, axes[1]] -= size_px
 
+            # Shift the bounds
+            size = new_nodes.bounds[:, 2] - new_nodes.bounds[:, 0]
+            size_px = new_nodes.pixel_coords[:, 2] - new_nodes.pixel_coords[:, 0]
+            axes = (1, 3) if is_horizontal else (0, 2)
+            add_or_subtract = -1 if is_before else 1
+            new_nodes.bounds[:, axes[0]] += size * add_or_subtract
+            new_nodes.bounds[:, axes[1]] += size * add_or_subtract
+            new_nodes.coordinates[:, axes[0]] += size * add_or_subtract
+            new_nodes.pixel_coords[:, axes[0]] += size_px * add_or_subtract
+            new_nodes.pixel_coords[:, axes[1]] += size_px * add_or_subtract
+
+            cells_done = np.append(cells_done, node_idx)
             nodes += new_nodes
 
         return nodes

@@ -558,7 +558,7 @@ class Grid:
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
-        self.sort()
+        # self.sort()
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
