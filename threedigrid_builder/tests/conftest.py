@@ -1,8 +1,8 @@
 from threedigrid_builder.interface.db import SQLite
 
+import os
 import pathlib
 import pytest
-import os
 
 
 data_path = pathlib.Path(__file__).resolve().parents[0] / "data"

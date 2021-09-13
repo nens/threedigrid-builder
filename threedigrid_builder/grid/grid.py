@@ -558,24 +558,7 @@ class Grid:
             NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
         )
         bc_node_ids = self.nodes.id[np.isin(self.nodes.node_type, BOUNDARY_NODE_TYPES)]
-        new_line_idx = np.arange(len(self.lines))
-
-        boundary_line_idx = np.where(self.lines.kcu == LineType.LINE_1D_BOUNDARY)[0]
-        boundary_line = self.lines.line[boundary_line_idx]
-        line_sorter = np.argsort(boundary_line[np.isin(boundary_line, bc_node_ids)])
-        new_line_idx[boundary_line_idx] = new_line_idx[boundary_line_idx][line_sorter]
-
-        BOUNDARY_LINE_2D_TYPES = (
-            LineType.LINE_2D_BOUNDARY_SOUTH,
-            LineType.LINE_2D_BOUNDARY_NORTH,
-            LineType.LINE_2D_BOUNDARY_EAST,
-            LineType.LINE_2D_BOUNDARY_WEST,
-        )
-        boundary_line_idx = np.where(np.isin(self.lines.kcu, BOUNDARY_LINE_2D_TYPES))[0]
-        boundary_line = self.lines.line[boundary_line_idx]
-        line_sorter = np.argsort(boundary_line[np.isin(boundary_line, bc_node_ids)])
-        new_line_idx[boundary_line_idx] = new_line_idx[boundary_line_idx][line_sorter]
-        self.lines.reorder(new_line_idx)
+        self.lines.sort_by_nodes(bc_node_ids)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
