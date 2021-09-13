@@ -125,17 +125,17 @@ class BoundaryConditions2D:
             assert np.all(quad_idx[x, y] == (node_idx + 1))
 
             if is_horizontal:  # horizontal BC, looking at vertical neigbours
-                # A cell has no bottom neighbor if:
+                # A cell has no bottom (upstream) neighbor if:
                 # - the nodgrid entry before (under) at the left & right sides is 0
                 before = (quad_idx[x, y - 1] == 0) & (quad_idx[x + sz - 1, y - 1] == 0)
-                # A cell has no top neighbor if:
+                # A cell has no top (downstream) neighbor if:
                 # - the nodgrid entry after (above) at the left & right sides is 0
                 after = (quad_idx[x, y + sz] == 0) & (quad_idx[x + sz - 1, y + sz] == 0)
             else:  # vertical BC, looking at horizontal neigbours
-                # A cell has no left neighbor if:
+                # A cell has no left (upstream) neighbor if:
                 # - the nodgrid entry before (to the left) at bottom & top sides are 0
                 before = (quad_idx[x - 1, y] == 0) & (quad_idx[x - 1, y + sz - 1] == 0)
-                # A cell has no right neighbor if:
+                # A cell has no right (downstream) neighbor if:
                 # - the nodgrid entry after (to the right) at bottom & top sides is 0
                 after = (quad_idx[x + sz, y] == 0) & (quad_idx[x + sz, y + sz - 1] == 0)
 
@@ -153,29 +153,29 @@ class BoundaryConditions2D:
                     f"2D boundary condition {self.id[bc_idx]} touches cells that have "
                     f"equal numbers of {s} edges."
                 )
-            is_before = n_edges_before > n_edges_after
+            is_before = n_edges_before > n_edges_after  # is_upstream
 
-            # Filter the nodes to nodes that have edges and check their edge coordinate
+            # Filter the nodes to those that have edges
             if is_horizontal and is_before:
                 kcu = LineType.LINE_2D_BOUNDARY_SOUTH
                 node_idx = node_idx[before]
                 edge_coord = nodes.bounds[node_idx, 1]
-                pix_coords_cols = (0, 1, 2, 1)
+                cross_pix_coords_cols = (0, 1, 2, 1)
             elif is_horizontal:  # and not is_before
                 kcu = LineType.LINE_2D_BOUNDARY_NORTH
                 node_idx = node_idx[after]
                 edge_coord = nodes.bounds[node_idx, 3]
-                pix_coords_cols = (0, 3, 2, 3)
+                cross_pix_coords_cols = (0, 3, 2, 3)
             elif is_before:  # and not is_horizontal
                 kcu = LineType.LINE_2D_BOUNDARY_WEST
                 node_idx = node_idx[before]
                 edge_coord = nodes.bounds[node_idx, 0]
-                pix_coords_cols = (0, 1, 0, 3)
+                cross_pix_coords_cols = (0, 1, 0, 3)
             else:  # not is_horizontal and not is_before
                 kcu = LineType.LINE_2D_BOUNDARY_EAST
                 node_idx = node_idx[after]
                 edge_coord = nodes.bounds[node_idx, 2]
-                pix_coords_cols = (2, 1, 2, 3)
+                cross_pix_coords_cols = (2, 1, 2, 3)
 
             if edge_coord.size > 1 and np.any(edge_coord[1:] != edge_coord[:-1]):
                 coords = np.unique(edge_coord)
@@ -198,7 +198,7 @@ class BoundaryConditions2D:
 
             # Get the cross_pix_coords before resetting the pixel_coords
             cross_pix_coords = np.array(
-                [new_nodes.pixel_coords[:, x] for x in pix_coords_cols]
+                [new_nodes.pixel_coords[:, x] for x in cross_pix_coords_cols]
             ).T
 
             # a boundary cell has no real place on the nodgrid or on the pixels:
