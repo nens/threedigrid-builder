@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Added 1D boundary conditions.
 
+- Added 2D boundary conditions.
+
 
 0.3.1 (2021-08-16)
 ------------------

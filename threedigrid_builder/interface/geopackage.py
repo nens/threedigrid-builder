@@ -64,7 +64,12 @@ class GeopackageOut(OutputInterface):
         )
 
         # Attribute data must only be 1D
-        node_data.pop("pixel_coords")
+        (
+            node_data["pixel_coords_1"],
+            node_data["pixel_coords_2"],
+            node_data["pixel_coords_3"],
+            node_data["pixel_coords_4"],
+        ) = node_data.pop("pixel_coords").T
 
         # construct the geodataframes
         df_nodes = geopandas.GeoDataFrame(
@@ -74,8 +79,10 @@ class GeopackageOut(OutputInterface):
             node_data, geometry=cell_geometries, crs=epsg_code
         )
 
-        df_nodes.to_file(self.path, layer="nodes", driver="GPKG")
-        df_cells.to_file(self.path, layer="cells", driver="GPKG")
+        if len(df_nodes) > 0:
+            df_nodes.to_file(self.path, layer="nodes", driver="GPKG")
+        if len(df_cells) > 0:
+            df_cells.to_file(self.path, layer="cells", driver="GPKG")
 
     def write_nodes_embedded(self, nodes_embedded, nodes, epsg_code=None, **kwargs):
         """Write "nodes_embedded" and "nodes_embedded_lines" layer to a geopackage
@@ -87,6 +94,8 @@ class GeopackageOut(OutputInterface):
             nodes (Nodes): for looking up the coordinate
             epsg_code (int)
         """
+        if len(nodes_embedded) == 0:
+            return
         node_data = nodes_embedded.to_dict()
 
         # construct points from nodes.coordinates
@@ -149,7 +158,12 @@ class GeopackageOut(OutputInterface):
         # gpkg cannot deal with 2D arrays, cast lines.line to 2 1D arrays
         line_data["node_1"], line_data["node_2"] = line_data.pop("line").T
         line_data.pop("line_coords")
-        line_data.pop("cross_pix_coords")
+        (
+            line_data["cross_pix_coords_1"],
+            line_data["cross_pix_coords_2"],
+            line_data["cross_pix_coords_3"],
+            line_data["cross_pix_coords_4"],
+        ) = line_data.pop("cross_pix_coords").T
 
         # construct the geodataframe
         df_lines = geopandas.GeoDataFrame(
@@ -165,6 +179,8 @@ class GeopackageOut(OutputInterface):
             pumps (Pumps)
             epsg_code (int)
         """
+        if len(pumps) == 0:
+            return
         pump_data = pumps.to_dict()
 
         # construct lines from pumps.line_coords

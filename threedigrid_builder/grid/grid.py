@@ -464,6 +464,23 @@ class Grid:
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
 
+    def set_boundary_conditions_2d(
+        self,
+        boundary_conditions_2d,
+        quadtree,
+        node_id_counter,
+        line_id_counter,
+    ):
+        nodes, lines = boundary_conditions_2d.get_nodes_and_lines(
+            self.nodes,
+            self.cell_tree,
+            quadtree,
+            node_id_counter,
+            line_id_counter,
+        )
+        self.nodes += nodes
+        self.lines += lines
+
     def set_pumps(self, pumps):
         """Set the pumps on this grid object
 
