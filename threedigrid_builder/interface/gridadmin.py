@@ -350,6 +350,10 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "flou", lines.flou)
         self.write_dataset(group, "cross1", increase(lines.cross1))
         self.write_dataset(group, "cross2", increase(lines.cross2))
+        self.write_dataset(group, "frict_type1", lines.frict_type1)
+        self.write_dataset(group, "frict_type2", lines.frict_type2)
+        self.write_dataset(group, "frict_value1", lines.frict_value1)
+        self.write_dataset(group, "frict_value2", lines.frict_value2)
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(group, "line_coords", lines.line_coords.T)
         self.write_dataset(

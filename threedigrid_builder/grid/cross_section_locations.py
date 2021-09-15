@@ -53,6 +53,11 @@ class CrossSectionLocations:
         )
         lines.cross_weight = cross_weight
 
+        lines.frict_type1 = self.friction_type[self.id_to_index(cross_loc1)]
+        lines.frict_type2 = self.friction_type[self.id_to_index(cross_loc2)]
+        lines.frict_value1 = self.friction_value[self.id_to_index(cross_loc1)]
+        lines.frict_value2 = self.friction_value[self.id_to_index(cross_loc2)]
+
         # Compute invert levels and start and end
         lines.invert_level_start_point = compute_bottom_level(
             lines.content_pk,

@@ -33,6 +33,10 @@ class Line:
     flou: float  # obstacle height
     cross1: int  # the id of the cross section definition
     cross2: int  # the id of the cross section definition
+    frict_type1: int # Friction type
+    frict_type2: int # Friction type
+    frict_value1: float # Friction type
+    frict_value2: float # Friction type
     cross_weight: float
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
