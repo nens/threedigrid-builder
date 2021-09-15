@@ -153,13 +153,15 @@ class GridAdminOut(OutputInterface):
         NODATA_YET = 0
 
         n2dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
+        n2dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_BOUNDARIES)
+        n1dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_BOUNDARIES)
         group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
-        group.create_dataset("n2dobc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("n2dobc", data=n2dobc, dtype="i4")
         group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
 
         n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
         group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
-        group.create_dataset("n1dobc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("n1dobc", data=n1dobc, dtype="i4")
 
         liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U)
         group.create_dataset("liutot", data=liutot, dtype="i4")
