@@ -90,3 +90,15 @@ class Lines:
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
         self.ds1d[to_fix] = pygeos.length(self.line_geometries[to_fix])
+
+    def sort_by_nodes(self, node_ids):
+        """Order selected lines by node id, ascending.
+
+        Only lines with given node ids are ordered and then on then id that is supplied.
+        This operation only makes sense if every node id occurs once in lines.line.
+        """
+        line_idx, start_or_end = np.where(np.isin(self.line, node_ids))
+        new_line_idx = np.arange(len(self))
+        sorter = np.argsort(self.line[line_idx, start_or_end])
+        new_line_idx[line_idx] = new_line_idx[line_idx][sorter]
+        self.reorder(new_line_idx)

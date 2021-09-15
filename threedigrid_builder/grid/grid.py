@@ -547,8 +547,6 @@ class Grid:
         node_sorter = np.argsort(replace(self.nodes.node_type, NODE_ORDER))
         line_sorter = np.argsort(replace(self.lines.kcu, LINE_ORDER))
 
-        # TODO Sort boundary noes & lines so that they are internally in the same order
-
         # now sort the nodes and lines and reset their ids
         old_node_ids = self.nodes.id.copy()
         self.nodes.reorder(node_sorter)
@@ -569,6 +567,15 @@ class Grid:
             self.nodes_embedded.embedded_in = np.take(
                 new_ids, self.nodes_embedded.embedded_in
             )
+
+        # sort boundary lines so that they internally match the boundary node order
+        BOUNDARY_NODE_TYPES = (
+            NodeType.NODE_1D_BOUNDARIES,
+            NodeType.NODE_2D_BOUNDARIES,
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
+        )
+        bc_node_ids = self.nodes.id[np.isin(self.nodes.node_type, BOUNDARY_NODE_TYPES)]
+        self.lines.sort_by_nodes(bc_node_ids)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""

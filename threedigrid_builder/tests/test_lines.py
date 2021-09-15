@@ -88,3 +88,10 @@ def test_set_bottom_levels_skips_already_set(nodes, lines):
     lines.set_bottom_levels(nodes, allow_nan=True)
 
     assert_equal(lines.dpumax, [2.0, 3.0, 23.0])
+
+
+def test_sort_by_nodes(lines):
+    lines.line[:] = [[4, 5], [6, 7], [1, 0]]
+    lines.sort_by_nodes([1, 4])
+
+    assert_equal(lines.line, [[1, 0], [6, 7], [4, 5]])
