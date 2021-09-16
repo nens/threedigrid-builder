@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Added 2D boundary conditions.
 
+- Enable compression in HDF5 output.
+
 
 0.3.1 (2021-08-16)
 ------------------

@@ -46,6 +46,14 @@ LINE_TYPES_1D2D_GW = (
     LineType.LINE_1D2D_GROUNDWATER_SEWER,
 )
 
+# Some default settings for h5py datasets
+HDF5_SETTINGS = {
+    "compression": "gzip",  # more compatible than lzf and better compression
+    "compression_opts": 4,  # the default, 9 gives only 1% better compression
+    "shuffle": True,  # helps another 3% and has almost no overhead
+    "fletcher32": True,  # checksums are good
+}
+
 
 def field_to_h5(group, name, dtype, val, mode="attrs"):
     """Write a dataclass field to H5py attributes or datasets.
@@ -379,6 +387,7 @@ class GridAdminOut(OutputInterface):
             "line_geometries",
             data=np.array(line_geometries, dtype=object),
             dtype=vlen_dtype,
+            **HDF5_SETTINGS,
         )
 
         # can be collected from SQLite, but empty for now:
@@ -442,7 +451,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "count", cross_sections.count)
 
         # do not use self.write_dataset as we don't want a dummy element
-        group.create_dataset("tables", data=cross_sections.tables.T)
+        group.create_dataset("tables", data=cross_sections.tables.T, **HDF5_SETTINGS)
 
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
@@ -456,7 +465,11 @@ class GridAdminOut(OutputInterface):
         """
         if values.ndim == 1:
             ds = group.create_dataset(
-                name, (values.shape[0] + 1,), dtype=values.dtype, fillvalue=fill
+                name,
+                (values.shape[0] + 1,),
+                dtype=values.dtype,
+                fillvalue=fill,
+                **HDF5_SETTINGS,
             )
             ds[1:] = values
             if name == "id":  # set the ID of the dummy element
@@ -467,6 +480,7 @@ class GridAdminOut(OutputInterface):
                 (values.shape[0], values.shape[1] + 1),
                 dtype=values.dtype,
                 fillvalue=fill,
+                **HDF5_SETTINGS,
             )
             ds[:, 1:] = values
         else:
