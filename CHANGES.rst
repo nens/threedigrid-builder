@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Added 2D boundary conditions.
 
+- Fixed 2D lines that connect a larger to a smaller cell in south east direction.
+
 
 0.3.1 (2021-08-16)
 ------------------
