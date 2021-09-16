@@ -51,7 +51,6 @@ HDF5_SETTINGS = {
     "compression": "gzip",  # more compatible than lzf and better compression
     "compression_opts": 1,  # the fastest, a 9 gives only 1% better compression
     "shuffle": True,  # helps another 3% and has almost no overhead
-    "fletcher32": True,  # checksums are good
 }
 
 
@@ -382,7 +381,10 @@ class GridAdminOut(OutputInterface):
         ]
         line_geometries.insert(0, np.array([-9999.0, -9999.0]))
         # The dataset has a special "variable length" dtype. This one is special write method.
-        vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+        try:
+            vlen_dtype = h5py.vlen_dtype(np.dtype(float))
+        except AttributeError:  # Pre h5py 2.10
+            vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
         group.create_dataset(
             "line_geometries",
             data=np.array(line_geometries, dtype=object),
