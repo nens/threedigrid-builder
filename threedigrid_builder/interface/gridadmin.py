@@ -49,7 +49,7 @@ LINE_TYPES_1D2D_GW = (
 # Some default settings for h5py datasets
 HDF5_SETTINGS = {
     "compression": "gzip",  # more compatible than lzf and better compression
-    "compression_opts": 4,  # the default, 9 gives only 1% better compression
+    "compression_opts": 1,  # the fastest, a 9 gives only 1% better compression
     "shuffle": True,  # helps another 3% and has almost no overhead
     "fletcher32": True,  # checksums are good
 }
