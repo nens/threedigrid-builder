@@ -162,12 +162,13 @@ class GridAdminOut(OutputInterface):
         n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
         group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
         group.create_dataset("n1dobc", data=n1dobc, dtype="i4")
-
-        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U)
+        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U) + \
+            np.count_nonzero(lines.kcu == LineType.LINE_2D_OBSTACLE_U)
         group.create_dataset("liutot", data=liutot, dtype="i4")
-        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V)
+        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V) + \
+            np.count_nonzero(lines.kcu == LineType.LINE_2D_OBSTACLE_V)
         group.create_dataset("livtot", data=livtot, dtype="i4")
-
+        
         group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
         group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
 
@@ -313,6 +314,7 @@ class GridAdminOut(OutputInterface):
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
+        l2d_obstacle = np.isin(lines.kcu, (LineType.LINE_2D_OBSTACLE_U, LineType.LINE_2D_OBSTACLE_U))
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", lines.id + 1)
         self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
@@ -321,6 +323,7 @@ class GridAdminOut(OutputInterface):
         )
 
         lines.kcu[l2d] = LineType.LINE_2D
+        lines.kcu[l2d_obstacle] = LineType.LINE_2D_OBSTACLE
         lines.kcu[lines.kcu == LineType.LINE_1D_BOUNDARY] = LineType.LINE_1D_ISOLATED
         self.write_dataset(group, "kcu", lines.kcu)
         calculation_type = fill_int.copy()

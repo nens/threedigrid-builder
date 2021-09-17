@@ -122,6 +122,8 @@ class WeirOrifices:
             dpumax=self.crest_level,
             cross1=cross1,
             cross_weight=1.0,
+            frict_type1=self.friction_type,
+            frict_value1=self.friction_value,
             invert_level_start_point=self.crest_level,
             invert_level_end_point=self.crest_level,
         )

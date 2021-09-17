@@ -229,6 +229,8 @@ class BaseLinear:
             cross_weight=cross_weight,
             frict_type1=frict_type,
             frict_value1=frict_value,
+            frict_type2=frict_type,
+            frict_value2=frict_value,
             invert_level_start_point=invert_start,
             invert_level_end_point=invert_end,
         )

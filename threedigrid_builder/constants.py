@@ -45,6 +45,8 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_2D_V = 99  # for internal use
     LINE_2D = 100
     LINE_2D_OBSTACLE = 101  # levee
+    LINE_2D_OBSTACLE_U = 102  # levee
+    LINE_2D_OBSTACLE_V = 103  # levee
     LINE_2D_VERTICAL = 150
     LINE_2D_GROUNDWATER = -150
     LINE_2D_BOUNDARY_WEST = 200
