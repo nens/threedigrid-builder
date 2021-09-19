@@ -314,7 +314,7 @@ class GridAdminOut(OutputInterface):
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
-        l2d_obstacle = np.isin(lines.kcu, (LineType.LINE_2D_OBSTACLE_U, LineType.LINE_2D_OBSTACLE_U))
+        l2d_obstacle = np.isin(lines.kcu, (LineType.LINE_2D_OBSTACLE_U, LineType.LINE_2D_OBSTACLE_V))
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", lines.id + 1)
         self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
