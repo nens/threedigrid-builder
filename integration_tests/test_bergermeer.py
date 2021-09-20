@@ -46,7 +46,7 @@ def test_integration(tmp_path):
         }
 
         ## LINES
-        assert f["lines"]["id"].shape == (15498,)
+        assert f["lines"]["id"].shape == (15505,)
         assert_array_equal(f["lines"]["id"][:], np.arange(f["lines"]["id"].shape[0]))
         assert count_unique(f["lines"]["kcu"]) == {
             -9999: 1,
@@ -57,11 +57,11 @@ def test_integration(tmp_path):
             LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED: 23,
             LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 1512,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 396,
-            LineType.LINE_2D: 9537,
+            LineType.LINE_2D: 9544,
             LineType.LINE_2D_OBSTACLE: 1493,
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 12962,
+            b"": 12969,
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,
