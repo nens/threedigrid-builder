@@ -32,6 +32,7 @@ class Node:
     embedded_in: int  # the id of the node in which this node is embedded
     boundary_id: int  # referring to the id of the boundary condition
     boundary_type: BoundaryType
+    manhole_id: int  # referring to the id of a manhole
 
 
 @array_of(Node)

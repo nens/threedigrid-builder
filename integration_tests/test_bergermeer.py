@@ -53,6 +53,7 @@ def test_integration(tmp_path):
             NodeType.NODE_1D_STORAGE: 42,  # Inpy: 0
             NodeType.NODE_1D_BOUNDARIES: 4,
         }
+        assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
 
         ## LINES
         assert f["lines"]["id"].shape == (15498,)  # Inpy: (31916, )

@@ -216,8 +216,7 @@ class GridAdminOut(OutputInterface):
         shape = (len(nodes),)
 
         # Some convenient masks:
-        is_mh = nodes.content_type == ContentType.TYPE_V2_MANHOLE
-        is_cn = is_mh | (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
+        is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
         is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
 
         # Datasets that match directly to a nodes attribute:
@@ -243,9 +242,9 @@ class GridAdminOut(OutputInterface):
         content_pk[is_cn] = nodes.content_pk[is_cn]
         self.write_dataset(group, "content_pk", content_pk)
         # is_manhole is 1 for manholes, otherwise -9999
-        is_manhole = is_mh.astype("i4")
-        is_manhole[~is_mh] = -9999
-        self.write_dataset(group, "is_manhole", is_manhole)
+        self.write_dataset(
+            group, "is_manhole", np.where(nodes.manhole_id != -9999, 1, -9999).astype("i4")
+        )
 
         # unclear what is the difference: seems bottom_level is for 1D, and z_coordinate
         # for 2D, but some nodes have both sets (then they are equal)

@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Added 2D boundary conditions.
 
+- Fixed nodes.is_manhole in the gridadmin output.
+
 
 0.3.1 (2021-08-16)
 ------------------
