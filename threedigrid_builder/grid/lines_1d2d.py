@@ -13,6 +13,19 @@ import pygeos
 __all__ = ["get_1d2d_lines", "ConnectedPoints"]
 
 
+HAS_1D2D_CONTENT_TYPES = (
+    ContentType.TYPE_V2_CONNECTION_NODES,
+    ContentType.TYPE_V2_CHANNEL,
+    ContentType.TYPE_V2_PIPE,
+    ContentType.TYPE_V2_CULVERT,
+)
+
+HAS_1D2D_CALC_TYPES = (
+    CalculationType.CONNECTED,
+    CalculationType.DOUBLE_CONNECTED,
+)
+
+
 class ConnectedPoint:
     id: int
     the_geom: pygeos.Geometry
@@ -24,7 +37,35 @@ class ConnectedPoint:
 
 @array_of(ConnectedPoint)
 class ConnectedPoints:
-    pass
+    def get_node_ids(self, grid):
+        """Find the node ids to which connected points belong
+
+        The supplied nodes should be ordered by content_pk (per content_type) and then
+        by position on the linear object (channel / pipe / culvert).
+        """
+        # TODO map manhole and boundary ids to connection node ids
+        result = np.empty_like(self.id)
+
+        for content_type in HAS_1D2D_CONTENT_TYPES - {
+            ContentType.TYPE_V2_CONNECTION_NODES
+        }:
+            mask = self.content_type == content_type
+            if not mask.any():
+                continue
+
+            node_idx = np.where(grid.nodes.content_type == content_type)[0]
+            node_idx = node_idx[
+                np.searchsorted(grid.nodes.content_pk[node_idx], self.content_pk[mask])
+            ]
+            missing = grid.nodes.content_pk[node_idx] != self.content_pk[mask]
+            if missing.any():
+                raise SchematisationError(
+                    f"Connected points {self.id[missing]} refer to non-existing objects"
+                )
+            result[mask] = grid.nodes.index_to_id(node_idx)
+
+        # print(result)
+        return result
 
 
 def get_1d2d_lines(
@@ -68,13 +109,6 @@ def get_1d2d_lines(
         - kcu: LINE_1D2D_* type (see above)
         - dpumax: based on drain_level or dmax (see above)
     """
-    HAS_1D2D_CONTENT_TYPES = (
-        ContentType.TYPE_V2_CONNECTION_NODES,
-        ContentType.TYPE_V2_CHANNEL,
-        ContentType.TYPE_V2_PIPE,
-        ContentType.TYPE_V2_CULVERT,
-    )
-    HAS_1D2D_CALC_TYPES = (CalculationType.CONNECTED, CalculationType.DOUBLE_CONNECTED)
     connected_idx = np.where(
         np.isin(nodes.content_type, HAS_1D2D_CONTENT_TYPES)
         & np.isin(nodes.calculation_type, HAS_1D2D_CALC_TYPES)

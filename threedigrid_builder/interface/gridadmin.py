@@ -243,7 +243,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "content_pk", content_pk)
         # is_manhole is 1 for manholes, otherwise -9999
         self.write_dataset(
-            group, "is_manhole", np.where(nodes.manhole_id != -9999, 1, -9999).astype("i4")
+            group,
+            "is_manhole",
+            np.where(nodes.manhole_id != -9999, 1, -9999).astype("i4"),
         )
 
         # unclear what is the difference: seems bottom_level is for 1D, and z_coordinate

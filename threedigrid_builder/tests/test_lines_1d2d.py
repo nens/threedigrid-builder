@@ -6,6 +6,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import ConnectedPoints
 from threedigrid_builder.grid import Grid
 from unittest import mock
 
@@ -167,3 +168,78 @@ def test_1d2d_multiple(grid2d):
     assert_array_equal(
         grid2d.lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0, 6.0, 7.0, 7.0, 8.0]
     )
+
+
+CN = ContentType.TYPE_V2_CONNECTION_NODES
+CH = ContentType.TYPE_V2_CHANNEL
+PI = ContentType.TYPE_V2_PIPE
+CV = ContentType.TYPE_V2_CULVERT
+MH = ContentType.TYPE_V2_MANHOLE
+BC = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
+
+
+@pytest.fixture
+def grid1d():
+    return Grid(
+        nodes=Nodes(
+            id=range(10),
+            content_type=[CN, CN, CN, CN, CH, CH, CH, PI, PI, CV],
+            content_pk=[1, 2, 3, 4, 1, 1, 2, 9, 9, 8],
+            manhole_id=[-9999, -9999, 2, 1] + [-9999] * 6,
+            boundary_id=[-9999, 1, -9999, -9999] + [-9999] * 6,
+        ),
+        lines=Lines(
+            id=range(10),
+            content_type=[CH, CH, CH, CH, CH, PI, PI, PI, CV, CV],
+            content_pk=[1, 1, 1, 2, 2, 9, 9, 9, 8, 8],
+            line=[
+                (0, 4),
+                (4, 5),
+                (5, 1),
+                (1, 6),
+                (6, 0),
+                (3, 7),
+                (7, 8),
+                (8, 4),
+                (4, 9),
+                (9, 3),
+            ],
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "content_type,content_pk,node_number,expected",
+    [
+        ([BC], [1], [-9999], [1]),
+        ([MH], [2], [-9999], [2]),
+        ([MH], [1], [-9999], [3]),
+        ([CH], [1], [1], [0]),
+        ([CH], [1], [2], [4]),
+        ([CH], [1], [3], [5]),
+        ([CH], [1], [4], [1]),
+        ([CH], [2], [1], [1]),
+        ([CH], [2], [2], [6]),
+        ([CH], [2], [3], [0]),
+        ([PI], [9], [1], [3]),
+        ([PI], [9], [2], [7]),
+        ([PI], [9], [3], [8]),
+        ([PI], [9], [4], [4]),
+        ([CV], [8], [1], [4]),
+        ([CV], [8], [2], [9]),
+        ([CV], [8], [3], [3]),
+    ],
+)
+def test_connected_points_get_node_ids(
+    content_type, content_pk, node_number, expected, grid1d
+):
+    connected_points = ConnectedPoints(
+        id=range(len(content_pk)),
+        content_type=content_type,
+        content_pk=content_pk,
+        node_number=node_number,
+    )
+
+    actual = connected_points.get_node_ids(grid1d)
+
+    assert_array_equal(actual, expected)
