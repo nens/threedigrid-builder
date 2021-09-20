@@ -16,10 +16,9 @@ from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.constants import InitializationType
+from threedigrid_builder.constants import InitializationType, ContentType
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
-from threedigrid_builder.grid import CalculationPoints
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectedPoints
 from threedigrid_builder.grid import ConnectionNodes
@@ -31,12 +30,14 @@ from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
+from threedigrid_builder.exceptions import SchematisationError
 from typing import Callable
-from typing import ContextManager
+from typing import ContextManager, Tuple
 
 import numpy as np
 import pathlib
 import pygeos
+import re
 
 
 __all__ = ["SQLite"]
@@ -51,6 +52,29 @@ NumpyQuery.default_numpy_settings[IntegerEnum] = {
     **NumpyQuery.default_numpy_settings[Integer],
     "sql_cast": lambda x: cast(x, Integer),
 }
+
+# To parse CalculationPoint.user_ref
+CALCULATION_POINT_CONTENT_TYPE_MAP = {
+    "v2_channel": ContentType.TYPE_V2_CHANNEL,
+    "v2_pipe": ContentType.TYPE_V2_PIPE,
+    "v2_culvert": ContentType.TYPE_V2_CULVERT,
+    "v2_manhole": ContentType.TYPE_V2_MANHOLE,
+    "v2_1d_boundary_conditions": ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS,
+}
+
+
+def parse_connected_point_user_ref(user_ref: str) -> Tuple[ContentType, int, int]:
+    """Return content_type, content_id, node_number from a user_ref.
+
+    Raises Exception for various parse errors.
+
+    Example
+    -------
+    >>> parse_connected_point_user_ref("201#123#v2_channels#4)
+    ContentType.TYPE_V2_CHANNEL, 123, 4
+    """
+    _, id_str, type_str, node_str = user_ref.split("#")
+    return CALCULATION_POINT_CONTENT_TYPE_MAP[type_str], int(id_str), int(node_str)
 
 
 def _object_as_dict(obj) -> dict:
@@ -248,43 +272,47 @@ class SQLite:
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_calculation_points(self) -> CalculationPoints:
-        with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.CalculationPoint.the_geom,
-                    models.CalculationPoint.id,
-                    models.CalculationPoint.user_ref,
-                    models.CalculationPoint.calc_type,
-                )
-                .order_by(models.CalculationPoint.id)
-                .as_structarray()
-            )
-
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-        # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
-        arr["calc_type"][arr["calc_type"] >= 100] -= 100
-
-        # transform to a Channels object
-        return CalculationPoints(**{name: arr[name] for name in arr.dtype.names})
-
     def get_connected_points(self) -> ConnectedPoints:
+        """Load connected points, join them directly with calculation points.
+
+        Automatically ignores calculation points without connected points.
+        """
         with self.get_session() as session:
             arr = (
                 session.query(
                     models.ConnectedPoint.the_geom,
                     models.ConnectedPoint.id,
-                    models.ConnectedPoint.calculation_pnt_id,
                     models.ConnectedPoint.exchange_level,
-                )
+                    models.CalculationPoint.user_ref,
+                ).join(models.CalculationPoint)
                 .order_by(models.ConnectedPoint.id)
                 .as_structarray()
             )
 
+        # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
+        # replace -9999.0 with NaN in exchange_level
+        arr["exchange_level"][arr["exchange_level"] == -9999.0] = np.nan
+
+        # convert to columnar dict
+        dct = {name: arr[name] for name in arr.dtype.names}
+
+        # parse user_ref
+        content_type = np.empty_like(dct["id"])
+        content_pk = np.empty_like(dct["id"])
+        node_number = np.empty_like(dct["id"])
+        for i, user_ref in enumerate(dct.pop("user_ref")):
+            try:
+                content_type[i], content_pk[i], node_number[i] = \
+                    parse_connected_point_user_ref(user_ref)
+            except Exception:
+                raise SchematisationError(
+                    f'Invalid user_ref in connected point {dct["id"][i]}: "{user_ref}".'
+                )
+
         # transform to a Channels object
-        return ConnectedPoints(**{name: arr[name] for name in arr.dtype.names})
+        return ConnectedPoints(content_type=content_type, content_pk=content_pk, node_number=node_number, **dct)
 
     def get_channels(self) -> Channels:
         """Return Channels"""

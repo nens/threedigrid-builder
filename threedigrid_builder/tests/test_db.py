@@ -1,7 +1,7 @@
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.constants import BoundaryType
+from threedigrid_builder.constants import BoundaryType, ContentType
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
@@ -9,7 +9,7 @@ from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
-from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import Channels, ConnectedPoints
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
@@ -72,6 +72,20 @@ def test_get_channels(db):
     assert channels.connection_node_start_id[536] == 1377
     assert channels.connection_node_end_id[1163] == 1056
     assert channels.id[1174] == 666668899
+
+
+def test_get_connected_points(db):
+    connected_points = db.get_connected_points()
+    assert isinstance(connected_points, ConnectedPoints)
+
+    assert len(connected_points) == 1931
+    assert connected_points.id[56] == 57
+    assert pygeos.to_wkt(connected_points.the_geom[1321]) == "POINT (109012 517295)"
+    assert np.isnan(connected_points.exchange_level[0])
+    assert connected_points.exchange_level[1322] == 0.0
+    assert connected_points.content_type[1320] == ContentType.TYPE_V2_CHANNEL
+    assert connected_points.content_pk[1321] == 206
+    assert connected_points.node_number[1322] == 2
 
 
 def test_get_connection_nodes(db):
