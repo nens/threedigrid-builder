@@ -306,15 +306,12 @@ class SQLite:
         node_number = np.empty_like(dct["id"])
         for i, user_ref in enumerate(dct.pop("user_ref")):
             try:
-                (
-                    content_type[i],
-                    content_pk[i],
-                    node_number[i],
-                ) = parse_connected_point_user_ref(user_ref)
+                parsed = parse_connected_point_user_ref(user_ref)
             except Exception:
                 raise SchematisationError(
                     f'Invalid user_ref in connected point {dct["id"][i]}: "{user_ref}".'
                 )
+            content_type[i], content_pk[i], node_number[i] = parsed
 
         # transform to a Channels object
         return ConnectedPoints(
