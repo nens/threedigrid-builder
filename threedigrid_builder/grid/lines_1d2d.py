@@ -43,29 +43,87 @@ class ConnectedPoints:
         The supplied nodes should be ordered by content_pk (per content_type) and then
         by position on the linear object (channel / pipe / culvert).
         """
-        # TODO map manhole and boundary ids to connection node ids
-        result = np.empty_like(self.id)
+        nodes = grid.nodes
 
-        for content_type in HAS_1D2D_CONTENT_TYPES - {
-            ContentType.TYPE_V2_CONNECTION_NODES
-        }:
+        HAS_1D2D_NO_CONN_NODES = (
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_PIPE,
+            ContentType.TYPE_V2_CULVERT,
+        )
+        # TODO map manhole and boundary ids to connection node ids
+        node_idx = np.empty_like(self.id)
+
+        for content_type in HAS_1D2D_NO_CONN_NODES:
             mask = self.content_type == content_type
             if not mask.any():
                 continue
 
-            node_idx = np.where(grid.nodes.content_type == content_type)[0]
-            node_idx = node_idx[
-                np.searchsorted(grid.nodes.content_pk[node_idx], self.content_pk[mask])
-            ]
-            missing = grid.nodes.content_pk[node_idx] != self.content_pk[mask]
+            idx = np.where(nodes.content_type == content_type)[0]
+            idx = idx[np.searchsorted(nodes.content_pk[idx], self.content_pk[mask])]
+            missing = nodes.content_pk[idx] != self.content_pk[mask]
             if missing.any():
                 raise SchematisationError(
                     f"Connected points {self.id[missing]} refer to non-existing objects"
                 )
-            result[mask] = grid.nodes.index_to_id(node_idx)
 
-        # print(result)
-        return result
+            node_idx[mask] = idx
+
+        # handle node_number
+        is_linear = np.isin(self.content_type, HAS_1D2D_NO_CONN_NODES)
+        mask = is_linear & (self.node_number > 1)
+        node_idx[mask] += self.node_number[mask] - 2
+
+        # first and last nodes are actually connection nodes
+        is_first_node = is_linear & (self.node_number == 1)
+
+        # identify last nodes by checking if the the node_idx + node_number - 2 leads
+        # to a different (the next) channel/pipe/culvert
+        is_last_node = (
+            (np.take(nodes.content_type, node_idx, mode="wrap") != self.content_type)
+            | (np.take(nodes.content_pk, node_idx, mode="wrap") != self.content_pk)
+            | (node_idx >= len(nodes))
+        )
+        # check if the previous one is indeed an interpolated node
+        node_idx[is_last_node] -= 1
+        bad_node_number = (
+            (np.take(nodes.content_type, node_idx, mode="wrap") != self.content_type)
+            | (np.take(nodes.content_pk, node_idx, mode="wrap") != self.content_pk)
+            | (node_idx >= len(nodes))
+            | (self.node_number < 1)
+        )
+        if bad_node_number.any():
+            raise SchematisationError(
+                f"Connected points {self.id[bad_node_number]} have a node number "
+                f"that is out of bounds."
+            )
+
+        node_ids = nodes.index_to_id(node_idx)
+
+        # handle first nodes (connect to a connection node)
+        if is_first_node.any():
+            # find the lines
+            sorter = np.argsort(grid.lines.line[:, 1])
+            line_idx = np.searchsorted(
+                grid.lines.line[:, 1],
+                node_ids[is_first_node],
+                sorter=sorter,
+            )
+            # find the nodes
+            node_ids[is_first_node] = grid.lines.line[sorter[line_idx], 0]
+
+        # handle last nodes (connect to a connection node)
+        if is_last_node.any():
+            # find the lines
+            sorter = np.argsort(grid.lines.line[:, 0])
+            line_idx = np.searchsorted(
+                grid.lines.line[:, 0],
+                node_ids[is_last_node],
+                sorter=sorter,
+            )
+            # find the nodes
+            node_ids[is_last_node] = grid.lines.line[sorter[line_idx], 1]
+
+        return node_ids
 
 
 def get_1d2d_lines(
