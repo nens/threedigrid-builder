@@ -16,7 +16,9 @@ from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.constants import InitializationType, ContentType
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import InitializationType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
 from threedigrid_builder.grid import Channels
@@ -30,14 +32,13 @@ from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
-from threedigrid_builder.exceptions import SchematisationError
 from typing import Callable
-from typing import ContextManager, Tuple
+from typing import ContextManager
+from typing import Tuple
 
 import numpy as np
 import pathlib
 import pygeos
-import re
 
 
 __all__ = ["SQLite"]
@@ -284,7 +285,8 @@ class SQLite:
                     models.ConnectedPoint.id,
                     models.ConnectedPoint.exchange_level,
                     models.CalculationPoint.user_ref,
-                ).join(models.CalculationPoint)
+                )
+                .join(models.CalculationPoint)
                 .order_by(models.ConnectedPoint.id)
                 .as_structarray()
             )
@@ -304,15 +306,23 @@ class SQLite:
         node_number = np.empty_like(dct["id"])
         for i, user_ref in enumerate(dct.pop("user_ref")):
             try:
-                content_type[i], content_pk[i], node_number[i] = \
-                    parse_connected_point_user_ref(user_ref)
+                (
+                    content_type[i],
+                    content_pk[i],
+                    node_number[i],
+                ) = parse_connected_point_user_ref(user_ref)
             except Exception:
                 raise SchematisationError(
                     f'Invalid user_ref in connected point {dct["id"][i]}: "{user_ref}".'
                 )
 
         # transform to a Channels object
-        return ConnectedPoints(content_type=content_type, content_pk=content_pk, node_number=node_number, **dct)
+        return ConnectedPoints(
+            content_type=content_type,
+            content_pk=content_pk,
+            node_number=node_number,
+            **dct,
+        )
 
     def get_channels(self) -> Channels:
         """Return Channels"""

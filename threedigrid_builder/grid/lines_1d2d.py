@@ -1,4 +1,5 @@
-from threedigrid_builder.base import Lines, array_of
+from threedigrid_builder.base import array_of
+from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType

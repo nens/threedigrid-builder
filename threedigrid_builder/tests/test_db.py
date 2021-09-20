@@ -1,15 +1,17 @@
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.constants import BoundaryType, ContentType
+from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
+from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
-from threedigrid_builder.grid import Channels, ConnectedPoints
+from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import ConnectedPoints
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
