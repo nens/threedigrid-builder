@@ -1,4 +1,4 @@
-from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Lines, array_of
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
@@ -12,10 +12,26 @@ import pygeos
 __all__ = ["get_1d2d_lines", "CalculationPoints", "ConnectedPoints"]
 
 
+class CalculationPoint:
+    id: int
+    the_geom: pygeos.Geometry
+    user_ref: str
+    calc_type: CalculationType
+
+
+@array_of
 class CalculationPoints:
     pass
 
 
+class ConnectedPoint:
+    id: int
+    the_geom: pygeos.Geometry
+    calculation_pnt_id: int
+    exchange_level: float
+
+
+@array_of
 class ConnectedPoints:
     pass
 

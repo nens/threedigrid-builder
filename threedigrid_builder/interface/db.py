@@ -19,7 +19,9 @@ from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
+from threedigrid_builder.grid import CalculationPoints
 from threedigrid_builder.grid import Channels
+from threedigrid_builder.grid import ConnectedPoints
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
@@ -245,6 +247,44 @@ class SQLite:
 
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_calculation_points(self) -> CalculationPoints:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.CalculationPoint.the_geom,
+                    models.CalculationPoint.id,
+                    models.CalculationPoint.user_ref,
+                    models.CalculationPoint.calc_type,
+                )
+                .order_by(models.CalculationPoint.id)
+                .as_structarray()
+            )
+
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+        # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
+        arr["calc_type"][arr["calc_type"] >= 100] -= 100
+
+        # transform to a Channels object
+        return CalculationPoints(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_connected_points(self) -> ConnectedPoints:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.ConnectedPoint.the_geom,
+                    models.ConnectedPoint.id,
+                    models.ConnectedPoint.calculation_pnt_id,
+                    models.ConnectedPoint.exchange_level,
+                )
+                .order_by(models.ConnectedPoint.id)
+                .as_structarray()
+            )
+
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # transform to a Channels object
+        return ConnectedPoints(**{name: arr[name] for name in arr.dtype.names})
 
     def get_channels(self) -> Channels:
         """Return Channels"""
