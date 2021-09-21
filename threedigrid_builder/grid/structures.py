@@ -124,6 +124,8 @@ class WeirOrifices:
             cross_weight=1.0,
             frict_type1=self.friction_type,
             frict_value1=self.friction_value,
+            frict_type2=self.friction_type,
+            frict_value2=self.friction_value,
             invert_level_start_point=self.crest_level,
             invert_level_end_point=self.crest_level,
         )
