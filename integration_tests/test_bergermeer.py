@@ -1,4 +1,4 @@
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_almost_equal
 from threedigrid_builder.application import make_grid
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import LineType
@@ -34,34 +34,46 @@ def test_integration(tmp_path):
         progress_callback=progress_callback,
     )
     with h5py.File(tmp_path / "gridadmin.h5", "r") as f:
+        ## REPROJECTION
+        # spot-check a coordinates as reprojection WGS84 -> RD might mismatch
+        # WGS84: 4.728282895,52.645792838
+        idx = np.where(f["nodes"]["content_pk"][:] == 1)[0][0]
+        assert_almost_equal(
+            f["nodes"]["coordinates"][:, idx], [110404.2, 517792.3], decimal=3,
+        )
+
         ## NODES
-        assert f["nodes"]["id"].shape == (7906,)
+        assert f["nodes"]["id"].shape == (7906,)  # Inpy: (13280, )
         assert_array_equal(f["nodes"]["id"][:], np.arange(f["nodes"]["id"].shape[0]))
         assert count_unique(f["nodes"]["node_type"]) == {
             -9999: 1,
             NodeType.NODE_2D_OPEN_WATER: 5374,
-            NodeType.NODE_1D_NO_STORAGE: 2485,
-            NodeType.NODE_1D_STORAGE: 42,
+            # Inpy: NodeType.NODE_2D_GROUNDWATER: 5374,
+            NodeType.NODE_1D_NO_STORAGE: 2485,  # Inpy: 2527
+            NodeType.NODE_1D_STORAGE: 42,  # Inpy: 0
             NodeType.NODE_1D_BOUNDARIES: 4,
         }
 
         ## LINES
-        assert f["lines"]["id"].shape == (15505,)
+        assert f["lines"]["id"].shape == (15505,)  # Inpy: (31916, )
         assert_array_equal(f["lines"]["id"][:], np.arange(f["lines"]["id"].shape[0]))
         assert count_unique(f["lines"]["kcu"]) == {
-            -9999: 1,
+            -9999: 1,  # Inpy: 0: 1
+            # Inpy: LineType.LINE_2D_GROUNDWATER: 11037,
             LineType.LINE_1D_ISOLATED: 716,
             LineType.LINE_1D_CONNECTED: 1545,
             LineType.LINE_1D_SHORT_CRESTED: 56,
             LineType.LINE_1D_DOUBLE_CONNECTED: 219,
             LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED: 23,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 1512,
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 396,
-            LineType.LINE_2D: 9544,
-            LineType.LINE_2D_OBSTACLE: 1493,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 1512,  # Inpy: 1907
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 396,  # Inpy: 0
+            # Inpy: LineType.LINE_1D2D_POSSIBLE_BREACH: 1,
+            LineType.LINE_2D: 9544,  # Inpy: 9553
+            LineType.LINE_2D_OBSTACLE: 1493,  # Inpy: 1484
+            # Inpy: LineType.LINE_2D_VERTICAL: 5374
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 12969,
+            b"": 12969,  # Inpy: 29380
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,

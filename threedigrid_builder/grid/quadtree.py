@@ -10,7 +10,6 @@ import itertools
 import math
 import numpy as np
 import pygeos
-import warnings
 
 
 __all__ = ["QuadTree"]
@@ -189,18 +188,8 @@ class QuadTree:
             pixel_coords=pixel_coords,
         )
 
-        # Pragmatic fix: drop self-connected lines
-        is_self_connected = line[:, 0] == line[:, 1]
-        if np.any(is_self_connected):
-            n = np.count_nonzero(is_self_connected)
-            warnings.warn(f"Quadtree produced {n} self-connected lines")
-            mask = ~is_self_connected
-            kcu = kcu[mask]
-            line = line[mask]
-            lik = lik[mask]
-            lim = lim[mask]
-            lin = lin[mask]
-            cross_pix_coords = cross_pix_coords[mask]
+        if np.any(line[:, 0] == line[:, 1]):
+            raise RuntimeError("Quadtree produced self-connected lines")
 
         lines = Lines(
             id=itertools.islice(line_id_counter, len(line)),
