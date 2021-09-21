@@ -42,21 +42,23 @@ class CrossSectionLocations:
             channels,
         )
 
+        idx1 = self.id_to_index(cross_loc1)
+        idx2 = self.id_to_index(cross_loc2)
         # Fill cross1 and cross2 by mapping to CrossSectionDefinitions
         lines.cross1 = definitions.id_to_index(
-            self.definition_id[self.id_to_index(cross_loc1)],
+            self.definition_id[idx1],
             check_exists=True,
         )
         lines.cross2 = definitions.id_to_index(
-            self.definition_id[self.id_to_index(cross_loc2)],
+            self.definition_id[idx2],
             check_exists=True,
         )
         lines.cross_weight = cross_weight
 
-        lines.frict_type1 = self.friction_type[self.id_to_index(cross_loc1)]
-        lines.frict_type2 = self.friction_type[self.id_to_index(cross_loc2)]
-        lines.frict_value1 = self.friction_value[self.id_to_index(cross_loc1)]
-        lines.frict_value2 = self.friction_value[self.id_to_index(cross_loc2)]
+        lines.frict_type1 = self.friction_type[idx1]
+        lines.frict_type2 = self.friction_type[idx2]
+        lines.frict_value1 = self.friction_value[idx1]
+        lines.frict_value2 = self.friction_value[idx2]
 
         # Compute invert levels and start and end
         lines.invert_level_start_point = compute_bottom_level(
