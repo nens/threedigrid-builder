@@ -226,6 +226,7 @@ class BaseLinear:
             ds1d=end_s - start_s,
             kcu=objs.calculation_type[segment_idx],
             cross1=cross1,
+            cross2=cross1,
             cross_weight=cross_weight,
             frict_type1=frict_type,
             frict_value1=frict_value,
