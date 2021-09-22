@@ -1,7 +1,8 @@
 from enum import IntEnum
 from numpy.testing import assert_equal
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import replace, search
+from threedigrid_builder.base import replace
+from threedigrid_builder.base import search
 from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
 

@@ -1,5 +1,6 @@
-from threedigrid_builder.base import array_of, search
+from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
+from threedigrid_builder.base import search
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
@@ -44,10 +45,9 @@ class ConnectedPoints:
         by position on the linear object (channel / pipe / culvert).
         """
         nodes = grid.nodes
-        
+
         # TODO map manhole and boundary ids to connection node ids
         node_idx = np.empty_like(self.id)
-
 
         HAS_1D2D_NO_CONN_NODES = (
             ContentType.TYPE_V2_CHANNEL,
@@ -66,7 +66,7 @@ class ConnectedPoints:
                     self.content_pk[current_selection],
                     mask=(nodes.content_type == content_type),
                     assume_ordered=True,
-                    check_exists=True
+                    check_exists=True,
                 )
             except KeyError as e:
                 conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
@@ -108,27 +108,23 @@ class ConnectedPoints:
 
         # handle first nodes (connect to a connection node)
         if is_first_node.any():
-            # find the lines
-            sorter = np.argsort(grid.lines.line[:, 1])
-            line_idx = np.searchsorted(
+            line_idx = search(
                 grid.lines.line[:, 1],
                 node_ids[is_first_node],
-                sorter=sorter,
+                assume_ordered=False,
+                check_exists=True,
             )
-            # find the nodes
-            node_ids[is_first_node] = grid.lines.line[sorter[line_idx], 0]
+            node_ids[is_first_node] = grid.lines.line[line_idx, 0]
 
         # handle last nodes (connect to a connection node)
         if is_last_node.any():
-            # find the lines
-            sorter = np.argsort(grid.lines.line[:, 0])
-            line_idx = np.searchsorted(
+            line_idx = search(
                 grid.lines.line[:, 0],
                 node_ids[is_last_node],
-                sorter=sorter,
+                assume_ordered=False,
+                check_exists=True,
             )
-            # find the nodes
-            node_ids[is_last_node] = grid.lines.line[sorter[line_idx], 1]
+            node_ids[is_last_node] = grid.lines.line[line_idx, 1]
 
         return node_ids
 

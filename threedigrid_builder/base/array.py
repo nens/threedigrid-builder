@@ -357,7 +357,7 @@ class DoesNotExist(KeyError):
         super().__init__(msg)
 
 
-def search(a, v, mask=None, assume_ordered=False, check_exists=False):
+def search(a, v, mask=None, assume_ordered=False, check_exists=True):
     """Find indices where `v` occurs in `a` should be inserted to maintain order.
 
     Args:
@@ -367,7 +367,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=False):
       mask (1D array_like): A (boolean or index) mask to apply to a before searching.
       assume_ordered (bool, optional): Whether to assume a is ordered, default False.
       check_exists (bool, optional): Check whether any value in v does exists in a,
-        default False.
+        default True.
 
     Raises:
       If check_exists is True, this function raises a KeyError with added ``values``
