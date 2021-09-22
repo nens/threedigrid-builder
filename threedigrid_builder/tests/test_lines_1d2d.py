@@ -26,6 +26,11 @@ def grid2d():
     )
 
 
+@pytest.fixture
+def empty_connected_points():
+    return ConnectedPoints(id=[])
+
+
 @pytest.mark.parametrize(
     "node_coordinates,expected_lines",
     [
@@ -48,7 +53,7 @@ def grid2d():
         ([(0.5, 0.5), (1.5, 0.5)], [(7, 0), (8, 1)]),  # two cells, different
     ],
 )
-def test_1d2d(node_coordinates, expected_lines, grid2d):
+def test_1d2d(node_coordinates, expected_lines, grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
         id=[7, 8][: len(node_coordinates)],
         coordinates=node_coordinates,
@@ -68,6 +73,7 @@ def test_1d2d(node_coordinates, expected_lines, grid2d):
     culverts.get_1d2d_properties.return_value = 0, 0
 
     grid2d.add_1d2d(
+        empty_connected_points,
         connection_nodes,
         channels,
         pipes,
@@ -82,7 +88,7 @@ def test_1d2d(node_coordinates, expected_lines, grid2d):
 @pytest.mark.parametrize(
     "node_coordinates", [(-1e-7, 0.5), (2.0001, 1.5), (1, 1.0001), (1, -1e-7)]
 )
-def test_1d2d_no_cell(node_coordinates, grid2d):
+def test_1d2d_no_cell(node_coordinates, grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
         id=[7],
         coordinates=[node_coordinates],
@@ -92,10 +98,10 @@ def test_1d2d_no_cell(node_coordinates, grid2d):
     grid2d.lines = Lines(id=[])
 
     with pytest.raises(SchematisationError, match=".*outside of the 2D.*"):
-        grid2d.add_1d2d(*((mock.Mock(),) * 6))
+        grid2d.add_1d2d(empty_connected_points, *((mock.Mock(),) * 6))
 
 
-def test_1d2d_multiple(grid2d):
+def test_1d2d_multiple(grid2d, empty_connected_points):
     CN = ContentType.TYPE_V2_CONNECTION_NODES
     CH = ContentType.TYPE_V2_CHANNEL
     PIPE = ContentType.TYPE_V2_PIPE
@@ -121,6 +127,7 @@ def test_1d2d_multiple(grid2d):
     culverts.get_1d2d_properties.return_value = (True, [8])
 
     grid2d.add_1d2d(
+        empty_connected_points,
         connection_nodes,
         channels,
         pipes,
@@ -187,7 +194,8 @@ def grid1d():
             content_pk=[1, 2, 3, 4, 1, 1, 2, 9, 9, 8],
             manhole_id=[-9999, -9999, 2, 1] + [-9999] * 6,
             boundary_id=[-9999, 1, -9999, -9999] + [-9999] * 6,
-            node_type=[NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_BOUNDARIES] + [NodeType.NODE_1D_NO_STORAGE] * 8,
+            node_type=[NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_BOUNDARIES]
+            + [NodeType.NODE_1D_NO_STORAGE] * 8,
         ),
         lines=Lines(
             id=range(10),
@@ -234,9 +242,7 @@ def grid1d():
         ([MH, MH], [2, 1], [-9999, -9999], [2, 3]),
     ],
 )
-def test_connected_points_get_node_ids(
-    content_type, content_pk, node_number, expected, grid1d
-):
+def test_get_node_ids(content_type, content_pk, node_number, expected, grid1d):
     connected_points = ConnectedPoints(
         id=range(len(expected)),
         content_type=content_type,

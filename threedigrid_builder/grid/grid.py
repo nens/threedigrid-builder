@@ -3,7 +3,6 @@ from . import cross_section_locations as csl_module
 from . import embedded as embedded_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
-from .lines_1d2d import get_1d2d_lines
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import Lines
@@ -513,7 +512,14 @@ class Grid:
         )
 
     def add_1d2d(
-        self, connection_nodes, channels, pipes, locations, culverts, line_id_counter
+        self,
+        connected_points,
+        connection_nodes,
+        channels,
+        pipes,
+        locations,
+        culverts,
+        line_id_counter,
     ):
         """Connect 1D and 2D elements by adding 1D-2D lines.
 
@@ -523,7 +529,7 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
-        self.lines += get_1d2d_lines(
+        self.lines += connected_points.get_lines(
             self.cell_tree,
             self.nodes,
             connection_nodes,
