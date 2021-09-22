@@ -39,8 +39,8 @@ class ConnectedPoint:
 
 @array_of(ConnectedPoint)
 class ConnectedPoints:
-    def get_node_ids(self, grid):
-        """Find the node ids to which connected points belong
+    def get_node_index(self, grid):
+        """Find the node index to which connected points belong
 
         The supplied nodes should be ordered by content_pk (per content_type) and then
         by position on the linear object (channel / pipe / culvert). 1D boundary node
@@ -142,29 +142,27 @@ class ConnectedPoints:
                 f"that is out of bounds."
             )
 
-        node_ids = nodes.index_to_id(node_idx)
-
         # handle first nodes (connect to a connection node)
         if is_first_node.any():
             line_idx = search(
                 grid.lines.line[:, 1],
-                node_ids[is_first_node],
+                nodes.index_to_id(node_idx[is_first_node]),
                 assume_ordered=False,
                 check_exists=True,
             )
-            node_ids[is_first_node] = grid.lines.line[line_idx, 0]
+            node_idx[is_first_node] = nodes.id_to_index(grid.lines.line[line_idx, 0])
 
         # handle last nodes (connect to a connection node)
         if is_last_node.any():
             line_idx = search(
                 grid.lines.line[:, 0],
-                node_ids[is_last_node],
+                nodes.index_to_id(node_idx[is_last_node]),
                 assume_ordered=False,
                 check_exists=True,
             )
-            node_ids[is_last_node] = grid.lines.line[line_idx, 1]
+            node_idx[is_last_node] = nodes.id_to_index(grid.lines.line[line_idx, 1])
 
-        return node_ids
+        return node_idx
 
     def get_lines(
         self,
@@ -191,30 +189,37 @@ class ConnectedPoints:
         which cells are connected to. This is currently unimplemented.
 
         Args:
-            cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into
+          cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into
             the STRtree must be equal to the indices into the nodes.
-            nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
+          nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
             the 1D nodes already have a dmax and calculation_type set.
-            connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
-            channels (Channels)
-            pipes (Pipes)
-            locations (CrossSectionLocations): for looking up bank_level
-            culverts (Culverts)
-            line_id_counter (iterable): An iterable yielding integers
+          connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
+          channels (Channels)
+          pipes (Pipes)
+          locations (CrossSectionLocations): for looking up bank_level
+          culverts (Culverts)
+          line_id_counter (iterable): An iterable yielding integers
 
         Returns:
-            Lines with data in the following columns:
-            - id: integer generated from line_id_counter
-            - kcu: LINE_1D2D_* type (see above)
-            - dpumax: based on drain_level or dmax (see above)
+          Lines with data in the following columns:
+          - id: integer generated from line_id_counter
+          - kcu: LINE_1D2D_* type (see above)
+          - dpumax: based on drain_level or dmax (see above)
         """
-        connected_idx = np.where(
-            np.isin(nodes.content_type, HAS_1D2D_CONTENT_TYPES)
-            & np.isin(nodes.calculation_type, HAS_1D2D_CALC_TYPES)
+        # Create an array of node indices that need a 1D2D connection
+        node_idx_1 = np.where(nodes.calculation_type == CalculationType.CONNECTED)[0]
+        node_idx_2 = np.where(
+            nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
         )[0]
-        n_connected_nodes = connected_idx.shape[0]
-        if n_connected_nodes == 0:
+        if len(node_idx_1) == 0 and len(node_idx_2) == 0:
             return Lines(id=[])
+        # Merge the indices, doubling the double connected and sorting them
+        connected_idx = np.concatenate([node_idx_1, np.repeat(node_idx_2, 2)])
+        is_double = np.ones(len(connected_idx), dtype=bool)
+        is_double[: len(node_idx_1)] = False
+        sorter = np.argsort(connected_idx)
+        connected_idx = connected_idx[sorter]
+        is_double = is_double[sorter]
 
         # The query_bulk returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
@@ -224,7 +229,7 @@ class ConnectedPoints:
         idx = idx[:, first_unique_index]
         n_lines = idx.shape[1]
         # Error if there is a node without a 1D-2D line
-        if n_lines != n_connected_nodes:
+        if n_lines != connected_idx.shape[0]:
             # The code in this if clause is only for pretty error formatting.
             out_of_bounds = np.delete(connected_idx, idx[0])
             types = nodes.content_type[out_of_bounds]
@@ -247,12 +252,6 @@ class ConnectedPoints:
         node_idx = connected_idx[idx[0]]  # convert to node indexes
         node_id = nodes.index_to_id(node_idx)  # convert to node ids
         cell_id = nodes.index_to_id(idx[1])  # convert to cell ids
-
-        # create a 'duplicator' array that duplicates lines from double connected nodes
-        is_double = nodes.calculation_type[node_idx] == CalculationType.DOUBLE_CONNECTED
-        duplicator = np.ones(n_lines, dtype=int)
-        duplicator[is_double] = 2
-        duplicator = np.repeat(np.arange(n_lines), duplicator)
 
         # Identify different types of objects and dispatch to the associated functions
         is_ch = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
@@ -294,8 +293,8 @@ class ConnectedPoints:
         )
 
         return Lines(
-            id=itertools.islice(line_id_counter, len(duplicator)),
-            line=np.array([node_id, cell_id]).T[duplicator],
-            kcu=kcu[duplicator],
-            dpumax=dpumax[duplicator],
+            id=itertools.islice(line_id_counter, n_lines),
+            line=np.array([node_id, cell_id]).T,
+            kcu=kcu,
+            dpumax=dpumax,
         )

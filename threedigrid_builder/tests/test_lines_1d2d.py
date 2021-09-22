@@ -117,14 +117,17 @@ def test_1d2d_multiple(grid2d, empty_connected_points):
     grid2d.lines = Lines(id=[])
 
     connection_nodes = mock.Mock()
-    connection_nodes.get_1d2d_properties.return_value = ([True, True, False], [1, 2, 3])
+    connection_nodes.get_1d2d_properties.return_value = (
+        [True, True, True, False],
+        [1, 2, 2, 3],
+    )
     channels = mock.Mock()
-    channels.get_1d2d_properties.return_value = (False, [5])
+    channels.get_1d2d_properties.return_value = ([False, False], [5, 5])
     pipes = mock.Mock()
-    pipes.get_1d2d_properties.return_value = (True, [6, 7])
+    pipes.get_1d2d_properties.return_value = ([True, True, True], [6, 7, 7])
     locations = mock.Mock()
     culverts = mock.Mock()
-    culverts.get_1d2d_properties.return_value = (True, [8])
+    culverts.get_1d2d_properties.return_value = ([True], [8])
 
     grid2d.add_1d2d(
         empty_connected_points,
@@ -138,16 +141,18 @@ def test_1d2d_multiple(grid2d, empty_connected_points):
 
     args, _ = connection_nodes.get_1d2d_properties.call_args
     assert args[0] is grid2d.nodes
-    assert_array_equal(args[1], [2, 3, 5])  # node_idx (offset by 2 because of 2d cells)
+    assert_array_equal(
+        args[1], [2, 3, 3, 5]
+    )  # node_idx (offset by 2 because of 2d cells)
 
     args, _ = channels.get_1d2d_properties.call_args
     assert args[0] is grid2d.nodes
-    assert_array_equal(args[1], [4])  # node_idx (offset by 2 because of 2d cells)
+    assert_array_equal(args[1], [4, 4])  # node_idx (offset by 2 because of 2d cells)
     assert args[2] is locations
 
     args, _ = pipes.get_1d2d_properties.call_args
     assert args[0] is grid2d.nodes
-    assert_array_equal(args[1], [6, 7])  # node_idx (offset by 2 because of 2d cells)
+    assert_array_equal(args[1], [6, 7, 7])  # node_idx (offset by 2 because of 2d cells)
     assert args[2] is connection_nodes
 
     args, _ = culverts.get_1d2d_properties.call_args
@@ -242,7 +247,7 @@ def grid1d():
         ([MH, MH], [2, 1], [-9999, -9999], [2, 3]),
     ],
 )
-def test_get_node_ids(content_type, content_pk, node_number, expected, grid1d):
+def test_get_node_index(content_type, content_pk, node_number, expected, grid1d):
     connected_points = ConnectedPoints(
         id=range(len(expected)),
         content_type=content_type,
@@ -250,6 +255,6 @@ def test_get_node_ids(content_type, content_pk, node_number, expected, grid1d):
         node_number=node_number,
     )
 
-    actual = connected_points.get_node_ids(grid1d)
+    actual = connected_points.get_node_index(grid1d)
 
     assert_array_equal(actual, expected)
