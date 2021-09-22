@@ -515,6 +515,8 @@ class SQLite:
                 .order_by(models.Pumpstation.id)
                 .as_structarray()
             )
+    
+        arr["capacity"] = arr["capacity"] / 100
 
         # transform to a Pumps object
         return Pumps(**{name: arr[name] for name in arr.dtype.names})
