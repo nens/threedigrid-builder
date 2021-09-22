@@ -35,11 +35,13 @@ class ConnectedPoint:
     content_type: ContentType
     content_pk: int
     node_number: int
+    user_ref: str  # useful for debugging
+    calc_pnt_id: int  # useful for debugging
 
 
 @array_of(ConnectedPoint)
 class ConnectedPoints:
-    def get_node_index(self, grid):
+    def get_node_index(self, nodes, channels, pipes, culverts):
         """Find the node index to which connected points belong
 
         The supplied nodes should be ordered by content_pk (per content_type) and then
@@ -47,8 +49,6 @@ class ConnectedPoints:
         ids must be sorted by boundary_id, but manholes do not have to be sorted by
         manhole_id.
         """
-        nodes = grid.nodes
-
         node_idx = np.empty_like(self.id)
 
         # Find manholes
@@ -63,9 +63,10 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
+                bad = np.where(current_selection)[0][e.indices]
                 raise SchematisationError(
-                    f"Connected points {conn_pnt_ids} refer to non-existing objects."
+                    f"Connected points {self.id[bad]} (calculation points "
+                    f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
                 )
 
         # Find 1D boundary conditions
@@ -82,59 +83,87 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
+                bad = np.where(current_selection)[0][e.indices]
                 raise SchematisationError(
-                    f"Connected points {conn_pnt_ids} refer to non-existing objects."
+                    f"Connected points {self.id[bad]} (calculation points "
+                    f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
                 )
 
-        HAS_1D2D_NO_CONN_NODES = (
-            ContentType.TYPE_V2_CHANNEL,
-            ContentType.TYPE_V2_PIPE,
-            ContentType.TYPE_V2_CULVERT,
-        )
-        for content_type in HAS_1D2D_NO_CONN_NODES:
+        HAS_1D2D_NO_CONN_NODES = {
+            ContentType.TYPE_V2_CHANNEL: channels,
+            ContentType.TYPE_V2_PIPE: pipes,
+            ContentType.TYPE_V2_CULVERT: culverts,
+        }
+        for content_type, objs in HAS_1D2D_NO_CONN_NODES.items():
             current_selection = self.content_type == content_type
             if not current_selection.any():
                 continue
 
-            # Search the nodes for the ones with the correct content_type & content_pk
-            try:
-                _node_idx = search(
+            # Handle node_number == 1 seperately; they may not have interpolated nodes
+            is_first_node = current_selection & (self.node_number == 1)
+            if is_first_node.any():
+                try:
+                    obj_idx = objs.id_to_index(
+                        self.content_pk[is_first_node], check_exists=True
+                    )
+                except KeyError as e:
+                    bad = np.where(is_first_node)[0][e.indices]
+                    raise SchematisationError(
+                        f"Connected points {self.id[bad]} (calculation points "
+                        f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
+                    )
+                node_idx[is_first_node] = search(
                     nodes.content_pk,
-                    self.content_pk[current_selection],
-                    mask=(nodes.content_type == content_type),
+                    objs.connection_node_start_id[obj_idx],
+                    mask=(nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES),
                     assume_ordered=True,
-                    check_exists=True,
+                    check_exists=False,
                 )
-            except KeyError as e:
-                conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
-                raise SchematisationError(
-                    f"Connected points {conn_pnt_ids} refer to non-existing objects."
-                )
+
+            # Search the nodes for the ones with node_number > 1
+            current_selection = current_selection & (self.node_number > 1)
+            if not current_selection.any():
+                continue
+            _node_idx = search(
+                nodes.content_pk,
+                self.content_pk[current_selection],
+                mask=(nodes.content_type == content_type),
+                assume_ordered=True,
+                check_exists=False,  # happens if there are no interpol. nodes
+            )
             node_idx[current_selection] = _node_idx
 
-        # handle node_number
-        is_linear = np.isin(self.content_type, HAS_1D2D_NO_CONN_NODES)
-        mask = is_linear & (self.node_number > 1)
-        node_idx[mask] += self.node_number[mask] - 2
+        # Handle node_number > 1 cases (these are interpolated nodes or end nodes)
+        is_linear = np.isin(self.content_type, list(HAS_1D2D_NO_CONN_NODES.keys()))
+        bad_node_number = is_linear & (self.node_number < 1)
+        if bad_node_number.any():
+            raise SchematisationError(
+                f"Connected points {self.id[bad_node_number]} have a node number "
+                f"that is out of bounds."
+            )
+        is_interpolated_node = is_linear & (self.node_number > 1)
+        node_idx[is_interpolated_node] += self.node_number[is_interpolated_node] - 2
 
-        # first and last nodes are actually connection nodes
-        is_first_node = is_linear & (self.node_number == 1)
-
-        # identify last nodes by checking if the the node_idx + node_number - 2 leads
+        # Identify end nodes by checking if the the node_idx + node_number - 2 leads
         # to a different (the next) channel/pipe/culvert
-        is_last_node = is_linear & (
-            (np.take(nodes.content_type, node_idx, mode="wrap") != self.content_type)
-            | (np.take(nodes.content_pk, node_idx, mode="wrap") != self.content_pk)
+        is_end_node = is_interpolated_node & (
+            (np.take(nodes.content_type, node_idx, mode="clip") != self.content_type)
+            | (np.take(nodes.content_pk, node_idx, mode="clip") != self.content_pk)
             | (node_idx >= len(nodes))
         )
         # check if the previous one is indeed an interpolated node
-        node_idx[is_last_node] -= 1
-        bad_node_number = is_linear & (
-            (np.take(nodes.content_type, node_idx, mode="wrap") != self.content_type)
-            | (np.take(nodes.content_pk, node_idx, mode="wrap") != self.content_pk)
-            | (node_idx >= len(nodes))
-            | (self.node_number < 1)
+        node_idx[is_end_node] -= 1
+        bad_node_number = (
+            is_linear
+            & (self.node_number > 2)
+            & (
+                (
+                    np.take(nodes.content_type, node_idx, mode="clip")
+                    != self.content_type
+                )
+                | (np.take(nodes.content_pk, node_idx, mode="clip") != self.content_pk)
+                | (node_idx >= len(nodes))
+            )
         )
         if bad_node_number.any():
             raise SchematisationError(
@@ -142,25 +171,28 @@ class ConnectedPoints:
                 f"that is out of bounds."
             )
 
-        # handle first nodes (connect to a connection node)
-        if is_first_node.any():
-            line_idx = search(
-                grid.lines.line[:, 1],
-                nodes.index_to_id(node_idx[is_first_node]),
-                assume_ordered=False,
-                check_exists=True,
+        # handle end nodes (find the connection node id)
+        for content_type, objs in HAS_1D2D_NO_CONN_NODES.items():
+            _is_end_node = is_end_node & (self.content_type == content_type)
+            if not _is_end_node.any():
+                continue
+            try:
+                obj_idx = objs.id_to_index(
+                    self.content_pk[_is_end_node], check_exists=True
+                )
+            except KeyError as e:
+                bad = np.where(_is_end_node)[0][e.indices]
+                raise SchematisationError(
+                    f"Connected points {self.id[bad]} (calculation points "
+                    f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
+                )
+            node_idx[_is_end_node] = search(
+                nodes.content_pk,
+                objs.connection_node_end_id[obj_idx],
+                mask=(nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES),
+                assume_ordered=True,
+                check_exists=False,
             )
-            node_idx[is_first_node] = nodes.id_to_index(grid.lines.line[line_idx, 0])
-
-        # handle last nodes (connect to a connection node)
-        if is_last_node.any():
-            line_idx = search(
-                grid.lines.line[:, 0],
-                nodes.index_to_id(node_idx[is_last_node]),
-                assume_ordered=False,
-                check_exists=True,
-            )
-            node_idx[is_last_node] = nodes.id_to_index(grid.lines.line[line_idx, 1])
 
         return node_idx
 
@@ -191,8 +223,10 @@ class ConnectedPoints:
         Args:
           cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into
             the STRtree must be equal to the indices into the nodes.
-          nodes (Nodes): All 1D and 2D nodes to compute 1D-2D lines for. Be sure that
-            the 1D nodes already have a dmax and calculation_type set.
+          nodes (Grid): Aall 1D and 2D nodes to compute 1D-2D lines for.
+            Requires nodes from channels, pipes, culverts, manholes and 1d boundary
+            conditions.
+            Be sure that the nodes already have a dmax and calculation_type set.
           connection_nodes (ConnectionNodes): for looking up manhole_id and drain_level
           channels (Channels)
           pipes (Pipes)
@@ -213,25 +247,51 @@ class ConnectedPoints:
         )[0]
         if len(node_idx_1) == 0 and len(node_idx_2) == 0:
             return Lines(id=[])
+
         # Merge the indices, doubling the double connected and sorting them
-        connected_idx = np.concatenate([node_idx_1, np.repeat(node_idx_2, 2)])
-        is_double = np.ones(len(connected_idx), dtype=bool)
-        is_double[: len(node_idx_1)] = False
-        sorter = np.argsort(connected_idx)
-        connected_idx = connected_idx[sorter]
-        is_double = is_double[sorter]
+        line_node_idx = np.concatenate([node_idx_1, np.repeat(node_idx_2, 2)])
+        line_is_double = np.ones(len(line_node_idx), dtype=bool)
+        line_is_double[: len(node_idx_1)] = False
+        line_is_first = np.ones(len(line_node_idx), dtype=bool)
+        line_is_first[len(node_idx_1) + 1 : len(line_node_idx) : 2] = False
+        line_is_second = np.zeros(len(line_node_idx), dtype=bool)
+        line_is_second[len(node_idx_1) + 1 : len(line_node_idx) : 2] = True
+
+        # Map node indices to connected point indices where one exists
+        conn_pnt_node_idx = self.get_node_index(nodes, channels, pipes, culverts)
+        line_connpnt_idx = np.full_like(line_node_idx, -9999)
+
+        # Get the first connected point
+        line_connpnt_idx[line_is_first] = search(
+            conn_pnt_node_idx,
+            line_node_idx[line_is_first],
+            assume_ordered=False,
+            check_exists=False,
+        )
+        # Get the second connected point (mask out the first ones)
+        line_connpnt_idx[line_is_second] = search(
+            conn_pnt_node_idx,
+            line_node_idx[line_is_second],
+            mask=line_connpnt_idx[line_is_first],
+            check_exists=False,
+        )
+        # Correct the 'mistakes' (1d2d lines that do not have connected points)
+        use_default = (line_connpnt_idx < 0) | (
+            line_connpnt_idx >= len(self)
+        ) | np.take(conn_pnt_node_idx, line_connpnt_idx, mode="clip") != line_node_idx
+        line_connpnt_idx[use_default] = -9999
 
         # The query_bulk returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
-        idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[connected_idx]))
+        idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[line_node_idx]))
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, first_unique_index = np.unique(idx[0], return_index=True)
         idx = idx[:, first_unique_index]
         n_lines = idx.shape[1]
         # Error if there is a node without a 1D-2D line
-        if n_lines != connected_idx.shape[0]:
+        if n_lines != line_node_idx.shape[0]:
             # The code in this if clause is only for pretty error formatting.
-            out_of_bounds = np.delete(connected_idx, idx[0])
+            out_of_bounds = np.delete(line_node_idx, idx[0])
             types = nodes.content_type[out_of_bounds]
             pks = nodes.content_pk[out_of_bounds]
             pretty_names = ("connection nodes", "channels", "pipes", "culverts")
@@ -249,7 +309,7 @@ class ConnectedPoints:
             )
         if n_lines == 0:
             return Lines(id=[])
-        node_idx = connected_idx[idx[0]]  # convert to node indexes
+        node_idx = line_node_idx[idx[0]]  # convert to node indexes
         node_id = nodes.index_to_id(node_idx)  # convert to node ids
         cell_id = nodes.index_to_id(idx[1])  # convert to cell ids
 
@@ -281,7 +341,7 @@ class ConnectedPoints:
 
         # map "is_closed" to "kcu" (including double/single connected properties)
         # map the two binary arrays on numbers 0, 1, 2, 3
-        options = is_double * 2 + is_closed
+        options = line_is_double * 2 + is_closed
         kcu = np.choose(
             options,
             choices=[

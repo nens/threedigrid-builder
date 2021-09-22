@@ -6,8 +6,11 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectedPoints
+from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import Pipes
 from unittest import mock
 
 import itertools
@@ -192,34 +195,23 @@ BC = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
 
 @pytest.fixture
 def grid1d():
-    return Grid(
-        nodes=Nodes(
-            id=range(10),
-            content_type=[CN, CN, CN, CN, CH, CH, CH, PI, PI, CV],
-            content_pk=[1, 2, 3, 4, 1, 1, 2, 9, 9, 8],
-            manhole_id=[-9999, -9999, 2, 1] + [-9999] * 6,
-            boundary_id=[-9999, 1, -9999, -9999] + [-9999] * 6,
-            node_type=[NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_BOUNDARIES]
-            + [NodeType.NODE_1D_NO_STORAGE] * 8,
-        ),
-        lines=Lines(
-            id=range(10),
-            content_type=[CH, CH, CH, CH, CH, PI, PI, PI, CV, CV],
-            content_pk=[1, 1, 1, 2, 2, 9, 9, 9, 8, 8],
-            line=[
-                (0, 4),
-                (4, 5),
-                (5, 1),
-                (1, 6),
-                (6, 0),
-                (2, 7),
-                (7, 8),
-                (8, 3),
-                (3, 9),
-                (9, 2),
-            ],
-        ),
+    nodes = Nodes(
+        id=range(10),
+        content_type=[CN, CN, CN, CN, CH, CH, CH, PI, PI, CV],
+        content_pk=[1, 2, 3, 4, 1, 1, 2, 9, 9, 8],
+        manhole_id=[-9999, -9999, 2, 1] + [-9999] * 6,
+        boundary_id=[-9999, 1, -9999, -9999] + [-9999] * 6,
+        node_type=[NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_BOUNDARIES]
+        + [NodeType.NODE_1D_NO_STORAGE] * 8,
     )
+    channels = Channels(
+        id=[1, 2], connection_node_start_id=[1, 2], connection_node_end_id=[2, 1]
+    )
+    pipes = Pipes(id=[9], connection_node_start_id=[3], connection_node_end_id=[4])
+    culverts = Culverts(
+        id=[8], connection_node_start_id=[4], connection_node_end_id=[3]
+    )
+    return nodes, channels, pipes, culverts
 
 
 @pytest.mark.parametrize(
@@ -255,6 +247,6 @@ def test_get_node_index(content_type, content_pk, node_number, expected, grid1d)
         node_number=node_number,
     )
 
-    actual = connected_points.get_node_index(grid1d)
+    actual = connected_points.get_node_index(*grid1d)
 
     assert_array_equal(actual, expected)

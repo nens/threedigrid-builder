@@ -209,7 +209,7 @@ class ArrayDataClass:
         except KeyError as e:
             raise SchematisationError(
                 f"Some objects refer to non-existing "
-                f"{self.__class__.__name__} (missing: {e.values})."
+                f"{self.__class__.__name__} (missing: {e.values.tolist()})."
             )
         return result
 
@@ -399,8 +399,8 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         if missing.any():
             raise DoesNotExist(
                 "search encountered missing elements",
-                values=np.compress(missing, v).tolist(),
-                indices=np.where(missing)[0].tolist(),
+                values=np.compress(missing, v),
+                indices=np.where(missing)[0],
             )
 
     # Map to original (unmasked) indices
