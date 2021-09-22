@@ -160,19 +160,22 @@ class GridAdminOut(OutputInterface):
         NODATA_YET = 0
 
         n2dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
+        n2dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_BOUNDARIES)
+        n1dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_BOUNDARIES)
         group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
-        group.create_dataset("n2dobc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("n2dobc", data=n2dobc, dtype="i4")
         group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
 
         n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
         group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
-        group.create_dataset("n1dobc", data=NODATA_YET, dtype="i4")
-
-        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U)
+        group.create_dataset("n1dobc", data=n1dobc, dtype="i4")
+        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U) + \
+            np.count_nonzero(lines.kcu == LineType.LINE_2D_OBSTACLE_U)
         group.create_dataset("liutot", data=liutot, dtype="i4")
-        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V)
+        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V) + \
+            np.count_nonzero(lines.kcu == LineType.LINE_2D_OBSTACLE_V)
         group.create_dataset("livtot", data=livtot, dtype="i4")
-
+        
         group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
         group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
 
@@ -318,6 +321,7 @@ class GridAdminOut(OutputInterface):
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
+        l2d_obstacle = np.isin(lines.kcu, (LineType.LINE_2D_OBSTACLE_U, LineType.LINE_2D_OBSTACLE_V))
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", lines.id + 1)
         self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
@@ -326,6 +330,7 @@ class GridAdminOut(OutputInterface):
         )
 
         lines.kcu[l2d] = LineType.LINE_2D
+        lines.kcu[l2d_obstacle] = LineType.LINE_2D_OBSTACLE
         lines.kcu[lines.kcu == LineType.LINE_1D_BOUNDARY] = LineType.LINE_1D_ISOLATED
         self.write_dataset(group, "kcu", lines.kcu)
         calculation_type = fill_int.copy()
@@ -357,6 +362,10 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "flou", lines.flou)
         self.write_dataset(group, "cross1", increase(lines.cross1))
         self.write_dataset(group, "cross2", increase(lines.cross2))
+        self.write_dataset(group, "frict_type1", lines.frict_type1)
+        self.write_dataset(group, "frict_type2", lines.frict_type2)
+        self.write_dataset(group, "frict_value1", lines.frict_value1)
+        self.write_dataset(group, "frict_value2", lines.frict_value2)
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(group, "line_coords", lines.line_coords.T)
         self.write_dataset(

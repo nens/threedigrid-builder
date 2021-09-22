@@ -207,6 +207,14 @@ class BaseLinear:
         except AttributeError:
             invert_end = invert_start = np.nan
 
+        try:
+            frict_type = objs.friction_type
+            frict_value = objs.friction_value
+        except AttributeError:
+            frict_type = -9999
+            frict_value = np.nan
+
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -218,7 +226,12 @@ class BaseLinear:
             ds1d=end_s - start_s,
             kcu=objs.calculation_type[segment_idx],
             cross1=cross1,
+            cross2=cross1,
             cross_weight=cross_weight,
+            frict_type1=frict_type,
+            frict_value1=frict_value,
+            frict_type2=frict_type,
+            frict_value2=frict_value,
             invert_level_start_point=invert_start,
             invert_level_end_point=invert_end,
         )

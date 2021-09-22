@@ -60,6 +60,8 @@ def locations():
         id=[1, 2, 3, 5, 6],
         the_geom=pygeos.points([(1, 0), (26, 1), (16, 1), (58, 3), (49, 2)]),
         channel_id=[51, 53, 53, 52, 54],
+        friction_type=[1, 1, 1, 2, 2],
+        friction_value=[30, 35, 40, 0.02, 0.03],
         reference_level=[1.0, 2.0, 3.0, 5.0, 6.0],
         definition_id=[3, 3, 4, 4, 5],
     )
@@ -154,6 +156,10 @@ def test_apply_to_lines(channels, channel_lines, locations, definitions):
 
     assert_equal(channel_lines.cross1, [0, 1, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.cross2, [0, 1, 0, 0, 0, 2, 2])
+    assert_equal(channel_lines.frict_type1, [1, 2, 1, 1, 1, 2, 2])
+    assert_equal(channel_lines.frict_type2, [1, 2, 1, 1, 1, 2, 2])
+    assert_equal(channel_lines.frict_value1, [30, 0.02, 40, 40, 40, 0.03, 0.03])
+    assert_equal(channel_lines.frict_value2, [30, 0.02, 35, 35, 35, 0.03, 0.03])
     assert_almost_equal(
         channel_lines.cross_weight, [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
     )

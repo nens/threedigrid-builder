@@ -50,6 +50,8 @@ def two_weir_orifices(request):
         connection_node_end_id=[42, 33],
         crest_level=[2.3, 4.5],
         crest_type=[4, 3],
+        friction_type=[1, 1],
+        friction_value=[31, 41],
         cross_section_definition_id=[17, 18],
     )
 
@@ -78,11 +80,15 @@ def test_get_lines(connection_nodes, two_weir_orifices, definitions):
     assert_array_equal(lines.content_pk, [1, 2])
     assert_array_equal(lines.kcu, [4, 3])
     assert_array_equal(lines.cross1, [0, 1])
-    assert_array_equal(lines.cross2, -9999)
+    assert_array_equal(lines.cross2, [0, 1])
     assert_array_equal(lines.cross_weight, [1.0, 1.0])
     assert_array_equal(lines.dpumax, [2.3, 4.5])
     assert_array_equal(lines.invert_level_start_point, [2.3, 4.5])
     assert_array_equal(lines.invert_level_end_point, [2.3, 4.5])
+    assert_array_equal(lines.frict_type1, [1, 1])
+    assert_array_equal(lines.frict_type2, [1, 1])
+    assert_array_equal(lines.frict_value1, [31, 41])
+    assert_array_equal(lines.frict_value2, [31, 41])
 
 
 @pytest.mark.parametrize(

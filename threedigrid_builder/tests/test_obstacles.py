@@ -60,7 +60,7 @@ def test_set_obstacles(grid, obstacles):
     grid.set_obstacles(obstacles)
 
     expected_kcu = np.array(
-        [101, 101, 101, 101, 98, 99, 101, 99, 99, 101], dtype=np.int32
+        [102, 102, 102, 102, 98, 99, 103, 99, 99, 103], dtype=np.int32
     )
     assert_equal(grid.lines.kcu, expected_kcu)
     expected_flodu = np.array(
