@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import array_of, search
 from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -44,29 +44,36 @@ class ConnectedPoints:
         by position on the linear object (channel / pipe / culvert).
         """
         nodes = grid.nodes
+        
+        # TODO map manhole and boundary ids to connection node ids
+        node_idx = np.empty_like(self.id)
+
 
         HAS_1D2D_NO_CONN_NODES = (
             ContentType.TYPE_V2_CHANNEL,
             ContentType.TYPE_V2_PIPE,
             ContentType.TYPE_V2_CULVERT,
         )
-        # TODO map manhole and boundary ids to connection node ids
-        node_idx = np.empty_like(self.id)
-
         for content_type in HAS_1D2D_NO_CONN_NODES:
-            mask = self.content_type == content_type
-            if not mask.any():
+            current_selection = self.content_type == content_type
+            if not current_selection.any():
                 continue
 
-            idx = np.where(nodes.content_type == content_type)[0]
-            idx = idx[np.searchsorted(nodes.content_pk[idx], self.content_pk[mask])]
-            missing = nodes.content_pk[idx] != self.content_pk[mask]
-            if missing.any():
-                raise SchematisationError(
-                    f"Connected points {self.id[missing]} refer to non-existing objects"
+            # Search the nodes for the ones with the correct content_type & content_pk
+            try:
+                _node_idx = search(
+                    nodes.content_pk,
+                    self.content_pk[current_selection],
+                    mask=(nodes.content_type == content_type),
+                    assume_ordered=True,
+                    check_exists=True
                 )
-
-            node_idx[mask] = idx
+            except KeyError as e:
+                conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
+                raise SchematisationError(
+                    f"Connected points {conn_pnt_ids} refer to non-existing objects."
+                )
+            node_idx[current_selection] = _node_idx
 
         # handle node_number
         is_linear = np.isin(self.content_type, HAS_1D2D_NO_CONN_NODES)

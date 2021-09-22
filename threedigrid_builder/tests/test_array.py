@@ -1,7 +1,7 @@
 from enum import IntEnum
 from numpy.testing import assert_equal
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import replace
+from threedigrid_builder.base import replace, search
 from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
 
@@ -163,7 +163,7 @@ def test_id_to_index_check_exists():
     with pytest.raises(SchematisationError, match=r".*missing: \[2\].*"):
         records.id_to_index([1, 2, 3], check_exists=True)
 
-    with pytest.raises(SchematisationError, match=r".*missing: \[2\].*"):
+    with pytest.raises(SchematisationError, match=r".*missing: \[2, 2\].*"):
         records.id_to_index([1, 1, 2, 2], check_exists=True)
 
     records.id_to_index([1, 1, 2, 2])  # no check, no error
@@ -248,3 +248,86 @@ def test_replace():
     expected = np.array([1, 9999999, -200, 9])
 
     assert_equal(actual, expected)
+
+
+def test_search():
+    actual = search(
+        [1, 4, 5, 9, 2],
+        [4, 1, 2],
+        assume_ordered=False,
+        check_exists=True,
+    )
+
+    assert_equal(actual, [1, 0, 4])
+
+
+def test_search_ordered():
+    actual = search(
+        [1, 2, 4, 5, 9],
+        [4, 1, 2],
+        assume_ordered=True,
+        check_exists=True,
+    )
+
+    assert_equal(actual, [2, 0, 1])
+
+
+def test_search_bool_mask():
+    actual = search(
+        [1, 4, 2, 9, 2],
+        [4, 1, 2],
+        mask=[True, True, False, False, True],
+        assume_ordered=False,
+        check_exists=True,
+    )
+
+    assert_equal(actual, [1, 0, 4])
+
+
+def test_search_int_mask():
+    actual = search(
+        [1, 4, 2, 9, 2],
+        [4, 1, 2],
+        mask=[0, 1, 4],
+        assume_ordered=False,
+        check_exists=True,
+    )
+
+    assert_equal(actual, [1, 0, 4])
+
+
+def test_search_int_mask_ordered():
+    actual = search(
+        [1, 4, 2, 9, 2],
+        [4, 1, 2],
+        mask=[0, 4, 1],  # this orders a
+        assume_ordered=True,
+        check_exists=True,
+    )
+
+    assert_equal(actual, [1, 0, 4])
+
+
+def test_search_check_exists():
+    with pytest.raises(KeyError) as e:
+        search(
+            [1, 2, 4, 5, 9],
+            [4, 6, 1, 2, 3],
+            assume_ordered=False,
+            check_exists=True,
+        )
+        assert_equal(e.indices, [1, 4])
+        assert_equal(e.values, [6, 3])
+
+
+def test_search_check_exists_mask():
+    with pytest.raises(KeyError) as e:
+        search(
+            [1, 2, 4, 5, 9],
+            [4, 1],
+            mask=[0, 1, 3],
+            assume_ordered=False,
+            check_exists=True,
+        )
+        assert_equal(e.indices, [0])
+        assert_equal(e.values, [4])
