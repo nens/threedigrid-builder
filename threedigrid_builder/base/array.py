@@ -370,15 +370,23 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         default True.
 
     Raises:
-      If check_exists is True, this function raises a KeyError with added ``values``
-      and ``indices`` attributes corresponding to the missing values and the indices
-      of them into ``v``.
+      If check_exists is True or if the (masked) ``a`` is empty, this function raises a
+      KeyError with added ``values`` and ``indices`` attributes corresponding to the
+      missing values and the indices of them into ``v``.
     """
+    v = np.asarray(v)
     if mask is not None:
         mask = np.asarray(mask)
         if mask.dtype == bool:
             mask = np.where(mask)[0]
         a = np.take(a, mask)
+        # If there is no array to search in: raise directly
+        if len(a) == 0:
+            raise DoesNotExist(
+                "search encountered missing elements",
+                values=v.tolist(),
+                indices=np.arange(v.shape[0]).tolist(),
+            )
 
     if assume_ordered:
         ind = np.searchsorted(a, v)
@@ -387,7 +395,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         ind = np.take(sorter, np.searchsorted(a, v, sorter=sorter))
 
     if check_exists:
-        missing = np.take(a, ind) != v
+        missing = np.take(a, ind, mode="clip") != v
         if missing.any():
             raise DoesNotExist(
                 "search encountered missing elements",

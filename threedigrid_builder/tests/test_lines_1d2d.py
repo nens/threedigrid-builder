@@ -187,6 +187,7 @@ def grid1d():
             content_pk=[1, 2, 3, 4, 1, 1, 2, 9, 9, 8],
             manhole_id=[-9999, -9999, 2, 1] + [-9999] * 6,
             boundary_id=[-9999, 1, -9999, -9999] + [-9999] * 6,
+            node_type=[NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_BOUNDARIES] + [NodeType.NODE_1D_NO_STORAGE] * 8,
         ),
         lines=Lines(
             id=range(10),
@@ -211,9 +212,9 @@ def grid1d():
 @pytest.mark.parametrize(
     "content_type,content_pk,node_number,expected",
     [
-        # ([BC], [1], [-9999], [1]),
-        # ([MH], [2], [-9999], [2]),
-        # ([MH], [1], [-9999], [3]),
+        ([BC], [1], [-9999], [1]),
+        ([MH], [2], [-9999], [2]),
+        ([MH], [1], [-9999], [3]),
         ([CH], [1], [1], [0]),
         ([CH], [1], [2], [4]),
         ([CH], [1], [3], [5]),
@@ -228,8 +229,9 @@ def grid1d():
         ([CV], [8], [1], [3]),
         ([CV], [8], [2], [9]),
         ([CV], [8], [3], [2]),
-        (CH, 1, [1, 2, 2, 3, 3, 4], [0, 4, 4, 5, 5, 1]),
+        ([CH] * 6, [1] * 6, [1, 2, 2, 3, 3, 4], [0, 4, 4, 5, 5, 1]),
         ([CH, PI], [1, 9], [2, 2], [4, 7]),
+        ([MH, MH], [2, 1], [-9999, -9999], [2, 3]),
     ],
 )
 def test_connected_points_get_node_ids(

@@ -2,7 +2,7 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import search
 from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import ContentType, NodeType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.exceptions import SchematisationError
 
@@ -42,12 +42,47 @@ class ConnectedPoints:
         """Find the node ids to which connected points belong
 
         The supplied nodes should be ordered by content_pk (per content_type) and then
-        by position on the linear object (channel / pipe / culvert).
+        by position on the linear object (channel / pipe / culvert). 1D boundary node
+        ids must be sorted by boundary_id, but manholes do not have to be sorted by
+        manhole_id. 
         """
         nodes = grid.nodes
 
-        # TODO map manhole and boundary ids to connection node ids
         node_idx = np.empty_like(self.id)
+
+        # Find manholes
+        current_selection = self.content_type == ContentType.TYPE_V2_MANHOLE
+        if current_selection.any():
+            try:
+                node_idx[current_selection] = search(
+                    nodes.manhole_id,
+                    self.content_pk[current_selection],
+                    mask=(nodes.manhole_id != -9999),
+                    assume_ordered=False,
+                    check_exists=True,
+                )
+            except KeyError as e:
+                conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
+                raise SchematisationError(
+                    f"Connected points {conn_pnt_ids} refer to non-existing objects."
+                )
+
+        # Find 1D boundary conditions
+        current_selection = self.content_type == ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
+        if current_selection.any():
+            try:
+                node_idx[current_selection] = search(
+                    nodes.boundary_id,
+                    self.content_pk[current_selection],
+                    mask=(nodes.node_type == NodeType.NODE_1D_BOUNDARIES),
+                    assume_ordered=True,
+                    check_exists=True,
+                )
+            except KeyError as e:
+                conn_pnt_ids = self.id[current_selection[e.indices]].tolist()
+                raise SchematisationError(
+                    f"Connected points {conn_pnt_ids} refer to non-existing objects."
+                )
 
         HAS_1D2D_NO_CONN_NODES = (
             ContentType.TYPE_V2_CHANNEL,
@@ -85,14 +120,14 @@ class ConnectedPoints:
 
         # identify last nodes by checking if the the node_idx + node_number - 2 leads
         # to a different (the next) channel/pipe/culvert
-        is_last_node = (
+        is_last_node = is_linear & (
             (np.take(nodes.content_type, node_idx, mode="wrap") != self.content_type)
             | (np.take(nodes.content_pk, node_idx, mode="wrap") != self.content_pk)
             | (node_idx >= len(nodes))
         )
         # check if the previous one is indeed an interpolated node
         node_idx[is_last_node] -= 1
-        bad_node_number = (
+        bad_node_number = is_linear & (
             (np.take(nodes.content_type, node_idx, mode="wrap") != self.content_type)
             | (np.take(nodes.content_pk, node_idx, mode="wrap") != self.content_pk)
             | (node_idx >= len(nodes))
