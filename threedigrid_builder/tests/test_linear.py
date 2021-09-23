@@ -302,7 +302,7 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
     assert_array_equal(lines.cross1, [0, 0, 1, 1, 1])
-    assert_array_equal(lines.cross2, -9999)
+    assert_array_equal(lines.cross2, [0, 0, 1, 1, 1])
     assert_array_equal(lines.cross_weight, 1.0)
     assert_almost_equal(lines.s1d, expected_centers)
     assert_almost_equal(lines.ds1d, expected_sizes)

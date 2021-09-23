@@ -36,7 +36,12 @@ def apply_obstacles(lines, obstacles):
     lines_tree = pygeos.STRtree(pygeos.linestrings(coordinates.reshape(-1, 2, 2)))
 
     inscts = lines_tree.query_bulk(obstacles.the_geom, predicate="intersects")
-    lines.kcu[inscts[1, :]] = LineType.LINE_2D_OBSTACLE
+    is_u = np.where(lines.kcu == LineType.LINE_2D_U)[0]
+    mask = np.isin(is_u, inscts[1, :])
+    lines.kcu[is_u[mask]] = LineType.LINE_2D_OBSTACLE_U
+    is_v = np.where(lines.kcu == LineType.LINE_2D_V)[0]
+    mask = np.isin(is_v, inscts[1, :])
+    lines.kcu[is_v[mask]] = LineType.LINE_2D_OBSTACLE_V
     for i in range(len(obstacles.id)):
         indices = inscts[1, np.where(inscts[0, :] == i)]
         lines.flod[indices] = np.fmax(lines.flod[indices], obstacles.crest_level[i])

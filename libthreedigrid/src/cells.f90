@@ -202,7 +202,7 @@ module m_cells
                     cross_pix_coords(l_v,:) = (/ i0 - 1, j0 - 1, i2, j0 - 1/) ! Python indexing so -1 at start slice
                 endif
             endif
-            if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i3:i1,max(1,j0-1):j0), 2) > 0)) then
+            if(lg(mn(3), mn(2)-1) == k-1 .and. any(minval(area_mask(i3:i1,max(1,j0-1):j0), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3), mn(2)-1)

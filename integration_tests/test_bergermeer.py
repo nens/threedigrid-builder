@@ -56,7 +56,7 @@ def test_integration(tmp_path):
         assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
 
         ## LINES
-        assert f["lines"]["id"].shape == (15498,)  # Inpy: (31916, )
+        assert f["lines"]["id"].shape == (15505,)  # Inpy: (31916, )
         assert_array_equal(f["lines"]["id"][:], np.arange(f["lines"]["id"].shape[0]))
         assert count_unique(f["lines"]["kcu"]) == {
             -9999: 1,  # Inpy: 0: 1
@@ -69,12 +69,12 @@ def test_integration(tmp_path):
             LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 1512,  # Inpy: 1907
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 396,  # Inpy: 0
             # Inpy: LineType.LINE_1D2D_POSSIBLE_BREACH: 1,
-            LineType.LINE_2D: 9537,  # Inpy: 9553
+            LineType.LINE_2D: 9544,  # Inpy: 9553
             LineType.LINE_2D_OBSTACLE: 1493,  # Inpy: 1484
             # Inpy: LineType.LINE_2D_VERTICAL: 5374
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 12962,  # Inpy: 29380
+            b"": 12969,  # Inpy: 29380
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,

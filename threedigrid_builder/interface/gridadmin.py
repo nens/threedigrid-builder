@@ -46,6 +46,13 @@ LINE_TYPES_1D2D_GW = (
     LineType.LINE_1D2D_GROUNDWATER_SEWER,
 )
 
+# Some default settings for h5py datasets
+HDF5_SETTINGS = {
+    "compression": "gzip",  # more compatible than lzf and better compression
+    "compression_opts": 1,  # the fastest, a 9 gives only 1% better compression
+    "shuffle": True,  # helps another 3% and has almost no overhead
+}
+
 
 def field_to_h5(group, name, dtype, val, mode="attrs"):
     """Write a dataclass field to H5py attributes or datasets.
@@ -153,19 +160,22 @@ class GridAdminOut(OutputInterface):
         NODATA_YET = 0
 
         n2dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
+        n2dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_BOUNDARIES)
+        n1dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_BOUNDARIES)
         group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
-        group.create_dataset("n2dobc", data=NODATA_YET, dtype="i4")
+        group.create_dataset("n2dobc", data=n2dobc, dtype="i4")
         group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
 
         n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
         group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
-        group.create_dataset("n1dobc", data=NODATA_YET, dtype="i4")
-
-        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U)
+        group.create_dataset("n1dobc", data=n1dobc, dtype="i4")
+        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U) + \
+            np.count_nonzero(lines.kcu == LineType.LINE_2D_OBSTACLE_U)
         group.create_dataset("liutot", data=liutot, dtype="i4")
-        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V)
+        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V) + \
+            np.count_nonzero(lines.kcu == LineType.LINE_2D_OBSTACLE_V)
         group.create_dataset("livtot", data=livtot, dtype="i4")
-
+        
         group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
         group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
 
@@ -312,6 +322,7 @@ class GridAdminOut(OutputInterface):
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
+        l2d_obstacle = np.isin(lines.kcu, (LineType.LINE_2D_OBSTACLE_U, LineType.LINE_2D_OBSTACLE_V))
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", lines.id + 1)
         self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
@@ -320,6 +331,7 @@ class GridAdminOut(OutputInterface):
         )
 
         lines.kcu[l2d] = LineType.LINE_2D
+        lines.kcu[l2d_obstacle] = LineType.LINE_2D_OBSTACLE
         lines.kcu[lines.kcu == LineType.LINE_1D_BOUNDARY] = LineType.LINE_1D_ISOLATED
         self.write_dataset(group, "kcu", lines.kcu)
         calculation_type = fill_int.copy()
@@ -351,6 +363,10 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "flou", lines.flou)
         self.write_dataset(group, "cross1", increase(lines.cross1))
         self.write_dataset(group, "cross2", increase(lines.cross2))
+        self.write_dataset(group, "frict_type1", lines.frict_type1)
+        self.write_dataset(group, "frict_type2", lines.frict_type2)
+        self.write_dataset(group, "frict_value1", lines.frict_value1)
+        self.write_dataset(group, "frict_value2", lines.frict_value2)
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(group, "line_coords", lines.line_coords.T)
         self.write_dataset(
@@ -375,11 +391,15 @@ class GridAdminOut(OutputInterface):
         ]
         line_geometries.insert(0, np.array([-9999.0, -9999.0]))
         # The dataset has a special "variable length" dtype. This one is special write method.
-        vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+        try:
+            vlen_dtype = h5py.vlen_dtype(np.dtype(float))
+        except AttributeError:  # Pre h5py 2.10
+            vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
         group.create_dataset(
             "line_geometries",
             data=np.array(line_geometries, dtype=object),
             dtype=vlen_dtype,
+            **HDF5_SETTINGS,
         )
 
         # can be collected from SQLite, but empty for now:
@@ -443,7 +463,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "count", cross_sections.count)
 
         # do not use self.write_dataset as we don't want a dummy element
-        group.create_dataset("tables", data=cross_sections.tables.T)
+        group.create_dataset("tables", data=cross_sections.tables.T, **HDF5_SETTINGS)
 
     def write_dataset(self, group, name, values, fill=-9999):
         """Create the correct size dataset for writing to gridadmin.h5 and
@@ -457,7 +477,11 @@ class GridAdminOut(OutputInterface):
         """
         if values.ndim == 1:
             ds = group.create_dataset(
-                name, (values.shape[0] + 1,), dtype=values.dtype, fillvalue=fill
+                name,
+                (values.shape[0] + 1,),
+                dtype=values.dtype,
+                fillvalue=fill,
+                **HDF5_SETTINGS,
             )
             ds[1:] = values
             if name == "id":  # set the ID of the dummy element
@@ -468,6 +492,7 @@ class GridAdminOut(OutputInterface):
                 (values.shape[0], values.shape[1] + 1),
                 dtype=values.dtype,
                 fillvalue=fill,
+                **HDF5_SETTINGS,
             )
             ds[:, 1:] = values
         else:
