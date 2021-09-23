@@ -351,7 +351,7 @@ class DoesNotExist(KeyError):
 
 
 def search(a, v, mask=None, assume_ordered=False, check_exists=True):
-    """Find indices where `v` occurs in `a` should be inserted to maintain order.
+    """Find indices where `v` occurs in `a`.
 
     Args:
       a (1D array_like): Input array. If assume_ordered is True, then it must be sorted
@@ -359,7 +359,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
       v (array_like): Values to find in a.
       mask (1D array_like): A (boolean or index) mask to apply to a before searching.
       assume_ordered (bool, optional): Whether to assume a is ordered, default False.
-      check_exists (bool, optional): Check whether any value in v does exists in a,
+      check_exists (bool, optional): Check whether the values in v exist in a,
         default True.
 
     Raises:
@@ -377,8 +377,8 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         if len(a) == 0:
             raise DoesNotExist(
                 "search encountered missing elements",
-                values=v.tolist(),
-                indices=np.arange(v.shape[0]).tolist(),
+                values=v,
+                indices=np.arange(v.shape[0]),
             )
 
     if assume_ordered:

@@ -88,6 +88,7 @@ def test_get_connected_points(db):
     assert connected_points.content_type[1320] == ContentType.TYPE_V2_CHANNEL
     assert connected_points.content_pk[1321] == 206
     assert connected_points.node_number[1322] == 2
+    assert connected_points.calculation_point_id[1322] == 1701
 
 
 def test_get_connection_nodes(db):

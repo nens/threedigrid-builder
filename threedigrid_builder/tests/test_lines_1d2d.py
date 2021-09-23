@@ -325,7 +325,7 @@ def test_get_node_index_err(content_type, content_pk, node_number, expected, gri
         content_type=content_type,
         content_pk=content_pk,
         node_number=node_number,
-        calc_pnt_id=range(10, 10 + len(content_type)),
+        calculation_point_id=range(10, 10 + len(content_type)),
     )
 
     with pytest.raises(SchematisationError, match=expected):
@@ -366,7 +366,7 @@ def test_get_line_mappings(cp_node_idx, expected_line_cp_idx, grid1d):
 def test_get_line_mappings_err(cp_node_idx, expected_msg, grid1d):
     connected_points = ConnectedPoints(
         id=range(len(cp_node_idx)),
-        calc_pnt_id=range(10, 10 + len(cp_node_idx)),
+        calculation_point_id=range(10, 10 + len(cp_node_idx)),
     )
 
     with pytest.raises(SchematisationError, match=expected_msg):

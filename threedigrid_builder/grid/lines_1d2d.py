@@ -35,8 +35,7 @@ class ConnectedPoint:
     content_type: ContentType
     content_pk: int
     node_number: int
-    user_ref: str  # useful for debugging
-    calc_pnt_id: int  # useful for debugging
+    calculation_point_id: int  # only for error messages
 
 
 @array_of(ConnectedPoint)
@@ -66,7 +65,7 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                bad = self.calc_pnt_id[np.where(current_selection)[0][e.indices]]
+                bad = self.calculation_point_id[np.where(current_selection)[0][e.indices]]
                 raise SchematisationError(
                     f"Calculation points {np.unique(bad).tolist()} refer to "
                     f"non-existing manholes."
@@ -86,7 +85,7 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                bad = self.calc_pnt_id[np.where(current_selection)[0][e.indices]]
+                bad = self.calculation_point_id[np.where(current_selection)[0][e.indices]]
                 raise SchematisationError(
                     f"Calculation points {np.unique(bad).tolist()} refer to "
                     f"non-existing 1D boundary conditions."
@@ -110,7 +109,7 @@ class ConnectedPoints:
                         self.content_pk[is_first_node], check_exists=True
                     )
                 except KeyError as e:
-                    bad = self.calc_pnt_id[np.where(is_first_node)[0][e.indices]]
+                    bad = self.calculation_point_id[np.where(is_first_node)[0][e.indices]]
                     raise SchematisationError(
                         f"Calculation points {np.unique(bad).tolist()} refer to "
                         f"non-existing {objs.__class__.__name__.lower()}."
@@ -140,7 +139,7 @@ class ConnectedPoints:
         is_linear = np.isin(self.content_type, list(HAS_1D2D_NO_CONN_NODES.keys()))
         bad_node_number = is_linear & (self.node_number < 1)
         if bad_node_number.any():
-            bad = self.calc_pnt_id[bad_node_number]
+            bad = self.calculation_point_id[bad_node_number]
             raise SchematisationError(
                 f"Calculation points {np.unique(bad).tolist()} have node "
                 f"numbers below 1."
@@ -170,7 +169,7 @@ class ConnectedPoints:
             )
         )
         if bad_node_number.any():
-            bad = self.calc_pnt_id[bad_node_number]
+            bad = self.calculation_point_id[bad_node_number]
             raise SchematisationError(
                 f"Calculation points {np.unique(bad).tolist()} have too "
                 f"large node numbers."
@@ -186,7 +185,7 @@ class ConnectedPoints:
                     self.content_pk[_is_end_node], check_exists=True
                 )
             except KeyError as e:
-                bad = self.calc_pnt_id[np.where(_is_end_node)[0][e.indices]]
+                bad = self.calculation_point_id[np.where(_is_end_node)[0][e.indices]]
                 raise SchematisationError(
                     f"Calculation points {np.unique(bad).tolist()} refer to "
                     f"non-existing {objs.__class__.__name__.lower()}."
@@ -226,7 +225,7 @@ class ConnectedPoints:
             cp_node_idx, return_index=True, return_counts=True
         )
         if np.any(counts > 2):
-            bad_ids = np.unique(self.calc_pnt_id[cp1_node_idx[counts > 2]])
+            bad_ids = np.unique(self.calculation_point_id[cp1_node_idx[counts > 2]])
             raise SchematisationError(
                 f"Calculation points {bad_ids.tolist()} have too many connected points."
             )
@@ -246,7 +245,7 @@ class ConnectedPoints:
             bad = cp1_idx[e.indices]
             raise SchematisationError(
                 f"Connected points {self.id[bad]} (calculation points "
-                f"{self.calc_pnt_id[bad]}) refer to objects that do not have a "
+                f"{self.calculation_point_id[bad]}) refer to objects that do not have a "
                 f"'connected' calculation type."
             )
         line1_cp_idx[idx] = cp1_idx
@@ -262,7 +261,7 @@ class ConnectedPoints:
             bad = cp2_idx[e.indices]
             raise SchematisationError(
                 f"Connected points {self.id[bad]} (calculation points "
-                f"{self.calc_pnt_id[bad]}) are a second reference to objects that "
+                f"{self.calculation_point_id[bad]}) are a second reference to objects that "
                 f"do not have a 'double connected' but only a 'connected' calculation "
                 f"type."
             )
@@ -292,16 +291,20 @@ class ConnectedPoints:
     ):
         """Compute 1D-2D flowlines for (double) connected 1D nodes.
 
-        The line type and bottom level (kcu and dpumax) are set according to the
-        "get_1d2d_properties" on the corresponding objects (ConnectionNodes, Channels,
-        Pipes, Culverts).
+        The line will connect to the cell in which the ConnectedPoint geometry is
+        located. If the ConnectedPoint is unavailable, the geometry of the 1D node
+        itself is taken instead. For edge cases the line will connect to the cell with
+        the lowest id.
 
-        If the 2D bottom level will turn out higher, this will be corrected later by
-        threedi-tables.
-
-        The line will connect to the cell in which the 1D node is located. For edge cases,
-        the line will connect to the cell with the lowest id. Users may want to influence
-        which cells are connected to. This is currently unimplemented.
+        The following line attributes will be set:
+        - kcu (line_type): according to the get_1d2d_properties method on the
+          corresponding 1D objects (ConnectionNodes, Channels, Pipes, Culverts)
+        - dpumax (bottom_level): to the exchange_level of the ConnectedPoint or, if 
+          there is no ConnectedPoint or its exchange_level is empty, according to
+          the get_1d2d_properties method
+        - content_type: TYPE_V2_ADDED_CALCULATION_POINT for lines that come from a
+          ConnectedPoint
+        - content_pk: the ConnectedPoint's id if available
 
         Args:
           cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into

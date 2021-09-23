@@ -285,7 +285,7 @@ class SQLite:
                     models.ConnectedPoint.id,
                     models.ConnectedPoint.exchange_level,
                     models.CalculationPoint.user_ref,
-                    models.CalculationPoint.id.label("calc_pnt_id"),
+                    models.CalculationPoint.id.label("calculation_point_id"),
                 )
                 .join(models.CalculationPoint)
                 .order_by(models.ConnectedPoint.id)
@@ -305,7 +305,7 @@ class SQLite:
         content_type = np.empty_like(dct["id"])
         content_pk = np.empty_like(dct["id"])
         node_number = np.empty_like(dct["id"])
-        for i, user_ref in enumerate(dct["user_ref"]):
+        for i, user_ref in enumerate(dct.pop("user_ref")):
             try:
                 parsed = parse_connected_point_user_ref(user_ref)
             except Exception:
