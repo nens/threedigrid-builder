@@ -65,7 +65,9 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                bad = self.calculation_point_id[np.where(current_selection)[0][e.indices]]
+                bad = self.calculation_point_id[
+                    np.where(current_selection)[0][e.indices]
+                ]
                 raise SchematisationError(
                     f"Calculation points {np.unique(bad).tolist()} refer to "
                     f"non-existing manholes."
@@ -85,7 +87,9 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                bad = self.calculation_point_id[np.where(current_selection)[0][e.indices]]
+                bad = self.calculation_point_id[
+                    np.where(current_selection)[0][e.indices]
+                ]
                 raise SchematisationError(
                     f"Calculation points {np.unique(bad).tolist()} refer to "
                     f"non-existing 1D boundary conditions."
@@ -109,7 +113,9 @@ class ConnectedPoints:
                         self.content_pk[is_first_node], check_exists=True
                     )
                 except KeyError as e:
-                    bad = self.calculation_point_id[np.where(is_first_node)[0][e.indices]]
+                    bad = self.calculation_point_id[
+                        np.where(is_first_node)[0][e.indices]
+                    ]
                     raise SchematisationError(
                         f"Calculation points {np.unique(bad).tolist()} refer to "
                         f"non-existing {objs.__class__.__name__.lower()}."
@@ -299,7 +305,7 @@ class ConnectedPoints:
         The following line attributes will be set:
         - kcu (line_type): according to the get_1d2d_properties method on the
           corresponding 1D objects (ConnectionNodes, Channels, Pipes, Culverts)
-        - dpumax (bottom_level): to the exchange_level of the ConnectedPoint or, if 
+        - dpumax (bottom_level): to the exchange_level of the ConnectedPoint or, if
           there is no ConnectedPoint or its exchange_level is empty, according to
           the get_1d2d_properties method
         - content_type: TYPE_V2_ADDED_CALCULATION_POINT for lines that come from a
