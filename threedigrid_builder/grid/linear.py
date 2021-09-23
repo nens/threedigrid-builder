@@ -214,7 +214,6 @@ class BaseLinear:
             frict_type = -9999
             frict_value = np.nan
 
-
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),

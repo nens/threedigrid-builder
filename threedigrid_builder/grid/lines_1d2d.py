@@ -329,9 +329,19 @@ class ConnectedPoints:
         if line_node_idx is None:
             return Lines(id=[])
 
+        n_lines = len(line_node_idx)
+        line_has_cp = line_cp_idx != -9999
+
+        # Collect the 2D sides of the 1D2D line (user supplied or 1D node coordinate)
+        points = np.empty(n_lines, dtype=object)
+        points[line_has_cp] = self.the_geom[line_cp_idx[line_has_cp]]
+        points[~line_has_cp] = pygeos.points(
+            nodes.coordinates[line_node_idx[~line_has_cp]]
+        )
+
         # The query_bulk returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
-        idx = cell_tree.query_bulk(pygeos.points(nodes.coordinates[line_node_idx]))
+        idx = cell_tree.query_bulk(points)
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, first_unique_index = np.unique(idx[0], return_index=True)
         idx = idx[:, first_unique_index]
@@ -387,6 +397,20 @@ class ConnectedPoints:
             connection_nodes,
         )
 
+        # Override the exchange_level if there is a connected point with one
+        exchange_levels = np.take(self.exchange_level, line_cp_idx, mode="clip")
+        use_exchange_level = line_has_cp & np.isfinite(exchange_levels)
+        dpumax[use_exchange_level] = exchange_levels[use_exchange_level]
+
+        # Make content_type and content_pk for tracing the ConnectedPoints
+        content_type = np.where(
+            line_has_cp,
+            ContentType.TYPE_V2_ADDED_CALCULATION_POINT,
+            -9999,
+        )
+        content_pk = np.full(n_lines, fill_value=-9999, dtype=np.int32)
+        content_pk[line_has_cp] = self.index_to_id(line_cp_idx[line_has_cp])
+
         # map "is_closed" to "kcu" (including double/single connected properties)
         # map the two binary arrays on numbers 0, 1, 2, 3
         options = line_is_double * 2 + is_closed
@@ -405,4 +429,6 @@ class ConnectedPoints:
             line=np.array([node_id, cell_id]).T,
             kcu=kcu,
             dpumax=dpumax,
+            content_type=content_type,
+            content_pk=content_pk,
         )

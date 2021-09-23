@@ -288,10 +288,6 @@ class SQLite:
                     models.CalculationPoint.id.label("calc_pnt_id"),
                 )
                 .join(models.CalculationPoint)
-                # .filter(
-                #     (models.ConnectedPoint.exchange_level != -9999.0)
-                #     | (models.ConnectedPoint.the_geom != models.CalculationPoint.the_geom)
-                # )
                 .order_by(models.ConnectedPoint.id)
                 .as_structarray()
             )
