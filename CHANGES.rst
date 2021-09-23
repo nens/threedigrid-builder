@@ -4,7 +4,9 @@ Changelog of threedigrid-builder
 0.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed nodes.is_manhole in the gridadmin output.
+
+- Handle user-supplied 1D-2D lines (connected point / calculation point).
 
 
 0.4.0 (2021-09-23)
@@ -14,13 +16,9 @@ Changelog of threedigrid-builder
 
 - Added 2D boundary conditions.
 
-- Fixed nodes.is_manhole in the gridadmin output.
-
 - Enable compression in HDF5 output.
 
 - Fixed 2D lines that connect a larger to a smaller cell in south east direction.
-
-- Handle user-supplied 1D-2D lines (connected point / calculation point).
 
 
 0.3.1 (2021-08-16)
