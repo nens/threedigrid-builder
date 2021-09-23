@@ -199,91 +199,83 @@ class ConnectedPoints:
 
         return node_idx
 
-    def get_line_mapping(self, nodes, conn_point_node_idx):
+    def get_line_mappings(self, nodes, cp_node_idx):
         """Return a node index and a connected point index per 1D2D line.
 
-        Returns integer arrays and one boolean array:
-        - an integer array with a node index for every 1D2D line
-        - an integer array with a connected point index for every 1D2D line
-        - a boolean array with whether a 1D2D is double connected
-
-        If there is no ConnectedPoint for a 1D2D line, the connected point index is -9999.
+        Returns 3 arrays of shape (n_lines, ):
+        - an int array with a node index
+        - an int array with a connected point index (-9999 if there is none)
+        - a bool array with True where a line is double connected
         """
-        node_is_single = np.where(nodes.calculation_type == CalculationType.CONNECTED)[
-            0
-        ]
-        node_is_double = np.where(
-            nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
-        )[0]
-        n_lines = len(node_is_single) + 2 * len(node_is_double)
+        # Initialize the arrays
+        is_single = nodes.calculation_type == CalculationType.CONNECTED
+        is_double = nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
+        n_lines = np.count_nonzero(is_single) + 2 * np.count_nonzero(is_double)
         if n_lines == 0:
             return None, None, None
 
-        line_conn_point_idx = np.full((n_lines,), fill_value=-9999, dtype=int)
+        line1_node_idx = np.where(is_single | is_double)[0]
+        line1_cp_idx = np.full_like(line1_node_idx, fill_value=-9999)
+        line2_node_idx = np.where(is_double)[0]
+        line2_cp_idx = np.full_like(line2_node_idx, fill_value=-9999)
 
-        # Merge the indices, doubling the double connected ones
-        line_node_idx = np.concatenate([node_is_single, np.repeat(node_is_double, 2)])
-        line_is_double = np.ones(len(line_node_idx), dtype=bool)
-        line_is_double[: len(node_is_single)] = False
-        line_is_first = np.ones(len(line_node_idx), dtype=bool)
-        line_is_first[len(node_is_single) + 1 : len(line_node_idx) : 2] = False
-        line_is_second = np.zeros(len(line_node_idx), dtype=bool)
-        line_is_second[len(node_is_single) + 1 : len(line_node_idx) : 2] = True
-
-        # Sort them in ascending node order
-        sorter = np.argsort(line_node_idx)
-        line_node_idx = line_node_idx[sorter]
-        line_is_double = line_is_double[sorter]
-        line_is_first = line_is_first[sorter]
-        line_is_second = line_is_second[sorter]
-
-        conn_point_node_idx_1, conn_point_idx_1, counts = np.unique(
-            conn_point_node_idx, return_index=True, return_counts=True
+        # Get the first occurences of connected points
+        cp1_node_idx, cp1_idx, counts = np.unique(
+            cp_node_idx, return_index=True, return_counts=True
         )
         if np.any(counts > 2):
+            bad_ids = np.unique(self.calc_pnt_id[cp1_node_idx[counts > 2]])
             raise SchematisationError(
-                "Some calculation nodes have too many connected points."
+                f"Calculation points {bad_ids.tolist()} have too many connected points."
             )
-        conn_point_idx_2 = np.delete(
-            np.arange(len(conn_point_node_idx)), conn_point_idx_1
-        )
-        conn_point_node_idx_2 = conn_point_node_idx[conn_point_idx_2]
+        # Get the second occurences of connected points by inverting the _1 array
+        cp2_idx = np.delete(np.arange(len(cp_node_idx)), cp1_idx)
+        cp2_node_idx = np.take(cp_node_idx, cp2_idx)
+
+        # Lookup the first and second occurences seperately
         try:
             idx = search(
-                line_node_idx,
-                conn_point_node_idx_1,
-                mask=line_is_first,
+                line1_node_idx,
+                cp1_node_idx,
                 assume_ordered=True,
                 check_exists=True,
             )
         except KeyError as e:
-            bad = conn_point_idx_1[e.indices]
+            bad = cp1_idx[e.indices]
             raise SchematisationError(
                 f"Connected points {self.id[bad]} (calculation points "
                 f"{self.calc_pnt_id[bad]}) refer to objects that do not have a "
                 f"'connected' calculation type."
             )
-        line_conn_point_idx[idx] = conn_point_idx_1
+        line1_cp_idx[idx] = cp1_idx
 
         try:
             idx = search(
-                line_node_idx,
-                conn_point_node_idx_2,
-                mask=line_is_second,
+                line2_node_idx,
+                cp2_node_idx,
                 assume_ordered=True,
                 check_exists=True,
             )
         except KeyError as e:
-            bad = conn_point_idx_1[e.indices]
+            bad = cp2_idx[e.indices]
             raise SchematisationError(
                 f"Connected points {self.id[bad]} (calculation points "
                 f"{self.calc_pnt_id[bad]}) are a second reference to objects that "
                 f"do not have a 'double connected' but only a 'connected' calculation "
                 f"type."
             )
-        line_conn_point_idx[idx] = conn_point_idx_2
+        line2_cp_idx[idx] = cp2_idx
 
-        return line_node_idx, line_conn_point_idx, line_is_double
+        # Merge the arrays
+        line_node_idx = np.concatenate([line1_node_idx, line2_node_idx])
+        line_cp_idx = np.concatenate([line1_cp_idx, line2_cp_idx])
+
+        # Sort them by node index
+        sorter = np.argsort(line_node_idx)
+        line_node_idx = line_node_idx[sorter]
+        line_cp_idx = line_cp_idx[sorter]
+        line_is_double = np.isin(line_node_idx, np.where(is_double)[0])
+        return line_node_idx, line_cp_idx, line_is_double
 
     def get_lines(
         self,
@@ -331,7 +323,7 @@ class ConnectedPoints:
         """
         # Create an array of node indices that need a 1D2D connection
 
-        line_node_idx, line_cp_idx, line_is_double = self.get_line_mapping(
+        line_node_idx, line_cp_idx, line_is_double = self.get_line_mappings(
             nodes, self.get_node_index(nodes, channels, pipes, culverts)
         )
         if line_node_idx is None:

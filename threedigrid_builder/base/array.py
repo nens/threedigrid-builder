@@ -405,6 +405,6 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
 
     # Map to original (unmasked) indices
     if mask is not None:
-        ind = np.take(mask, ind)
+        ind = np.take(mask, ind, mode="clip")
 
     return ind

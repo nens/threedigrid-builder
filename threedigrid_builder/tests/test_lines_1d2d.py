@@ -191,6 +191,11 @@ PI = ContentType.TYPE_V2_PIPE
 CV = ContentType.TYPE_V2_CULVERT
 MH = ContentType.TYPE_V2_MANHOLE
 BC = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
+NODE_1D = NodeType.NODE_1D_NO_STORAGE
+NODE_1DBC = NodeType.NODE_1D_BOUNDARIES
+ISO = CalculationType.ISOLATED
+C1 = CalculationType.CONNECTED
+C2 = CalculationType.DOUBLE_CONNECTED
 
 
 @pytest.fixture
@@ -201,11 +206,13 @@ def grid1d():
         content_pk=[1, 2, 3, 4, 1, 1, 2, 9, 9, 8],
         manhole_id=[-9999, -9999, 2, 1] + [-9999] * 6,
         boundary_id=[-9999, 1, -9999, -9999] + [-9999] * 6,
-        node_type=[NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_BOUNDARIES]
-        + [NodeType.NODE_1D_NO_STORAGE] * 8,
+        node_type=[NODE_1D, NODE_1DBC] + [NODE_1D] * 8,
+        calculation_type=[C1, C2, ISO, ISO, C1, C1, ISO, C2, C2, ISO],
     )
     channels = Channels(
-        id=[1, 2], connection_node_start_id=[1, 2], connection_node_end_id=[2, 1]
+        id=[1, 2, 3],
+        connection_node_start_id=[1, 2, 1],
+        connection_node_end_id=[2, 1, 4],
     )
     pipes = Pipes(id=[9], connection_node_start_id=[3], connection_node_end_id=[4])
     culverts = Culverts(
@@ -227,6 +234,8 @@ def grid1d():
         ([CH], [2], [1], [1]),
         ([CH], [2], [2], [6]),
         ([CH], [2], [3], [0]),
+        ([CH], [3], [1], [0]),
+        ([CH], [3], [2], [3]),
         ([PI], [9], [1], [2]),
         ([PI], [9], [2], [7]),
         ([PI], [9], [3], [8]),
@@ -250,3 +259,24 @@ def test_get_node_index(content_type, content_pk, node_number, expected, grid1d)
     actual = connected_points.get_node_index(*grid1d)
 
     assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "cp_node_idx,expected_line_cp_idx",
+    [
+        ([0, 4, 5], [0, -9999, -9999, 1, 2, -9999, -9999, -9999, -9999]),
+        ([1, 5, 7], [-9999, 0, -9999, -9999, 1, 2, -9999, -9999, -9999]),
+        ([1, 1, 0], [2, 0, 1, -9999, -9999, -9999, -9999, -9999, -9999]),
+        ([7, 8, 7], [-9999, -9999, -9999, -9999, -9999, 0, 2, 1, -9999]),
+    ],
+)
+def test_get_line_mappings(cp_node_idx, expected_line_cp_idx, grid1d):
+    connected_points = ConnectedPoints(id=[])
+
+    line_node_idx, line_cp_idx, line_is_double = connected_points.get_line_mappings(
+        grid1d[0], cp_node_idx
+    )
+
+    assert_array_equal(line_cp_idx, expected_line_cp_idx)
+    assert_array_equal(line_node_idx, [0, 1, 1, 4, 5, 7, 7, 8, 8])
+    assert_array_equal(line_is_double, [False, True, True, False, False] + [True] * 4)
