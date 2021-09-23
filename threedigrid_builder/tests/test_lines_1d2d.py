@@ -295,7 +295,9 @@ def test_get_node_index_err(content_type, content_pk, node_number, expected, gri
     ],
 )
 def test_get_line_mappings(cp_node_idx, expected_line_cp_idx, grid1d):
-    connected_points = ConnectedPoints(id=[])
+    connected_points = ConnectedPoints(
+        id=range(len(cp_node_idx)),
+    )
 
     line_node_idx, line_cp_idx, line_is_double = connected_points.get_line_mappings(
         grid1d[0], cp_node_idx
@@ -304,3 +306,21 @@ def test_get_line_mappings(cp_node_idx, expected_line_cp_idx, grid1d):
     assert_array_equal(line_cp_idx, expected_line_cp_idx)
     assert_array_equal(line_node_idx, [0, 1, 1, 4, 5, 7, 7, 8, 8])
     assert_array_equal(line_is_double, [False, True, True, False, False] + [True] * 4)
+
+
+@pytest.mark.parametrize(
+    "cp_node_idx,expected_msg",
+    [
+        ([2], ".*refer to objects that do not have a 'connected'.*"),
+        ([0, 0], ".*are a second reference to objects that do not have a 'double.*"),
+        ([1, 1, 1], ".*have too many connected points."),
+    ],
+)
+def test_get_line_mappings_err(cp_node_idx, expected_msg, grid1d):
+    connected_points = ConnectedPoints(
+        id=range(len(cp_node_idx)),
+        calc_pnt_id=range(10, 10 + len(cp_node_idx)),
+    )
+
+    with pytest.raises(SchematisationError, match=expected_msg):
+        connected_points.get_line_mappings(grid1d[0], cp_node_idx)
