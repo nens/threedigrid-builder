@@ -2,6 +2,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import numpy as np
@@ -199,6 +200,11 @@ class BaseLinear:
         except AttributeError:
             cross1 = -9999
             cross_weight = np.nan
+        except KeyError as e:
+            raise SchematisationError(
+                f"{self.__class__.__name__} {self.id[e.indices].tolist()} refer to "
+                f"non-existing cross section definitions."
+            )
 
         # conditionally add the invert levels (for pipes and culverts only)
         try:
@@ -213,7 +219,6 @@ class BaseLinear:
         except AttributeError:
             frict_type = -9999
             frict_value = np.nan
-
 
         # construct the result
         return Lines(

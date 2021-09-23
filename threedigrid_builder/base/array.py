@@ -1,5 +1,4 @@
 from enum import IntEnum
-from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 import sys
@@ -19,6 +18,7 @@ __all__ = [
     "is_int_enum",
     "unpack_optional_type",
     "replace",
+    "search",
 ]
 
 
@@ -194,7 +194,8 @@ class ArrayDataClass:
         Args:
             id (int or array_like): The id(s) to find in self.id
             check_exists (bool): Whether to check if the id is actually present. Raises
-              SchematisationError if an id is not present.
+              a KeyError with added "values" and "indices" attributes if an id is not
+              present.
 
         Returns:
             int or array_like: the indexes into self.id
@@ -203,16 +204,7 @@ class ArrayDataClass:
         # len(id)    len(self.id)   timing (microseconds)
         # 1000       2000           44
         # 1000       10000          62
-        result = np.searchsorted(self.id, id)  # inverse of self.id[index]
-        if check_exists:
-            check = self.index_to_id(result)
-            if not np.all(check == id):
-                missing = sorted(set(id) - set(check))
-                raise SchematisationError(
-                    f"Some objects refer to non-existing "
-                    f"{self.__class__.__name__} (missing: {missing})."
-                )
-        return result
+        return search(self.id, id, assume_ordered=True, check_exists=check_exists)
 
     def index_to_id(self, index):
         """Find the id of records with given index.
@@ -349,3 +341,63 @@ def replace(arr, mapping, check_present=False):
     if check_present and not np.all(keys[indices] == arr):
         raise ValueError("Not all values are present in the replacement dict")
     return values[indices]
+
+
+class DoesNotExist(KeyError):
+    def __init__(self, msg, values, indices):
+        self.values = values
+        self.indices = indices
+        super().__init__(msg)
+
+
+def search(a, v, mask=None, assume_ordered=False, check_exists=True):
+    """Find indices where `v` occurs in `a`.
+
+    Args:
+      a (1D array_like): Input array. If assume_ordered is True, then it must be sorted
+        in ascending order.
+      v (array_like): Values to find in a.
+      mask (1D array_like): A (boolean or index) mask to apply to a before searching.
+      assume_ordered (bool, optional): Whether to assume a is ordered, default False.
+      check_exists (bool, optional): Check whether the values in v exist in a,
+        default True.
+
+    Raises:
+      If check_exists is True or if the (masked) ``a`` is empty, this function raises a
+      KeyError with added ``values`` and ``indices`` attributes corresponding to the
+      missing values and the indices of them into ``v``.
+    """
+    v = np.asarray(v)
+    if mask is not None:
+        mask = np.asarray(mask)
+        if mask.dtype == bool:
+            mask = np.where(mask)[0]
+        a = np.take(a, mask)
+        # If there is no array to search in: raise directly
+        if len(a) == 0:
+            raise DoesNotExist(
+                "search encountered missing elements",
+                values=v,
+                indices=np.arange(v.shape[0]),
+            )
+
+    if assume_ordered:
+        ind = np.searchsorted(a, v)
+    else:
+        sorter = np.argsort(a)
+        ind = np.take(sorter, np.searchsorted(a, v, sorter=sorter), mode="clip")
+
+    if check_exists:
+        missing = np.take(a, ind, mode="clip") != v
+        if missing.any():
+            raise DoesNotExist(
+                "search encountered missing elements",
+                values=np.compress(missing, v),
+                indices=np.where(missing)[0],
+            )
+
+    # Map to original (unmasked) indices
+    if mask is not None:
+        ind = np.take(mask, ind, mode="clip")
+
+    return ind

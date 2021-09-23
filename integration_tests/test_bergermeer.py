@@ -53,6 +53,7 @@ def test_integration(tmp_path):
             NodeType.NODE_1D_STORAGE: 42,  # Inpy: 0
             NodeType.NODE_1D_BOUNDARIES: 4,
         }
+        assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
 
         ## LINES
         assert f["lines"]["id"].shape == (15505,)  # Inpy: (31916, )
@@ -73,11 +74,12 @@ def test_integration(tmp_path):
             # Inpy: LineType.LINE_2D_VERTICAL: 5374
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 12969,  # Inpy: 29380
+            b"": 11038,  # Inpy: 29380
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,
             b"v2_weir": 56,
+            b"v2_added_c": 1931
         }
 
         ## PUMPS

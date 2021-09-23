@@ -1,6 +1,7 @@
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
+from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 import pygeos
@@ -45,14 +46,20 @@ class CrossSectionLocations:
         idx1 = self.id_to_index(cross_loc1)
         idx2 = self.id_to_index(cross_loc2)
         # Fill cross1 and cross2 by mapping to CrossSectionDefinitions
-        lines.cross1 = definitions.id_to_index(
-            self.definition_id[idx1],
-            check_exists=True,
-        )
-        lines.cross2 = definitions.id_to_index(
-            self.definition_id[idx2],
-            check_exists=True,
-        )
+        try:
+            lines.cross1 = definitions.id_to_index(
+                self.definition_id[idx1],
+                check_exists=True,
+            )
+            lines.cross2 = definitions.id_to_index(
+                self.definition_id[idx2],
+                check_exists=True,
+            )
+        except KeyError as e:
+            raise SchematisationError(
+                f"Cross section locations {self.id[e.indices].tolist()} refer to "
+                f"non-existing cross section definitions."
+            )
         lines.cross_weight = cross_weight
 
         lines.frict_type1 = self.friction_type[idx1]

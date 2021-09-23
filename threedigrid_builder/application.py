@@ -155,6 +155,7 @@ def _make_gridadmin(
         progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.embed_nodes(embedded_node_id_counter)
         grid.add_1d2d(
+            db.get_connected_points(),
             connection_nodes=connection_nodes,
             channels=channels,
             pipes=pipes,

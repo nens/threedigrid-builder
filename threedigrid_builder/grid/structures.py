@@ -3,6 +3,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import linear
 
 import itertools
@@ -110,9 +111,15 @@ class WeirOrifices:
         line[:, 0] = connection_nodes.id_to_index(self.connection_node_start_id)
         line[:, 1] = connection_nodes.id_to_index(self.connection_node_end_id)
         line += connection_node_offset
-        cross1 = definitions.id_to_index(
-            self.cross_section_definition_id, check_exists=True
-        )
+        try:
+            cross1 = definitions.id_to_index(
+                self.cross_section_definition_id, check_exists=True
+            )
+        except KeyError as e:
+            raise SchematisationError(
+                f"{self.__class__.__name__} {self.id[e.indices].tolist()} refer to "
+                f"non-existing cross section definitions."
+            )
         return Lines(
             id=itertools.islice(line_id_counter, len(self)),
             line=line,
