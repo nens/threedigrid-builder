@@ -237,7 +237,7 @@ def test_get_pumps(db):
     assert len(pumps) == 19
     assert pumps.id[11] == 13
     assert pumps.code[0] == "Rioolgemaal"
-    assert pumps.capacity[12] == 288.0
+    assert pumps.capacity[12] == 0.288
     assert pumps.connection_node_start_id[13] == 1006
     assert pumps.connection_node_end_id[0] == -9999  # NULL handling
     assert pumps.connection_node_end_id[2] == 218

@@ -208,8 +208,8 @@ class BaseLinear:
             invert_end = invert_start = np.nan
 
         try:
-            frict_type = objs.friction_type
-            frict_value = objs.friction_value
+            frict_type = objs.friction_type[segment_idx]
+            frict_value = objs.friction_value[segment_idx]
         except AttributeError:
             frict_type = -9999
             frict_value = np.nan
