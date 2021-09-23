@@ -14,6 +14,8 @@ from threedigrid_builder.grid import Pipes
 from unittest import mock
 
 import itertools
+import numpy as np
+import pygeos
 import pytest
 
 
@@ -191,6 +193,51 @@ def test_get_lines_multiple(grid2d, empty_connected_points):
     assert_array_equal(
         actual_lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0, 6.0, 7.0, 7.0, 8.0]
     )
+
+
+def test_get_lines_multiple_with_conn_points(grid2d):
+    grid2d.nodes += Nodes(
+        id=[2, 3, 5, 7, 9, 11, 13],
+        coordinates=[(0.5, 0.5)] * 7,  # all the same, geo-stuff is tested elsewhere
+        content_type=[CN, CN, CH, CN, PI, PI, CV],
+        calculation_type=[C1, C2, C2, C1, C1, C2, C1],
+    )
+    connected_points = ConnectedPoints(
+        id=range(3),
+        the_geom=pygeos.points([(1.5, 0.5), (1.5, 0.5), (1.5, 0.5)]),
+        exchange_level=[np.nan, 0.1, 0.2],
+        # don't set the content_pk etc., instead, we patch .get_node_index()
+    )
+
+    connection_nodes = mock.Mock()
+    connection_nodes.get_1d2d_properties.return_value = True, [1, 2, 2, 3]
+    channels = mock.Mock()
+    channels.get_1d2d_properties.return_value = (False, [5, 5])
+    pipes = mock.Mock()
+    pipes.get_1d2d_properties.return_value = (True, [6, 7, 7])
+    locations = mock.Mock()
+    culverts = mock.Mock()
+    culverts.get_1d2d_properties.return_value = (True, [8])
+
+    with mock.patch.object(connected_points, "get_node_index") as get_node_index:
+        get_node_index.return_value = np.array([2, 2, 6]) + 2
+        actual_lines = connected_points.get_lines(
+            grid2d.cell_tree,
+            grid2d.nodes,
+            connection_nodes,
+            channels,
+            pipes,
+            locations,
+            culverts,
+            line_id_counter=itertools.count(),
+        )
+
+    # the dpumax comes from the get_1d2d_properties, but is overridded by exchange_level
+    assert_array_equal(
+        actual_lines.dpumax, [1.0, 2.0, 2.0, 5.0, 0.1, 3.0, 6.0, 7.0, 7.0, 0.2]
+    )
+    # the cell id is different for the 3 user-supplied connected points
+    assert_array_equal(actual_lines.line[:, 1], [0, 0, 0, 1, 1, 0, 0, 0, 0, 1])
 
 
 @pytest.fixture
