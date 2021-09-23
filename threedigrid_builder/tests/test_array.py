@@ -3,7 +3,6 @@ from numpy.testing import assert_equal
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import replace
 from threedigrid_builder.base import search
-from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
 
 import itertools
@@ -161,11 +160,15 @@ def test_id_to_index(id, expected):
 def test_id_to_index_check_exists():
     records = Records(id=[1, 3, 5])
 
-    with pytest.raises(SchematisationError, match=r".*missing: \[2\].*"):
+    with pytest.raises(KeyError) as e:
         records.id_to_index([1, 2, 3], check_exists=True)
+        assert_equal(e.indices, [1])
+        assert_equal(e.values, [2])
 
-    with pytest.raises(SchematisationError, match=r".*missing: \[2, 2\].*"):
+    with pytest.raises(KeyError) as e:
         records.id_to_index([1, 1, 2, 2], check_exists=True)
+        assert_equal(e.indices, [2, 3])
+        assert_equal(e.values, [2, 2])
 
     records.id_to_index([1, 1, 2, 2])  # no check, no error
 

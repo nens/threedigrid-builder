@@ -66,10 +66,10 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                bad = np.where(current_selection)[0][e.indices]
+                bad = self.calc_pnt_id[np.where(current_selection)[0][e.indices]]
                 raise SchematisationError(
-                    f"Connected points {self.id[bad]} (calculation points "
-                    f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
+                    f"Calculation points {np.unique(bad).tolist()} refer to "
+                    f"non-existing manholes."
                 )
 
         # Find 1D boundary conditions
@@ -86,10 +86,10 @@ class ConnectedPoints:
                     check_exists=True,
                 )
             except KeyError as e:
-                bad = np.where(current_selection)[0][e.indices]
+                bad = self.calc_pnt_id[np.where(current_selection)[0][e.indices]]
                 raise SchematisationError(
-                    f"Connected points {self.id[bad]} (calculation points "
-                    f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
+                    f"Calculation points {np.unique(bad).tolist()} refer to "
+                    f"non-existing 1D boundary conditions."
                 )
 
         HAS_1D2D_NO_CONN_NODES = {
@@ -110,10 +110,10 @@ class ConnectedPoints:
                         self.content_pk[is_first_node], check_exists=True
                     )
                 except KeyError as e:
-                    bad = np.where(is_first_node)[0][e.indices]
+                    bad = self.calc_pnt_id[np.where(is_first_node)[0][e.indices]]
                     raise SchematisationError(
-                        f"Connected points {self.id[bad]} (calculation points "
-                        f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
+                        f"Calculation points {np.unique(bad).tolist()} refer to "
+                        f"non-existing {objs.__class__.__name__.lower()}."
                     )
                 node_idx[is_first_node] = search(
                     nodes.content_pk,
@@ -140,9 +140,10 @@ class ConnectedPoints:
         is_linear = np.isin(self.content_type, list(HAS_1D2D_NO_CONN_NODES.keys()))
         bad_node_number = is_linear & (self.node_number < 1)
         if bad_node_number.any():
+            bad = self.calc_pnt_id[bad_node_number]
             raise SchematisationError(
-                f"Connected points {self.id[bad_node_number]} have a node number "
-                f"that is out of bounds."
+                f"Calculation points {np.unique(bad).tolist()} have node "
+                f"numbers below 1."
             )
         is_interpolated_node = is_linear & (self.node_number > 1)
         node_idx[is_interpolated_node] += self.node_number[is_interpolated_node] - 2
@@ -169,9 +170,10 @@ class ConnectedPoints:
             )
         )
         if bad_node_number.any():
+            bad = self.calc_pnt_id[bad_node_number]
             raise SchematisationError(
-                f"Connected points {self.id[bad_node_number]} have a node number "
-                f"that is out of bounds."
+                f"Calculation points {np.unique(bad).tolist()} have too "
+                f"large node numbers."
             )
 
         # handle end nodes (find the connection node id)
@@ -184,10 +186,10 @@ class ConnectedPoints:
                     self.content_pk[_is_end_node], check_exists=True
                 )
             except KeyError as e:
-                bad = np.where(_is_end_node)[0][e.indices]
+                bad = self.calc_pnt_id[np.where(_is_end_node)[0][e.indices]]
                 raise SchematisationError(
-                    f"Connected points {self.id[bad]} (calculation points "
-                    f"{self.calc_pnt_id[bad]}) refer to non-existing objects."
+                    f"Calculation points {np.unique(bad).tolist()} refer to "
+                    f"non-existing {objs.__class__.__name__.lower()}."
                 )
             node_idx[_is_end_node] = search(
                 nodes.content_pk,

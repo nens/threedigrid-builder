@@ -1,5 +1,4 @@
 from enum import IntEnum
-from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 import sys
@@ -195,7 +194,8 @@ class ArrayDataClass:
         Args:
             id (int or array_like): The id(s) to find in self.id
             check_exists (bool): Whether to check if the id is actually present. Raises
-              SchematisationError if an id is not present.
+              a KeyError with added "values" and "indices" attributes if an id is not
+              present.
 
         Returns:
             int or array_like: the indexes into self.id
@@ -204,14 +204,7 @@ class ArrayDataClass:
         # len(id)    len(self.id)   timing (microseconds)
         # 1000       2000           44
         # 1000       10000          62
-        try:
-            result = search(self.id, id, assume_ordered=True, check_exists=check_exists)
-        except KeyError as e:
-            raise SchematisationError(
-                f"Some objects refer to non-existing "
-                f"{self.__class__.__name__} (missing: {e.values.tolist()})."
-            )
-        return result
+        return search(self.id, id, assume_ordered=True, check_exists=check_exists)
 
     def index_to_id(self, index):
         """Find the id of records with given index.
@@ -392,7 +385,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         ind = np.searchsorted(a, v)
     else:
         sorter = np.argsort(a)
-        ind = np.take(sorter, np.searchsorted(a, v, sorter=sorter))
+        ind = np.take(sorter, np.searchsorted(a, v, sorter=sorter), mode="clip")
 
     if check_exists:
         missing = np.take(a, ind, mode="clip") != v

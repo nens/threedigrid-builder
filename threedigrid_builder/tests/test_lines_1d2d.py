@@ -257,6 +257,35 @@ def test_get_node_index(content_type, content_pk, node_number, expected, grid1d)
 
 
 @pytest.mark.parametrize(
+    "content_type,content_pk,node_number,expected",
+    [
+        ([BC], [2], [-9999], r".*\[10\] refer to non-existing 1D boundary conditions."),
+        ([MH], [3], [-9999], r".*\[10\] refer to non-existing manholes."),
+        ([CH], [4], [1], r".*\[10\] refer to non-existing channels."),
+        ([PI], [3], [1], r".*\[10\] refer to non-existing pipes."),
+        ([CV], [3], [1], r".*\[10\] refer to non-existing culverts."),
+        ([CH], [4], [2], r".*\[10\] refer to non-existing channels."),
+        ([PI], [3], [2], r".*\[10\] refer to non-existing pipes."),
+        ([CV], [3], [2], r".*\[10\] refer to non-existing culverts."),
+        ([CH], [1], [0], r".*\[10\] have node numbers below 1."),
+        ([CH], [1], [5], r".*\[10\] have too large node numbers."),
+        ([CH], [3], [3], r".*\[10\] have too large node numbers."),
+    ],
+)
+def test_get_node_index_err(content_type, content_pk, node_number, expected, grid1d):
+    connected_points = ConnectedPoints(
+        id=range(len(content_type)),
+        content_type=content_type,
+        content_pk=content_pk,
+        node_number=node_number,
+        calc_pnt_id=range(10, 10 + len(content_type)),
+    )
+
+    with pytest.raises(SchematisationError, match=expected):
+        connected_points.get_node_index(*grid1d)
+
+
+@pytest.mark.parametrize(
     "cp_node_idx,expected_line_cp_idx",
     [
         ([0, 4, 5], [0, -9999, -9999, 1, 2, -9999, -9999, -9999, -9999]),
