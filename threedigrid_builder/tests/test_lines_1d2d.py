@@ -17,6 +17,19 @@ import itertools
 import pytest
 
 
+CN = ContentType.TYPE_V2_CONNECTION_NODES
+CH = ContentType.TYPE_V2_CHANNEL
+PI = ContentType.TYPE_V2_PIPE
+CV = ContentType.TYPE_V2_CULVERT
+MH = ContentType.TYPE_V2_MANHOLE
+BC = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
+NODE_1D = NodeType.NODE_1D_NO_STORAGE
+NODE_1DBC = NodeType.NODE_1D_BOUNDARIES
+ISO = CalculationType.ISOLATED
+C1 = CalculationType.CONNECTED
+C2 = CalculationType.DOUBLE_CONNECTED
+
+
 @pytest.fixture
 def grid2d():
     return Grid(
@@ -56,14 +69,13 @@ def empty_connected_points():
         ([(0.5, 0.5), (1.5, 0.5)], [(7, 0), (8, 1)]),  # two cells, different
     ],
 )
-def test_1d2d(node_coordinates, expected_lines, grid2d, empty_connected_points):
+def test_get_lines(node_coordinates, expected_lines, grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
         id=[7, 8][: len(node_coordinates)],
         coordinates=node_coordinates,
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         calculation_type=CalculationType.CONNECTED,
     )
-    grid2d.lines = Lines(id=[])
 
     connection_nodes = mock.Mock()
     connection_nodes.get_1d2d_properties.return_value = 0, 0
@@ -75,8 +87,9 @@ def test_1d2d(node_coordinates, expected_lines, grid2d, empty_connected_points):
     culverts = mock.Mock()
     culverts.get_1d2d_properties.return_value = 0, 0
 
-    grid2d.add_1d2d(
-        empty_connected_points,
+    actual_lines = empty_connected_points.get_lines(
+        grid2d.cell_tree,
+        grid2d.nodes,
         connection_nodes,
         channels,
         pipes,
@@ -85,39 +98,33 @@ def test_1d2d(node_coordinates, expected_lines, grid2d, empty_connected_points):
         line_id_counter=itertools.count(),
     )
 
-    assert_array_equal(grid2d.lines.line, expected_lines)
+    assert_array_equal(actual_lines.line, expected_lines)
 
 
 @pytest.mark.parametrize(
     "node_coordinates", [(-1e-7, 0.5), (2.0001, 1.5), (1, 1.0001), (1, -1e-7)]
 )
-def test_1d2d_no_cell(node_coordinates, grid2d, empty_connected_points):
+def test_get_lines_no_cell(node_coordinates, grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
         id=[7],
         coordinates=[node_coordinates],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         calculation_type=CalculationType.CONNECTED,
     )
-    grid2d.lines = Lines(id=[])
 
     with pytest.raises(SchematisationError, match=".*outside of the 2D.*"):
-        grid2d.add_1d2d(empty_connected_points, *((mock.Mock(),) * 6))
+        empty_connected_points.get_lines(
+            grid2d.cell_tree, grid2d.nodes, *((mock.Mock(),) * 6)
+        )
 
 
-def test_1d2d_multiple(grid2d, empty_connected_points):
-    CN = ContentType.TYPE_V2_CONNECTION_NODES
-    CH = ContentType.TYPE_V2_CHANNEL
-    PIPE = ContentType.TYPE_V2_PIPE
-    CV = ContentType.TYPE_V2_CULVERT
-    C1 = CalculationType.CONNECTED
-    C2 = CalculationType.DOUBLE_CONNECTED
+def test_get_lines_multiple(grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
         id=[2, 3, 5, 7, 9, 11, 13],
         coordinates=[(0.5, 0.5)] * 7,  # all the same, geo-stuff is tested elsewhere
-        content_type=[CN, CN, CH, CN, PIPE, PIPE, CV],
+        content_type=[CN, CN, CH, CN, PI, PI, CV],
         calculation_type=[C1, C2, C2, C1, C1, C2, C1],
     )
-    grid2d.lines = Lines(id=[])
 
     connection_nodes = mock.Mock()
     connection_nodes.get_1d2d_properties.return_value = (
@@ -132,8 +139,9 @@ def test_1d2d_multiple(grid2d, empty_connected_points):
     culverts = mock.Mock()
     culverts.get_1d2d_properties.return_value = ([True], [8])
 
-    grid2d.add_1d2d(
-        empty_connected_points,
+    actual_lines = empty_connected_points.get_lines(
+        grid2d.cell_tree,
+        grid2d.nodes,
         connection_nodes,
         channels,
         pipes,
@@ -165,7 +173,7 @@ def test_1d2d_multiple(grid2d, empty_connected_points):
 
     # the kcu comes from the "has_storage" from get_1d2d_properties and the calc type
     assert_array_equal(
-        grid2d.lines.kcu,
+        actual_lines.kcu,
         [
             LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
@@ -181,21 +189,8 @@ def test_1d2d_multiple(grid2d, empty_connected_points):
     )
     # the dpumax comes from the get_1d2d_properties
     assert_array_equal(
-        grid2d.lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0, 6.0, 7.0, 7.0, 8.0]
+        actual_lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0, 6.0, 7.0, 7.0, 8.0]
     )
-
-
-CN = ContentType.TYPE_V2_CONNECTION_NODES
-CH = ContentType.TYPE_V2_CHANNEL
-PI = ContentType.TYPE_V2_PIPE
-CV = ContentType.TYPE_V2_CULVERT
-MH = ContentType.TYPE_V2_MANHOLE
-BC = ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS
-NODE_1D = NodeType.NODE_1D_NO_STORAGE
-NODE_1DBC = NodeType.NODE_1D_BOUNDARIES
-ISO = CalculationType.ISOLATED
-C1 = CalculationType.CONNECTED
-C2 = CalculationType.DOUBLE_CONNECTED
 
 
 @pytest.fixture

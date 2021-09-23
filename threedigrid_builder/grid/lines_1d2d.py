@@ -398,9 +398,10 @@ class ConnectedPoints:
         )
 
         # Override the exchange_level if there is a connected point with one
-        exchange_levels = np.take(self.exchange_level, line_cp_idx, mode="clip")
-        use_exchange_level = line_has_cp & np.isfinite(exchange_levels)
-        dpumax[use_exchange_level] = exchange_levels[use_exchange_level]
+        if line_has_cp.any():
+            exchange_levels = np.take(self.exchange_level, line_cp_idx, mode="clip")
+            use_exchange_level = line_has_cp & np.isfinite(exchange_levels)
+            dpumax[use_exchange_level] = exchange_levels[use_exchange_level]
 
         # Make content_type and content_pk for tracing the ConnectedPoints
         content_type = np.where(

@@ -14,6 +14,8 @@ Changelog of threedigrid-builder
 
 - Fixed 2D lines that connect a larger to a smaller cell in south east direction.
 
+- Handle user-supplied 1D-2D lines (connected point / calculation point).
+
 
 0.3.1 (2021-08-16)
 ------------------
