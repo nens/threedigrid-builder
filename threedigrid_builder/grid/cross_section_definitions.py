@@ -178,7 +178,7 @@ def tabulate_tabulated(shape, width, height):
             f"Cross section definitions of tabulated type must have equal number of "
             f"height and width elements (got: {height}, {width})."
         )
-    if len(heights) > 1 and np.any(np.diff(heights) <= 0.0):
+    if len(heights) > 1 and np.any(np.diff(heights) < 0.0):
         raise SchematisationError(
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
