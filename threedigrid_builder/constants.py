@@ -119,4 +119,5 @@ class BoundaryType(IntEnum):
     WATERLEVEL = 1
     VELOCITY = 2
     DISCHARGE = 3
+    RIEMANN = 4
     SOMMERFELD = 5
