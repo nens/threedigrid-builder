@@ -80,7 +80,7 @@ install_requires = [
     "threedi-modelchecker>=0.12",
     "pygeos>=0.10",
     "pyproj>=3",
-    "condenser[geo]",
+    "condenser[geo]>=0.1.1",
     "sqlalchemy<1.4",
     "dataclasses ; python_version<'3.7'",
 ]
