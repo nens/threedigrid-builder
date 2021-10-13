@@ -91,6 +91,7 @@ class GridMeta:
     # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
     has_1d: bool = False
     has_2d: bool = False
+    has_embedded: bool = False
     has_breaches: bool = False
     has_groundwater: bool = False
     has_groundwater_flow: bool = False
@@ -595,3 +596,5 @@ class Grid:
         self.meta.extent_2d = self.nodes.get_extent_2d()
         self.meta.has_1d = self.meta.extent_1d is not None
         self.meta.has_2d = self.meta.extent_2d is not None
+        if len(self.nodes_embedded) > 0:
+            self.meta.has_embedded = True
