@@ -28,11 +28,9 @@ jobs:
             pip install cmake &&
             ./build.sh &&
             cat WHEEL_LICENSE_POSIX >> LICENSE
-          CIBW_TEST_EXTRAS: test,gridadmin
-          CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests
 
       - name: Clear previous wheels
-        run: rm /var/wheels/threedigrid_builder*
+        run: rm -f /var/wheels/threedigrid_builder*
 
       - name: Move wheels
         run: mv ./wheelhouse/*.whl /var/wheels
