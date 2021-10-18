@@ -32,12 +32,12 @@ class ConnectionNode:
 
 @array_of(ConnectionNode)
 class ConnectionNodes:
-    def get_nodes(self, node_id_counter):
+    def get_nodes(self, node_id_counter, global_initial_waterlevel):
         """Convert connection nodes to a nodes instance
 
         Args:
             node_id_counter (iterable): an iterable yielding integers
-            global_dist_calc_points (float): Default node interdistance.
+            global_initial_waterlevel (float): Default initial waterlevel.
 
         Returns:
             tuple of nodes (Nodes), segment_size (ndarray)
@@ -64,6 +64,11 @@ class ConnectionNodes:
             calculation_type=self.calculation_type,
             dmax=self.bottom_level,
             manhole_id=self.manhole_id,
+            initial_waterlevel=np.where(
+                np.isfinite(self.initial_waterlevel),
+                self.initial_waterlevel,
+                global_initial_waterlevel,
+            ),
         )
         return nodes
 

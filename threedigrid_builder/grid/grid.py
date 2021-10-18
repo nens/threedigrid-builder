@@ -258,12 +258,15 @@ class Grid:
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
-    def from_connection_nodes(cls, connection_nodes, node_id_counter):
+    def from_connection_nodes(
+        cls, connection_nodes, node_id_counter, global_initial_waterlevel
+    ):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
             connection_nodes (ConnectionNodes): id and the_geom are used
             node_id_counter (iterable): an iterable yielding integers
+            global_initial_waterlevel (float): a global value for initial_waterlevel
 
         Returns:
             Grid with data in the following columns:
@@ -274,7 +277,10 @@ class Grid:
             - nodes.node_type: NODE_1D_NO_STORAGE / NODE_1D_STORAGE
             - nodes.calculation_type: only if set on Manhole
         """
-        return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
+        return cls(
+            connection_nodes.get_nodes(node_id_counter, global_initial_waterlevel),
+            Lines(id=[]),
+        )
 
     @classmethod
     def from_linear_objects(

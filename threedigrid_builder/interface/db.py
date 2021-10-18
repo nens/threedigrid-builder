@@ -373,6 +373,9 @@ class SQLite:
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
+        # replace -9999.0 with NaN in initial_waterlevel
+        arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
+
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
     def get_cross_section_definitions(self) -> CrossSectionDefinitions:

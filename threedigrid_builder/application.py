@@ -82,7 +82,9 @@ def _make_gridadmin(
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
         progress_callback(0.8, "Constructing 1D computational grid...")
         cn_grid = Grid.from_connection_nodes(
-            connection_nodes=connection_nodes, node_id_counter=node_id_counter
+            connection_nodes=connection_nodes,
+            node_id_counter=node_id_counter,
+            global_initial_waterlevel=grid_settings.initial_waterlevel,
         )
         connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
         grid += cn_grid

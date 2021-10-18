@@ -251,9 +251,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "initial_waterlevel", nodes.initial_waterlevel)
 
         # content pk is only set for connection nodes, otherwise 0
-        content_pk = np.full(len(nodes), 0, dtype="i4")
-        content_pk[is_cn] = nodes.content_pk[is_cn]
-        self.write_dataset(group, "content_pk", content_pk)
+        self.write_dataset(group, "content_pk", np.where(is_cn, nodes.content_pk, 0))
         # is_manhole is 1 for manholes, otherwise -9999
         self.write_dataset(
             group,
@@ -467,7 +465,7 @@ class GridAdminOut(OutputInterface):
         # do not use self.write_dataset as we don't want a dummy element
         group.create_dataset("tables", data=cross_sections.tables.T, **HDF5_SETTINGS)
 
-    def write_dataset(self, group, name, values, fill=-9999):
+    def write_dataset(self, group, name, values, fill=None):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.
 
@@ -477,6 +475,12 @@ class GridAdminOut(OutputInterface):
             values (array): Values of dataset to write.
             fill: fillvalue with same dtype as values.
         """
+        if fill is None:
+            if np.issubdtype(values.dtype, np.floating):
+                fill = np.nan
+            else:
+                fill = -9999
+
         if values.ndim == 1:
             ds = group.create_dataset(
                 name,
