@@ -27,6 +27,7 @@ class ConnectionNode:
     surface_level: float
     manhole_shape: str  # enum with classes "00", "01", "02"
     manhole_width: float
+    initial_waterlevel: float
 
 
 @array_of(ConnectionNode)

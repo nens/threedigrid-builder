@@ -45,6 +45,7 @@ def meta():
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,
+            initial_waterlevel=-0.4,
         ),
         tables_settings=TablesSettings(
             table_step_size=0.05,

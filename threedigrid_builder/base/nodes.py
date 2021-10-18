@@ -33,6 +33,7 @@ class Node:
     boundary_id: int  # referring to the id of the boundary condition
     boundary_type: BoundaryType
     manhole_id: int  # referring to the id of a manhole
+    initial_waterlevel: float
 
 
 @array_of(Node)

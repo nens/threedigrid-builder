@@ -248,6 +248,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "embedded_in", nodes.embedded_in + 1)
         self.write_dataset(group, "boundary_id", nodes.boundary_id)
         self.write_dataset(group, "boundary_type", nodes.boundary_type)
+        self.write_dataset(group, "initial_waterlevel", nodes.initial_waterlevel)
 
         # content pk is only set for connection nodes, otherwise 0
         content_pk = np.full(len(nodes), 0, dtype="i4")
@@ -281,9 +282,6 @@ class GridAdminOut(OutputInterface):
         # can be collected from SQLite, but empty for now:
         self.write_dataset(
             group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
-        )
-        self.write_dataset(
-            group, "initial_waterlevel", np.full(shape, -9999, dtype=np.float64)
         )
         # (manhole specific:)
         self.write_dataset(

@@ -355,6 +355,7 @@ class SQLite:
                     models.ConnectionNode.id,
                     models.ConnectionNode.code,
                     models.ConnectionNode.storage_area,
+                    models.ConnectionNode.initial_waterlevel,
                     models.Manhole.id.label("manhole_id"),
                     models.Manhole.calculation_type,
                     models.Manhole.bottom_level,
@@ -592,7 +593,7 @@ class SQLite:
                 .as_structarray()
             )
 
-        # Pump capicity is entered as L/s but we need m3/s.    
+        # Pump capicity is entered as L/s but we need m3/s.
         arr["capacity"] = arr["capacity"] / 1000
 
         # transform to a Pumps object
