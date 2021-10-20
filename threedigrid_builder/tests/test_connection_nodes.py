@@ -33,14 +33,13 @@ def connection_nodes():
         bottom_level=np.array([2.1, 5.2, np.nan, np.nan]),
         manhole_id=[1, 2, -9999, -9999],
         drain_level=[1.2, 3.4, np.nan, np.nan],
-        initial_waterlevel=[2.1, 3.1, np.nan, np.nan],
     )
 
 
 def test_get_nodes(connection_nodes):
     counter = itertools.count(start=2)
 
-    nodes = connection_nodes.get_nodes(counter, global_initial_waterlevel=2.2)
+    nodes = connection_nodes.get_nodes(counter)
     assert isinstance(nodes, Nodes)
 
     assert_array_equal(nodes.id, [2, 3, 4, 5])
@@ -58,7 +57,6 @@ def test_get_nodes(connection_nodes):
     )
     assert_array_equal(nodes.calculation_type, connection_nodes.calculation_type)
     assert_array_equal(nodes.dmax, connection_nodes.bottom_level)
-    assert_array_equal(nodes.initial_waterlevel, [2.1, 3.1, 2.2, 2.2])
 
 
 @pytest.mark.parametrize(

@@ -143,11 +143,9 @@ def test_from_connection_nodes():
     nodes = Nodes(id=[])
 
     connection_nodes.get_nodes.return_value = nodes
-    grid = Grid.from_connection_nodes(
-        connection_nodes, counter, global_initial_waterlevel=2.2
-    )
+    grid = Grid.from_connection_nodes(connection_nodes, counter)
 
-    connection_nodes.get_nodes.assert_called_with(counter, 2.2)
+    connection_nodes.get_nodes.assert_called_with(counter)
 
     assert grid.nodes is nodes
     assert len(grid.lines) == 0

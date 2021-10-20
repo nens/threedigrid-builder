@@ -1,6 +1,7 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
 from . import embedded as embedded_module
+from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
@@ -258,15 +259,12 @@ class Grid:
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
-    def from_connection_nodes(
-        cls, connection_nodes, node_id_counter, global_initial_waterlevel
-    ):
+    def from_connection_nodes(cls, connection_nodes, node_id_counter):
         """Construct a grid (only nodes) for the connection nodes
 
         Args:
             connection_nodes (ConnectionNodes): id and the_geom are used
             node_id_counter (iterable): an iterable yielding integers
-            global_initial_waterlevel (float): a global value for initial_waterlevel
 
         Returns:
             Grid with data in the following columns:
@@ -277,10 +275,7 @@ class Grid:
             - nodes.node_type: NODE_1D_NO_STORAGE / NODE_1D_STORAGE
             - nodes.calculation_type: only if set on Manhole
         """
-        return cls(
-            connection_nodes.get_nodes(node_id_counter, global_initial_waterlevel),
-            Lines(id=[]),
-        )
+        return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
 
     @classmethod
     def from_linear_objects(
@@ -454,6 +449,30 @@ class Grid:
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         csl_module.fix_dpumax(self.lines, self.nodes)
+
+    def set_initial_waterlevels(
+        self, connection_nodes, channels, pipes, culverts, global_initial_waterlevel
+    ):
+        """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
+
+        Bottom levels (dmax) should be set already.
+
+        Args:
+            connection_nodes (ConnectionNodes): used to map ids to indices
+            channels (Channels)
+            pipes (Pipes)
+            culverts (Culverts)
+            global_initial_waterlevel (float): a global value for initial_waterlevel
+
+        """
+        initial_waterlevels_module.compute_initial_waterlevels(
+            self.nodes,
+            connection_nodes,
+            channels,
+            pipes,
+            culverts,
+            global_initial_waterlevel,
+        )
 
     def set_obstacles(self, obstacles):
         """Set obstacles on 2D lines by determining intersection between
