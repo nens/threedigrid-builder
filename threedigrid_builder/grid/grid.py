@@ -467,11 +467,11 @@ class Grid:
         """
         initial_waterlevels_module.compute_initial_waterlevels(
             self.nodes,
-            connection_nodes,
-            channels,
-            pipes,
-            culverts,
-            global_initial_waterlevel,
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            culverts=culverts,
+            global_initial_waterlevel=global_initial_waterlevel,
         )
 
     def set_obstacles(self, obstacles):

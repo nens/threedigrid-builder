@@ -205,6 +205,28 @@ def test_set_bottom_levels(fix_dpumax, cn_compute):
     fix_dpumax.assert_called_with(grid.lines, grid.nodes)
 
 
+@mock.patch("threedigrid_builder.grid.initial_waterlevels.compute_initial_waterlevels")
+def test_set_initial_waterlevels(compute_initial_waterlevels, grid):
+    connection_nodes = mock.Mock()
+    channels = mock.Mock()
+    pipes = mock.Mock()
+    culverts = mock.Mock()
+    global_initial_waterlevel = 42.0
+
+    grid.set_initial_waterlevels(
+        connection_nodes, channels, pipes, culverts, global_initial_waterlevel
+    )
+
+    compute_initial_waterlevels.assert_called_with(
+        grid.nodes,
+        connection_nodes=connection_nodes,
+        channels=channels,
+        pipes=pipes,
+        culverts=culverts,
+        global_initial_waterlevel=global_initial_waterlevel,
+    )
+
+
 def test_sort():
     grid = Grid(
         Nodes(

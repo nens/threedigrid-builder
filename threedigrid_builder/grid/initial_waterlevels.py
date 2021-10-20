@@ -1,3 +1,4 @@
+from threedigrid_builder.base import search
 from threedigrid_builder.constants import ContentType
 
 import numpy as np
@@ -12,7 +13,7 @@ def _compute_for_interpolated_nodes(nodes, cn_idx, objects):
 
     Args:
         nodes (Nodes)
-        cn_idx (ndarray of int): indexes into nodes of nodes that are connection nodes
+        cn_idx (ndarray of int): masks nodes so that you have only connection nodes
         objects (LinearObjects): channels, pipes, or culverts
 
     Returns:
@@ -36,12 +37,18 @@ def _compute_for_interpolated_nodes(nodes, cn_idx, objects):
         raise ValueError("Encountered nodes outside of the linear object bounds")
 
     # convert connection_node_start_id to node indexes
-    left_cn_idx = cn_idx[
-        np.searchsorted(nodes.content_pk[cn_idx], objects.connection_node_start_id[idx])
-    ]
-    right_cn_idx = cn_idx[
-        np.searchsorted(nodes.content_pk[cn_idx], objects.connection_node_end_id[idx])
-    ]
+    left_cn_idx = search(
+        nodes.content_pk,
+        objects.connection_node_start_id[idx],
+        mask=cn_idx,
+        assume_ordered=True,
+    )
+    right_cn_idx = search(
+        nodes.content_pk,
+        objects.connection_node_end_id[idx],
+        mask=cn_idx,
+        assume_ordered=True,
+    )
 
     left = nodes.initial_waterlevel[left_cn_idx]
     right = nodes.initial_waterlevel[right_cn_idx]
