@@ -1,6 +1,7 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
 from . import embedded as embedded_module
+from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
@@ -448,6 +449,30 @@ class Grid:
 
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         csl_module.fix_dpumax(self.lines, self.nodes)
+
+    def set_initial_waterlevels(
+        self, connection_nodes, channels, pipes, culverts, global_initial_waterlevel
+    ):
+        """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
+
+        Bottom levels (dmax) should be set already.
+
+        Args:
+            connection_nodes (ConnectionNodes): used to map ids to indices
+            channels (Channels)
+            pipes (Pipes)
+            culverts (Culverts)
+            global_initial_waterlevel (float): a global value for initial_waterlevel
+
+        """
+        initial_waterlevels_module.compute_initial_waterlevels(
+            self.nodes,
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            culverts=culverts,
+            global_initial_waterlevel=global_initial_waterlevel,
+        )
 
     def set_obstacles(self, obstacles):
         """Set obstacles on 2D lines by determining intersection between

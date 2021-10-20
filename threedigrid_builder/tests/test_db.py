@@ -102,6 +102,7 @@ def test_get_connection_nodes(db):
     assert connection_nodes.storage_area[39] == 0.64
     assert np.isnan(connection_nodes.storage_area[49])
     assert connection_nodes.code[494] == ""
+    assert connection_nodes.initial_waterlevel[169] == -0.4
     # manhole fields
     assert connection_nodes.manhole_id[10] == 11
     assert connection_nodes.manhole_id[100] == -9999
@@ -201,6 +202,7 @@ def test_get_settings(db):
     assert g.kmax == 4
     assert g.embedded_cutoff_threshold == 0.05
     assert g.max_angle_1d_advection == 90.0
+    assert g.initial_waterlevel == -9999.0
     # use_2d is based on the presence of dem_file:
     assert g.use_2d is True
 

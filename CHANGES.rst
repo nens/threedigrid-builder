@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Handle user-supplied 1D-2D lines (connected point / calculation point).
 
+- Write initial_waterlevel for connection nodes.
+
 
 0.4.0 (2021-09-23)
 ------------------

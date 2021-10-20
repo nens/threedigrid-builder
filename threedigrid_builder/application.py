@@ -82,7 +82,8 @@ def _make_gridadmin(
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
         progress_callback(0.8, "Constructing 1D computational grid...")
         cn_grid = Grid.from_connection_nodes(
-            connection_nodes=connection_nodes, node_id_counter=node_id_counter
+            connection_nodes=connection_nodes,
+            node_id_counter=node_id_counter,
         )
         connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
         grid += cn_grid
@@ -147,6 +148,13 @@ def _make_gridadmin(
 
         grid.set_calculation_types()
         grid.set_bottom_levels()
+        grid.set_initial_waterlevels(
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            culverts=culverts,
+            global_initial_waterlevel=grid_settings.initial_waterlevel,
+        )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(definitions)
         grid.set_pumps(db.get_pumps())

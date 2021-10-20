@@ -27,6 +27,7 @@ class ConnectionNode:
     surface_level: float
     manhole_shape: str  # enum with classes "00", "01", "02"
     manhole_width: float
+    initial_waterlevel: float
 
 
 @array_of(ConnectionNode)
@@ -36,7 +37,6 @@ class ConnectionNodes:
 
         Args:
             node_id_counter (iterable): an iterable yielding integers
-            global_dist_calc_points (float): Default node interdistance.
 
         Returns:
             tuple of nodes (Nodes), segment_size (ndarray)
