@@ -1,14 +1,20 @@
 Changelog of threedigrid-builder
 ================================
 
-0.4.1 (unreleased)
+0.5.1 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
+0.5.0 (2021-10-21)
 ------------------
 
 - Fixed nodes.is_manhole in the gridadmin output.
 
 - Handle user-supplied 1D-2D lines (connected point / calculation point).
 
-- Write initial_waterlevel for connection nodes.
+- Write initial_waterlevel for 1D nodes and add 'has_initial_waterlevels' to meta.
 
 
 0.4.0 (2021-09-23)
