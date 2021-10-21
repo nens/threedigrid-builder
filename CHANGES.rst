@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.4.1 (unreleased)
+0.5.0 (2021-10-21)
 ------------------
 
 - Fixed nodes.is_manhole in the gridadmin output.
