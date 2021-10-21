@@ -18,7 +18,6 @@ class GridSettings:
     grid_space: float
     dist_calc_points: float
     kmax: int
-    initial_waterlevel: float
     embedded_cutoff_threshold: float = 0.05
     max_angle_1d_advection: float = 90.0
 

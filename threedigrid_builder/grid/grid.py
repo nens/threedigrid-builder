@@ -99,6 +99,7 @@ class GridMeta:
     has_pumpstations: bool = False
     has_simple_infiltration: bool = False
     has_interflow: bool = False
+    has_initial_waterlevels: bool = True
 
     extent_1d: Optional[Tuple[float, float, float, float]] = None
     extent_2d: Optional[Tuple[float, float, float, float]] = None
@@ -450,9 +451,7 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         csl_module.fix_dpumax(self.lines, self.nodes)
 
-    def set_initial_waterlevels(
-        self, connection_nodes, channels, pipes, culverts, global_initial_waterlevel
-    ):
+    def set_initial_waterlevels( self, connection_nodes, channels, pipes, culverts):
         """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
 
         Bottom levels (dmax) should be set already.
@@ -462,7 +461,6 @@ class Grid:
             channels (Channels)
             pipes (Pipes)
             culverts (Culverts)
-            global_initial_waterlevel (float): a global value for initial_waterlevel
 
         """
         initial_waterlevels_module.compute_initial_waterlevels(
@@ -471,7 +469,6 @@ class Grid:
             channels=channels,
             pipes=pipes,
             culverts=culverts,
-            global_initial_waterlevel=global_initial_waterlevel,
         )
 
     def set_obstacles(self, obstacles):
@@ -616,6 +613,7 @@ class Grid:
         self.lines.set_discharge_coefficients()
         if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
+        self.meta.has_initial_waterlevels = np.isfinite(self.nodes.initial_waterlevel).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
         self.meta.has_1d = self.meta.extent_1d is not None
