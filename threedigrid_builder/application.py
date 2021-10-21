@@ -153,7 +153,6 @@ def _make_gridadmin(
             channels=channels,
             pipes=pipes,
             culverts=culverts,
-            global_initial_waterlevel=grid_settings.initial_waterlevel,
         )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(definitions)

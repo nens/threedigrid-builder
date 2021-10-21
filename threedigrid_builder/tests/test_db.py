@@ -202,7 +202,6 @@ def test_get_settings(db):
     assert g.kmax == 4
     assert g.embedded_cutoff_threshold == 0.05
     assert g.max_angle_1d_advection == 90.0
-    assert g.initial_waterlevel == -9999.0
     # use_2d is based on the presence of dem_file:
     assert g.use_2d is True
 

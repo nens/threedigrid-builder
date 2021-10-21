@@ -73,9 +73,7 @@ def _compute_for_interpolated_nodes(nodes, cn_idx, objects):
     return is_type, weights * right + (1 - weights) * left
 
 
-def compute_initial_waterlevels(
-    nodes, connection_nodes, channels, pipes, culverts, global_initial_waterlevel
-):
+def compute_initial_waterlevels(nodes, connection_nodes, channels, pipes, culverts):
     """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
 
     Bottom levels (dmax) should be set already.
@@ -85,40 +83,29 @@ def compute_initial_waterlevels(
         channels (Channels)
         pipes (Pipes)
         culverts (Culverts)
-        global_initial_waterlevel (float): a global value for initial_waterlevel
 
     """
-    is_1d = np.where(
-        np.isin(
-            nodes.content_type,
-            [
-                ContentType.TYPE_V2_CONNECTION_NODES,
-                ContentType.TYPE_V2_CHANNEL,
-                ContentType.TYPE_V2_PIPE,
-                ContentType.TYPE_V2_CULVERT,
-            ],
-        )
-    )[0]
-    cn_idx = np.where(nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)[0]
-
     if not np.any(np.isfinite(connection_nodes.initial_waterlevel)):
-        # Set global value everywhere
-        nodes.initial_waterlevel[is_1d] = global_initial_waterlevel
-    else:
-        # First set the connection node initial waterlevels
-        nodes.initial_waterlevel[cn_idx] = connection_nodes.initial_waterlevel[
-            connection_nodes.id_to_index(nodes.content_pk[cn_idx])
-        ]
+        return
+    is_1d = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+    cn_idx = np.where(is_1d)[0]
 
-        # Then interpolate
-        for objects in (channels, pipes, culverts):
-            is_type, initial_waterlevel = _compute_for_interpolated_nodes(
-                nodes, cn_idx, objects
-            )
-            if initial_waterlevel is not None:
-                nodes.initial_waterlevel[is_type] = initial_waterlevel
+    # First set the connection node initial waterlevels
+    nodes.initial_waterlevel[cn_idx] = connection_nodes.initial_waterlevel[
+        connection_nodes.id_to_index(nodes.content_pk[cn_idx])
+    ]
+
+    # Then interpolate
+    for objects in (channels, pipes, culverts):
+        is_type, initial_waterlevel = _compute_for_interpolated_nodes(
+            nodes, cn_idx, objects
+        )
+        if initial_waterlevel is not None:
+            nodes.initial_waterlevel[is_type] = initial_waterlevel
+            is_1d |= is_type
 
     # Replace dry values with bottom levels (dmax)
+    is_1d = np.where(is_1d)[0]
     is_dry = ~np.isfinite(nodes.initial_waterlevel[is_1d]) | (
         nodes.initial_waterlevel[is_1d] < nodes.dmax[is_1d]
     )

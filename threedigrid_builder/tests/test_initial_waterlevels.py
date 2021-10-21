@@ -49,7 +49,6 @@ def connection_nodes():
 @pytest.mark.parametrize(
     "initial_waterlevels, expected",
     [
-        ([nan, nan, nan, nan, nan], [42.0, 42.0, 42.0, 42.0, 42.0, 42.0, 42.0, 42.0]),
         ([0.0, 0.0, 0.0, 0.0, 0.0], [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]),
         ([1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
         ([1.0, nan, nan, nan, nan], [1.0, 0.2, 0.3, 0.867, 0.733, 0.6, 0.9, 0.8]),
@@ -67,7 +66,6 @@ def test_compute_initial_waterlevels(
         channels=channels,
         pipes=mock.Mock(),
         culverts=mock.Mock(),
-        global_initial_waterlevel=42.0,
     )
 
     assert_almost_equal(nodes.initial_waterlevel, expected, decimal=3)

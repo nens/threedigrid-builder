@@ -49,7 +49,6 @@ def h5_out(tmpdir_factory):
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,
-            initial_waterlevel=-0.4,
         ),
         tables_settings=TablesSettings(
             table_step_size=0.05,
@@ -293,6 +292,7 @@ def test_write_meta(h5_out, dataset, shape, dtype):
         ("has_pumpstations", (), "bool"),  # changed to bool
         ("has_simple_infiltration", (), "bool"),  # changed to bool
         ("has_interflow", (), "bool"),  # added
+        ("has_initial_waterlevels", (), "bool"),  # added
         ("model_name", (), "S"),
         ("model_slug", (), "S"),
         ("revision_hash", (), "S"),

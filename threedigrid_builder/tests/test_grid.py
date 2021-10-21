@@ -45,7 +45,6 @@ def meta():
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,
-            initial_waterlevel=-0.4,
         ),
         tables_settings=TablesSettings(
             table_step_size=0.05,
@@ -211,11 +210,8 @@ def test_set_initial_waterlevels(compute_initial_waterlevels, grid):
     channels = mock.Mock()
     pipes = mock.Mock()
     culverts = mock.Mock()
-    global_initial_waterlevel = 42.0
 
-    grid.set_initial_waterlevels(
-        connection_nodes, channels, pipes, culverts, global_initial_waterlevel
-    )
+    grid.set_initial_waterlevels(connection_nodes, channels, pipes, culverts)
 
     compute_initial_waterlevels.assert_called_with(
         grid.nodes,
@@ -223,7 +219,6 @@ def test_set_initial_waterlevels(compute_initial_waterlevels, grid):
         channels=channels,
         pipes=pipes,
         culverts=culverts,
-        global_initial_waterlevel=global_initial_waterlevel,
     )
 
 
