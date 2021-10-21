@@ -195,7 +195,9 @@ class EmbeddedObjects:
         node_s = (
             np.delete(self.vpoint_s, ch_start) + np.delete(self.vpoint_s, ch_end - 1)
         ) / 2
-        self.vpoint_line_s = self.vpoint_s - np.insert(node_s, [0], 0.)
+        self.vpoint_line_s = self.vpoint_s.copy()
+        int_nodes = np.delete(np.arange(len(self.vpoint_line_s)), ch_start)
+        self.vpoint_line_s[int_nodes] -= node_s
         node_ch_idx = np.delete(self.vpoint_ch_idx, ch_start)
         node_point = pygeos.line_interpolate_point(
             self.objects.the_geom[node_ch_idx], node_s
