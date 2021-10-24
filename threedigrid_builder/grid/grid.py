@@ -618,7 +618,7 @@ class Grid:
         self.meta.has_initial_waterlevels = np.isfinite(self.nodes.initial_waterlevel).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
-        self.meta.has_1d = self.meta.extent_1d is not None
+        self.meta.has_1d = self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         self.meta.has_2d = self.meta.extent_2d is not None
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True
