@@ -339,7 +339,7 @@ class Grid:
             line_id_counter,
             connection_node_offset=connection_node_offset,
         )
-        nodes_embedded, lines_s1d, lines_s_s1d = objects.get_embedded(
+        nodes_embedded, lines_s1d, lines_ds1d_half = objects.get_embedded(
             cell_tree,
             embedded_cutoff_threshold,
             embedded_node_id_counter,
@@ -357,7 +357,7 @@ class Grid:
             # Override the velocity point locations (the defaulted to the line midpoint,
             # while for embedded objects we force them to the cell edges)
             lines_embedded.s1d[:] = lines_s1d
-            lines_embedded.s_s1d[:] = lines_s_s1d
+            lines_embedded.ds1d_half[:] = lines_ds1d_half
             lines += lines_embedded
             # Later gridbuilder functions expect ordering by content_pk
             lines.reorder_by("content_pk")

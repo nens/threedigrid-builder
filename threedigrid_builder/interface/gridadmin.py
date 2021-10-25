@@ -340,7 +340,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "line", lines.line.T + 1)
         self.write_dataset(group, "cross_pix_coords", lines.cross_pix_coords.T)
         self.write_dataset(group, "s1d", lines.s1d)
-        self.write_dataset(group, "s_s1d", lines.s_s1d)
+        self.write_dataset(group, "ds1d_half", lines.ds1d_half)
         self.write_dataset(group, "ds1d", lines.ds1d)
         self.write_dataset(group, "lik", lines.lik)
         self.write_dataset(group, "lim", lines.lim)

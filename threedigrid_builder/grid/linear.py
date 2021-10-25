@@ -228,7 +228,7 @@ class BaseLinear:
             content_type=objs.content_type,
             content_pk=content_pk,
             s1d=(start_s + end_s) / 2,
-            s_s1d=(end_s - start_s) / 2,
+            ds1d_half=(end_s - start_s) / 2,
             ds1d=end_s - start_s,
             kcu=objs.calculation_type[segment_idx],
             cross1=cross1,

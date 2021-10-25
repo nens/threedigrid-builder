@@ -126,7 +126,7 @@ def test_embed_linear_objects_multiple(grid2d):
         ],
     )
 
-    nodes, lines_s1d, lines_s_s1d = embed_linear_objects(
+    nodes, lines_s1d, lines_ds1d_half = embed_linear_objects(
         linear_objects,
         grid2d.cell_tree,
         embedded_cutoff_threshold=1,
@@ -141,7 +141,7 @@ def test_embed_linear_objects_multiple(grid2d):
     assert_array_equal(nodes.s1d, [11])  # halfway the 2 velocity points (see below)
     assert_array_equal(nodes.embedded_in, [1])
     assert_almost_equal(lines_s1d, [9, 2, 5, 3, 19])
-    assert_almost_equal(lines_s_s1d, [9, 2, 5, 3, 8])
+    assert_almost_equal(lines_ds1d_half, [9, 2, 5, 3, 8])
 
 
 @pytest.mark.parametrize("reverse", [False, True])
@@ -195,7 +195,7 @@ def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
         the_geom=[pygeos.linestrings(geometry)],
     )
 
-    nodes, actual_lines_s1d, line_s_s1d = embed_linear_objects(
+    nodes, actual_lines_s1d, line_ds1d_half = embed_linear_objects(
         linear_objects,
         grid2d.cell_tree,
         embedded_cutoff_threshold=1,
