@@ -21,6 +21,7 @@ class Line:
     lim: int  # quadtree grid coordinate x of the line start
     lin: int  # quadtree grid coordinate y of the line start
     s1d: float  # position (arclength) along a 1D element
+    ds1d_half: float  # position (arclength) along a single line (between two calc nodes.)
     ds1d: float  # arclength
     line_geometries: pygeos.Geometry
     line_coords: Tuple[float, float, float, float]
@@ -94,6 +95,7 @@ class Lines:
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
         self.ds1d[to_fix] = pygeos.length(self.line_geometries[to_fix])
+        self.ds1d_half[to_fix] = 0.5 * self.ds1d[to_fix]
 
     def sort_by_nodes(self, node_ids):
         """Order selected lines by node id, ascending.

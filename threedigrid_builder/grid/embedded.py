@@ -100,11 +100,14 @@ class EmbeddedObjects:
           point is on a cell edge by definition.
     """
 
-    def __init__(self, objects, vpoint_s, vpoint_ch_idx, vpoint_line=None):
+    def __init__(
+        self, objects, vpoint_s, vpoint_ch_idx, vpoint_line=None, vpoint_line_s=None\
+    ):
         self.objects = objects
         self.vpoint_s = vpoint_s
         self.vpoint_ch_idx = vpoint_ch_idx
         self.vpoint_line = vpoint_line
+        self.vpoint_line_s = vpoint_line_s
 
     @property
     def counts(self):
@@ -125,6 +128,7 @@ class EmbeddedObjects:
             self.vpoint_s[index],
             self.vpoint_ch_idx[index],
             self.vpoint_line[:, index] if self.vpoint_line is not None else None,
+            self.vpoint_line_s[index] if self.vpoint_line_s is not None else None,
         )
 
     def delete(self, index):
@@ -133,24 +137,34 @@ class EmbeddedObjects:
             vpoint_line = np.delete(self.vpoint_line, index, axis=1)
         else:
             vpoint_line = None
+        if self.vpoint_line_s is not None:
+            vpoint_line_s = np.delete(self.vpoint_line_s, index)
+        else:
+            vpoint_line_s = None
         return self.__class__(
             self.objects,
             np.delete(self.vpoint_s, index),
             np.delete(self.vpoint_ch_idx, index),
             vpoint_line,
+            vpoint_line_s
         )
 
-    def insert(self, where, vpoint_s, vpoint_ch_idx, vpoint_line=-9999):
+    def insert(self, where, vpoint_s, vpoint_ch_idx, vpoint_line=-9999, vpoint_line_s=np.nan):
         """Insert velocity points at ``where``"""
         if self.vpoint_line is not None:
             vpoint_line = np.insert(self.vpoint_line, where, vpoint_line, axis=1)
         else:
             vpoint_line = None
+        if self.vpoint_line_s is not None:
+            vpoint_line_s = np.insert(self.vpoint_line_s, where, vpoint_line_s, axis=1)
+        else:
+            vpoint_line_s = None
         return self.__class__(
             self.objects,
             np.insert(self.vpoint_s, where, vpoint_s),
             np.insert(self.vpoint_ch_idx, where, vpoint_ch_idx),
             vpoint_line,
+            vpoint_line_s,
         )
 
     @classmethod
@@ -181,6 +195,9 @@ class EmbeddedObjects:
         node_s = (
             np.delete(self.vpoint_s, ch_start) + np.delete(self.vpoint_s, ch_end - 1)
         ) / 2
+        self.vpoint_line_s = self.vpoint_s.copy()
+        int_nodes = np.delete(np.arange(len(self.vpoint_line_s)), ch_start)
+        self.vpoint_line_s[int_nodes] -= node_s
         node_ch_idx = np.delete(self.vpoint_ch_idx, ch_start)
         node_point = pygeos.line_interpolate_point(
             self.objects.the_geom[node_ch_idx], node_s
@@ -383,7 +400,7 @@ def embed_linear_objects(
     All linear objects are expected to be of EMBEDDED calculation type.
     """
     if len(objects) == 0:
-        return Nodes(id=[]), np.empty((0,))
+        return Nodes(id=[]), np.empty((0,)), np.empty((0,))
 
     if cell_tree is None or len(cell_tree) == 0:
         raise SchematisationError(
@@ -405,7 +422,7 @@ def embed_linear_objects(
     # Now we create the virtual nodes
     embedded_nodes = embedded_objects.get_nodes(embedded_node_id_counter)
 
-    return embedded_nodes, embedded_objects.vpoint_s
+    return embedded_nodes, embedded_objects.vpoint_s, embedded_objects.vpoint_line_s
 
 
 def _bfs(graph, start):

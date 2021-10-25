@@ -92,6 +92,7 @@ class GridMeta:
     # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
     has_1d: bool = False
     has_2d: bool = False
+    has_embedded: bool = False
     has_breaches: bool = False
     has_groundwater: bool = False
     has_groundwater_flow: bool = False
@@ -338,7 +339,7 @@ class Grid:
             line_id_counter,
             connection_node_offset=connection_node_offset,
         )
-        nodes_embedded, lines_s1d = objects.get_embedded(
+        nodes_embedded, lines_s1d, lines_ds1d_half = objects.get_embedded(
             cell_tree,
             embedded_cutoff_threshold,
             embedded_node_id_counter,
@@ -356,6 +357,7 @@ class Grid:
             # Override the velocity point locations (the defaulted to the line midpoint,
             # while for embedded objects we force them to the cell edges)
             lines_embedded.s1d[:] = lines_s1d
+            lines_embedded.ds1d_half[:] = lines_ds1d_half
             lines += lines_embedded
             # Later gridbuilder functions expect ordering by content_pk
             lines.reorder_by("content_pk")
@@ -616,5 +618,7 @@ class Grid:
         self.meta.has_initial_waterlevels = np.isfinite(self.nodes.initial_waterlevel).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
-        self.meta.has_1d = self.meta.extent_1d is not None
+        self.meta.has_1d = self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         self.meta.has_2d = self.meta.extent_2d is not None
+        if len(self.nodes_embedded) > 0:
+            self.meta.has_embedded = True
