@@ -38,7 +38,7 @@ class TablesSettings:
     table_step_size: float
     frict_coef: float
     frict_coef_type: InitializationType
-    frict_type: int = 4
+    frict_type: int = 2
     interception_global: Optional[float] = None
     interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__
