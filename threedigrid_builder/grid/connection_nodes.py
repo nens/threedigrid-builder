@@ -63,6 +63,7 @@ class ConnectionNodes:
             calculation_type=self.calculation_type,
             dmax=self.bottom_level,
             manhole_id=self.manhole_id,
+            storage_area=self.storage_area,
         )
         return nodes
 
