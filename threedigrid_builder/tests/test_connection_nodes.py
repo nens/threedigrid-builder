@@ -57,6 +57,7 @@ def test_get_nodes(connection_nodes):
     )
     assert_array_equal(nodes.calculation_type, connection_nodes.calculation_type)
     assert_array_equal(nodes.dmax, connection_nodes.bottom_level)
+    assert_array_equal(nodes.storage_area, connection_nodes.storage_area)
 
 
 @pytest.mark.parametrize(
