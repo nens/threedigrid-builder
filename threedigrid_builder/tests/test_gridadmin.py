@@ -78,7 +78,7 @@ def h5_out(tmpdir_factory):
     nodes_embedded = Nodes(
         id=[0, 1],
         embedded_in=[1, 2],
-        dmax=[2.3, 0.2],
+        dmax=[2.3, np.nan],
     )
 
     path = tmpdir_factory.mktemp("h5") / "gridadmin.h5"
@@ -406,3 +406,7 @@ def test_not_off_by_one(h5_out, group, dataset, expected):
     # gridadmin contains a dummy element at index 0 (so index 1 is the first)
     # references should also be increased by one
     assert h5_out[group][dataset][..., 1].tolist() == expected
+
+
+def test_nan_to_minus_9999(h5_out):
+    assert h5_out["nodes_embedded"]["dmax"][2] == -9999.0

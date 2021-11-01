@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.5.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Replace (float) nan values in all gridadmin output with -9999.0.
 
 
 0.5.1 (2021-11-01)

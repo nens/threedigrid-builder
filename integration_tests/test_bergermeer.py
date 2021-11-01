@@ -55,7 +55,7 @@ def test_integration(tmp_path):
         }
         assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
         assert np.count_nonzero(f["nodes"]["content_pk"][:] > 0) == 1360
-        assert np.count_nonzero(np.isfinite(f["nodes"]["initial_waterlevel"][:])) == 2531
+        assert np.count_nonzero(f["nodes"]["initial_waterlevel"][:] > -9999) == 2531
 
         ## LINES
         assert f["lines"]["id"].shape == (15505,)  # Inpy: (31916, )

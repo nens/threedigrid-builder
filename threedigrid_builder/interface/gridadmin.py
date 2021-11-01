@@ -54,6 +54,16 @@ HDF5_SETTINGS = {
 }
 
 
+def nan_to_minus_9999(data):
+    """Replace all np.nan to -9999.0 if data is of dtype floating"""
+    if np.isscalar(data):
+        return -9999.0 if np.isnan(data) else data
+    if np.issubdtype(data.dtype, np.floating):
+        return np.where(np.isnan(data), -9999.0, data)
+    else:
+        return data
+
+
 def field_to_h5(group, name, dtype, val, mode="attrs"):
     """Write a dataclass field to H5py attributes or datasets.
 
@@ -80,7 +90,9 @@ def field_to_h5(group, name, dtype, val, mode="attrs"):
     elif dtype is float:
         dtype = np.float64
         if val is None:
-            val = np.full(shape, np.nan, dtype=dtype)
+            val = np.full(shape, -9999.0, dtype=dtype)
+        else:
+            val = nan_to_minus_9999(np.asarray(val))
     elif dtype is str:
         # Future: Write variable-length UTF-8
         # dtype = h5py.special_dtype(vlen=str)
@@ -478,7 +490,7 @@ class GridAdminOut(OutputInterface):
         """
         if fill is None:
             if np.issubdtype(values.dtype, np.floating):
-                fill = np.nan
+                fill = -9999.0
             else:
                 fill = -9999
 
@@ -490,7 +502,7 @@ class GridAdminOut(OutputInterface):
                 fillvalue=fill,
                 **HDF5_SETTINGS,
             )
-            ds[1:] = values
+            ds[1:] = nan_to_minus_9999(values)
             if name == "id":  # set the ID of the dummy element
                 ds[0] = 0
         elif values.ndim == 2:
@@ -501,6 +513,6 @@ class GridAdminOut(OutputInterface):
                 fillvalue=fill,
                 **HDF5_SETTINGS,
             )
-            ds[:, 1:] = values
+            ds[:, 1:] = nan_to_minus_9999(values)
         else:
             ValueError("Too many dimensions for values.")
