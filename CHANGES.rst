@@ -6,6 +6,10 @@ Changelog of threedigrid-builder
 
 - Add storage_area to calculation nodes. 
 
+- Added ds1d_half to nodes.
+
+- Added has_embedded to attrs.
+
 
 0.5.0 (2021-10-21)
 ------------------
