@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.5.1 (unreleased)
+0.5.1 (2021-11-01)
 ------------------
 
 - Add storage_area to calculation nodes. 
