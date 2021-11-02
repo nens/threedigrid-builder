@@ -157,18 +157,31 @@ class GridAdminOut(OutputInterface):
             ValueError if it exists already.
         """
         group = self._file.create_group("meta")
-        NODATA_YET = 0
 
-        n2dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
-        n2dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_BOUNDARIES)
-        n1dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_BOUNDARIES)
-        group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
-        group.create_dataset("n2dobc", data=n2dobc, dtype="i4")
-        group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
+        is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+        is_1d = np.isin(nodes.node_type, NODE_TYPES_1D)
+        is_2d_bnd = nodes.node_type == NodeType.NODE_2D_BOUNDARIES
+        is_gw_bnd = nodes.node_type == NodeType.NODE_2D_GROUNDWATER_BOUNDARIES
+        is_1d_bnd = nodes.node_type == NodeType.NODE_1D_BOUNDARIES
 
-        n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
-        group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
-        group.create_dataset("n1dobc", data=n1dobc, dtype="i4")
+        # the number of 1D nodes
+        group.create_dataset("n1dtot", data=np.count_nonzero(is_1d), dtype="i4")
+        # the number of 2D open water nodes
+        group.create_dataset("n2dtot", data=np.count_nonzero(is_2d), dtype="i4")
+        # the number of 1D boundary nodes
+        group.create_dataset("n1dobc", data=np.count_nonzero(is_1d_bnd), dtype="i4")
+        # the number of 2D boundary nodes
+        group.create_dataset("n2dobc", data=np.count_nonzero(is_2d_bnd), dtype="i4")
+        # the number of unique 2D boundaries
+        group.create_dataset(
+            "nob2ds", data=len(np.unique(nodes.boundary_id[is_2d_bnd])), dtype="i4"
+        )
+        # the number of unique groundwater boundaries
+        group.create_dataset(
+            "nob2dg", data=len(np.unique(nodes.boundary_id[is_gw_bnd])), dtype="i4"
+        )
+
+        # the number of U and V lines (including obstacle lines)
         liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U) + np.count_nonzero(
             lines.kcu == LineType.LINE_2D_OBSTACLE_U
         )
@@ -178,18 +191,39 @@ class GridAdminOut(OutputInterface):
         )
         group.create_dataset("livtot", data=livtot, dtype="i4")
 
-        group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
-        group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
-
+        # the number of 1D lines
         l1dtot = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D))
         group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
 
+        # the number of 1D-2D lines
         infl1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D))
         group.create_dataset("infl1d", data=infl1d, dtype="i4")
 
         ingrw1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D_GW))
         group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
-        group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
+
+        # To be implemented:
+        for field in (
+            'ijmax',
+            'imax',
+            'jap1d',
+            'jmax',
+            'l2dtot',
+            'levnms',
+            'lgrmin',
+            'lgrtot',
+            'lgutot',
+            'lgvtot',
+            'linall',
+            'lintot',
+            'n2dall',
+            'ngr2bc',
+            'ngrtot',
+            'nodall',
+            'nodobc',
+            'nodtot'
+        ):
+            group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
         """Write the "grid_coordinate_attributes" group in the gridadmin file.
@@ -234,7 +268,6 @@ class GridAdminOut(OutputInterface):
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)
         self.write_dataset(group, "code", nodes.code.astype("S32"), fill=b"")
-        self.write_dataset(group, "display_name", nodes.code.astype("S64"), fill=b"")
         self.write_dataset(group, "node_type", nodes.node_type)
         self.write_dataset(group, "calculation_type", nodes.calculation_type)
         self.write_dataset(group, "coordinates", nodes.coordinates.T)
@@ -278,6 +311,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pixel_width", pixel_width)
 
         # can be collected from SQLite, but empty for now:
+        self.write_dataset(group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b"")
         self.write_dataset(
             group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
         )
@@ -289,15 +323,15 @@ class GridAdminOut(OutputInterface):
             group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
         )
         self.write_dataset(
-            group, "drain_level", np.full(shape, -9999, dtype=np.float64)
+            group, "drain_level", np.full(shape, np.nan, dtype=np.float64)
         )
         self.write_dataset(
-            group, "surface_level", np.full(shape, -9999, dtype=np.float64)
+            group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
         )
-        self.write_dataset(group, "width", np.full(shape, -9999, dtype=np.float64))
+        self.write_dataset(group, "width", np.full(shape, np.nan, dtype=np.float64))
 
         # unknown
-        self.write_dataset(group, "sumax", np.full(shape, -9999, dtype=np.float64))
+        self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 
     def write_lines(self, lines):
         """Write the "lines" group in the gridadmin file
@@ -316,7 +350,7 @@ class GridAdminOut(OutputInterface):
         group = self._file.create_group("lines")
         shape = (len(lines),)
         fill_int = np.full(shape, -9999, dtype="i4")
-        fill_float = np.full(shape, -9999, dtype=float)
+        fill_float = np.full(shape, np.nan, dtype=float)
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
@@ -390,7 +424,7 @@ class GridAdminOut(OutputInterface):
         line_geometries = [
             pygeos.get_coordinates(x).T.ravel() for x in lines.line_geometries
         ]
-        line_geometries.insert(0, np.array([-9999.0, -9999.0]))
+        line_geometries.insert(0, np.array([np.nan, np.nan]))
         # The dataset has a special "variable length" dtype. This one is special write method.
         try:
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))

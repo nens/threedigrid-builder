@@ -231,7 +231,7 @@ def test_write_lines(h5_out, dataset, shape, dtype):
 def test_line_geometries(h5_out):
     # line geometries are stored as a variable-length array [x, x, ..., y, y, ...]
     data = h5_out["lines"]["line_geometries"][:]
-    assert data[0].tolist() == [-9999, -9999]
+    assert np.isnan(data[0]).all()
     assert data[1].tolist() == [1, 2, 1, 2]
     assert data[2].tolist() == [1, 2, 3, 1, 2, 3]
 
@@ -257,19 +257,35 @@ def test_write_quadtree(h5_out, dataset, shape, dtype):
 @pytest.mark.parametrize(
     "dataset,shape,dtype",
     [
-        ("infl1d", (), "i4"),
-        ("ingrw1d", (), "i4"),
-        ("jap1d", (), "i4"),
-        ("l1dtot", (), "i4"),
-        ("lgutot", (), "i4"),
-        ("lgvtot", (), "i4"),
-        ("liutot", (), "i4"),
-        ("livtot", (), "i4"),
-        ("n1dobc", (), "i4"),
-        ("n1dtot", (), "i4"),
-        ("n2dobc", (), "i4"),
-        ("n2dtot", (), "i4"),
-        ("ngr2bc", (), "i4"),
+        ('ijmax', (), 'i4'),
+        ('imax', (), 'i4'),
+        ('infl1d', (), 'i4'),
+        ('ingrw1d', (), 'i4'),
+        ('jap1d', (), 'i4'),
+        ('jmax', (), 'i4'),
+        ('l1dtot', (), 'i4'),
+        ('l2dtot', (), 'i4'),
+        ('levnms', (), 'i4'),
+        ('lgrmin', (), 'i4'),
+        ('lgrtot', (), 'i4'),
+        ('lgutot', (), 'i4'),
+        ('lgvtot', (), 'i4'),
+        ('linall', (), 'i4'),
+        ('lintot', (), 'i4'),
+        ('liutot', (), 'i4'),
+        ('livtot', (), 'i4'),
+        ('n1dobc', (), 'i4'),
+        ('n1dtot', (), 'i4'),
+        ('n2dall', (), 'i4'),
+        ('n2dobc', (), 'i4'),
+        ('n2dtot', (), 'i4'),
+        ('ngr2bc', (), 'i4'),
+        ('ngrtot', (), 'i4'),
+        ('nob2dg', (), 'i4'),
+        ('nob2ds', (), 'i4'),
+        ('nodall', (), 'i4'),
+        ('nodobc', (), 'i4'),
+        ('nodtot', (), 'i4'),
     ],
 )
 def test_write_meta(h5_out, dataset, shape, dtype):
