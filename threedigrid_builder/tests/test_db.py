@@ -63,9 +63,12 @@ def test_get_channels(db):
 
     # some test samples
     assert len(channels.id) == 1175
-    assert (
-        pygeos.to_wkt(channels.the_geom[0])
-        == "LINESTRING (109798 518896, 109815 518823, 109818 518812, 109822 518800, 109834 518750)"
+    assert pygeos.equals_exact(
+        channels.the_geom[0],
+        pygeos.Geometry(
+            "LINESTRING (109798 518896, 109815 518823, 109818 518812, 109822 518800, 109834 518750)"
+        ),
+        tolerance=1,
     )
     assert channels.id[11] == 12
     assert channels.code[42] == "151"
@@ -82,7 +85,11 @@ def test_get_connected_points(db):
 
     assert len(connected_points) == 1931
     assert connected_points.id[56] == 57
-    assert pygeos.to_wkt(connected_points.the_geom[1321]) == "POINT (109012 517295)"
+    assert pygeos.equals_exact(
+        connected_points.the_geom[1321],
+        pygeos.Geometry("POINT (109012 517295)"),
+        tolerance=1,
+    )
     assert np.isnan(connected_points.exchange_level[0])
     assert connected_points.exchange_level[1322] == 0.0
     assert connected_points.content_type[1320] == ContentType.TYPE_V2_CHANNEL
@@ -97,7 +104,11 @@ def test_get_connection_nodes(db):
 
     # some test samples
     assert len(connection_nodes.id) == 1360
-    assert pygeos.to_wkt(connection_nodes.the_geom[0]) == "POINT (110404 517792)"
+    assert pygeos.equals_exact(
+        connection_nodes.the_geom[0],
+        pygeos.Geometry("POINT (110404 517792)"),
+        tolerance=1,
+    )
     assert connection_nodes.id[11] == 12
     assert connection_nodes.storage_area[39] == 0.64
     assert np.isnan(connection_nodes.storage_area[49])
@@ -133,7 +144,9 @@ def test_get_cross_section_locations(db):
 
     # some test samples
     assert len(locations.id) == 1175
-    assert pygeos.to_wkt(locations.the_geom[96]) == "POINT (111104 521655)"
+    assert pygeos.equals_exact(
+        locations.the_geom[96], pygeos.Geometry("POINT (111104 521655)"), tolerance=1
+    )
     assert locations.id[11] == 12
     assert locations.definition_id[365] == 98
     assert locations.channel_id[448] == 452
@@ -148,13 +161,19 @@ def test_get_grid_refinements(db):
 
     # some test samples
     assert len(grid_refinements.id) == 6
-    assert (
-        pygeos.to_wkt(grid_refinements.the_geom[3])
-        == "LINESTRING (110173 517604, 110327 517527, 110461 517809, 110249 517909, 110147 517700, 110304 517616, 110368 517765, 110280 517816, 110242 517726, 110300 517701, 110316 517749)"
+    assert pygeos.equals_exact(
+        grid_refinements.the_geom[3],
+        pygeos.Geometry(
+            "LINESTRING (110173 517604, 110327 517527, 110461 517809, 110249 517909, 110147 517700, 110304 517616, 110368 517765, 110280 517816, 110242 517726, 110300 517701, 110316 517749)"
+        ),
+        tolerance=1,
     )
-    assert (
-        pygeos.to_wkt(grid_refinements.the_geom[4])
-        == "POLYGON ((108334 517481, 108701 517460, 108686 517171, 108324 517197, 108334 517481))"
+    assert pygeos.equals_exact(
+        grid_refinements.the_geom[4],
+        pygeos.Geometry(
+            "POLYGON ((108334 517481, 108701 517460, 108686 517171, 108324 517197, 108334 517481))"
+        ),
+        tolerance=1,
     )
     assert grid_refinements.refinement_level[1] == 1
     assert grid_refinements.display_name[3] == "riolering"
@@ -274,9 +293,10 @@ def test_get_culverts(db):
 
     assert culverts.id[89] == 2000112
     assert culverts.code[35] == "500"
-    assert (
-        pygeos.to_wkt(culverts.the_geom[36])
-        == "LINESTRING (108351 516428, 108357 516430)"
+    assert pygeos.equals_exact(
+        culverts.the_geom[36],
+        pygeos.Geometry("LINESTRING (108351 516428, 108357 516430)"),
+        tolerance=1,
     )
     assert culverts.dist_calc_points[52] == 20.0
     assert culverts.connection_node_start_id[45] == 1220
