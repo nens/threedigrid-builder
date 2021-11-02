@@ -46,6 +46,20 @@ LINE_TYPES_1D2D_GW = (
     LineType.LINE_1D2D_GROUNDWATER_SEWER,
 )
 
+LINE_TYPES_2D = (
+    LineType.LINE_2D_U,
+    LineType.LINE_2D_V,
+    LineType.LINE_2D,
+    LineType.LINE_2D_OBSTACLE,
+    LineType.LINE_2D_OBSTACLE_U,
+    LineType.LINE_2D_OBSTACLE_V,
+)
+
+LINE_TYPES_2D_GROUNDWATER = (
+    LineType.LINE_2D_GROUNDWATER,
+    LineType.LINE_2D_VERTICAL,
+)
+
 # Some default settings for h5py datasets
 HDF5_SETTINGS = {
     "compression": "gzip",  # more compatible than lzf and better compression
@@ -157,39 +171,43 @@ class GridAdminOut(OutputInterface):
             ValueError if it exists already.
         """
         group = self._file.create_group("meta")
-        NODATA_YET = 0
 
-        n2dtot = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
-        n2dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_2D_BOUNDARIES)
-        n1dobc = np.count_nonzero(nodes.node_type == NodeType.NODE_1D_BOUNDARIES)
-        group.create_dataset("n2dtot", data=n2dtot, dtype="i4")
-        group.create_dataset("n2dobc", data=n2dobc, dtype="i4")
-        group.create_dataset("ngr2bc", data=NODATA_YET, dtype="i4")
+        # the number of nodes in several categories
+        for dataset_name, node_types in [
+            ("n1dtot", NODE_TYPES_1D),
+            ("n2dtot", (NodeType.NODE_2D_OPEN_WATER)),
+            ("ngrtot", (NodeType.NODE_2D_GROUNDWATER)),
+            ("n1dobc", (NodeType.NODE_1D_BOUNDARIES)),
+            ("n2dobc", (NodeType.NODE_2D_BOUNDARIES)),
+            ("ngr2bc", (NodeType.NODE_2D_GROUNDWATER_BOUNDARIES)),
+        ]:
+            count = np.count_nonzero(np.isin(nodes.node_type, node_types))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
 
-        n1dtot = np.count_nonzero(np.isin(nodes.node_type, NODE_TYPES_1D))
-        group.create_dataset("n1dtot", data=n1dtot, dtype="i4")
-        group.create_dataset("n1dobc", data=n1dobc, dtype="i4")
-        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U) + np.count_nonzero(
-            lines.kcu == LineType.LINE_2D_OBSTACLE_U
-        )
-        group.create_dataset("liutot", data=liutot, dtype="i4")
-        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V) + np.count_nonzero(
-            lines.kcu == LineType.LINE_2D_OBSTACLE_V
-        )
-        group.create_dataset("livtot", data=livtot, dtype="i4")
+        # the number of lines in several categories
+        for dataset_name, kcu_values in [
+            ("liutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
+            ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
+            ("l1dtot", LINE_TYPES_1D),
+            ("l2dtot", LINE_TYPES_2D),
+            ("lgrtot", LINE_TYPES_2D_GROUNDWATER),
+            ("infl1d", LINE_TYPES_1D2D),
+            ("ingrw1d", LINE_TYPES_1D2D_GW),
+        ]:
+            count = np.count_nonzero(np.isin(lines.kcu, kcu_values))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
 
-        group.create_dataset("lgutot", data=NODATA_YET, dtype="i4")
-        group.create_dataset("lgvtot", data=NODATA_YET, dtype="i4")
+        # the number of unique boundaries (only 2D)
+        for dataset_name, node_type in [
+            ("nob2ds", NodeType.NODE_2D_BOUNDARIES),
+            ("nob2dg", NodeType.NODE_2D_GROUNDWATER_BOUNDARIES),
+        ]:
+            count = len(np.unique(nodes.boundary_id[nodes.node_type == node_type]))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
 
-        l1dtot = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D))
-        group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
-
-        infl1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D))
-        group.create_dataset("infl1d", data=infl1d, dtype="i4")
-
-        ingrw1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D_GW))
-        group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
-        group.create_dataset("jap1d", data=NODATA_YET, dtype="i4")
+        # To be implemented when groundwater is done:
+        for field in ("lgutot", "lgvtot"):
+            group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
         """Write the "grid_coordinate_attributes" group in the gridadmin file.
@@ -234,7 +252,6 @@ class GridAdminOut(OutputInterface):
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)
         self.write_dataset(group, "code", nodes.code.astype("S32"), fill=b"")
-        self.write_dataset(group, "display_name", nodes.code.astype("S64"), fill=b"")
         self.write_dataset(group, "node_type", nodes.node_type)
         self.write_dataset(group, "calculation_type", nodes.calculation_type)
         self.write_dataset(group, "coordinates", nodes.coordinates.T)
@@ -279,6 +296,9 @@ class GridAdminOut(OutputInterface):
 
         # can be collected from SQLite, but empty for now:
         self.write_dataset(
+            group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b""
+        )
+        self.write_dataset(
             group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
         )
         # (manhole specific:)
@@ -289,15 +309,15 @@ class GridAdminOut(OutputInterface):
             group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
         )
         self.write_dataset(
-            group, "drain_level", np.full(shape, -9999, dtype=np.float64)
+            group, "drain_level", np.full(shape, np.nan, dtype=np.float64)
         )
         self.write_dataset(
-            group, "surface_level", np.full(shape, -9999, dtype=np.float64)
+            group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
         )
-        self.write_dataset(group, "width", np.full(shape, -9999, dtype=np.float64))
+        self.write_dataset(group, "width", np.full(shape, np.nan, dtype=np.float64))
 
         # unknown
-        self.write_dataset(group, "sumax", np.full(shape, -9999, dtype=np.float64))
+        self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 
     def write_lines(self, lines):
         """Write the "lines" group in the gridadmin file
@@ -316,7 +336,7 @@ class GridAdminOut(OutputInterface):
         group = self._file.create_group("lines")
         shape = (len(lines),)
         fill_int = np.full(shape, -9999, dtype="i4")
-        fill_float = np.full(shape, -9999, dtype=float)
+        fill_float = np.full(shape, np.nan, dtype=float)
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
@@ -390,7 +410,7 @@ class GridAdminOut(OutputInterface):
         line_geometries = [
             pygeos.get_coordinates(x).T.ravel() for x in lines.line_geometries
         ]
-        line_geometries.insert(0, np.array([-9999.0, -9999.0]))
+        line_geometries.insert(0, np.array([np.nan, np.nan]))
         # The dataset has a special "variable length" dtype. This one is special write method.
         try:
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))

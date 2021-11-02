@@ -4,7 +4,11 @@ Changelog of threedigrid-builder
 0.5.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Consistently write NaN (and not -9999.0) in gridadmin float datasets.
+
+- Fix tests with GEOS 3.10.0
+
+- Make 'meta' group complete.
 
 
 0.5.1 (2021-11-01)
