@@ -101,7 +101,7 @@ class EmbeddedObjects:
     """
 
     def __init__(
-        self, objects, vpoint_s, vpoint_ch_idx, vpoint_line=None, vpoint_line_s=None\
+        self, objects, vpoint_s, vpoint_ch_idx, vpoint_line=None, vpoint_line_s=None
     ):
         self.objects = objects
         self.vpoint_s = vpoint_s
@@ -146,10 +146,12 @@ class EmbeddedObjects:
             np.delete(self.vpoint_s, index),
             np.delete(self.vpoint_ch_idx, index),
             vpoint_line,
-            vpoint_line_s
+            vpoint_line_s,
         )
 
-    def insert(self, where, vpoint_s, vpoint_ch_idx, vpoint_line=-9999, vpoint_line_s=np.nan):
+    def insert(
+        self, where, vpoint_s, vpoint_ch_idx, vpoint_line=-9999, vpoint_line_s=np.nan
+    ):
         """Insert velocity points at ``where``"""
         if self.vpoint_line is not None:
             vpoint_line = np.insert(self.vpoint_line, where, vpoint_line, axis=1)

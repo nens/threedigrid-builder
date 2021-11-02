@@ -96,7 +96,7 @@ class BaseLinear:
     def get_embedded(
         self, cell_tree, embedded_cutoff_threshold, embedded_node_id_counter
     ):
-        """"""
+        """ """
         from threedigrid_builder.grid import embed_linear_objects
 
         return embed_linear_objects(

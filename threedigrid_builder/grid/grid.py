@@ -453,7 +453,7 @@ class Grid:
         # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         csl_module.fix_dpumax(self.lines, self.nodes)
 
-    def set_initial_waterlevels( self, connection_nodes, channels, pipes, culverts):
+    def set_initial_waterlevels(self, connection_nodes, channels, pipes, culverts):
         """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
 
         Bottom levels (dmax) should be set already.
@@ -615,10 +615,14 @@ class Grid:
         self.lines.set_discharge_coefficients()
         if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
-        self.meta.has_initial_waterlevels = np.isfinite(self.nodes.initial_waterlevel).any()
+        self.meta.has_initial_waterlevels = np.isfinite(
+            self.nodes.initial_waterlevel
+        ).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
-        self.meta.has_1d = self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
+        self.meta.has_1d = (
+            self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
+        )
         self.meta.has_2d = self.meta.extent_2d is not None
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True
