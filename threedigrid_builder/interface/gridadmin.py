@@ -46,6 +46,20 @@ LINE_TYPES_1D2D_GW = (
     LineType.LINE_1D2D_GROUNDWATER_SEWER,
 )
 
+LINE_TYPES_2D = (
+    LineType.LINE_2D_U,
+    LineType.LINE_2D_V,
+    LineType.LINE_2D,
+    LineType.LINE_2D_OBSTACLE,
+    LineType.LINE_2D_OBSTACLE_U,
+    LineType.LINE_2D_OBSTACLE_V,
+)
+
+LINE_TYPES_2D_GROUNDWATER = (
+    LineType.LINE_2D_GROUNDWATER,
+    LineType.LINE_2D_VERTICAL,
+)
+
 # Some default settings for h5py datasets
 HDF5_SETTINGS = {
     "compression": "gzip",  # more compatible than lzf and better compression
@@ -158,71 +172,41 @@ class GridAdminOut(OutputInterface):
         """
         group = self._file.create_group("meta")
 
-        is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
-        is_1d = np.isin(nodes.node_type, NODE_TYPES_1D)
-        is_2d_bnd = nodes.node_type == NodeType.NODE_2D_BOUNDARIES
-        is_gw_bnd = nodes.node_type == NodeType.NODE_2D_GROUNDWATER_BOUNDARIES
-        is_1d_bnd = nodes.node_type == NodeType.NODE_1D_BOUNDARIES
+        # the number of 1D nodes in several categories
+        for dataset_name, node_types in [
+            ("n1dtot", NODE_TYPES_1D),
+            ("n2dtot", (NodeType.NODE_2D_OPEN_WATER)),
+            ("ngrtot", (NodeType.NODE_2D_GROUNDWATER)),
+            ("n1dobc", (NodeType.NODE_1D_BOUNDARIES)),
+            ("n2dobc", (NodeType.NODE_2D_BOUNDARIES)),
+            ("ngr2bc", (NodeType.NODE_2D_GROUNDWATER_BOUNDARIES)),
+        ]:
+            count = np.count_nonzero(np.isin(nodes.node_type, node_types))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
 
-        # the number of 1D nodes
-        group.create_dataset("n1dtot", data=np.count_nonzero(is_1d), dtype="i4")
-        # the number of 2D open water nodes
-        group.create_dataset("n2dtot", data=np.count_nonzero(is_2d), dtype="i4")
-        # the number of 1D boundary nodes
-        group.create_dataset("n1dobc", data=np.count_nonzero(is_1d_bnd), dtype="i4")
-        # the number of 2D boundary nodes
-        group.create_dataset("n2dobc", data=np.count_nonzero(is_2d_bnd), dtype="i4")
+        # the number of 1D lines in several categories
+        for dataset_name, kcu_values in [
+            ("liutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
+            ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
+            ("l1dtot", LINE_TYPES_1D),
+            ("l2dtot", LINE_TYPES_2D),
+            ("lgrtot", LINE_TYPES_2D_GROUNDWATER),
+            ("infl1d", LINE_TYPES_1D2D),
+            ("ingrw1d", LINE_TYPES_1D2D_GW),
+        ]:
+            count = np.count_nonzero(np.isin(lines.kcu, kcu_values))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
+
         # the number of unique 2D boundaries
-        group.create_dataset(
-            "nob2ds", data=len(np.unique(nodes.boundary_id[is_2d_bnd])), dtype="i4"
-        )
-        # the number of unique groundwater boundaries
-        group.create_dataset(
-            "nob2dg", data=len(np.unique(nodes.boundary_id[is_gw_bnd])), dtype="i4"
-        )
+        for dataset_name, node_type in [
+            ("nob2ds", NodeType.NODE_2D_BOUNDARIES),
+            ("nob2dg", NodeType.NODE_2D_GROUNDWATER_BOUNDARIES),
+        ]:
+            count = len(np.unique(nodes.boundary_id[nodes.node_type == node_type]))
+            group.create_dataset(dataset_name, data=count, dtype="i4")       
 
-        # the number of U and V lines (including obstacle lines)
-        liutot = np.count_nonzero(lines.kcu == LineType.LINE_2D_U) + np.count_nonzero(
-            lines.kcu == LineType.LINE_2D_OBSTACLE_U
-        )
-        group.create_dataset("liutot", data=liutot, dtype="i4")
-        livtot = np.count_nonzero(lines.kcu == LineType.LINE_2D_V) + np.count_nonzero(
-            lines.kcu == LineType.LINE_2D_OBSTACLE_V
-        )
-        group.create_dataset("livtot", data=livtot, dtype="i4")
-
-        # the number of 1D lines
-        l1dtot = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D))
-        group.create_dataset("l1dtot", data=l1dtot, dtype="i4")
-
-        # the number of 1D-2D lines
-        infl1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D))
-        group.create_dataset("infl1d", data=infl1d, dtype="i4")
-
-        ingrw1d = np.count_nonzero(np.isin(lines.kcu, LINE_TYPES_1D2D_GW))
-        group.create_dataset("ingrw1d", data=ingrw1d, dtype="i4")
-
-        # To be implemented:
-        for field in (
-            'ijmax',
-            'imax',
-            'jap1d',
-            'jmax',
-            'l2dtot',
-            'levnms',
-            'lgrmin',
-            'lgrtot',
-            'lgutot',
-            'lgvtot',
-            'linall',
-            'lintot',
-            'n2dall',
-            'ngr2bc',
-            'ngrtot',
-            'nodall',
-            'nodobc',
-            'nodtot'
-        ):
+        # To be implemented when groundwater is done:
+        for field in ('lgutot', 'lgvtot'):
             group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
