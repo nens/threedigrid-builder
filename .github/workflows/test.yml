@@ -27,6 +27,9 @@ jobs:
           # 2020
           - python: 3.9
             pins: "numpy==1.19.* h5py==3.1.*"
+          # 2021
+          - python: "3.10"
+            pins: "numpy==1.21.* h5py==3.5.*"
           # current
           - python: 3.9
             display_name: "latest"
