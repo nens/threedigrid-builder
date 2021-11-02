@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.5.2 (unreleased)
+0.5.2 (2021-11-02)
 ------------------
 
 - Consistently write NaN (and not -9999.0) in gridadmin float datasets.
