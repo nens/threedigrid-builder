@@ -172,7 +172,7 @@ class GridAdminOut(OutputInterface):
         """
         group = self._file.create_group("meta")
 
-        # the number of 1D nodes in several categories
+        # the number of nodes in several categories
         for dataset_name, node_types in [
             ("n1dtot", NODE_TYPES_1D),
             ("n2dtot", (NodeType.NODE_2D_OPEN_WATER)),
@@ -184,7 +184,7 @@ class GridAdminOut(OutputInterface):
             count = np.count_nonzero(np.isin(nodes.node_type, node_types))
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
-        # the number of 1D lines in several categories
+        # the number of lines in several categories
         for dataset_name, kcu_values in [
             ("liutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
             ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
@@ -197,7 +197,7 @@ class GridAdminOut(OutputInterface):
             count = np.count_nonzero(np.isin(lines.kcu, kcu_values))
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
-        # the number of unique 2D boundaries
+        # the number of unique boundaries (only 2D)
         for dataset_name, node_type in [
             ("nob2ds", NodeType.NODE_2D_BOUNDARIES),
             ("nob2dg", NodeType.NODE_2D_GROUNDWATER_BOUNDARIES),
