@@ -203,10 +203,10 @@ class GridAdminOut(OutputInterface):
             ("nob2dg", NodeType.NODE_2D_GROUNDWATER_BOUNDARIES),
         ]:
             count = len(np.unique(nodes.boundary_id[nodes.node_type == node_type]))
-            group.create_dataset(dataset_name, data=count, dtype="i4")       
+            group.create_dataset(dataset_name, data=count, dtype="i4")
 
         # To be implemented when groundwater is done:
-        for field in ('lgutot', 'lgvtot'):
+        for field in ("lgutot", "lgvtot"):
             group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
@@ -295,7 +295,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pixel_width", pixel_width)
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b"")
+        self.write_dataset(
+            group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b""
+        )
         self.write_dataset(
             group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
         )

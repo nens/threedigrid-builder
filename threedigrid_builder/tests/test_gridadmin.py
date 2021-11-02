@@ -259,30 +259,30 @@ def test_write_quadtree(h5_out, dataset, shape, dtype):
     [
         # ('ijmax', (), 'i4'),  deprecated
         # ('imax', (), 'i4'),  deprecated
-        ('infl1d', (), 'i4'),
-        ('ingrw1d', (), 'i4'),
+        ("infl1d", (), "i4"),
+        ("ingrw1d", (), "i4"),
         # ('jap1d', (), 'i4'),  deprecated
         # ('jmax', (), 'i4'),  deprecated
-        ('l1dtot', (), 'i4'),
-        ('l2dtot', (), 'i4'),
+        ("l1dtot", (), "i4"),
+        ("l2dtot", (), "i4"),
         # ('levnms', (), 'i4'),  deprecated
         # ('lgrmin', (), 'i4'),  deprecated
-        ('lgrtot', (), 'i4'),
-        ('lgutot', (), 'i4'),
-        ('lgvtot', (), 'i4'),
+        ("lgrtot", (), "i4"),
+        ("lgutot", (), "i4"),
+        ("lgvtot", (), "i4"),
         # ('linall', (), 'i4'),  deprecated (can be derived from others)
         # ('lintot', (), 'i4'),  deprecated (can be derived from others)
-        ('liutot', (), 'i4'),
-        ('livtot', (), 'i4'),
-        ('n1dobc', (), 'i4'),
-        ('n1dtot', (), 'i4'),
+        ("liutot", (), "i4"),
+        ("livtot", (), "i4"),
+        ("n1dobc", (), "i4"),
+        ("n1dtot", (), "i4"),
         # ('n2dall', (), 'i4'),  deprecated (can be derived from others)
-        ('n2dobc', (), 'i4'),
-        ('n2dtot', (), 'i4'),
-        ('ngr2bc', (), 'i4'),
-        ('ngrtot', (), 'i4'),
-        ('nob2dg', (), 'i4'),
-        ('nob2ds', (), 'i4'),
+        ("n2dobc", (), "i4"),
+        ("n2dtot", (), "i4"),
+        ("ngr2bc", (), "i4"),
+        ("ngrtot", (), "i4"),
+        ("nob2dg", (), "i4"),
+        ("nob2ds", (), "i4"),
         # ('nodall', (), 'i4'),  deprecated (can be derived from others)
         # ('nodobc', (), 'i4'),  deprecated (can be derived from others)
         # ('nodtot', (), 'i4'),  deprecated (can be derived from others)
