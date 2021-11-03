@@ -76,7 +76,7 @@ class GridMeta:
     """Metadata that needs to end up in the gridadmin file."""
 
     epsg_code: int
-    model_name: str  # name from sqlite globalsettings.name
+    model_name: str
 
     grid_settings: GridSettings
     tables_settings: TablesSettings

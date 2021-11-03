@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from dataclasses import fields
-from threedigrid_builder.constants import InitializationType
+from threedigrid_builder.constants import InitializationType, FrictionType
 from typing import Optional
 
 
@@ -38,7 +38,7 @@ class TablesSettings:
     table_step_size: float
     frict_coef: float
     frict_coef_type: InitializationType
-    frict_type: int = 2
+    frict_type: FrictionType = FrictionType.MANNING
     interception_global: Optional[float] = None
     interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__

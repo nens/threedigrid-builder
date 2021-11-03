@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.5.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Validate input frict_type (must be one of {1 (CHEZY), 2 (MANNING)}).
 
 
 0.5.2 (2021-11-02)
