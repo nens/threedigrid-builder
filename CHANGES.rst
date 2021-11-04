@@ -4,7 +4,8 @@ Changelog of threedigrid-builder
 0.5.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed exchange_level (dpumax) for 1D2D lines attached to non-manhole connection nodes.
+  The exchange_level is now derived from the bank_levels of attached channels.
 
 
 0.5.2 (2021-11-02)
