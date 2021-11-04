@@ -88,6 +88,7 @@ class ConnectionNodes:
         connection_node_idx = self.id_to_index(connection_node_id)
         is_manhole = self.manhole_id[connection_node_idx] != -9999
 
+<<<<<<< Updated upstream
         # for nodes without manhole, compute drain level from channel bank levels
         no_manhole = node_idx[~is_manhole]
         dpumax = np.full(len(self), np.nan)  # easier to initialize for all conn. nodes
@@ -111,6 +112,14 @@ class ConnectionNodes:
 
         # for manholes: put in the drain level
         dpumax[is_manhole] = self.drain_level[connection_node_idx[is_manhole]]
+=======
+        # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
+        dpumax = np.where(
+            is_manhole, self.drain_level[connection_node_idx], np.nan
+        )
+
+        
+>>>>>>> Stashed changes
         return is_manhole, dpumax
 
 
