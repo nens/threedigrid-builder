@@ -7,7 +7,7 @@ Changelog of threedigrid-builder
 - Fixed exchange_level (dpumax) for 1D2D lines attached to non-manhole connection nodes.
   The exchange_level is now derived from the bank_levels of attached channels.
 
-- Fixed discharge_coefficients for culverts.
+- Add discharge_coefficients for structures.
 
 
 0.5.2 (2021-11-02)
