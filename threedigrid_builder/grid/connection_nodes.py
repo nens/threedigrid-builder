@@ -70,14 +70,12 @@ class ConnectionNodes:
 
     def get_1d2d_properties(self, nodes, node_idx, channels, locations):
         """Compute properties (is_closed, dpumax) of 1D-2D connection node flowlines.
-
         Args:
             nodes (Nodes): All nodes
             node_idx (array of int): indices into nodes for which to compute properties
             channels (Channels): required for nodes without drain_level
             locations (CrossSectionLocations): to take drain_level from for nodes
                 without drain_level but with channel(s)
-
         Returns:
             tuple of:
             - is_closed (array of bool): based on self.manhole_id
@@ -88,7 +86,6 @@ class ConnectionNodes:
         connection_node_idx = self.id_to_index(connection_node_id)
         is_manhole = self.manhole_id[connection_node_idx] != -9999
 
-<<<<<<< Updated upstream
         # for nodes without manhole, compute drain level from channel bank levels
         no_manhole = node_idx[~is_manhole]
         dpumax = np.full(len(self), np.nan)  # easier to initialize for all conn. nodes
@@ -112,14 +109,6 @@ class ConnectionNodes:
 
         # for manholes: put in the drain level
         dpumax[is_manhole] = self.drain_level[connection_node_idx[is_manhole]]
-=======
-        # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
-        dpumax = np.where(
-            is_manhole, self.drain_level[connection_node_idx], np.nan
-        )
-
-        
->>>>>>> Stashed changes
         return is_manhole, dpumax
 
 
