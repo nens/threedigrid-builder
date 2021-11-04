@@ -1,11 +1,11 @@
+from .cross_section_locations import compute_bottom_level
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Nodes, search
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
-from .cross_section_locations import compute_bottom_level
 
 import itertools
 import numpy as np
@@ -81,17 +81,16 @@ class ConnectionNodes:
         Returns:
             tuple of:
             - is_closed (array of bool): based on self.manhole_id
-            - dpumax (array of float): based on self.drain_level or nodes.dmax
+            - dpumax (array of float): based on self.drain_level or locations.bank_level
         """
-        # get the corresponding connection node indexes
+        # get the corresponding connection_node ids and indexes
         connection_node_id = nodes.content_pk[node_idx]
         connection_node_idx = self.id_to_index(connection_node_id)
-
         is_manhole = self.manhole_id[connection_node_idx] != -9999
 
         # for nodes without manhole, compute drain level from channel bank levels
         no_manhole = node_idx[~is_manhole]
-        dpumax = np.full(len(self), np.nan)
+        dpumax = np.full(len(self), np.nan)  # easier to initialize for all conn. nodes
         for name in ("connection_node_start_id", "connection_node_end_id"):
             has_node = np.isin(getattr(channels, name), nodes.content_pk[no_manhole])
             cn_idx_with_channel = self.id_to_index(getattr(channels, name)[has_node])
@@ -107,12 +106,11 @@ class ConnectionNodes:
                 "bank_level",
             )
             _put_if_less(dpumax, cn_idx_with_channel, drain_level)
+        # filter out connection nodes that were not in node_idx (non-connected ones)
+        dpumax = dpumax[connection_node_idx]
 
-        # if still nan: overwrite with node dmax
-        dpumax[np.isnan(dpumax)] = nodes.dmax[node_idx[np.isnan(dpumax)]]
-
-        # for manholes: overwrite with drain level
-        dpumax[is_manhole] = self.drain_level[connection_node_idx]
+        # for manholes: put in the drain level
+        dpumax[is_manhole] = self.drain_level[connection_node_idx[is_manhole]]
         return is_manhole, dpumax
 
 

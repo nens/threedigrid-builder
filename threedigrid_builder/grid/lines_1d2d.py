@@ -392,7 +392,10 @@ class ConnectedPoints:
         dpumax = np.full(n_lines, fill_value=np.nan, dtype=np.float64)
 
         is_closed[is_cn], dpumax[is_cn] = connection_nodes.get_1d2d_properties(
-            nodes, node_idx[is_cn], channels, locations,
+            nodes,
+            node_idx[is_cn],
+            channels,
+            locations,
         )
         is_closed[is_ch], dpumax[is_ch] = channels.get_1d2d_properties(
             nodes, node_idx[is_ch], locations
