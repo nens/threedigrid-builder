@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.5.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed embedding linear objects that begin/end outside of the model.
 
 
 0.5.2 (2021-11-02)

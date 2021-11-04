@@ -248,6 +248,23 @@ class EmbeddedObjects:
         )
         vp_idx_a, cell_idx_a = cell_tree.query_bulk(pnt_a)
         vp_idx_b, cell_idx_b = cell_tree.query_bulk(pnt_b)
+        # List velocity points that are at the model edge. These are the vpoints that
+        # occur only in vp_idx_a (before) or only in vp_idx_b (after)
+        at_model_edge = np.setxor1d(vp_idx_a, vp_idx_b)
+        if len(at_model_edge) > 0:
+            # remove the velocity points at model edge:
+            self.vpoint_s = np.delete(self.vpoint_s, at_model_edge)
+            self.vpoint_ch_idx = np.delete(self.vpoint_ch_idx, at_model_edge)
+
+            # adapt the return of the bulk query correspondingly:
+            mask_a = ~np.isin(vp_idx_a, at_model_edge)
+            cell_idx_a = cell_idx_a[mask_a]
+            mask_b = ~np.isin(vp_idx_b, at_model_edge)
+            cell_idx_b = cell_idx_b[mask_b]
+            idx_mapping = np.insert(np.arange(len(self.vpoint_s)), at_model_edge, -9999)
+            vp_idx_a = idx_mapping[vp_idx_a[mask_a]]
+            vp_idx_b = idx_mapping[vp_idx_b[mask_b]]
+
         cell_idx_a, cell_idx_b = self._fix_tangent_lines(
             vp_idx_a, cell_idx_a, vp_idx_b, cell_idx_b
         )
