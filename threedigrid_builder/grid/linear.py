@@ -220,6 +220,9 @@ class BaseLinear:
             frict_type = -9999
             frict_value = np.nan
 
+        # Conditionally add discharge coefficients, (for culverts only). If one culvert has
+        # multiple segments positive coefficient goes onto the first segment and negative 
+        # coefficient goes onto last segment (ohterwise we have to much energy losses.)
         try:
             dc_positive = np.full((len(segments)), 1.0, dtype=np.float64)
             dc_negative = np.full((len(segments)), 1.0, dtype=np.float64)
