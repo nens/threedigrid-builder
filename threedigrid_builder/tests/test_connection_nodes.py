@@ -208,40 +208,45 @@ def test_bottom_levels_above_invert_level(structure_type):
 def test_1d2d_properties(connection_nodes):
     """Test setup:
 
-    - node_idx=0: this is a manhole, drain_level is copied
-    - node_idx=1: this is skipped
-    - node_idx=2: this is not a manhole, it has 2 channels, lowest bank_level is taken
-    - node_idx=3: this is not a manhole, it has not channels: dmax is taken
+    - node 0: this is a manhole, drain_level is copied
+    - node 1: this is skipped (not in node_idx)
+    - node 2: this is not a manhole, it has 2 channels, lowest bank_level is taken
+    - node 3: this is not a manhole, it has no channels: outcome is NaN
+    - node 4: this is not a manhole, it 1 channel with no bank level: outcome is NaN
     """
     nodes = Nodes(
-        id=[0, 2, 5, 7],
-        content_pk=[1, 3, 1, 4],
-        dmax=[1.0, 3.0, 2.0, 4.0],
+        id=[0, 1, 2, 3, 4],
+        content_pk=[1, 3, 99, 4, 9],
+        dmax=[1.0, 3.0, 2.0, 4.0, 2.3],
     )
-    node_idx = np.array([0, 1, 3])
+    node_idx = np.array([0, 1, 3, 4])
 
+    # channels & cs locations are so that:
+    # - channel 32 (CN 1 -> 3, N 0 -> 1), start is 4.0 and end is 0.0
+    # - channel 33 (CN 3 -> 9, N 1 -> 4), start&end are 1.0
+    # - channel 34 (CN 3 -> 9, N 1 -> 4), 1 bank_level is nan so start&end are nan
     channels = Channels(
-        id=[32, 33],
-        connection_node_start_id=[1, 3],
-        connection_node_end_id=[3, 1],
+        id=[32, 33, 34],
+        connection_node_start_id=[1, 3, 3],
+        connection_node_end_id=[3, 9, 9],
         the_geom=pygeos.linestrings(
             [
-                [(0, 0), (10, 0), (10, 20)],
-                [(10, 20), (0, 20), (0, 0)],
+                [(0, 0), (10, 0)],
+                [(10, 20), (10, 30)],
+                [(10, 20), (10, 30)],
             ]
         ),
     )
-    # cs locations are so that channel 1, end is 0.0 and channel 2, start is 1.0
     locations = CrossSectionLocations(
-        id=range(3),
-        channel_id=[32, 32, 33],
-        the_geom=pygeos.points([(10, 0), (10, 10), (0, 20)]),
-        bank_level=[2.0, 1.0, 1.0],
+        id=range(5),
+        channel_id=[32, 32, 33, 34, 34],
+        the_geom=pygeos.points([(0, 0), (10, 0), (10, 25), (10, 22), (10, 28)]),
+        bank_level=[4.0, 0.0, 1.0, -10.0, np.nan],
     )
 
     is_closed, dpumax = connection_nodes.get_1d2d_properties(
         nodes, node_idx, channels, locations
     )
 
-    assert_array_equal(is_closed, [True, False, False])
-    assert_array_equal(dpumax, [1.2, 0.0, np.nan])
+    assert_array_equal(is_closed, [True, False, False, False])
+    assert_array_equal(dpumax, [1.2, 0.0, np.nan, 1.0])

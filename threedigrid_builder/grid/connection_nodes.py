@@ -167,6 +167,11 @@ def _put_if_less(a, ind, v):
     sorter = np.argsort(-v)
     v = v[sorter]
     ind = ind[sorter]
+    # filter nan values
+    is_nan = np.isnan(v)
+    if is_nan.any():
+        v = v[~is_nan]
+        ind = ind[~is_nan]
     # same as v < a, except for how NaN is handled:
     is_less = ~(v > a[ind])
     if is_less.any():
