@@ -226,8 +226,8 @@ class BaseLinear:
         try:
             dc_positive = np.full((len(segments)), 1.0, dtype=np.float64)
             dc_negative = np.full((len(segments)), 1.0, dtype=np.float64)
-            dc_positive[first_idx] = objs.discharge_coefficient_positive[segment_idx][first_idx]
-            dc_negative[last_idx] = objs.discharge_coefficient_negative[segment_idx][last_idx]
+            dc_positive[first_idx] = objs.discharge_coefficient_positive
+            dc_negative[last_idx] = objs.discharge_coefficient_negative
         except AttributeError:
             dc_positive = 1.0
             dc_negative = 1.0
