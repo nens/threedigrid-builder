@@ -136,6 +136,8 @@ class WeirOrifices:
             frict_value2=self.friction_value,
             invert_level_start_point=self.crest_level,
             invert_level_end_point=self.crest_level,
+            discharge_coefficient_positive=self.discharge_coefficient_positive,
+            discharge_coefficient_negative=self.discharge_coefficient_negative,
         )
 
 

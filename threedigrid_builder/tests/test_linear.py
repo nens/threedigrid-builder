@@ -60,6 +60,8 @@ class LinearObject:
     cross_section_definition_id: int
     invert_level_start_point: float
     invert_level_end_point: float
+    discharge_coefficient_positive: float
+    discharge_coefficient_negative: float
 
 
 @array_of(LinearObject)
@@ -94,6 +96,8 @@ def two_linear_objects():
         cross_section_definition_id=[17, 18],
         invert_level_start_point=[1.0, 2.0],
         invert_level_end_point=[3.0, 4.0],
+        discharge_coefficient_positive=[0.8, 0.5],
+        discharge_coefficient_negative=[0.5, 0.8],
     )
 
 
@@ -304,6 +308,8 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_array_equal(lines.cross1, [0, 0, 1, 1, 1])
     assert_array_equal(lines.cross2, [0, 0, 1, 1, 1])
     assert_array_equal(lines.cross_weight, 1.0)
+    assert_array_equal(lines.discharge_coefficient_positive, [0.8, 1., 0.5, 1., 1.])
+    assert_array_equal(lines.discharge_coefficient_negative, [1., 0.5, 1., 1., 0.8])
     assert_almost_equal(lines.s1d, expected_centers)
     assert_almost_equal(lines.ds1d, expected_sizes)
     assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
