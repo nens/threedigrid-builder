@@ -4,6 +4,9 @@ Changelog of threedigrid-builder
 0.5.3 (unreleased)
 ------------------
 
+- Raise SchematisationError on embedding linear objects that begin/end outside of 2D
+  domain. Added tests for edge cases.
+
 - Fixed exchange_level (dpumax) for 1D2D lines attached to non-manhole connection nodes.
   The exchange_level is now derived from the bank_levels of attached channels.
 

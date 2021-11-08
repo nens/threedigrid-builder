@@ -248,6 +248,18 @@ class EmbeddedObjects:
         )
         vp_idx_a, cell_idx_a = cell_tree.query_bulk(pnt_a)
         vp_idx_b, cell_idx_b = cell_tree.query_bulk(pnt_b)
+
+        # List velocity points that are outside of the model.
+        n_vpoints = len(self.vpoint_s)
+        no_intersct_a = np.bincount(vp_idx_a, minlength=n_vpoints) == 0
+        no_intersct_b = np.bincount(vp_idx_b, minlength=n_vpoints) == 0
+        if np.any(no_intersct_a | no_intersct_b):
+            bad_objects_ids = self.vpoint_ch_idx[no_intersct_a | no_intersct_b].tolist()
+            raise SchematisationError(
+                f"{self.objects.__class__.__name__} {sorted(set(bad_objects_ids))} are "
+                f"not completely inside the 2D cell."
+            )
+
         cell_idx_a, cell_idx_b = self._fix_tangent_lines(
             vp_idx_a, cell_idx_a, vp_idx_b, cell_idx_b
         )
