@@ -441,7 +441,7 @@ class ConnectedPoints:
 
         return Lines(
             id=itertools.islice(line_id_counter, n_lines),
-            line=np.array([node_id, cell_id]).T,
+            line=np.array([cell_id, node_id]).T,
             kcu=kcu,
             dpumax=dpumax,
             content_type=content_type,
