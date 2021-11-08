@@ -9,6 +9,7 @@ from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
+from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
@@ -28,11 +29,11 @@ def connection_nodes():
         the_geom=pygeos.points([(0, 0), (10, 0), (10, 20), (10, 30)]),
         id=np.array([1, 3, 4, 9]),
         code=np.array(["one", "two", "", ""]),
-        storage_area=np.array([-2, 0, 15, np.nan]),
+        storage_area=np.array([15, 0, np.nan, np.nan]),
         calculation_type=np.array([1, 2, 5, 2]),
-        bottom_level=np.array([2.1, 5.2, np.nan, np.nan]),
-        manhole_id=[1, 2, -9999, -9999],
-        drain_level=[1.2, 3.4, np.nan, np.nan],
+        bottom_level=np.array([2.1, np.nan, np.nan, np.nan]),
+        manhole_id=[1, -9999, -9999, -9999],
+        drain_level=[1.2, np.nan, np.nan, np.nan],
     )
 
 
@@ -49,9 +50,9 @@ def test_get_nodes(connection_nodes):
     assert_array_equal(
         nodes.node_type,
         [
-            NodeType.NODE_1D_NO_STORAGE,
-            NodeType.NODE_1D_NO_STORAGE,
             NodeType.NODE_1D_STORAGE,
+            NodeType.NODE_1D_NO_STORAGE,
+            NodeType.NODE_1D_NO_STORAGE,
             NodeType.NODE_1D_NO_STORAGE,
         ],
     )
@@ -205,16 +206,47 @@ def test_bottom_levels_above_invert_level(structure_type):
 
 
 def test_1d2d_properties(connection_nodes):
+    """Test setup:
+
+    - node 0: this is a manhole, drain_level is copied
+    - node 1: this is skipped (not in node_idx)
+    - node 2: this is not a manhole, it has 2 channels, lowest bank_level is taken
+    - node 3: this is not a manhole, it has no channels: outcome is NaN
+    - node 4: this is not a manhole, it 1 channel with no bank level: outcome is NaN
+    """
     nodes = Nodes(
-        id=[0, 2, 5, 7],
-        content_pk=[1, 3, 1, 4],
-        dmax=[1.0, 3.0, 2.0, 4.0],
+        id=[0, 1, 2, 3, 4],
+        content_pk=[1, 3, 99, 4, 9],
+        dmax=[1.0, 3.0, 2.0, 4.0, 2.3],
     )
-    node_idx = [0, 1, 3]
+    node_idx = np.array([0, 1, 3, 4])
 
-    is_closed, dpumax = connection_nodes.get_1d2d_properties(nodes, node_idx)
+    # channels & cs locations are so that:
+    # - channel 32 (CN 1 -> 3, N 0 -> 1), start is 4.0 and end is 0.0
+    # - channel 33 (CN 3 -> 9, N 1 -> 4), start&end are 1.0
+    # - channel 34 (CN 3 -> 9, N 1 -> 4), 1 bank_level is nan so start&end are nan
+    channels = Channels(
+        id=[32, 33, 34],
+        connection_node_start_id=[1, 3, 3],
+        connection_node_end_id=[3, 9, 9],
+        the_geom=pygeos.linestrings(
+            [
+                [(0, 0), (10, 0)],
+                [(10, 20), (10, 30)],
+                [(10, 20), (10, 30)],
+            ]
+        ),
+    )
+    locations = CrossSectionLocations(
+        id=range(5),
+        channel_id=[32, 32, 33, 34, 34],
+        the_geom=pygeos.points([(0, 0), (10, 0), (10, 25), (10, 22), (10, 28)]),
+        bank_level=[4.0, 0.0, 1.0, -10.0, np.nan],
+    )
 
-    assert_array_equal(is_closed, [True, True, False])
+    is_closed, dpumax = connection_nodes.get_1d2d_properties(
+        nodes, node_idx, channels, locations
+    )
 
-    # for the manholes, conn_node.drain_level is copied, otherwise, dmax is taken
-    assert_array_equal(dpumax, [1.2, 3.4, 4.0])
+    assert_array_equal(is_closed, [True, False, False, False])
+    assert_array_equal(dpumax, [1.2, 0.0, np.nan, 1.0])

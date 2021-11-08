@@ -1,3 +1,4 @@
+from .cross_section_locations import compute_bottom_level
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
@@ -67,28 +68,49 @@ class ConnectionNodes:
         )
         return nodes
 
-    def get_1d2d_properties(self, nodes, node_idx):
+    def get_1d2d_properties(self, nodes, node_idx, channels, locations):
         """Compute properties (is_closed, dpumax) of 1D-2D connection node flowlines.
 
         Args:
             nodes (Nodes): All nodes
             node_idx (array of int): indices into nodes for which to compute properties
+            channels (Channels): required for nodes without drain_level
+            locations (CrossSectionLocations): to take drain_level from for nodes
+                without drain_level but with channel(s)
 
         Returns:
             tuple of:
             - is_closed (array of bool): based on self.manhole_id
-            - dpumax (array of float): based on self.drain_level or nodes.dmax
+            - dpumax (array of float): based on self.drain_level or locations.bank_level
         """
-        # get the corresponding connection node indexes
+        # get the corresponding connection_node ids and indexes
         connection_node_id = nodes.content_pk[node_idx]
         connection_node_idx = self.id_to_index(connection_node_id)
-
         is_manhole = self.manhole_id[connection_node_idx] != -9999
 
-        # assign bottom levels (for manhole: drain_level, otherwise: the node dmax)
-        dpumax = np.where(
-            is_manhole, self.drain_level[connection_node_idx], nodes.dmax[node_idx]
-        )
+        # for nodes without manhole, compute drain level from channel bank levels
+        no_manhole = node_idx[~is_manhole]
+        dpumax = np.full(len(self), np.nan)  # easier to initialize for all conn. nodes
+        for name in ("connection_node_start_id", "connection_node_end_id"):
+            has_node = np.isin(getattr(channels, name), nodes.content_pk[no_manhole])
+            cn_idx_with_channel = self.id_to_index(getattr(channels, name)[has_node])
+            if name == "connection_node_start_id":
+                ds = 0.0
+            else:
+                ds = pygeos.length(channels.the_geom[has_node])
+            drain_level = compute_bottom_level(
+                channels.id[has_node],
+                ds,
+                locations,
+                channels,
+                "bank_level",
+            )
+            _put_if_less(dpumax, cn_idx_with_channel, drain_level)
+        # filter out connection nodes that were not in node_idx (non-connected ones)
+        dpumax = dpumax[connection_node_idx]
+
+        # for manholes: put in the drain level
+        dpumax[is_manhole] = self.drain_level[connection_node_idx[is_manhole]]
         return is_manhole, dpumax
 
 
@@ -145,6 +167,11 @@ def _put_if_less(a, ind, v):
     sorter = np.argsort(-v)
     v = v[sorter]
     ind = ind[sorter]
+    # filter nan values
+    is_nan = np.isnan(v)
+    if is_nan.any():
+        v = v[~is_nan]
+        ind = ind[~is_nan]
     # same as v < a, except for how NaN is handled:
     is_less = ~(v > a[ind])
     if is_less.any():
