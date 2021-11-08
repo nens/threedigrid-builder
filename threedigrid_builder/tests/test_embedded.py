@@ -181,8 +181,9 @@ def test_embed_linear_objects_multiple(grid2d):
         ([(5.6, 7), (10, 10.3), (15, 10.3)], [5.25], []),  # 0 to 3, 2 is below thresh
         ([(5.6, 7), (10, 10.3), (14.4, 7)], [5.5], []),  # 0 to 1, 2&3 are below thresh
         ([(0, 5), (18, 5)], [10], []),  # begins at model edge
-        ([(0, 5), (18, 5), (18, 12)], [10, 23], [1]),  # begins at model edge, with node
-        ([(-1, 5), (18, 5)], [11], []),  # begins outside of model
+        ([(0, 5), (0, 15), (5, 15)], [5], []),  # begins tangent to the model edge
+        ([(0, 5), (18, 5), (18, 12)], [10, 23], [1]),  # begins at model edge, 2
+        ([(0, 5), (0, 15), (15, 15)], [5, 20], [2]),  # begins tangent to model edge, 2
     ],
 )
 def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
@@ -208,3 +209,30 @@ def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
     assert_array_equal(nodes.embedded_in, embedded_in)
     if lines_s1d is not None:
         assert_almost_equal(actual_lines_s1d, lines_s1d)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize(
+    "geometry",
+    [
+        [(-1E-7, 5), (18, 5)],  # begins outside of model
+        [(5, 5), (-5, 5), (-5, 15), (5, 15)],  # begins in the model, but goes outside
+    ],
+)
+def test_embed_linear_object_outside_raise(grid2d, geometry, reverse):
+    if reverse:
+        geometry = geometry[::-1]
+
+    linear_objects = LinearObjects(
+        id=[0],
+        calculation_type=EMBEDDED,
+        the_geom=[pygeos.linestrings(geometry)],
+    )
+
+    with pytest.raises(SchematisationError, match="LinearObjects \[0\] are not completely inside the 2D cell."):
+        embed_linear_objects(
+            linear_objects,
+            grid2d.cell_tree,
+            embedded_cutoff_threshold=1,
+            embedded_node_id_counter=count(2),
+        )
