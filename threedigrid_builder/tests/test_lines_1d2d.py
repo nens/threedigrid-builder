@@ -52,23 +52,23 @@ def empty_connected_points():
 @pytest.mark.parametrize(
     "node_coordinates,expected_lines",
     [
-        ([(0.5, 0.5)], [(7, 0)]),  # first cell, center
-        ([(0, 0.5)], [(7, 0)]),  # first cell, left edge
-        ([(0.5, 1)], [(7, 0)]),  # first cell, top edge
-        ([(0.5, 0)], [(7, 0)]),  # first cell, bottom edge
-        ([(0, 1)], [(7, 0)]),  # first cell, topleft corner
-        ([(0, 0)], [(7, 0)]),  # first cell, bottomleft corner
-        ([(1.5, 0.5)], [(7, 1)]),  # second cell, center
-        ([(2, 0.5)], [(7, 1)]),  # second cell, right edge
-        ([(1.5, 1)], [(7, 1)]),  # second cell, top edge
-        ([(1.5, 0)], [(7, 1)]),  # second cell, bottom edge
-        ([(2, 1)], [(7, 1)]),  # second cell, topright corner
-        ([(2, 0)], [(7, 1)]),  # second cell, bottomright corner
-        ([(1, 1)], [(7, 0)]),  # edge between: top corner
-        ([(1, 0)], [(7, 0)]),  # edge between: bottom corner
-        ([(1, 0.5)], [(7, 0)]),  # edge between: middle
-        ([(0.5, 0.5), (0.5, 0.9)], [(7, 0), (8, 0)]),  # two cells, same
-        ([(0.5, 0.5), (1.5, 0.5)], [(7, 0), (8, 1)]),  # two cells, different
+        ([(0.5, 0.5)], [(0, 7)]),  # first cell, center
+        ([(0, 0.5)], [(0, 7)]),  # first cell, left edge
+        ([(0.5, 1)], [(0, 7)]),  # first cell, top edge
+        ([(0.5, 0)], [(0, 7)]),  # first cell, bottom edge
+        ([(0, 1)], [(0, 7)]),  # first cell, topleft corner
+        ([(0, 0)], [(0, 7)]),  # first cell, bottomleft corner
+        ([(1.5, 0.5)], [(1, 7)]),  # second cell, center
+        ([(2, 0.5)], [(1, 7)]),  # second cell, right edge
+        ([(1.5, 1)], [(1, 7)]),  # second cell, top edge
+        ([(1.5, 0)], [(1, 7)]),  # second cell, bottom edge
+        ([(2, 1)], [(1, 7)]),  # second cell, topright corner
+        ([(2, 0)], [(1, 7)]),  # second cell, bottomright corner
+        ([(1, 1)], [(0, 7)]),  # edge between: top corner
+        ([(1, 0)], [(0, 7)]),  # edge between: bottom corner
+        ([(1, 0.5)], [(0, 7)]),  # edge between: middle
+        ([(0.5, 0.5), (0.5, 0.9)], [(0, 7), (0, 8)]),  # two cells, same
+        ([(0.5, 0.5), (1.5, 0.5)], [(0, 7), (1, 8)]),  # two cells, different
     ],
 )
 def test_get_lines(node_coordinates, expected_lines, grid2d, empty_connected_points):
@@ -237,7 +237,7 @@ def test_get_lines_multiple_with_conn_points(grid2d):
         actual_lines.dpumax, [1.0, 2.0, 2.0, 5.0, 0.1, 3.0, 6.0, 7.0, 7.0, 0.2]
     )
     # the cell id is different for the 3 user-supplied connected points
-    assert_array_equal(actual_lines.line[:, 1], [0, 0, 0, 1, 1, 0, 0, 0, 0, 1])
+    assert_array_equal(actual_lines.line[:, 0], [0, 0, 0, 1, 1, 0, 0, 0, 0, 1])
 
 
 @pytest.fixture
