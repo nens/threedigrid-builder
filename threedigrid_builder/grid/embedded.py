@@ -172,9 +172,6 @@ class EmbeddedObjects:
     @classmethod
     def from_cell_tree(cls, objects, cell_tree):
         """Construct the velocity points in the embedded objects from a cell tree."""
-        # cell_tree.query_bulk(
-        #     pygeos.get_point(objects.the_geom, 0),
-
         # The query_bulk returns 2 1D arrays: one with indices into the objects
         # and one with indices into the cells.
         idx = cell_tree.query_bulk(objects.the_geom, "intersects")
