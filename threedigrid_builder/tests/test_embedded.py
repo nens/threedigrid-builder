@@ -215,7 +215,7 @@ def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
 @pytest.mark.parametrize(
     "geometry",
     [
-        [(-1E-7, 5), (18, 5)],  # begins outside of model
+        [(-1, 5), (18, 5)],  # begins outside of model
         [(5, 5), (-5, 5), (-5, 15), (5, 15)],  # begins in the model, but goes outside
     ],
 )
@@ -229,7 +229,10 @@ def test_embed_linear_object_outside_raise(grid2d, geometry, reverse):
         the_geom=[pygeos.linestrings(geometry)],
     )
 
-    with pytest.raises(SchematisationError, match="LinearObjects \[0\] are not completely inside the 2D cell."):
+    with pytest.raises(
+        SchematisationError,
+        match=r"LinearObjects \[0\] are not completely inside the 2D cell.",
+    ):
         embed_linear_objects(
             linear_objects,
             grid2d.cell_tree,
