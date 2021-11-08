@@ -249,7 +249,7 @@ class EmbeddedObjects:
         vp_idx_a, cell_idx_a = cell_tree.query_bulk(pnt_a)
         vp_idx_b, cell_idx_b = cell_tree.query_bulk(pnt_b)
 
-        # List velocity points that are outside of the model or at the model edge.
+        # List velocity points that are outside of the model.
         n_vpoints = len(self.vpoint_s)
         no_intersct_a = np.bincount(vp_idx_a, minlength=n_vpoints) == 0
         no_intersct_b = np.bincount(vp_idx_b, minlength=n_vpoints) == 0
