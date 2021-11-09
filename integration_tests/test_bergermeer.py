@@ -39,7 +39,9 @@ def test_integration(tmp_path):
         # WGS84: 4.728282895,52.645792838
         idx = np.where(f["nodes"]["content_pk"][:] == 1)[0][0]
         assert_almost_equal(
-            f["nodes"]["coordinates"][:, idx], [110404.2, 517792.3], decimal=3,
+            f["nodes"]["coordinates"][:, idx],
+            [110404.2, 517792.3],
+            decimal=3,
         )
 
         ## NODES
@@ -55,7 +57,9 @@ def test_integration(tmp_path):
         }
         assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
         assert np.count_nonzero(f["nodes"]["content_pk"][:] > 0) == 1360
-        assert np.count_nonzero(np.isfinite(f["nodes"]["initial_waterlevel"][:])) == 2531
+        assert (
+            np.count_nonzero(np.isfinite(f["nodes"]["initial_waterlevel"][:])) == 2531
+        )
 
         ## LINES
         assert f["lines"]["id"].shape == (15505,)  # Inpy: (31916, )
@@ -81,7 +85,7 @@ def test_integration(tmp_path):
             b"v2_culvert": 92,
             b"v2_pipe": 42,
             b"v2_weir": 56,
-            b"v2_added_c": 1931
+            b"v2_added_c": 1931,
         }
 
         ## PUMPS
@@ -100,6 +104,27 @@ def test_integration(tmp_path):
 
         ## EMBEDDED NODES
         assert_array_equal(f["nodes_embedded"]["id"][:], [0])
+
+        ## COUNTS
+        assert {ds: f["meta"][ds][()] for ds in f["meta"]} == {
+            "infl1d": 1931,
+            "ingrw1d": 0,
+            "l1dtot": 2532,
+            "l2dtot": 11037,
+            "lgrtot": 0,
+            "lgutot": 0,
+            "lgvtot": 0,
+            "liutot": 5476,
+            "livtot": 5561,
+            "n1dobc": 4,
+            "n1dtot": 2527,
+            "n2dobc": 0,
+            "n2dtot": 5374,
+            "ngr2bc": 0,
+            "ngrtot": 0,
+            "nob2dg": 0,
+            "nob2ds": 0,
+        }
 
     # progress increases
     args = [x[0] for x in progress_callback.call_args_list]

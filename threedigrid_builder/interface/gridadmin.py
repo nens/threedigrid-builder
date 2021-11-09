@@ -185,6 +185,8 @@ class GridAdminOut(OutputInterface):
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
         # the number of lines in several categories
+        # note: remove the 1D boundary lines, these are counted via n1dobc
+        masked_line_kcu = lines.kcu[lines.is_1d_boundary != 1]
         for dataset_name, kcu_values in [
             ("liutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
             ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
@@ -194,7 +196,7 @@ class GridAdminOut(OutputInterface):
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),
         ]:
-            count = np.count_nonzero(np.isin(lines.kcu, kcu_values))
+            count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
         # the number of unique boundaries (only 2D)
