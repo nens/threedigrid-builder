@@ -14,6 +14,8 @@ Changelog of threedigrid-builder
 
 - Swap the order in lines.line for 1D2D lines. The order is now (2D, 1D).
 
+- Copy crest_level from v2_levee if a v2_connected_point refers to one.
+
 
 0.5.2 (2021-11-02)
 ------------------

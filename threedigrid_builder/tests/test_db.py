@@ -91,7 +91,7 @@ def test_get_connected_points(db):
         tolerance=1,
     )
     assert np.isnan(connected_points.exchange_level[0])
-    assert connected_points.exchange_level[1322] == 0.0
+    assert connected_points.exchange_level[1322] == 0.0  # copied from levee
     assert connected_points.content_type[1320] == ContentType.TYPE_V2_CHANNEL
     assert connected_points.content_pk[1321] == 206
     assert connected_points.node_number[1322] == 2
