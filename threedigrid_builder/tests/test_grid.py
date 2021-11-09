@@ -237,10 +237,11 @@ def test_sort():
         Lines(
             id=[0, 1, 6],
             kcu=[
-                LineType.LINE_1D_BOUNDARY,
+                LineType.LINE_1D_SHORT_CRESTED,
                 LineType.LINE_1D_ISOLATED,
                 LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
             ],
+            is_1d_boundary=[1, -9999, -9999],
             line=[(0, 4), (4, 5), (5, 1)],
             dpumax=[0, 1, 6],
         ),
@@ -276,13 +277,14 @@ def test_sort_boundary_conditions():
         Lines(
             id=[0, 1, 2, 3, 4, 5],
             kcu=[
-                LineType.LINE_1D_BOUNDARY,
-                LineType.LINE_1D_BOUNDARY,
+                LineType.LINE_1D_ISOLATED,
+                LineType.LINE_1D_ISOLATED,
                 LineType.LINE_2D_BOUNDARY_EAST,
                 LineType.LINE_2D_BOUNDARY_WEST,
                 LineType.LINE_2D_BOUNDARY_NORTH,
                 LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
             ],
+            is_1d_boundary=[1, 1] + [-9999] * 4,
             line=[(6, 4), (1, 6), (0, 3), (0, 5), (2, 0), (0, 6)],
             dpumax=[0, 1, 2, 3, 4, 5],
         ),

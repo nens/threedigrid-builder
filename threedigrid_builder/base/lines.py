@@ -41,6 +41,7 @@ class Line:
     cross_weight: float
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
+    is_1d_boundary: int  # internal flag
 
 
 @array_of(Line)

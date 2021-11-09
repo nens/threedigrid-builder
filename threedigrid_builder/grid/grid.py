@@ -65,8 +65,8 @@ LINE_ORDER = {
     LineType.LINE_2D_BOUNDARY_SOUTH: 8,
     LineType.LINE_2D_BOUNDARY_NORTH: 8,
     # LineType.LINE_2D_GROUNDWATER_BOUNDARY: 9, (to be implemented)
-    LineType.LINE_1D_BOUNDARY: 10,
 }
+LINE_ORDER_BOUNDARY_1D = 10
 # failsafe for future adding of types:
 assert len(LineType) == len(LINE_ORDER)
 
@@ -575,7 +575,9 @@ class Grid:
         See NODE_ORDER and LINE_ORDER for the order.
         """
         node_sorter = np.argsort(replace(self.nodes.node_type, NODE_ORDER))
-        line_sorter = np.argsort(replace(self.lines.kcu, LINE_ORDER))
+        line_sort_groups = replace(self.lines.kcu, LINE_ORDER)
+        line_sort_groups[self.lines.is_1d_boundary == 1] = LINE_ORDER_BOUNDARY_1D
+        line_sorter = np.argsort(line_sort_groups)
 
         # now sort the nodes and lines and reset their ids
         old_node_ids = self.nodes.id.copy()
