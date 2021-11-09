@@ -14,6 +14,8 @@ Changelog of threedigrid-builder
 
 - Swap the order in lines.line for 1D2D lines. The order is now (2D, 1D).
 
+- Fixed kcu for lines attached to 1D boundary conditions.
+
 
 0.5.2 (2021-11-02)
 ------------------

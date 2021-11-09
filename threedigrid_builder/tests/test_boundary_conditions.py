@@ -35,7 +35,7 @@ def grid1d():
     )
 
 
-def test_1d_pply(grid1d):
+def test_1d_apply(grid1d):
     boundary_conditions_1d = BoundaryConditions1D(
         id=[10, 22],
         boundary_type=[2, 3],
@@ -52,8 +52,8 @@ def test_1d_pply(grid1d):
     assert_array_equal(
         grid1d.nodes.calculation_type[[1, 2]], CalculationType.BOUNDARY_NODE
     )
-    assert_array_equal(grid1d.lines.kcu[[0, 1]], LineType.LINE_1D_BOUNDARY)
-    assert_array_equal(grid1d.lines.kcu[[2]], LineType.LINE_1D_ISOLATED)
+    assert_array_equal(grid1d.lines.is_1d_boundary[[0, 1]], 1)
+    assert_array_equal(grid1d.lines.is_1d_boundary[[2]], -9999)
 
 
 def test_1d_connection_node_does_not_exist(grid1d):

@@ -352,7 +352,6 @@ class GridAdminOut(OutputInterface):
 
         lines.kcu[l2d] = LineType.LINE_2D
         lines.kcu[l2d_obstacle] = LineType.LINE_2D_OBSTACLE
-        lines.kcu[lines.kcu == LineType.LINE_1D_BOUNDARY] = LineType.LINE_1D_ISOLATED
         self.write_dataset(group, "kcu", lines.kcu)
         calculation_type = fill_int.copy()
         calculation_type[is_channel] = lines.kcu[is_channel] + 100

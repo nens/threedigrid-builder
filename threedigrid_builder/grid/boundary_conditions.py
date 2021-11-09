@@ -32,7 +32,7 @@ class BoundaryConditions1D:
         - nodes.boundary_id: from BoundaryConditions1D.id
         - nodes.boundary_type: from BoundaryConditions1D.boundary_type
         - nodes.node_type: set to NODE_1D_BOUNDARIES
-        - lines.kcu: set to LINE_1D_BOUNDARY
+        - lines.boundary_id: from BoundaryConditions1D.id
 
         Note:
         - it is assumed that nodes.content_pk is sorted for connection nodes
@@ -87,7 +87,7 @@ class BoundaryConditions1D:
         grid.nodes.boundary_type[idx] = self.boundary_type
         grid.nodes.node_type[idx] = NodeType.NODE_1D_BOUNDARIES
         # set line attributes
-        grid.lines.kcu[line_idx] = LineType.LINE_1D_BOUNDARY
+        grid.lines.is_1d_boundary[line_idx] = 1
 
 
 class BoundaryCondition2D:

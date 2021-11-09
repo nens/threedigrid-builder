@@ -53,7 +53,6 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_2D_BOUNDARY_EAST = 300
     LINE_2D_BOUNDARY_SOUTH = 400
     LINE_2D_BOUNDARY_NORTH = 500
-    LINE_1D_BOUNDARY = 600  # for internal use
 
 
 @unique
