@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.5.3 (unreleased)
+0.6.0 (2021-11-09)
 ------------------
 
 - Raise SchematisationError on embedding linear objects that begin/end outside of 2D
