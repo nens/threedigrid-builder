@@ -16,6 +16,8 @@ Changelog of threedigrid-builder
 
 - Fixed kcu for lines attached to 1D boundary conditions.
 
+- Copy crest_level from v2_levee if a v2_connected_point refers to one.
+
 
 0.5.2 (2021-11-02)
 ------------------
