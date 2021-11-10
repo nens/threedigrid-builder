@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.6.1 (unreleased)
+0.6.1 (2021-11-10)
 ------------------
 
 - Fixed l1dtot (exclude 1D boundaries).
