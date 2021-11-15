@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Fixed l1dtot (exclude 1D boundaries).
 
+- Raise SchematisationError on invalid settings.
+
 
 0.6.0 (2021-11-09)
 ------------------
