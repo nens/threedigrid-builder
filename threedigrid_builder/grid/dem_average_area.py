@@ -1,5 +1,4 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import CalculationType
 
 import pygeos
 
@@ -25,4 +24,4 @@ def apply_dem_average_areas(nodes, cell_tree, dem_average_areas):
         dem_average_areas (DemAverageAreas)
     """
     idx = cell_tree.query_bulk(dem_average_areas.the_geom, "intersects")
-    nodes.calculation_type[idx[1, :]] = CalculationType.DEM_AVERAGED
+    nodes.has_dem_averaged[idx[1, :]] = 1

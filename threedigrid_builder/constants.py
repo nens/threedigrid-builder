@@ -12,7 +12,6 @@ class CalculationType(IntEnum):
     BROAD_CRESTED = 3  # only orifices + weirs, corresponds
     SHORT_CRESTED = 4  # only orifices + weirs
     DOUBLE_CONNECTED = 5
-    DEM_AVERAGED = 6
 
 
 @unique

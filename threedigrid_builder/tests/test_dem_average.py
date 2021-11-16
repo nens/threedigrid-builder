@@ -1,9 +1,7 @@
 from numpy.testing import assert_almost_equal
-from numpy.testing import assert_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.grid import DemAverageAreas, dem_average_area
+from threedigrid_builder.grid import DemAverageAreas
 from threedigrid_builder.grid.grid import Grid
 
 import numpy as np
@@ -45,9 +43,9 @@ def dem_average_areas_no_intersect():
 
 def test_dem_average_areas(grid, dem_average_areas):
     grid.set_dem_averaged_cells(dem_average_areas)
-    assert_almost_equal(grid.nodes.calculation_type, [6, 6, -9999, -9999])
+    assert_almost_equal(grid.nodes.has_dem_averaged, [1, 1, -9999, -9999])
 
 
 def test_dem_average_areas_no_intersections(grid, dem_average_areas_no_intersect):
     grid.set_dem_averaged_cells(dem_average_areas_no_intersect)
-    assert_almost_equal(grid.nodes.calculation_type, [-9999, -9999, -9999, -9999])
+    assert_almost_equal(grid.nodes.has_dem_averaged, [-9999, -9999, -9999, -9999])
