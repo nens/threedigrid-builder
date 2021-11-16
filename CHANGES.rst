@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.6.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add calculation_type for nodes to be Dem averaged.
 
 
 0.6.1 (2021-11-10)

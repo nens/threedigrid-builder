@@ -7,7 +7,7 @@ This layer depends on the interfaces as well as on the domain layer.
 
 from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import Grid, dem_average_area
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
@@ -77,6 +77,8 @@ def _make_gridadmin(
             node_id_counter,
             line_id_counter,
         )
+        dem_average_areas = db.get_dem_average_areas()
+        grid.set_dem_averaged_cells(dem_average_areas)
 
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:

@@ -3,6 +3,7 @@ from . import cross_section_locations as csl_module
 from . import embedded as embedded_module
 from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
+from . import dem_average_area as dem_average_area_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
@@ -566,6 +567,17 @@ class Grid:
             line_id_counter,
         )
 
+    def set_dem_averaged_cells(self, dem_average_areas):
+        """Determine which nodes need to be dem averaged during tables preprocessing.
+
+        Args:
+            dem_average_areas (DemAverageAreas)
+        """
+        if len(dem_average_areas) > 0:
+            dem_average_area_module.apply_dem_average_areas(
+                self.nodes, self.cell_tree, dem_average_areas
+            )
+        
     def sort(self):
         """Sort the nodes and lines into the order required by the calculation core.
 
