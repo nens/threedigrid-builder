@@ -15,16 +15,10 @@ import numpy as np
 __all__ = ["GridSettings", "TablesSettings"]
 
 
-def greater_zero_check(obj, attr, allow_zero=False):
+def greater_zero_check(obj, attr):
     value = getattr(obj, attr, None)
-    if value is None:
-        return
-    if allow_zero:
-        if value < 0:
-            raise SchematisationError(f"'{attr}' must be greater than or equal to 0.")
-    else:
-        if value <= 0:
-            raise SchematisationError(f"'{attr}' must be greater than 0.")
+    if value is not None and value <= 0:
+        raise SchematisationError(f"'{attr}' must be greater than 0.")
 
 
 @dataclass
@@ -52,13 +46,7 @@ class GridSettings:
     def __post_init__(self):
         # validations
         for field in ("grid_space", "dist_calc_points", "kmax"):
-            greater_zero_check(self, field, allow_zero=False)
-        for field in ("embedded_cutoff_threshold", "max_angle_1d_advection"):
-            greater_zero_check(self, field, allow_zero=True)
-        if self.max_angle_1d_advection > 0.5 * np.pi:
-            raise SchematisationError(
-                "'max_angle_1d_advection' must be less than 0.5 * pi."
-            )
+            greater_zero_check(self, field)
 
 
 @dataclass
@@ -108,7 +96,9 @@ class TablesSettings:
     ## from SimpleInfiltration
     infiltration_rate: Optional[float] = None
     infiltration_rate_type: Optional[InitializationType] = None
-    infiltration_surface_option: Optional[InfiltrationSurfaceOption] = None
+    infiltration_surface_option: InfiltrationSurfaceOption = (
+        InfiltrationSurfaceOption.RAIN
+    )
     max_infiltration_capacity_type: Optional[InitializationType] = None
 
     def __post_init__(self):
@@ -123,32 +113,8 @@ class TablesSettings:
             "table_step_size",
             "table_step_size_1d",
             "table_step_size_volume_2d",
-            "equilibrium_infiltration_rate",
-            "initial_infiltration_rate",
-            "infiltration_decay_period",
-            "groundwater_hydro_connectivity",
-            "porosity_layer_thickness",
-            "hydraulic_conductivity",
         ):
-            greater_zero_check(self, field, allow_zero=False)
-        for field in (
-            "frict_coef",
-            "interception_global",
-            "manhole_storage_area",
-            "phreatic_storage_capacity",
-            "infiltration_rate",
-            "porosity",
-        ):
-            greater_zero_check(self, field, allow_zero=True)
-        if (
-            self.phreatic_storage_capacity is not None
-            and self.phreatic_storage_capacity > 1
-        ):
-            raise SchematisationError(
-                "'phreatic_storage_capacity' must be less than or equal to 1."
-            )
-        if self.porosity is not None and self.porosity > 1:
-            raise SchematisationError("'porosity' must be less than or equal to 1.")
+            greater_zero_check(self, field)
 
         # check enums
         for (name, elem_type) in self.__annotations__.items():
