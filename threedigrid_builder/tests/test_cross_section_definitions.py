@@ -116,7 +116,6 @@ def test_tabulate_tabulated():
         (CrossSectionShape.TABULATED_RECTANGLE, "1", "1 2"),
         (CrossSectionShape.TABULATED_RECTANGLE, "1 2", "1"),
         (CrossSectionShape.TABULATED_RECTANGLE, "1 1", "2 1"),
-        (CrossSectionShape.TABULATED_RECTANGLE, "0 1", "1 2"),
     ],
 )
 def test_tabulate_tabulated_err(shape, width, height):
