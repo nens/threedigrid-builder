@@ -4,15 +4,16 @@ Changelog of threedigrid-builder
 0.6.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Raise SchematisationError on invalid settings.
+
+- Removed SchematisationError on tabulated rectangle cross section definition with zero
+  first "width" value.
 
 
 0.6.1 (2021-11-10)
 ------------------
 
 - Fixed l1dtot (exclude 1D boundaries).
-
-- Raise SchematisationError on invalid settings.
 
 
 0.6.0 (2021-11-09)
