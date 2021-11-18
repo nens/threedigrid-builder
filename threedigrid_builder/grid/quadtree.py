@@ -186,6 +186,7 @@ class QuadTree:
             bounds=bounds,
             coordinates=coords,
             pixel_coords=pixel_coords,
+            has_dem_averaged=0
         )
 
         if np.any(line[:, 0] == line[:, 1]):

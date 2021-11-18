@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Removed SchematisationError on tabulated rectangle cross section definition with zero
   first "width" value.
+  
+- Add calculation_type for nodes to be Dem averaged.
 
 
 0.6.1 (2021-11-10)

@@ -337,3 +337,8 @@ def test_get_weirs(db):
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
+
+def test_get_dem_average(db):
+    dem_avg_areas = db.get_dem_average_areas()
+    # no dem_average_areas in test dataset
+    assert len(dem_avg_areas) == 0

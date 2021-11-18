@@ -28,6 +28,7 @@ from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import GridRefinements
+from threedigrid_builder.grid import DemAverageAreas
 from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
@@ -500,6 +501,21 @@ class SQLite:
         arr["id"] = np.arange(len(arr["refinement_level"]))
 
         return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_dem_average_areas(self) -> DemAverageAreas:
+        """Return DemAverageAreas"""
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.DemAverageArea.id,
+                    models.DemAverageArea.the_geom,
+                )
+                .order_by(models.DemAverageArea.id)
+                .as_structarray()
+            )
+            arr["the_geom"] = self.reproject(arr["the_geom"])
+            
+        return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:
         """Return Obstacles and Levees concatenated into one array."""
