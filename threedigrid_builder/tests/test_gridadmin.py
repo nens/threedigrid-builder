@@ -130,6 +130,7 @@ def h5_out(tmpdir_factory):
         ("s1d", (4,), "float64"),  # added
         ("embedded_in", (4,), "int32"),  # added
         ("boundary_type", (4,), "int32"),  # added
+        ("has_dem_averaged", (4,), "int32"), #added
     ],
 )
 def test_write_nodes(h5_out, dataset, shape, dtype):
@@ -169,6 +170,7 @@ def test_write_nodes(h5_out, dataset, shape, dtype):
         ("embedded_in", (3,), "int32"),  # added
         ("boundary_id", (3,), "int32"),  # added
         ("boundary_type", (3,), "int32"),  # added
+        ("has_dem_averaged", (3,), "int32"), #added
     ],
 )
 def test_write_nodes_embedded(h5_out, dataset, shape, dtype):

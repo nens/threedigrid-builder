@@ -267,6 +267,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "embedded_in", nodes.embedded_in + 1)
         self.write_dataset(group, "boundary_id", nodes.boundary_id)
         self.write_dataset(group, "boundary_type", nodes.boundary_type)
+        self.write_dataset(group, "has_dem_averaged", nodes.has_dem_averaged)
         self.write_dataset(group, "initial_waterlevel", nodes.initial_waterlevel)
 
         # content pk is only set for connection nodes, otherwise 0
