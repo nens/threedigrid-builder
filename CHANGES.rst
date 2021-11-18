@@ -4,6 +4,11 @@ Changelog of threedigrid-builder
 0.6.2 (unreleased)
 ------------------
 
+- Raise SchematisationError on invalid settings.
+
+- Removed SchematisationError on tabulated rectangle cross section definition with zero
+  first "width" value.
+  
 - Add calculation_type for nodes to be Dem averaged.
 
 

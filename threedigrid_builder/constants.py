@@ -120,3 +120,19 @@ class BoundaryType(IntEnum):
     DISCHARGE = 3
     RIEMANN = 4
     SOMMERFELD = 5
+
+
+@unique
+class InfiltrationSurfaceOption(IntEnum):
+    RAIN = 0
+    WHOLE_SURFACE = 1
+    WET_SURFACE = 2
+
+
+@unique
+class InterflowType(IntEnum):
+    NO_INTERLFOW = 0
+    LOCAL_DEEPEST_POINT_SCALED_POROSITY = 1
+    GLOBAL_DEEPEST_POINT_SCALED_POROSITY = 2
+    LOCAL_DEEPEST_POINT_CONSTANT_POROSITY = 3
+    GLOBAL_DEEPEST_POINT_CONSTANT_POROSITY = 4

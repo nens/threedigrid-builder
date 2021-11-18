@@ -183,11 +183,6 @@ def tabulate_tabulated(shape, width, height):
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
         )
-    if shape == CrossSectionShape.TABULATED_RECTANGLE and np.isclose(widths[0], 0.0):
-        raise SchematisationError(
-            f"Cross section definitions of type 'tabulated rectangle' must start with "
-            f"a nonzero width (got: {width})."
-        )
     return shape, np.max(widths), np.array([heights, widths]).T
 
 

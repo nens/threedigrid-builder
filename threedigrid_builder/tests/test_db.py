@@ -220,7 +220,7 @@ def test_get_settings(db):
     assert g.dist_calc_points == 15.0
     assert g.kmax == 4
     assert g.embedded_cutoff_threshold == 0.05
-    assert g.max_angle_1d_advection == 90.0
+    assert g.max_angle_1d_advection == 0.4 * np.pi
     # use_2d is based on the presence of dem_file:
     assert g.use_2d is True
 
@@ -262,7 +262,7 @@ def test_get_settings(db):
     # there are no infiltration settings
     assert s.infiltration_rate is None
     assert s.infiltration_rate_type is None
-    assert s.infiltration_surface_option is None
+    assert s.infiltration_surface_option == 0
     assert s.max_infiltration_capacity_type is None
 
 
