@@ -207,6 +207,8 @@ def _grid_to_hdf5(grid: Grid, path):
         out.write_pumps(grid.pumps)
         if grid.cross_sections.tables is not None:
             out.write_cross_sections(grid.cross_sections)
+        out.write_levees(grid.levees, epsg_code=grid.meta.epsg_code)
+        out.write_breaches(grid.breaches, epsg_code=grid.meta.epsg_code)
 
 
 def make_gridadmin(
