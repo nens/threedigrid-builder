@@ -1,5 +1,5 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import ContentType, LineType
 from threedigrid_builder.constants import Material
 from typing import Tuple
 
@@ -12,11 +12,10 @@ __all__ = ["Levees", "Breaches"]
 
 class Breach:
     id: int
-    levl: int  # refers to line
-    levbr: float
-    levmat: Material
+    line_id: int
     content_pk: int  # refers to v2_connected_pnt
     coordinates: Tuple[float, float]
+    levee_id: int
 
 
 @array_of(Breach)
@@ -77,12 +76,55 @@ class Levees:
         # edge case: non-point type intersections
         non_point = pygeos.get_type_id(points) != 0
         points[non_point] = pygeos.point_on_surface(points[non_point])
+        points[pygeos.is_empty(points)] = None
 
         return Breaches(
             id=range(len(line_idx)),
-            levl=lines.index_to_id(line_idx),
-            levbr=self.max_breach_depth[levee_idx],
-            levmat=self.material[levee_idx],
+            line_id=lines.index_to_id(line_idx),
+            levee_id=self.index_to_id(levee_idx),
             content_pk=lines.content_pk[line_idx],
+            coordinates=np.array([pygeos.get_x(points), pygeos.get_y(points)]).T,
+        )
+
+    def get_breaches2(self, nodes, lines):
+        # only consider levees that have the correct properties set
+        mask = (np.isfinite(self.max_breach_depth) & (self.material != -9999))
+        if not np.any(mask):
+            return Breaches(id=[])
+
+        # get 1D2D lines that may cross a levee
+        LINETYPE_1D2D_OPEN = [
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER
+        ]
+        lines_1d2d_open = lines[np.isin(lines.kcu, LINETYPE_1D2D_OPEN)]
+        if len(lines_1d2d_open) == 0:
+            return Breaches(id=[])
+
+        # get crossings
+        lines_1d2d_open.set_line_coords(nodes)
+        lines_1d2d_open.fix_line_geometries()
+        tree = pygeos.STRtree(lines_1d2d_open.line_geometries)
+
+        levee_idx, line_idx = tree.query_bulk(self.the_geom[mask], predicate="crosses")
+        levee_idx = np.where(mask)[0][levee_idx]
+
+        # take the first levee for each line
+        line_idx, where = np.unique(line_idx, return_index=True)
+        levee_idx = levee_idx[where]
+
+        # compute the intersections
+        points = pygeos.intersection(
+            lines_1d2d_open.line_geometries[line_idx], self.the_geom[levee_idx]
+        )
+        # edge case: non-point type intersections
+        non_point = pygeos.get_type_id(points) != 0
+        points[non_point] = pygeos.point_on_surface(points[non_point])
+        points[pygeos.is_empty(points)] = None
+
+        return Breaches(
+            id=range(len(line_idx)),
+            line_id=lines_1d2d_open.index_to_id(line_idx),
+            levee_id=self.index_to_id(levee_idx),
             coordinates=np.array([pygeos.get_x(points), pygeos.get_y(points)]).T,
         )

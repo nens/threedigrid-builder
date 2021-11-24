@@ -590,7 +590,8 @@ class Grid:
 
     def add_levees_breaches(self, levees, connected_points):
         self.levees = levees
-        self.breaches = levees.get_breaches(self.nodes, self.lines, connected_points)
+        # self.breaches = levees.get_breaches(self.nodes, self.lines, connected_points)
+        self.breaches = levees.get_breaches2(self.nodes, self.lines)
 
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.

@@ -191,6 +191,8 @@ def _grid_to_gpkg(grid, path):
             )
         out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
         out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
+        out.write_levees(grid.levees, epsg_code=grid.meta.epsg_code)
+        out.write_breaches(grid.breaches, epsg_code=grid.meta.epsg_code)
 
 
 def _grid_to_hdf5(grid: Grid, path):

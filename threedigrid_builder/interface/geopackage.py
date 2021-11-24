@@ -6,7 +6,7 @@ from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import NodeType, Material
 
 import numpy as np
 import pygeos
@@ -203,3 +203,53 @@ class GeopackageOut(OutputInterface):
 
     def write_cross_sections(self, cross_sections):
         pass
+
+    def write_breaches(self, breaches, epsg_code=None, **kwargs):
+        """Write "breaches" layers to a geopackage
+
+        Args:
+            breaches (Breaches)
+            epsg_code (int)
+        """
+        if breaches is None or len(breaches) == 0:
+            return
+        breach_data = breaches.to_dict()
+
+        # construct points from nodes.coordinates
+        geometries = np.empty(len(breaches), dtype=object)
+        coordinates = breach_data.pop("coordinates")
+        has_coord = np.isfinite(coordinates).all(axis=1)
+        geometries[has_coord] = pygeos.points(coordinates[has_coord])
+
+        # construct the geodataframes
+        df = geopandas.GeoDataFrame(
+            breach_data, geometry=geometries, crs=epsg_code
+        )
+
+        if len(df) > 0:
+            df.to_file(self.path, layer="breaches", driver="GPKG")
+
+    def write_levees(self, levees, epsg_code=None, **kwargs):
+        """Write "levees" layers to a geopackage
+
+        Args:
+            levees (Levees)
+            epsg_code (int)
+        """
+        if levees is None or len(levees) == 0:
+            return
+        levee_data = levees.to_dict()
+
+        # construct points from nodes.coordinates
+        geometries = levee_data.pop("the_geom")
+
+        # convert enums to strings
+        levee_data["material"] = _enum_to_str(levee_data["material"], Material)
+
+        # construct the geodataframes
+        df = geopandas.GeoDataFrame(
+            levee_data, geometry=geometries, crs=epsg_code
+        )
+
+        if len(df) > 0:
+            df.to_file(self.path, layer="levees", driver="GPKG")
