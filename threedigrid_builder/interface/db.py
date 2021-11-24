@@ -14,6 +14,7 @@ from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.base import GridSettings
+from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import ContentType
@@ -27,8 +28,8 @@ from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import DemAverageAreas
+from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
@@ -285,12 +286,11 @@ class SQLite:
                     models.ConnectedPoint.the_geom,
                     models.ConnectedPoint.id,
                     models.ConnectedPoint.exchange_level,
+                    models.ConnectedPoint.levee_id,
                     models.CalculationPoint.user_ref,
                     models.CalculationPoint.id.label("calculation_point_id"),
-                    models.Levee.crest_level,
                 )
                 .join(models.CalculationPoint)
-                .outerjoin(models.Levee)
                 .order_by(models.ConnectedPoint.id)
                 .as_structarray()
             )
@@ -303,10 +303,6 @@ class SQLite:
 
         # convert to columnar dict
         dct = {name: arr[name] for name in arr.dtype.names}
-
-        # overwrite exchange_level with crest_level where no exchange_level supplied
-        mask = np.isnan(arr["exchange_level"])
-        dct["exchange_level"][mask] = dct.pop("crest_level")[mask]
 
         # parse user_ref
         content_type = np.empty_like(dct["id"])
@@ -321,13 +317,41 @@ class SQLite:
                 )
             content_type[i], content_pk[i], node_number[i] = parsed
 
-        # transform to a Channels object
+        # transform to a ConnectedPoints object
         return ConnectedPoints(
             content_type=content_type,
             content_pk=content_pk,
             node_number=node_number,
             **dct,
         )
+
+    def get_levees(self) -> Levees:
+        """Load connected points, join them directly with calculation points.
+
+        Automatically ignores calculation points without connected points.
+        """
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Levee.id,
+                    models.Levee.the_geom,
+                    models.Levee.material,
+                    models.Levee.crest_level,
+                    models.Levee.max_breach_depth,
+                )
+                .order_by(models.Levee.id)
+                .as_structarray()
+            )
+
+        # reproject
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # replace -9999.0 with NaN in crest_level and max_breach_depth
+        arr["crest_level"][arr["crest_level"] == -9999.0] = np.nan
+        arr["max_breach_depth"][arr["max_breach_depth"] == -9999.0] = np.nan
+
+        # transform to a Levees object
+        return Levees(**{name: arr[name] for name in arr.dtype.names})
 
     def get_channels(self) -> Channels:
         """Return Channels"""
@@ -514,7 +538,7 @@ class SQLite:
                 .as_structarray()
             )
             arr["the_geom"] = self.reproject(arr["the_geom"])
-            
+
         return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:

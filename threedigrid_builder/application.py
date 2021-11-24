@@ -7,7 +7,7 @@ This layer depends on the interfaces as well as on the domain layer.
 
 from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, dem_average_area
+from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
@@ -163,14 +163,19 @@ def _make_gridadmin(
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.embed_nodes(embedded_node_id_counter)
+        connected_points = db.get_connected_points()
         grid.add_1d2d(
-            db.get_connected_points(),
+            connected_points,
             connection_nodes=connection_nodes,
             channels=channels,
             pipes=pipes,
             locations=locations,
             culverts=culverts,
             line_id_counter=line_id_counter,
+        )
+        grid.add_levees_breaches(
+            db.get_levees(),
+            connected_points,
         )
 
     grid.finalize()

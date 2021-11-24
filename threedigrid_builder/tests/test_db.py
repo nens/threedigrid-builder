@@ -96,6 +96,7 @@ def test_get_connected_points(db):
     assert connected_points.content_pk[1321] == 206
     assert connected_points.node_number[1322] == 2
     assert connected_points.calculation_point_id[1322] == 1701
+    assert connected_points.levee_id[1322] == 3
 
 
 def test_get_connection_nodes(db):
@@ -337,6 +338,7 @@ def test_get_weirs(db):
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
+
 
 def test_get_dem_average(db):
     dem_avg_areas = db.get_dem_average_areas()

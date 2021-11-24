@@ -36,6 +36,7 @@ class ConnectedPoint:
     content_pk: int
     node_number: int
     calculation_point_id: int  # only for error messages
+    levee_id: int
 
 
 @array_of(ConnectedPoint)

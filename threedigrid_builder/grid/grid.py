@@ -1,12 +1,14 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
+from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
 from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
-from . import dem_average_area as dem_average_area_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
+from threedigrid_builder.base import Breaches
+from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
@@ -139,6 +141,8 @@ class Grid:
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
         nodes_embedded=None,
+        levees=None,
+        breaches=None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -160,6 +164,14 @@ class Grid:
             nodes_embedded = Nodes(id=[])
         elif not isinstance(nodes_embedded, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
+        if levees is None:
+            levees = Levees(id=[])
+        elif not isinstance(levees, Levees):
+            raise TypeError(f"Expected Levees instance, got {type(levees)}")
+        if breaches is None:
+            breaches = Breaches(id=[])
+        elif not isinstance(breaches, Breaches):
+            raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
@@ -167,6 +179,8 @@ class Grid:
         self.pumps = pumps
         self.cross_sections = cross_sections
         self.nodes_embedded = nodes_embedded
+        self.levees = levees
+        self.breaches = breaches
         self._cell_tree = None
 
     def __add__(self, other):
@@ -179,7 +193,14 @@ class Grid:
         new_attrs = {}
         for name in ("nodes", "lines", "nodes_embedded"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
-        for name in ("meta", "quadtree_stats", "pumps", "cross_sections"):
+        for name in (
+            "meta",
+            "quadtree_stats",
+            "pumps",
+            "cross_sections",
+            "levees",
+            "breaches",
+        ):
             if getattr(other, name) is None:
                 new_attrs[name] = getattr(self, name)
             else:
@@ -567,6 +588,10 @@ class Grid:
             line_id_counter,
         )
 
+    def add_levees_breaches(self, levees, connected_points):
+        self.levees = levees
+        self.breaches = levees.get_breaches(self.nodes, self.lines, connected_points)
+
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.
 
@@ -577,7 +602,7 @@ class Grid:
             dem_average_area_module.apply_dem_average_areas(
                 self.nodes, self.cell_tree, dem_average_areas
             )
-        
+
     def sort(self):
         """Sort the nodes and lines into the order required by the calculation core.
 
@@ -638,5 +663,6 @@ class Grid:
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )
         self.meta.has_2d = self.meta.extent_2d is not None
+        self.meta.has_breaches = self.breaches is not None and len(self.breaches) > 0
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True
