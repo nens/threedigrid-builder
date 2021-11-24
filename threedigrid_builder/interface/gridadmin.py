@@ -8,6 +8,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
+from threedigrid_builder.base.surfaces import Surfaces
 
 import numpy as np
 import pygeos
@@ -472,6 +473,40 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
+
+
+    def write_surfaces(self, surfaces: Surfaces):
+        group = self._file.create_group("surfaces")
+        self.write_dataset(group, "id", surfaces.id)
+        self.write_dataset(group, "code", surfaces.code.astype("S100"), fill=b"")
+        self.write_dataset(group, "display_name", surfaces.display_name.astype("S250"), fill=b"")
+        self.write_dataset(group, "function", surfaces.function.astype("S64"), fill=b"")
+        self.write_dataset(group, "area", surfaces.area)
+        self.write_dataset(group, "centroid_x", surfaces.centroid_x)
+        self.write_dataset(group, "centroid_y", surfaces.centroid_y)
+        self.write_dataset(group, "dry_weather_flow", surfaces.dry_weather_flow)
+        self.write_dataset(group, "nr_of_inhabitants", surfaces.nr_of_inhabitants)
+        self.write_dataset(group, "infiltration_flag", surfaces.infiltration_flag)
+        self.write_dataset(group, "outflow_delay", surfaces.outflow_delay)
+        self.write_dataset(group, "storage_limit", surfaces.storage_limit)
+
+        # TODO: check if only do this in case of impervious surfaces
+        self.write_dataset(group, "surface_class", surfaces.surface_class.astype("S128"), fill=b"")
+        self.write_dataset(group, "surface_inclination", surfaces.surface_inclination.astype("S64"), fill=b"")
+        self.write_dataset(group, "surface_sub_class", surfaces.surface_sub_class.astype("S128"), fill=b"")
+
+        self.write_dataset(group, "fac", surfaces.fac)
+        self.write_dataset(group, "fb", surfaces.fb)
+        self.write_dataset(group, "fe", surfaces.fe)
+        self.write_dataset(group, "imp", surfaces.imp)
+        self.write_dataset(group, "ka", surfaces.ka)
+        self.write_dataset(group, "kh", surfaces.kh)
+        self.write_dataset(group, "nxc", surfaces.nxc)
+        self.write_dataset(group, "nyc", surfaces.nyc)
+        self.write_dataset(group, "pk", surfaces.pk)
+        self.write_dataset(group, "cci", surfaces.cci)
+        self.write_dataset(group, "cid", surfaces.cid)
+
 
     def write_cross_sections(self, cross_sections: CrossSections):
         group = self._file.create_group("cross_sections")

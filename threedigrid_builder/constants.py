@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 from enum import unique
 
 
@@ -136,3 +136,12 @@ class InterflowType(IntEnum):
     GLOBAL_DEEPEST_POINT_SCALED_POROSITY = 2
     LOCAL_DEEPEST_POINT_CONSTANT_POROSITY = 3
     GLOBAL_DEEPEST_POINT_CONSTANT_POROSITY = 4
+
+
+@unique
+class SurfaceClass(str, Enum):
+    GESLOTEN_VERHARDING = "gesloten verharding"
+    OPEN_VERHARDING = "open verharding"
+    HALF_VERHARD = "half verhard"
+    ONVERHARD = "onverhard"
+    PAND = "pand"

@@ -46,6 +46,7 @@ def h5_out(tmpdir_factory):
             use_2d=True,
             use_1d_flow=True,
             use_2d_flow=True,
+            use_0d_inflow=0,
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,

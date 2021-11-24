@@ -7,12 +7,13 @@ This layer depends on the interfaces as well as on the domain layer.
 
 from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, dem_average_area
+from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import SQLite
 from threedigrid_builder.interface import Subgrid
+from threedi_modelchecker.threedi_model.constants import InflowType
 from typing import Callable
 from typing import Optional
 
@@ -173,6 +174,18 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
 
+    if grid_settings.use_0d_inflow in (
+        InflowType.IMPERVIOUS_SURFACE.value,
+        InflowType.SURFACE.value,
+    ):
+        # process zero-d
+        logger.warning("SURFACES!!! %s", grid_settings.use_0d_inflow)
+        progress_callback(0.95, "Processing 0D domain...")
+        if grid_settings.use_0d_inflow == InflowType.SURFACE.value:
+            grid.add_0d(db.get_surfaces())
+        else:
+            grid.add_0d(db.get_impervious_surfaces())
+
     grid.finalize()
     return grid
 
@@ -200,6 +213,8 @@ def _grid_to_hdf5(grid: Grid, path):
         out.write_pumps(grid.pumps)
         if grid.cross_sections.tables is not None:
             out.write_cross_sections(grid.cross_sections)
+        if grid.meta.has_0d:
+            out.write_surfaces(grid.surfaces)
 
 
 def make_gridadmin(

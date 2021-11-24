@@ -10,14 +10,17 @@ from dataclasses import fields
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import Surfaces as GridSurfaces
 from threedigrid_builder.base import replace
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid.zero_d import Surfaces, ImperviousSurfaces
+
 from typing import Optional
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import pygeos
@@ -91,6 +94,7 @@ class GridMeta:
     threedi_tables_version: Optional[str] = None  # filled in threedi-tables
 
     # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
+    has_0d: bool = False
     has_1d: bool = False
     has_2d: bool = False
     has_embedded: bool = False
@@ -105,6 +109,7 @@ class GridMeta:
 
     extent_1d: Optional[Tuple[float, float, float, float]] = None
     extent_2d: Optional[Tuple[float, float, float, float]] = None
+    zero_dim_extent: Optional[Tuple[float, float, float, float]] = None
 
     @classmethod
     def from_dict(cls, dct):
@@ -138,6 +143,7 @@ class Grid:
         lines: Lines,
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
+        surfaces: Optional[GridSurfaces] = None,
         nodes_embedded=None,
         meta=None,
         quadtree_stats=None,
@@ -160,9 +166,16 @@ class Grid:
             nodes_embedded = Nodes(id=[])
         elif not isinstance(nodes_embedded, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
+
+        if surfaces is None:
+            surfaces = GridSurfaces(id=[])
+        elif not isinstance(surfaces, GridSurfaces):
+            raise TypeError(f"Expected Surfaces instance, got {type(surfaces)}")
+
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
+        self.surfaces = surfaces
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
@@ -177,7 +190,7 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines", "nodes_embedded"):
+        for name in ("nodes", "lines", "nodes_embedded", "surfaces"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in ("meta", "quadtree_stats", "pumps", "cross_sections"):
             if getattr(other, name) is None:
@@ -567,6 +580,10 @@ class Grid:
             line_id_counter,
         )
 
+
+    def add_0d(self, surfaces: Union[Surfaces, ImperviousSurfaces]):
+        surfaces.apply(self)
+
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.
 
@@ -627,6 +644,7 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
+        self.meta: GridMeta
         if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
         self.meta.has_initial_waterlevels = np.isfinite(
@@ -634,9 +652,16 @@ class Grid:
         ).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
+
+        if self.surfaces:
+            self.meta.zero_dim_extent = self.surfaces.get_extent()
+
+        # TODO: calculate zero-dim-extent
+        # self.meta.zero_dim_extent = 
         self.meta.has_1d = (
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )
+        self.meta.has_0d = self.meta.zero_dim_extent is not None
         self.meta.has_2d = self.meta.extent_2d is not None
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True

@@ -33,6 +33,8 @@ from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
+from threedigrid_builder.grid import Surfaces
+from threedigrid_builder.grid import ImperviousSurfaces
 from typing import Callable
 from typing import ContextManager
 from typing import Tuple
@@ -240,6 +242,64 @@ class SQLite:
         target_epsg = self.epsg_code
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
         return pygeos.apply(geometries, func)
+
+    def get_surfaces(self) -> Surfaces:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Surface.id,
+                    models.Surface.function,
+                    models.Surface.code,
+                    models.Surface.display_name,
+                    models.Surface.nr_of_inhabitants,
+                    models.Surface.area,
+                    models.Surface.dry_weather_flow,
+                    models.Surface.the_geom,
+                    models.SurfaceParameter.outflow_delay,
+                    models.SurfaceParameter.surface_layer_thickness,
+                    models.SurfaceParameter.infiltration,
+                    models.SurfaceParameter.max_infiltration_capacity,
+                    models.SurfaceParameter.min_infiltration_capacity,
+                    models.SurfaceParameter.infiltration_decay_constant,
+                    models.SurfaceParameter.infiltration_recovery_constant
+                )
+                .join(models.SurfaceParameters)
+                .order_by(models.Surface.id)
+                .as_structarray()
+            )
+
+        # reproject
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        return Surfaces(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_impervious_surfaces(self) -> ImperviousSurfaces:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.ImperviousSurface.id,
+                    models.ImperviousSurface.code,
+                    models.ImperviousSurface.display_name,
+                    models.ImperviousSurface.surface_inclination,
+                    models.ImperviousSurface.surface_class,
+                    models.ImperviousSurface.surface_sub_class,
+                    models.ImperviousSurface.nr_of_inhabitants,
+                    models.ImperviousSurface.area,
+                    models.ImperviousSurface.dry_weather_flow,
+                    models.ImperviousSurface.the_geom,
+                )
+                .order_by(models.ImperviousSurface.id)
+                .as_structarray()
+            )
+
+        # convert enums to values
+        arr["surface_class"] = [x.value for x in arr["surface_class"]]
+        arr["surface_inclination"] = [x.value for x in arr["surface_inclination"]]
+
+        # reproject
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        return ImperviousSurfaces(**{name: arr[name] for name in arr.dtype.names})
 
     def get_boundary_conditions_1d(self) -> BoundaryConditions1D:
         """Return BoundaryConditions1D"""
