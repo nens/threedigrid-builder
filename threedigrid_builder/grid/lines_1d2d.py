@@ -465,6 +465,15 @@ class ConnectedPoints:
         conn_pnt_idx = conn_pnt_idx[has_levee]
         levee_idx = levees.id_to_index(self.levee_id[conn_pnt_idx])
 
+        # only consider levees that have the correct properties set
+        mask = (np.isfinite(levees.max_breach_depth) & (levees.material != -9999))[
+            levee_idx
+        ]
+        if not np.any(mask):
+            return Breaches(id=[])
+        line_idx = line_idx[mask]
+        levee_idx = levee_idx[mask]
+
         # compute the intersections (use shortest_line and not intersects to
         # account for the possibility that the levee may not intersect the line)
         points = pygeos.get_point(

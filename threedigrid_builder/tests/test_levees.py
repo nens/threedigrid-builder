@@ -15,22 +15,22 @@ import pytest
 @pytest.fixture
 def levees():
     return Levees(
-        id=[1, 2],
+        id=[1, 2, 3],
         the_geom=[
             pygeos.linestrings([[0, 0], [10, 0], [10, 10]]),
             pygeos.linestrings([[5, 5], [8, 5]]),
+            pygeos.linestrings([[0, 0], [1, 1]]),
         ],
-        max_breach_depth=[4.0, np.nan],
-        material=[Material.CLAY, -9999],
+        max_breach_depth=[4.0, 2.0, np.nan],
+        material=[Material.CLAY, Material.SAND, -9999],
     )
 
 
 @pytest.fixture
 def connected_points():
     return ConnectedPoints(
-        id=[0, 1, 2],
-        levee_id=[1, 1, 2],
-        exchange_level=[2.0, np.nan, np.nan],
+        id=[0, 1, 2, 3],
+        levee_id=[1, 1, 2, 3],
     )
 
 
@@ -39,16 +39,17 @@ def lines():
     CH = ContentType.TYPE_V2_CHANNEL
     CP = ContentType.TYPE_V2_ADDED_CALCULATION_POINT
     return Lines(
-        id=[0, 1, 2, 3, 4],
+        id=[0, 1, 2, 3, 4, 5],
         line_geometries=[
             None,
             None,
             pygeos.linestrings([[5, 5], [15, 5]]),  # crosses levee 1 at [10, 5]
             pygeos.linestrings([[3, 2], [4, 1], [5, 2]]),  # (closest on levee: [4, 0])
             pygeos.linestrings([[6, 5], [10, 5]]),  # tangent to levee 2
+            None,
         ],
-        content_type=[CH, -9999, CP, CP, CP],
-        content_pk=[1, -9999, 0, 1, 2],
+        content_type=[CH, -9999, CP, CP, CP, CP],
+        content_pk=[1, -9999, 0, 1, 2, 3],
     )
 
 
@@ -63,8 +64,8 @@ def test_get_breaches(connected_points, lines, levees):
     assert_almost_equal(breaches.coordinates, [[10, 5], [4, 0], [6, 5]])
     assert_equal(breaches.levee_id, [1, 1, 2])
     assert_equal(breaches.levl, [2, 3, 4])
-    assert_almost_equal(breaches.levbr, [4, 4, np.nan])
-    assert_equal(breaches.levmat, [Material.CLAY, Material.CLAY, -9999])
+    assert_almost_equal(breaches.levbr, [4, 4, 2])
+    assert_equal(breaches.levmat, [Material.CLAY, Material.CLAY, Material.SAND])
 
 
 def test_no_breaches(connected_points, lines, levees):
