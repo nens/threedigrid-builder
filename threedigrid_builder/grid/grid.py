@@ -491,22 +491,19 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles):
+    def set_obstacles(self, obstacles, levees):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to 101 and changes flod and flou to crest_level.
 
+        Also store levees on this grid for later output (and Breach determination)
+
         Args:
             obstacles (Obstacles)
+            levees (Levees)
         """
-        if len(obstacles) > 0:
-            obstacles_module.apply_obstacles(self.lines, obstacles)
-
-    def set_levees(self, levees):
-        """Set levees to the grid, also adjust 2D lines (see set_obstacles)."""
         self.levees = levees
-        if len(levees) > 0:
-            obstacles_module.apply_obstacles(self.lines, levees)
+        obstacles_module.apply_obstacles(self.lines, obstacles, levees)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
