@@ -100,6 +100,7 @@ class GridMeta:
     has_interception: bool = False
     has_pumpstations: bool = False
     has_simple_infiltration: bool = False
+    has_max_infiltration_capacity: bool = False
     has_interflow: bool = False
     has_initial_waterlevels: bool = True
 
@@ -211,6 +212,7 @@ class Grid:
         meta.has_interception = s.interception_type is not None
         meta.has_groundwater_flow = s.groundwater_hydro_connectivity_type is not None
         meta.has_simple_infiltration = s.infiltration_rate_type is not None
+        meta.has_max_infiltration_capacity = s.max_infiltration_capacity_type is not None
         meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
