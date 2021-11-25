@@ -1,4 +1,5 @@
 from threedigrid_builder.base import array_of
+from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import search
 from threedigrid_builder.constants import CalculationType
@@ -447,4 +448,38 @@ class ConnectedPoints:
             dpumax=dpumax,
             content_type=content_type,
             content_pk=content_pk,
+        )
+
+    def get_breaches(self, lines, levees):
+        """Every ConnectedPoint that has a levee_id will get an associated Breach"""
+        # get lines that have a connected point
+        (line_idx,) = np.where(
+            lines.content_type == ContentType.TYPE_V2_ADDED_CALCULATION_POINT
+        )
+        # refine to those connected points that have a levee
+        conn_pnt_idx = self.id_to_index(lines.content_pk[line_idx])
+        has_levee = self.levee_id[conn_pnt_idx] != -9999
+        if not np.any(has_levee):
+            return Breaches(id=[])
+        line_idx = line_idx[has_levee]
+        conn_pnt_idx = conn_pnt_idx[has_levee]
+        levee_idx = levees.id_to_index(self.levee_id[conn_pnt_idx])
+
+        # compute the intersections
+        points = pygeos.intersection(
+            lines.line_geometries[line_idx], levees.the_geom[levee_idx]
+        )
+        # edge case: non-point type intersections
+        non_point = pygeos.get_type_id(points) != 0
+        points[non_point] = pygeos.point_on_surface(points[non_point])
+        points[pygeos.is_empty(points)] = None
+
+        return Breaches(
+            id=range(1, len(line_idx) + 1),
+            line_id=lines.index_to_id(line_idx),
+            levee_id=levees.index_to_id(levee_idx),
+            levmat=levees.material[levee_idx],
+            levbr=levees.max_breach_depth[levee_idx],
+            content_pk=lines.content_pk[line_idx],
+            coordinates=np.array([pygeos.get_x(points), pygeos.get_y(points)]).T,
         )

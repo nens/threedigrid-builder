@@ -18,4 +18,4 @@ from .structures import *  # NOQA
 from .obstacles import *  # NOQA
 from .embedded import *  # NOQA
 from .lines_1d2d import *  # NOQA
-from .dem_average_area import * # NOQA
+from .dem_average_area import *  # NOQA

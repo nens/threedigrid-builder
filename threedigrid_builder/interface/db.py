@@ -289,8 +289,10 @@ class SQLite:
                     models.ConnectedPoint.levee_id,
                     models.CalculationPoint.user_ref,
                     models.CalculationPoint.id.label("calculation_point_id"),
+                    models.Levee.crest_level,
                 )
                 .join(models.CalculationPoint)
+                .outerjoin(models.Levee)
                 .order_by(models.ConnectedPoint.id)
                 .as_structarray()
             )
@@ -303,6 +305,10 @@ class SQLite:
 
         # convert to columnar dict
         dct = {name: arr[name] for name in arr.dtype.names}
+
+        # overwrite exchange_level with crest_level where no exchange_level supplied
+        mask = np.isnan(arr["exchange_level"])
+        dct["exchange_level"][mask] = dct.pop("crest_level")[mask]
 
         # parse user_ref
         content_type = np.empty_like(dct["id"])

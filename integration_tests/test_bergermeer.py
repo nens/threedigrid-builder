@@ -10,7 +10,9 @@ import numpy as np
 import pathlib
 
 
-data_path = pathlib.Path(__file__).resolve().parent / "data"
+project_root = pathlib.Path(__file__).resolve().parent.parent
+data_path = project_root / "integration_tests/data"
+unittests_data_path = project_root / "threedigrid_builder/tests/data"
 
 
 def count_unique(arr):
@@ -21,7 +23,7 @@ def count_unique(arr):
 def test_integration(tmp_path):
     progress_callback = Mock()
     make_grid(
-        data_path / "v2_bergermeer.sqlite",
+        unittests_data_path / "v2_bergermeer.sqlite",
         data_path / "dem_test_5m.tif",
         tmp_path / "gridadmin.h5",
         model_area_path=None,  # untested
@@ -104,6 +106,12 @@ def test_integration(tmp_path):
 
         ## EMBEDDED NODES
         assert_array_equal(f["nodes_embedded"]["id"][:], [0])
+
+        ## LEVEES
+        assert f["levees"]["id"][:].tolist() == [1, 2, 3]
+
+        ## BREACHES
+        assert f["breaches"]["id"][:].tolist() == [0, 1]
 
         ## COUNTS
         assert {ds: f["meta"][ds][()] for ds in f["meta"]} == {

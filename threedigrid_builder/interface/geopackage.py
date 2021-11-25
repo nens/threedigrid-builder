@@ -6,7 +6,8 @@ from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType, Material
+from threedigrid_builder.constants import Material
+from threedigrid_builder.constants import NodeType
 
 import numpy as np
 import pygeos
@@ -222,9 +223,7 @@ class GeopackageOut(OutputInterface):
         geometries[has_coord] = pygeos.points(coordinates[has_coord])
 
         # construct the geodataframes
-        df = geopandas.GeoDataFrame(
-            breach_data, geometry=geometries, crs=epsg_code
-        )
+        df = geopandas.GeoDataFrame(breach_data, geometry=geometries, crs=epsg_code)
 
         if len(df) > 0:
             df.to_file(self.path, layer="breaches", driver="GPKG")
@@ -247,9 +246,7 @@ class GeopackageOut(OutputInterface):
         levee_data["material"] = _enum_to_str(levee_data["material"], Material)
 
         # construct the geodataframes
-        df = geopandas.GeoDataFrame(
-            levee_data, geometry=geometries, crs=epsg_code
-        )
+        df = geopandas.GeoDataFrame(levee_data, geometry=geometries, crs=epsg_code)
 
         if len(df) > 0:
             df.to_file(self.path, layer="levees", driver="GPKG")

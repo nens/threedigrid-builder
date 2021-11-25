@@ -1,6 +1,8 @@
 from dataclasses import fields
+from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import is_int_enum
-from threedigrid_builder.base import is_tuple_type, Levees, Breaches
+from threedigrid_builder.base import is_tuple_type
+from threedigrid_builder.base import Levees
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.constants import ContentType
@@ -409,7 +411,9 @@ class GridAdminOut(OutputInterface):
         )
 
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
-        self.write_line_geometry_dataset(group, "line_geometries", lines.line_geometries)
+        self.write_line_geometry_dataset(
+            group, "line_geometries", lines.line_geometries
+        )
 
         # can be collected from SQLite, but empty for now:
         self.write_dataset(group, "connection_node_end_pk", fill_int)
@@ -482,8 +486,12 @@ class GridAdminOut(OutputInterface):
         # Datasets that match directly to a levees attribute:
         self.write_dataset(group, "id", levees.id, insert_dummy=False)
         self.write_dataset(group, "crest_level", levees.crest_level, insert_dummy=False)
-        self.write_dataset(group, "max_breach_depth", levees.max_breach_depth, insert_dummy=False)
-        self.write_line_geometry_dataset(group, "coords", levees.the_geom, insert_dummy=False)
+        self.write_dataset(
+            group, "max_breach_depth", levees.max_breach_depth, insert_dummy=False
+        )
+        self.write_line_geometry_dataset(
+            group, "coords", levees.the_geom, insert_dummy=False
+        )
 
     def write_breaches(self, breaches: Breaches):
         if breaches is None:
@@ -524,7 +532,7 @@ class GridAdminOut(OutputInterface):
                 fillvalue=fill,
                 **HDF5_SETTINGS,
             )
-            ds[int(insert_dummy):] = values
+            ds[int(insert_dummy) :] = values
             if insert_dummy and name == "id":  # set the ID of the dummy element
                 ds[0] = 0
         elif values.ndim == 2:
@@ -535,7 +543,7 @@ class GridAdminOut(OutputInterface):
                 fillvalue=fill,
                 **HDF5_SETTINGS,
             )
-            ds[:, int(insert_dummy):] = values
+            ds[:, int(insert_dummy) :] = values
         else:
             ValueError("Too many dimensions for values.")
 
