@@ -59,7 +59,7 @@ class RasterioInterface(RasterInterface):
 
     def _create_area_arr_from_geometry(self, area_geometry):
         import rasterio.features as rasterio_features
-    
+
         dem = self._raster
 
         window = rasterio_features.geometry_window(

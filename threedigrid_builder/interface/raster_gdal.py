@@ -12,7 +12,7 @@ def get_epsg_code(sr):
     """
     Return epsg code from a osr.SpatialReference object
     """
-    key = str('GEOGCS') if sr.IsGeographic() else str('PROJCS')
+    key = str("GEOGCS") if sr.IsGeographic() else str("PROJCS")
     name = sr.GetAuthorityName(key)
     if name == "EPSG":
         return int(sr.GetAuthorityCode(key))

@@ -4,8 +4,8 @@ from .pumps import Pumps
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional
 from threedigrid_builder.exceptions import SchematisationError
+from typing import Optional
 
 
 __all__ = ["OutputInterface", "RasterInterface"]
@@ -49,9 +49,15 @@ class OutputInterface(ABC):
 
 class RasterInterface(ABC):
     """The metaclass (class template) for raster data input"""
+
     GT_TOLERANCE = 7
 
-    def __init__(self, path: Path, model_area_path: Optional[Path] = None, epsg_code: Optional[int] = None):
+    def __init__(
+        self,
+        path: Path,
+        model_area_path: Optional[Path] = None,
+        epsg_code: Optional[int] = None,
+    ):
         self.path = path
         self.model_area_path = model_area_path
         self.transform = None
@@ -67,9 +73,13 @@ class RasterInterface(ABC):
 
         # check if pixels are square and if cross terms are 0
         if abs(a) != abs(e):
-            raise SchematisationError(f"Raster pixels are non-square ({abs(a)}x{abs(e)}).")
+            raise SchematisationError(
+                f"Raster pixels are non-square ({abs(a)}x{abs(e)})."
+            )
         if b != 0.0 or d != 0.0:
-            raise SchematisationError(f"Raster pixel grid has tilt (cross terms: {b},{d}).")
+            raise SchematisationError(
+                f"Raster pixel grid has tilt (cross terms: {b},{d})."
+            )
 
         self.transform = (a, b, c, d, e, f)
 
@@ -77,7 +87,9 @@ class RasterInterface(ABC):
         if epsg_code is None:
             return
         if self.epsg_code is not None and epsg_code != self.epsg_code:
-            raise SchematisationError(f"Raster and SQLite epsg code mismatch ({epsg_code} != {self.epsg_code}).")
+            raise SchematisationError(
+                f"Raster and SQLite epsg code mismatch ({epsg_code} != {self.epsg_code})."
+            )
         self.epsg_code = epsg_code
 
     @property

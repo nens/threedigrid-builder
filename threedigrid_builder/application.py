@@ -9,9 +9,10 @@ from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.interface import GDALInterface
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
-from threedigrid_builder.interface import RasterioInterface, GDALInterface
+from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
 from typing import Callable
 from typing import Optional
@@ -55,10 +56,14 @@ def _make_gridadmin(
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
 
         try:
-            with RasterioInterface(dem_path, model_area_path, grid.meta.epsg_code) as raster:
+            with RasterioInterface(
+                dem_path, model_area_path, grid.meta.epsg_code
+            ) as raster:
                 subgrid_meta = raster.read()
         except ImportError:
-            with GDALInterface(dem_path, model_area_path, grid.meta.epsg_code) as raster:
+            with GDALInterface(
+                dem_path, model_area_path, grid.meta.epsg_code
+            ) as raster:
                 subgrid_meta = raster.read()
 
         # patch epsg code if necessary
