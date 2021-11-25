@@ -465,18 +465,16 @@ class ConnectedPoints:
         conn_pnt_idx = conn_pnt_idx[has_levee]
         levee_idx = levees.id_to_index(self.levee_id[conn_pnt_idx])
 
-        # compute the intersections
-        points = pygeos.intersection(
-            lines.line_geometries[line_idx], levees.the_geom[levee_idx]
-        )
-        # edge case: non-point type intersections
-        non_point = pygeos.get_type_id(points) != 0
-        points[non_point] = pygeos.point_on_surface(points[non_point])
-        points[pygeos.is_empty(points)] = None
+        # compute the intersections (use shortest_line and not intersects to
+        # account for the possibility that the levee may not intersect the line)
+        points = pygeos.get_point(
+            pygeos.shortest_line(
+                levees.the_geom[levee_idx], lines.line_geometries[line_idx]
+            ), 0)
 
         return Breaches(
             id=range(1, len(line_idx) + 1),
-            line_id=lines.index_to_id(line_idx),
+            levl=lines.index_to_id(line_idx),
             levee_id=levees.index_to_id(levee_idx),
             levmat=levees.material[levee_idx],
             levbr=levees.max_breach_depth[levee_idx],

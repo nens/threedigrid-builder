@@ -10,7 +10,7 @@ __all__ = ["Levees", "Breaches"]
 
 class Breach:
     id: int
-    line_id: int
+    levl: int  # the line id
     content_pk: int  # refers to v2_connected_pnt
     coordinates: Tuple[float, float]
     levee_id: int
