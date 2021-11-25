@@ -1,7 +1,13 @@
 Changelog of threedigrid-builder
 ================================
 
-0.6.2 (unreleased)
+0.7.1 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
+0.7.0 (2021-11-25)
 ------------------
 
 - Raise SchematisationError on invalid settings.
