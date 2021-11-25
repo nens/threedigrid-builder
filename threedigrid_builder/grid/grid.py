@@ -597,6 +597,8 @@ class Grid:
         references a Levee, it will result in a Breach. The Breach gets the properties
         from the Levee (max_breach_depth, material) but these may be unset.
         """
+        self.lines.set_line_coords(self.nodes)
+        self.lines.fix_line_geometries()
         self.levees = levees
         self.breaches = connected_points.get_breaches(self.lines, levees)
 

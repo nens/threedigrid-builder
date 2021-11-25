@@ -112,6 +112,10 @@ def test_integration(tmp_path):
 
         ## BREACHES
         assert f["breaches"]["id"][:].tolist() == [0, 1]
+        assert_almost_equal(
+            f["breaches"]["coordinates"][:, 1], [108990.32, 517277.12],
+            decimal=2
+        )
 
         ## COUNTS
         assert {ds: f["meta"][ds][()] for ds in f["meta"]} == {
