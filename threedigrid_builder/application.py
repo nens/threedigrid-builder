@@ -11,7 +11,7 @@ from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
-from threedigrid_builder.interface import RasterioInterface
+from threedigrid_builder.interface import RasterioInterface, GDALInterface
 from threedigrid_builder.interface import SQLite
 from typing import Callable
 from typing import Optional
@@ -53,8 +53,18 @@ def _make_gridadmin(
         if not dem_path:
             raise SchematisationError("DEM file expected")
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
-        with RasterioInterface(dem_path, model_area_path) as raster:
-            subgrid_meta = raster.read()
+
+        try:
+            with RasterioInterface(dem_path, model_area_path, grid.meta.epsg_code) as raster:
+                subgrid_meta = raster.read()
+        except ImportError:
+            with GDALInterface(dem_path, model_area_path, grid.meta.epsg_code) as raster:
+                subgrid_meta = raster.read()
+
+        # patch epsg code if necessary
+        if grid.meta.epsg_code is None:
+            grid.meta.epsg_code = raster.epsg_code
+
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")
         quadtree = QuadTree(

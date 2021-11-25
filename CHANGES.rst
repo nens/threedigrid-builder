@@ -6,6 +6,10 @@ Changelog of threedigrid-builder
 
 - Added breaches and levees.
 
+- Implement GDAL as an alternative to RasterIO.
+
+- Check the raster EPSG code and use it if the model does not have one.
+
 
 0.7.0 (2021-11-25)
 ------------------

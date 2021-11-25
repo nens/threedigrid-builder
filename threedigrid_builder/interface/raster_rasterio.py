@@ -4,28 +4,23 @@ import json
 import numpy as np
 
 
-try:
-    from rasterio import features as rasterio_features
-
-    import rasterio
-except ImportError:
-    rasterio = rasterio_features = None
-
 __all__ = ["RasterioInterface"]
 
 
 class RasterioInterface(RasterInterface):
     def __init__(self, *args, **kwargs):
-        if rasterio is None:
-            raise ImportError("Module 'rasterio' is not available")
+        global rasterio
+
+        import rasterio
+
         super().__init__(*args, **kwargs)
 
     def __enter__(self):
-        if rasterio is None:
-            raise ImportError("Module 'rasterio' is not available")
         self._env = rasterio.Env().__enter__()
         self._raster = rasterio.open(self.path, "r").__enter__()
-        self.pixel_size = self._raster.profile["transform"][0]
+        profile = self._raster.profile
+        self.set_transform(profile["transform"][:6])
+        self.set_epsg_code(profile["crs"].to_epsg())
         return self
 
     def __exit__(self, *args, **kwargs):
@@ -63,6 +58,8 @@ class RasterioInterface(RasterInterface):
         return area_geometry
 
     def _create_area_arr_from_geometry(self, area_geometry):
+        import rasterio.features as rasterio_features
+    
         dem = self._raster
 
         window = rasterio_features.geometry_window(
