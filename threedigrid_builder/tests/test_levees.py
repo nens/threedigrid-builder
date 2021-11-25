@@ -1,3 +1,5 @@
+from numpy.testing import assert_almost_equal
+from numpy.testing import assert_equal
 from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
@@ -8,7 +10,6 @@ from threedigrid_builder.grid import ConnectedPoints
 import numpy as np
 import pygeos
 import pytest
-from numpy.testing import assert_almost_equal, assert_equal
 
 
 @pytest.fixture
@@ -54,6 +55,7 @@ def lines():
 def test_get_breaches(connected_points, lines, levees):
     breaches = connected_points.get_breaches(lines, levees)
 
+    assert isinstance(breaches, Breaches)
     assert len(breaches) == 3
 
     assert_equal(breaches.id, [1, 2, 3])
@@ -63,3 +65,11 @@ def test_get_breaches(connected_points, lines, levees):
     assert_equal(breaches.levl, [2, 3, 4])
     assert_almost_equal(breaches.levbr, [4, 4, np.nan])
     assert_equal(breaches.levmat, [Material.CLAY, Material.CLAY, -9999])
+
+
+def test_no_breaches(connected_points, lines, levees):
+    connected_points.levee_id[:] = -9999
+    breaches = connected_points.get_breaches(lines, levees)
+
+    assert isinstance(breaches, Breaches)
+    assert len(breaches) == 0

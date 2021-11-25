@@ -216,11 +216,14 @@ class GeopackageOut(OutputInterface):
             return
         breach_data = breaches.to_dict()
 
-        # construct points from nodes.coordinates
+        # construct points from breaches.coordinates
         geometries = np.empty(len(breaches), dtype=object)
         coordinates = breach_data.pop("coordinates")
         has_coord = np.isfinite(coordinates).all(axis=1)
         geometries[has_coord] = pygeos.points(coordinates[has_coord])
+
+        # convert enums to strings
+        breach_data["levmat"] = _enum_to_str(breach_data["levmat"], Material)
 
         # construct the geodataframes
         df = geopandas.GeoDataFrame(breach_data, geometry=geometries, crs=epsg_code)

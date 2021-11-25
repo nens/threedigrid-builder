@@ -635,7 +635,7 @@ class Grid:
         new_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
         new_ids[old_node_ids[node_sorter]] = self.nodes.id
 
-        # apply the mapping to lines.line and optionally to pumps and embedded nodes
+        # apply the mapping to lines.line and optionally to other attributes
         self.lines.line[:] = np.take(new_ids, self.lines.line)
         if self.pumps is not None:
             mask = self.pumps.line != -9999
@@ -644,6 +644,8 @@ class Grid:
             self.nodes_embedded.embedded_in = np.take(
                 new_ids, self.nodes_embedded.embedded_in
             )
+        if self.breaches is not None:
+            self.breaches.levl = np.take(new_ids, self.breaches.levl)
 
         # sort boundary lines so that they internally match the boundary node order
         BOUNDARY_NODE_TYPES = (

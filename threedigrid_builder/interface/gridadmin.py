@@ -500,7 +500,7 @@ class GridAdminOut(OutputInterface):
 
         # Datasets that match directly to a levees attribute:
         self.write_dataset(group, "id", breaches.id)
-        self.write_dataset(group, "levl", breaches.line_id + 1)
+        self.write_dataset(group, "levl", breaches.levl + 1)
         self.write_dataset(group, "levee_id", breaches.levee_id)
         self.write_dataset(group, "content_pk", breaches.content_pk)
         self.write_dataset(group, "levbr", breaches.levbr)

@@ -92,7 +92,7 @@ def h5_out(tmpdir_factory):
     breaches = Breaches(
         id=[0, 1],
         coordinates=[[0, 0], [1, 1]],
-        line_id=[4, 3],
+        levl=[4, 3],
         levee_id=[1, 0],
     )
 

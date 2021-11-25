@@ -470,7 +470,9 @@ class ConnectedPoints:
         points = pygeos.get_point(
             pygeos.shortest_line(
                 levees.the_geom[levee_idx], lines.line_geometries[line_idx]
-            ), 0)
+            ),
+            0,
+        )
 
         return Breaches(
             id=range(1, len(line_idx) + 1),
