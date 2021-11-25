@@ -416,9 +416,8 @@ def test_write_cross_sections(h5_out, dataset, shape, dtype):
     assert h5_out["cross_sections"][dataset].dtype == np.dtype(dtype)
 
 
-# obtained from bergermeer gridadmin.h5, edited:
-# - 2 levees to 1
-# - note that there is no dummy element in this group
+# obtained from bergermeer gridadmin.h5
+# note that there is no dummy element in this group (just 2 levees)
 @pytest.mark.parametrize(
     "dataset,shape,dtype",
     [
