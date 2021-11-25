@@ -628,24 +628,16 @@ class Grid:
         old_node_ids = self.nodes.id.copy()
         self.nodes.reorder(node_sorter)
         self.nodes.id[:] = np.arange(len(self.nodes))
+        old_line_ids = self.lines.id.copy()
         self.lines.reorder(line_sorter)
         self.lines.id[:] = np.arange(len(self.lines))
 
-        # create a mapping with new node ids on the position of the old node ids
-        new_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
-        new_ids[old_node_ids[node_sorter]] = self.nodes.id
+        # create mapping with the node new ids on the position of the old node ids
+        new_node_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
+        new_node_ids[old_node_ids[node_sorter]] = self.nodes.id
 
-        # apply the mapping to lines.line and optionally to other attributes
-        self.lines.line[:] = np.take(new_ids, self.lines.line)
-        if self.pumps is not None:
-            mask = self.pumps.line != -9999
-            self.pumps.line[mask] = np.take(new_ids, self.pumps.line[mask])
-        if self.nodes_embedded is not None:
-            self.nodes_embedded.embedded_in = np.take(
-                new_ids, self.nodes_embedded.embedded_in
-            )
-        if self.breaches is not None:
-            self.breaches.levl = np.take(new_ids, self.breaches.levl)
+        # apply the node id mappings to lines.line
+        self.lines.line[:] = np.take(new_node_ids, self.lines.line)
 
         # sort boundary lines so that they internally match the boundary node order
         BOUNDARY_NODE_TYPES = (
@@ -655,6 +647,21 @@ class Grid:
         )
         bc_node_ids = self.nodes.id[np.isin(self.nodes.node_type, BOUNDARY_NODE_TYPES)]
         self.lines.sort_by_nodes(bc_node_ids)
+
+        # create mapping with the line new ids on the position of the old line ids
+        new_line_ids = np.empty(old_line_ids[-1] + 1, dtype=self.lines.id.dtype)
+        new_line_ids[old_line_ids[line_sorter]] = self.lines.id
+
+        # apply the mappings to other datasets that contain references to nodes or lines
+        if self.pumps is not None:
+            mask = self.pumps.line != -9999
+            self.pumps.line[mask] = np.take(new_node_ids, self.pumps.line[mask])
+        if self.nodes_embedded is not None:
+            self.nodes_embedded.embedded_in = np.take(
+                new_node_ids, self.nodes_embedded.embedded_in
+            )
+        if self.breaches is not None:
+            self.breaches.levl = np.take(new_line_ids, self.breaches.levl)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""

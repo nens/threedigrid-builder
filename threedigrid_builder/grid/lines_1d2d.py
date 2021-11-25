@@ -475,7 +475,7 @@ class ConnectedPoints:
         )
 
         return Breaches(
-            id=range(1, len(line_idx) + 1),
+            id=range(len(line_idx)),
             levl=lines.index_to_id(line_idx),
             levee_id=levees.index_to_id(levee_idx),
             levmat=levees.material[levee_idx],

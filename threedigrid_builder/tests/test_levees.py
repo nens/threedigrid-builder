@@ -58,7 +58,7 @@ def test_get_breaches(connected_points, lines, levees):
     assert isinstance(breaches, Breaches)
     assert len(breaches) == 3
 
-    assert_equal(breaches.id, [1, 2, 3])
+    assert_equal(breaches.id, [0, 1, 2])
     assert_equal(breaches.content_pk, [0, 1, 2])
     assert_almost_equal(breaches.coordinates, [[10, 5], [4, 0], [6, 5]])
     assert_equal(breaches.levee_id, [1, 1, 2])

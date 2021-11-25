@@ -481,6 +481,7 @@ def test_write_breaches(h5_out, dataset, shape, dtype):
         ("lines", "cross2", -9999),  # reference to cross section
         ("pumps", "node1_id", 1),  # reference to node
         ("pumps", "node2_id", 2),  # reference to node
+        ("breaches", "id", 1),
         ("breaches", "levl", 5),  # reference to line
         ("breaches", "levee_id", 1),  # reference to levee, not increased
     ],

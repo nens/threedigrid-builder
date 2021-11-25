@@ -248,7 +248,7 @@ def test_sort():
         ),
         pumps=Pumps(id=[0], line=[(4, 5)]),
         nodes_embedded=Nodes(id=[0], embedded_in=[1]),
-        breaches=Breaches(id=[0], levl=[4]),
+        breaches=Breaches(id=[0], levl=[6]),
     )
     grid.sort()
 
