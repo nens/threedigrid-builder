@@ -472,9 +472,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "width_1d", cross_sections.width_1d)
         self.write_dataset(group, "offset", cross_sections.offset)
         self.write_dataset(group, "count", cross_sections.count)
-
-        # do not use self.write_dataset as we don't want a dummy element
-        group.create_dataset("tables", data=cross_sections.tables.T, **HDF5_SETTINGS)
+        self.write_dataset(group, "tables", cross_sections.tables.T, insert_dummy=False)
 
     def write_levees(self, levees: Levees):
         if levees is None:
@@ -497,12 +495,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "levl", breaches.line_id + 1)
         self.write_dataset(group, "levee_id", breaches.levee_id)
         self.write_dataset(group, "content_pk", breaches.content_pk)
-
-        # can be collected from SQLite, but empty for now:
-        shape = (len(breaches),)
-        self.write_dataset(group, "levbr", np.full(shape, np.nan, dtype=np.float64))
-        self.write_dataset(group, "levmat", np.full(shape, -9999, dtype=np.int32))
-        self.write_dataset(group, "kcu", np.full(shape, -9999, dtype=np.int32))
+        self.write_dataset(group, "levbr", breaches.levbr)
+        self.write_dataset(group, "levmat", breaches.levmat)
+        self.write_dataset(group, "coordinates", breaches.coordinates.T)
 
     def write_dataset(self, group, name, values, fill=None, insert_dummy=True):
         """Create the correct size dataset for writing to gridadmin.h5 and

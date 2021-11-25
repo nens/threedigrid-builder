@@ -1,13 +1,13 @@
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import TablesSettings
+from threedigrid_builder.base import TablesSettings, Levees
 from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import InitializationType
-from threedigrid_builder.constants import SewerageType
+from threedigrid_builder.constants import SewerageType, Material
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
 from threedigrid_builder.grid import Channels
@@ -180,6 +180,22 @@ def test_get_grid_refinements(db):
     assert grid_refinements.display_name[3] == "riolering"
     assert grid_refinements.display_name[5] == "test_polygon2"
     assert grid_refinements.code[5] == "2"
+
+
+def test_get_levees(db):
+    levees = db.get_levees()
+    assert isinstance(levees, Levees)
+
+    assert len(levees) == 3
+    assert levees.id[1] == 2
+    assert pygeos.equals_exact(
+        pygeos.get_point(levees.the_geom[0], 0),
+        pygeos.Geometry("POINT (110241 519070)"),
+        tolerance=1,
+    )
+    assert levees.crest_level[1] == 0.0
+    assert levees.max_breach_depth[2] == 4.0
+    assert levees.material[0] == Material.SAND
 
 
 def test_get_obstacles(db):

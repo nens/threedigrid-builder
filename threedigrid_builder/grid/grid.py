@@ -589,9 +589,17 @@ class Grid:
         )
 
     def add_levees_breaches(self, levees, connected_points):
+        """Add levees and breaches.
+
+        The levees are just read and attached to the grid object. The crest_level of the
+        levee is used to overwrite self.lines.dpumax where necessary.
+
+        The breaches are derived from the ConnectedPoints: if a ConnectedPoint
+        references a Levee, it will result in a Breach. The Breach gets the properties
+        from the Levee (max_breach_depth, material) but these may be unset.
+        """
         self.levees = levees
-        # self.breaches = levees.get_breaches(self.nodes, self.lines, connected_points)
-        self.breaches = levees.get_breaches2(self.nodes, self.lines)
+        self.breaches = levees.get_breaches(self.nodes, self.lines, connected_points)
 
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.
