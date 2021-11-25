@@ -1,4 +1,5 @@
 from numpy.testing import assert_array_equal
+from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
@@ -247,6 +248,7 @@ def test_sort():
         ),
         pumps=Pumps(id=[0], line=[(4, 5)]),
         nodes_embedded=Nodes(id=[0], embedded_in=[1]),
+        breaches=Breaches(id=[0], levl=[6]),
     )
     grid.sort()
 
@@ -257,6 +259,7 @@ def test_sort():
     assert_array_equal(grid.lines.line, [(1, 2), (2, 0), (3, 1)])
     assert_array_equal(grid.pumps.line, [(1, 2)])
     assert_array_equal(grid.nodes_embedded.embedded_in, [0])
+    assert_array_equal(grid.breaches.levl, [1])
 
 
 def test_sort_boundary_conditions():
