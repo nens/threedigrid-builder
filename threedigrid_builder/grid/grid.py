@@ -164,13 +164,9 @@ class Grid:
             nodes_embedded = Nodes(id=[])
         elif not isinstance(nodes_embedded, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
-        if levees is None:
-            levees = Levees(id=[])
-        elif not isinstance(levees, Levees):
+        if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
-        if breaches is None:
-            breaches = Breaches(id=[])
-        elif not isinstance(breaches, Breaches):
+        if breaches is not None and not isinstance(breaches, Breaches):
             raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
         self.lines = lines
@@ -506,6 +502,12 @@ class Grid:
         if len(obstacles) > 0:
             obstacles_module.apply_obstacles(self.lines, obstacles)
 
+    def set_levees(self, levees):
+        """Set levees to the grid, also adjust 2D lines (see set_obstacles)."""
+        self.levees = levees
+        if len(levees) > 0:
+            obstacles_module.apply_obstacles(self.lines, levees)
+
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
 
@@ -588,19 +590,14 @@ class Grid:
             line_id_counter,
         )
 
-    def add_levees_breaches(self, levees, connected_points):
-        """Add levees and breaches.
-
-        The levees are just attached to the grid object.
-
-        The breaches are derived from the ConnectedPoints: if a ConnectedPoint
+    def add_breaches(self, connected_points):
+        """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
         references a Levee, it will result in a Breach. The Breach gets the properties
         from the Levee (max_breach_depth, material) but these may be unset.
         """
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
-        self.levees = levees
-        self.breaches = connected_points.get_breaches(self.lines, levees)
+        self.breaches = connected_points.get_breaches(self.lines, self.levees)
 
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.

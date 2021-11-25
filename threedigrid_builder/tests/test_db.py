@@ -202,8 +202,7 @@ def test_get_levees(db):
 
 def test_get_obstacles(db):
     obstacles = db.get_obstacles()
-    assert (len(obstacles.id)) == 3
-    assert obstacles.crest_level[1] == 0.0
+    assert (len(obstacles)) == 0
 
 
 def test_get_pipes(db):

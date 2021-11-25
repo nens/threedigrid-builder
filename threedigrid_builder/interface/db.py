@@ -544,9 +544,8 @@ class SQLite:
         return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:
-        """Return Obstacles and Levees concatenated into one array."""
         with self.get_session() as session:
-            arr1 = (
+            arr = (
                 session.query(
                     models.Obstacle.the_geom,
                     models.Obstacle.id,
@@ -555,20 +554,9 @@ class SQLite:
                 .order_by(models.Obstacle.id)
                 .as_structarray()
             )
-            arr2 = (
-                session.query(
-                    models.Levee.the_geom,
-                    models.Levee.id,
-                    models.Levee.crest_level,
-                )
-                .order_by(models.Levee.id)
-                .as_structarray()
-            )
-            arr = np.concatenate((arr1, arr2))
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["id"] = np.arange(len(arr["crest_level"]))
 
         return Obstacles(**{name: arr[name] for name in arr.dtype.names})
 

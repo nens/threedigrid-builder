@@ -25,7 +25,7 @@ def apply_obstacles(lines, obstacles):
 
     Args:
         lines (Lines)
-        obstacles (Obstacles)
+        obstacles (Obstacles or Levees)
     """
     is_2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
     coordinates = lines.line_coords[is_2d]

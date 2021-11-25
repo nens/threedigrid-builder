@@ -69,8 +69,8 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
-        obstacles = db.get_obstacles()
-        grid.set_obstacles(obstacles)
+        grid.set_levees(db.get_levees())
+        grid.set_obstacles(db.get_obstacles())
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -173,10 +173,7 @@ def _make_gridadmin(
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
-        grid.add_levees_breaches(
-            db.get_levees(),
-            connected_points,
-        )
+        grid.add_breaches(connected_points)
 
     grid.finalize()
     return grid
