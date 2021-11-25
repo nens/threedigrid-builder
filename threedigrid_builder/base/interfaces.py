@@ -6,6 +6,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional
 
+
 __all__ = ["OutputInterface", "RasterInterface"]
 
 
@@ -65,5 +66,5 @@ class RasterInterface(ABC):
         pass
 
     @abstractmethod
-    def get_meta(self):
+    def read(self):
         pass

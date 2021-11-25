@@ -1,7 +1,7 @@
+from threedigrid_builder.base import RasterInterface
+
 import json
 import numpy as np
-from pathlib import Path
-from threedigrid_builder.base import RasterInterface
 
 
 try:
@@ -11,12 +11,22 @@ try:
 except ImportError:
     rasterio = rasterio_features = None
 
+__all__ = ["RasterioInterface"]
+
 
 class RasterioInterface(RasterInterface):
+    def __init__(self, *args, **kwargs):
+        if rasterio is None:
+            raise ImportError("Module 'rasterio' is not available")
+        super().__init__(*args, **kwargs)
+
     def __enter__(self):
+        if rasterio is None:
+            raise ImportError("Module 'rasterio' is not available")
         self._env = rasterio.Env().__enter__()
         self._raster = rasterio.open(self.path, "r").__enter__()
         self.pixel_size = self._raster.profile["transform"][0]
+        return self
 
     def __exit__(self, *args, **kwargs):
         self._raster.__exit__(*args, **kwargs)
@@ -25,7 +35,9 @@ class RasterioInterface(RasterInterface):
     def read(self):
         if self.model_area_path is not None:
             area_geometry = self._load_geometry(self.model_area_path)
-            width, height, bbox, data = self._create_area_arr_from_geometry(area_geometry)
+            width, height, bbox, data = self._create_area_arr_from_geometry(
+                area_geometry
+            )
         else:
             width, height, bbox, data = self._create_area_arr_from_dem()
 
@@ -35,8 +47,8 @@ class RasterioInterface(RasterInterface):
             "height": height,
             "bbox": bbox,
             "area_mask": np.flipud(data).T.astype(
-            dtype=np.int32, copy=False, order="F"
-                ),
+                dtype=np.int32, copy=False, order="F"
+            ),
         }
 
     def _create_area_arr_from_dem(self):
@@ -46,10 +58,9 @@ class RasterioInterface(RasterInterface):
 
     @staticmethod
     def _load_geometry(model_area_json):
-        with open(model_area_json, "r") as f:
+        with model_area_json.open("r") as f:
             area_geometry = json.load(f)["features"][0]
         return area_geometry
-
 
     def _create_area_arr_from_geometry(self, area_geometry):
         dem = self._raster
@@ -78,9 +89,7 @@ class RasterioInterface(RasterInterface):
             transform=self.transform,
             dtype=np.int32,
         )
-        return window.width,window.height,bbox,data
-
-    
+        return window.width, window.height, bbox, data
 
     # def create_model_area_tiff(self, out_filepath):
 
