@@ -332,10 +332,6 @@ class SQLite:
         )
 
     def get_levees(self) -> Levees:
-        """Load connected points, join them directly with calculation points.
-
-        Automatically ignores calculation points without connected points.
-        """
         with self.get_session() as session:
             arr = (
                 session.query(
