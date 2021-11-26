@@ -1,4 +1,5 @@
 from threedigrid_builder.base import GridSettings
+from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import BoundaryType
@@ -7,6 +8,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import InitializationType
+from threedigrid_builder.constants import Material
 from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
@@ -96,6 +98,7 @@ def test_get_connected_points(db):
     assert connected_points.content_pk[1321] == 206
     assert connected_points.node_number[1322] == 2
     assert connected_points.calculation_point_id[1322] == 1701
+    assert connected_points.levee_id[1322] == 3
 
 
 def test_get_connection_nodes(db):
@@ -181,10 +184,25 @@ def test_get_grid_refinements(db):
     assert grid_refinements.code[5] == "2"
 
 
+def test_get_levees(db):
+    levees = db.get_levees()
+    assert isinstance(levees, Levees)
+
+    assert len(levees) == 3
+    assert levees.id[1] == 2
+    assert pygeos.equals_exact(
+        pygeos.get_point(levees.the_geom[0], 0),
+        pygeos.Geometry("POINT (110241 519070)"),
+        tolerance=1,
+    )
+    assert levees.crest_level[1] == 0.0
+    assert levees.max_breach_depth[2] == 4.0
+    assert levees.material[0] == Material.SAND
+
+
 def test_get_obstacles(db):
     obstacles = db.get_obstacles()
-    assert (len(obstacles.id)) == 3
-    assert obstacles.crest_level[1] == 0.0
+    assert (len(obstacles)) == 0
 
 
 def test_get_pipes(db):
@@ -337,6 +355,7 @@ def test_get_weirs(db):
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
+
 
 def test_get_dem_average(db):
     dem_avg_areas = db.get_dem_average_areas()

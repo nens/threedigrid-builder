@@ -7,7 +7,7 @@ This layer depends on the interfaces as well as on the domain layer.
 
 from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, dem_average_area
+from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
@@ -69,8 +69,7 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
-        obstacles = db.get_obstacles()
-        grid.set_obstacles(obstacles)
+        grid.set_obstacles(db.get_obstacles(), db.get_levees())
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -163,8 +162,9 @@ def _make_gridadmin(
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.embed_nodes(embedded_node_id_counter)
+        connected_points = db.get_connected_points()
         grid.add_1d2d(
-            db.get_connected_points(),
+            connected_points,
             connection_nodes=connection_nodes,
             channels=channels,
             pipes=pipes,
@@ -172,6 +172,7 @@ def _make_gridadmin(
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
+        grid.add_breaches(connected_points)
 
     grid.finalize()
     return grid
@@ -186,6 +187,8 @@ def _grid_to_gpkg(grid, path):
             )
         out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
         out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
+        out.write_levees(grid.levees, epsg_code=grid.meta.epsg_code)
+        out.write_breaches(grid.breaches, epsg_code=grid.meta.epsg_code)
 
 
 def _grid_to_hdf5(grid: Grid, path):
@@ -200,6 +203,8 @@ def _grid_to_hdf5(grid: Grid, path):
         out.write_pumps(grid.pumps)
         if grid.cross_sections.tables is not None:
             out.write_cross_sections(grid.cross_sections)
+        out.write_levees(grid.levees)
+        out.write_breaches(grid.breaches)
 
 
 def make_gridadmin(

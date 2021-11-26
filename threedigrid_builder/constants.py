@@ -136,3 +136,9 @@ class InterflowType(IntEnum):
     GLOBAL_DEEPEST_POINT_SCALED_POROSITY = 2
     LOCAL_DEEPEST_POINT_CONSTANT_POROSITY = 3
     GLOBAL_DEEPEST_POINT_CONSTANT_POROSITY = 4
+
+
+@unique
+class Material(IntEnum):
+    SAND = 1
+    CLAY = 2
