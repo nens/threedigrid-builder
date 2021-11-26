@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.7.1 (unreleased)
 ------------------
 
+- Added has_max_infiltration_capacity flag.
+
 - Added breaches and levees.
 
 
