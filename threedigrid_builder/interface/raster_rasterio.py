@@ -5,6 +5,11 @@ import json
 import numpy as np
 
 
+try:
+    import rasterio
+except ImportError:
+    rasterio = None
+
 __all__ = ["RasterioInterface"]
 
 
@@ -25,10 +30,10 @@ def get_epsg_code(crs):
 
 class RasterioInterface(RasterInterface):
     def __init__(self, *args, **kwargs):
-        global rasterio
-
-        import rasterio
-
+        if rasterio is None:
+            raise ImportError(
+                "Cannot use RasterioInterface if rasterio is not available."
+            )
         super().__init__(*args, **kwargs)
 
     def __enter__(self):
