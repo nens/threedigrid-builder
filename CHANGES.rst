@@ -1,7 +1,23 @@
 Changelog of threedigrid-builder
 ================================
 
-0.6.2 (unreleased)
+0.7.1 (unreleased)
+------------------
+
+- Added has_max_infiltration_capacity flag.
+
+- Added breaches and levees.
+
+- Implement GDAL as an alternative to RasterIO.
+
+- Check the raster EPSG code and use it if the model does not have one.
+
+- Removed 'model_area_path' feature from application.
+
+- Removed the "sqlalchemy<1.4" contraint, this library is compatible with SQLAlchemy 1.4
+
+
+0.7.0 (2021-11-25)
 ------------------
 
 - Raise SchematisationError on invalid settings.

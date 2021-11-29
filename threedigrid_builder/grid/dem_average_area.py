@@ -14,10 +14,10 @@ class DemAverageAreas:
 
 
 def apply_dem_average_areas(nodes, cell_tree, dem_average_areas):
-    """Set calculation type to node being DEM_AVERAGED in tables. When the 
+    """Set calculation type to node being DEM_AVERAGED in tables. When the
     dem_average_areas polygons intersect with a 2D cell the node will be dem_averaged
     during table preprocessing.
-    
+
     Args:
         nodes (Nodes)
         cell_tree (STRTree)

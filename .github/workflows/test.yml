@@ -10,27 +10,46 @@ on:
 jobs:
   TestLinux:
     name: Python ${{ matrix.python }} ${{ matrix.display_name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         include:
           # 2017
           - python: 3.6
-            pins: "numpy==1.13.* h5py==2.7.*"
+            numpy: numpy==1.13.*
+            display_name: "2017"
+            pins: "h5py==2.7.* sqlalchemy==1.1.15"
+            extras: "[test,gridadmin,rasters]"
           # 2018
           - python: 3.7
-            pins: "numpy==1.15.* h5py==2.9.*"
+            numpy: numpy==1.15.*
+            display_name: "2018"
+            pins: "h5py==2.9.* sqlalchemy==1.2.15"
+            extras: "[test,gridadmin,rasters]"
           # 2019
           - python: 3.8
-            pins: "numpy==1.17.* h5py==2.10.*"
+            numpy: numpy==1.17.*
+            display_name: "2019"
+            pins: "h5py==2.10.* sqlalchemy==1.3.12"
+            extras: "[test,gridadmin,rasters]"
           # 2020
           - python: 3.9
-            pins: "numpy==1.19.* h5py==3.1.*"
-          # current
+            numpy: numpy==1.19.*
+            display_name: "2020"
+            pins: "h5py==3.1.* sqlalchemy==1.3.22"
+            extras: "[test,gridadmin,rasters]"
+          # 2021 (Summer)
           - python: 3.9
+            numpy: numpy==1.21.*
+            display_name: "2021 Q3"
+            pins: "h5py==3.3.* sqlalchemy==1.4.20"
+            extras: "[test,gridadmin,rasters]"
+          # current
+          - python: '3.10'
+            numpy: numpy
             display_name: "latest"
-            pins: "numpy"
+            extras: "[test,gridadmin]"
 
     steps:
       - uses: actions/checkout@v2
@@ -42,20 +61,27 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Install sqlite3 and spatialite libraries
+      - name: Install GDAL, sqlite3 and spatialite
         run: |
-          sudo apt-get install --yes --no-install-recommends sqlite3 libsqlite3-mod-spatialite
+          sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
 
       - name: Compile libthreedigrid
         shell: bash
         run: ./build.sh
 
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-
+
       - name: Install python dependencies
         shell: bash
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
-          pip install cython ${{ matrix.pins }}
-          pip install -e .[test,gridadmin,rasters] --no-build-isolation
+          pip install cython ${{ matrix.numpy }}
+          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.deps }} pygdal==3.0.4.*
           pip list
 
       - name: Run unittests

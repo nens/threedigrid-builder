@@ -81,7 +81,7 @@ install_requires = [
     "pygeos>=0.10",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
-    "sqlalchemy<1.4",
+    "sqlalchemy",
     "dataclasses ; python_version<'3.7'",
 ]
 

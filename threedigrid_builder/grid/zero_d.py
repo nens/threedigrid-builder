@@ -204,6 +204,7 @@ class SurfaceParams:
 
 class Surface:
     id: int
+    surface_id: int
     function: str
     code: str
     display_name: str
@@ -224,6 +225,7 @@ class Surface:
 
 class ImperviousSurface:
     id: int
+    surface_id: int
     code: str
     display_name: str
     surface_inclination: str
@@ -247,23 +249,38 @@ class Surfaces:
 @array_of(ImperviousSurface)
 class ImperviousSurfaces:
     def apply(self, grid):
-        centroids = pygeos.get_coordinates(pygeos.centroid(self.the_geom))
+        centroids = pygeos.centroid(self.the_geom)
+        no_centroid_mask = centroids == None
+
+        if np.any(no_centroid_mask):
+            # Try to fill empty centroids
+            for surface_id in np.unique(self.surface_id[no_centroid_mask]):
+                surface_id_mask = self.surface_id == surface_id
+                centroids[surface_id_mask] =  pygeos.centroid(
+                    self.connection_node_the_geom[surface_id_mask])
+
+        centroid_coords = pygeos.get_coordinates(centroids)
         connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
-         
-        grid.surfaces.id = np.arange(1, len(self.id) + 1, dtype=int)
-        grid.surfaces.centroid_x = centroids[:, 0]
-        grid.surfaces.centroid_y = centroids[:, 1]
-        grid.surfaces.code = self.code
-        grid.surfaces.display_name = self.display_name
-        grid.surfaces.surface_inclination = self.surface_inclination
-        grid.surfaces.surface_class = self.surface_class
-        grid.surfaces.surface_sub_class = self.surface_sub_class
-        grid.surfaces.nr_of_inhabitants = self.nr_of_inhabitants
-        grid.surfaces.area = self.area
-        grid.surfaces.dry_weather_flow = self.dry_weather_flow
+
+
+        _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
+
+        grid.surfaces.id = np.arange(1, len(unique_surfaces_mask) + 1, dtype=int)
+        grid.surfaces.centroid_x = centroid_coords[:, 0][unique_surfaces_mask]
+        grid.surfaces.centroid_y = centroid_coords[:, 1][unique_surfaces_mask]
+        grid.surfaces.code = self.code[unique_surfaces_mask]
+        grid.surfaces.display_name = self.display_name[unique_surfaces_mask]
+        grid.surfaces.surface_inclination = self.surface_inclination[unique_surfaces_mask]
+        grid.surfaces.surface_class = self.surface_class[unique_surfaces_mask]
+
+        self.surface_sub_class[self.surface_sub_class == None] = b""
+        grid.surfaces.surface_sub_class = self.surface_sub_class[unique_surfaces_mask]
+        grid.surfaces.nr_of_inhabitants = self.nr_of_inhabitants[unique_surfaces_mask]
+        grid.surfaces.area = self.area[unique_surfaces_mask]
+        grid.surfaces.dry_weather_flow = self.dry_weather_flow[unique_surfaces_mask]
 
         params = SurfaceParams.from_surface_class_and_inclination(
-            self.surface_class, self.surface_inclination)
+            self.surface_class[unique_surfaces_mask], self.surface_inclination[unique_surfaces_mask])
 
         grid.surfaces.outflow_delay = params.outflow_delay
         grid.surfaces.storage_limit = params.surface_storage
@@ -278,9 +295,14 @@ class ImperviousSurfaces:
         grid.surfaces.nxc = connection_node_coords[:, 0]
         grid.surfaces.nyc = connection_node_coords[:, 1]
         grid.surfaces.fac = self.percentage / 100.0
-        grid.surfaces.imp = grid.surfaces.id
 
-        grid.surfaces.function = np.full(self.id.shape, b"")
+        search_array = self.surface_id[unique_surfaces_mask]
+        sort_idx = np.argsort(self.surface_id[unique_surfaces_mask])
+        lookup = sort_idx[np.searchsorted(
+            search_array, self.surface_id, sorter=sort_idx)]
+
+        grid.surfaces.imp = lookup + 1 
+        grid.surfaces.function = np.full(len(unique_surfaces_mask), b"")
 
         # Find connection_node (calc) node id's
         connection_node_mask = grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value

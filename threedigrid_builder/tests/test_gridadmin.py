@@ -1,4 +1,6 @@
+from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import GridSettings
+from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
@@ -81,6 +83,19 @@ def h5_out(tmpdir_factory):
         embedded_in=[1, 2],
         dmax=[2.3, 0.2],
     )
+    levees = Levees(
+        id=[0, 1],
+        the_geom=[
+            pygeos.linestrings([[1, 1], [2, 2]]),
+            pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
+        ],
+    )
+    breaches = Breaches(
+        id=[0, 1],
+        coordinates=[[0, 0], [1, 1]],
+        levl=[4, 3],
+        levee_id=[1, 0],
+    )
 
     path = tmpdir_factory.mktemp("h5") / "gridadmin.h5"
     with GridAdminOut(path) as out:
@@ -92,6 +107,8 @@ def h5_out(tmpdir_factory):
         out.write_lines(lines)
         out.write_pumps(pumps)
         out.write_cross_sections(cross_sections)
+        out.write_levees(levees)
+        out.write_breaches(breaches)
 
     with h5py.File(path, "r") as f:
         yield f
@@ -131,7 +148,7 @@ def h5_out(tmpdir_factory):
         ("s1d", (4,), "float64"),  # added
         ("embedded_in", (4,), "int32"),  # added
         ("boundary_type", (4,), "int32"),  # added
-        ("has_dem_averaged", (4,), "int32"), #added
+        ("has_dem_averaged", (4,), "int32"),  # added
     ],
 )
 def test_write_nodes(h5_out, dataset, shape, dtype):
@@ -171,7 +188,7 @@ def test_write_nodes(h5_out, dataset, shape, dtype):
         ("embedded_in", (3,), "int32"),  # added
         ("boundary_id", (3,), "int32"),  # added
         ("boundary_type", (3,), "int32"),  # added
-        ("has_dem_averaged", (3,), "int32"), #added
+        ("has_dem_averaged", (3,), "int32"),  # added
     ],
 )
 def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
@@ -400,6 +417,52 @@ def test_write_cross_sections(h5_out, dataset, shape, dtype):
     assert h5_out["cross_sections"][dataset].dtype == np.dtype(dtype)
 
 
+# obtained from bergermeer gridadmin.h5
+# note that there is no dummy element in this group (just 2 levees)
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("id", (2,), "int32"),
+        ("crest_level", (2,), "float64"),
+        ("max_breach_depth", (2,), "float64"),
+        ("coords", (2,), "object"),
+    ],
+)
+def test_write_levees(h5_out, dataset, shape, dtype):
+    assert h5_out["levees"][dataset].shape == shape
+    assert h5_out["levees"][dataset].dtype == np.dtype(dtype)
+
+
+def test_write_levees_coords(h5_out):
+    # coords are stored as a variable-length array [x, x, ..., y, y, ...]
+    data = h5_out["levees"]["coords"][:]
+    assert data[0].tolist() == [1, 2, 1, 2]
+    assert data[1].tolist() == [1, 2, 3, 1, 2, 3]
+
+
+# obtained from bergermeer gridadmin.h5, edited:
+# - 1 breach to 2
+# - int64 to int32
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("id", (3,), "int32"),
+        ("levl", (3,), "int32"),
+        ("levbr", (3,), "float64"),
+        ("levmat", (3,), "int32"),
+        ("content_pk", (3,), "int32"),
+        ("coordinates", (2, 3), "float64"),
+        ("levee_id", (3,), "int32"),  # added
+        # ("llev", (1931,), "int32"),  dropped
+        # ("kcu", (2,), "int32"),  dropped
+        # ("seq_ids", (2,), "int32"),  dropped
+    ],
+)
+def test_write_breaches(h5_out, dataset, shape, dtype):
+    assert h5_out["breaches"][dataset].shape == shape
+    assert h5_out["breaches"][dataset].dtype == np.dtype(dtype)
+
+
 @pytest.mark.parametrize(
     "group,dataset,expected",
     [
@@ -419,6 +482,9 @@ def test_write_cross_sections(h5_out, dataset, shape, dtype):
         ("lines", "cross2", -9999),  # reference to cross section
         ("pumps", "node1_id", 1),  # reference to node
         ("pumps", "node2_id", 2),  # reference to node
+        ("breaches", "id", 1),
+        ("breaches", "levl", 5),  # reference to line
+        ("breaches", "levee_id", 1),  # reference to levee, not increased
     ],
 )
 def test_not_off_by_one(h5_out, group, dataset, expected):

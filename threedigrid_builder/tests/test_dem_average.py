@@ -14,11 +14,13 @@ def grid():
     id = np.array([0, 1, 2, 3])
     calculation_type = np.array([-9999, -9999, -9999, -9999])
     bounds = np.array(
-        [[0., 0., 1., 1.],
-         [0., 1., 1., 2.],
-         [1., 0., 2., 1.],
-         [1., 1., 2., 2.]],
-        dtype=np.float64
+        [
+            [0.0, 0.0, 1.0, 1.0],
+            [0.0, 1.0, 1.0, 2.0],
+            [1.0, 0.0, 2.0, 1.0],
+            [1.0, 1.0, 2.0, 2.0],
+        ],
+        dtype=np.float64,
     )
     nodes = Nodes(id=id, calculation_type=calculation_type, bounds=bounds)
     grid = Grid(nodes=nodes, lines=Lines(id=np.array([1])))
@@ -40,6 +42,7 @@ def dem_average_areas_no_intersect():
         id=np.array([1], dtype=np.int32),
         the_geom=np.array([pygeos.box(11, 11, 18, 18)]),
     )
+
 
 def test_dem_average_areas(grid, dem_average_areas):
     grid.set_dem_averaged_cells(dem_average_areas)

@@ -1,6 +1,8 @@
 from dataclasses import fields
+from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
+from threedigrid_builder.base import Levees
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.constants import ContentType
@@ -410,20 +412,8 @@ class GridAdminOut(OutputInterface):
         )
 
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
-        line_geometries = [
-            pygeos.get_coordinates(x).T.ravel() for x in lines.line_geometries
-        ]
-        line_geometries.insert(0, np.array([np.nan, np.nan]))
-        # The dataset has a special "variable length" dtype. This one is special write method.
-        try:
-            vlen_dtype = h5py.vlen_dtype(np.dtype(float))
-        except AttributeError:  # Pre h5py 2.10
-            vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
-        group.create_dataset(
-            "line_geometries",
-            data=np.array(line_geometries, dtype=object),
-            dtype=vlen_dtype,
-            **HDF5_SETTINGS,
+        self.write_line_geometry_dataset(
+            group, "line_geometries", lines.line_geometries
         )
 
         # can be collected from SQLite, but empty for now:
@@ -487,18 +477,15 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "display_name", surfaces.display_name.astype("S250"), fill=b"")
         self.write_dataset(group, "function", surfaces.function.astype("S64"), fill=b"")
 
-        # Nan to 0
-        area = np.copy(surfaces.area)
-        area[np.isnan(area)] = default_fill_value
 
-        self.write_dataset(group, "area", area, fill=default_fill_value)
+        self.write_dataset(group, "area", surfaces.area, fill=default_fill_value, fill_nan=default_fill_value)
         self.write_dataset(group, "centroid_x", surfaces.centroid_x, fill=default_fill_value)
         self.write_dataset(group, "centroid_y", surfaces.centroid_y, fill=default_fill_value)
-        self.write_dataset(group, "dry_weather_flow", surfaces.dry_weather_flow, fill=default_fill_value)
-        self.write_dataset(group, "nr_of_inhabitants", surfaces.nr_of_inhabitants, fill=default_fill_value)
+        self.write_dataset(group, "dry_weather_flow", surfaces.dry_weather_flow, fill=default_fill_value, fill_nan=default_fill_value)
+        self.write_dataset(group, "nr_of_inhabitants", surfaces.nr_of_inhabitants, fill=default_fill_value, fill_nan=default_fill_value)
         self.write_dataset(group, "infiltration_flag", surfaces.infiltration_flag)
-        self.write_dataset(group, "outflow_delay", surfaces.outflow_delay, fill=default_fill_value)
-        self.write_dataset(group, "storage_limit", surfaces.storage_limit, fill=default_fill_value)
+        self.write_dataset(group, "outflow_delay", surfaces.outflow_delay, fill=default_fill_value, fill_nan=default_fill_value)
+        self.write_dataset(group, "storage_limit", surfaces.storage_limit, fill=default_fill_value, fill_nan=default_fill_value)
 
         # TODO: check if only do this in case of impervious surfaces
         self.write_dataset(group, "surface_class", surfaces.surface_class.astype("S128"), fill=b"")
@@ -519,6 +506,8 @@ class GridAdminOut(OutputInterface):
 
 
     def write_cross_sections(self, cross_sections: CrossSections):
+        if cross_sections is None or cross_sections.tables is None:
+            return
         group = self._file.create_group("cross_sections")
 
         # Datasets that match directly to a lines attribute:
@@ -529,11 +518,38 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "width_1d", cross_sections.width_1d)
         self.write_dataset(group, "offset", cross_sections.offset)
         self.write_dataset(group, "count", cross_sections.count)
+        self.write_dataset(group, "tables", cross_sections.tables.T, insert_dummy=False)
 
-        # do not use self.write_dataset as we don't want a dummy element
-        group.create_dataset("tables", data=cross_sections.tables.T, **HDF5_SETTINGS)
+    def write_levees(self, levees: Levees):
+        if levees is None:
+            return
+        group = self._file.create_group("levees")
 
-    def write_dataset(self, group, name, values, fill=None):
+        # Datasets that match directly to a levees attribute:
+        self.write_dataset(group, "id", levees.id, insert_dummy=False)
+        self.write_dataset(group, "crest_level", levees.crest_level, insert_dummy=False)
+        self.write_dataset(
+            group, "max_breach_depth", levees.max_breach_depth, insert_dummy=False
+        )
+        self.write_line_geometry_dataset(
+            group, "coords", levees.the_geom, insert_dummy=False
+        )
+
+    def write_breaches(self, breaches: Breaches):
+        if breaches is None:
+            return
+        group = self._file.create_group("breaches")
+
+        # Datasets that match directly to a levees attribute:
+        self.write_dataset(group, "id", breaches.id + 1)
+        self.write_dataset(group, "levl", breaches.levl + 1)
+        self.write_dataset(group, "levee_id", breaches.levee_id)
+        self.write_dataset(group, "content_pk", breaches.content_pk)
+        self.write_dataset(group, "levbr", breaches.levbr)
+        self.write_dataset(group, "levmat", breaches.levmat)
+        self.write_dataset(group, "coordinates", breaches.coordinates.T)
+
+    def write_dataset(self, group, name, values, fill=None, insert_dummy=True, fill_nan=None):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.
 
@@ -542,32 +558,56 @@ class GridAdminOut(OutputInterface):
             name (str): Name of dataset
             values (array): Values of dataset to write.
             fill: fillvalue with same dtype as values.
+            fill_nane: (optional) fillvalue for nan values
         """
+
+        if fill_nan is not None:
+            if np.issubdtype(values.dtype, np.floating):
+                values[np.isnan(values)] = fill_nan
+           
         if fill is None:
             if np.issubdtype(values.dtype, np.floating):
                 fill = np.nan
             else:
                 fill = -9999
+        assert insert_dummy in (True, False)
 
         if values.ndim == 1:
             ds = group.create_dataset(
                 name,
-                (values.shape[0] + 1,),
+                (values.shape[0] + int(insert_dummy),),
                 dtype=values.dtype,
                 fillvalue=fill,
                 **HDF5_SETTINGS,
             )
-            ds[1:] = values
-            if name == "id":  # set the ID of the dummy element
+            ds[int(insert_dummy) :] = values
+            if insert_dummy and name == "id":  # set the ID of the dummy element
                 ds[0] = 0
         elif values.ndim == 2:
             ds = group.create_dataset(
                 name,
-                (values.shape[0], values.shape[1] + 1),
+                (values.shape[0], values.shape[1] + int(insert_dummy)),
                 dtype=values.dtype,
                 fillvalue=fill,
                 **HDF5_SETTINGS,
             )
-            ds[:, 1:] = values
+            ds[:, int(insert_dummy) :] = values
         else:
             ValueError("Too many dimensions for values.")
+
+    def write_line_geometry_dataset(self, group, name, data, insert_dummy=True):
+        # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
+        line_geometries = [pygeos.get_coordinates(x).T.ravel() for x in data]
+        if insert_dummy:
+            line_geometries.insert(0, np.array([np.nan, np.nan]))
+        # The dataset has a special "variable length" dtype
+        try:
+            vlen_dtype = h5py.vlen_dtype(np.dtype(float))
+        except AttributeError:  # Pre h5py 2.10
+            vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+        group.create_dataset(
+            name,
+            data=np.array(line_geometries, dtype=object),
+            dtype=vlen_dtype,
+            **HDF5_SETTINGS,
+        )

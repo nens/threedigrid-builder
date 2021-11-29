@@ -9,10 +9,11 @@ from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.interface import GDALInterface
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
+from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
-from threedigrid_builder.interface import Subgrid
 from threedi_modelchecker.threedi_model.constants import InflowType
 from typing import Callable
 from typing import Optional
@@ -33,7 +34,6 @@ def _default_progress_callback(progress: float, message: str):
 def _make_gridadmin(
     sqlite_path,
     dem_path=None,
-    model_area_path=None,
     meta=None,
     progress_callback=None,
 ):
@@ -54,8 +54,17 @@ def _make_gridadmin(
         if not dem_path:
             raise SchematisationError("DEM file expected")
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
-        subgrid = Subgrid(dem_path, model_area=model_area_path)
-        subgrid_meta = subgrid.get_meta()
+
+        try:
+            with RasterioInterface(dem_path) as raster:
+                subgrid_meta = raster.read()
+        except ImportError:
+            with GDALInterface(dem_path) as raster:
+                subgrid_meta = raster.read()
+
+        # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)
+        grid.meta.epsg_code = raster.epsg_code
+
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")
         quadtree = QuadTree(
@@ -70,8 +79,7 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
-        obstacles = db.get_obstacles()
-        grid.set_obstacles(obstacles)
+        grid.set_obstacles(db.get_obstacles(), db.get_levees())
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -164,8 +172,9 @@ def _make_gridadmin(
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.embed_nodes(embedded_node_id_counter)
+        connected_points = db.get_connected_points()
         grid.add_1d2d(
-            db.get_connected_points(),
+            connected_points,
             connection_nodes=connection_nodes,
             channels=channels,
             pipes=pipes,
@@ -173,6 +182,7 @@ def _make_gridadmin(
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
+        grid.add_breaches(connected_points)
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,
@@ -199,6 +209,8 @@ def _grid_to_gpkg(grid, path):
             )
         out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
         out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
+        out.write_levees(grid.levees, epsg_code=grid.meta.epsg_code)
+        out.write_breaches(grid.breaches, epsg_code=grid.meta.epsg_code)
 
 
 def _grid_to_hdf5(grid: Grid, path):
@@ -215,13 +227,14 @@ def _grid_to_hdf5(grid: Grid, path):
             out.write_cross_sections(grid.cross_sections)
         if grid.meta.has_0d:
             out.write_surfaces(grid.surfaces)
+        out.write_levees(grid.levees)
+        out.write_breaches(grid.breaches)
 
 
 def make_gridadmin(
     sqlite_path: Path,
     dem_path: Path,
     out_path: Path,
-    model_area_path: Optional[Path] = None,
     meta: dict = None,
     progress_callback: Optional[Callable[[float, str], None]] = None,
 ):
@@ -234,7 +247,6 @@ def make_gridadmin(
         dem_path: The path of the input DEM file (GeoTIFF)
         out_path: The path of the (to be created) output file. Allowed extensions
             are: .h5 (HDF5) and .gpkg (Geopackage)
-        model_area_path
         meta: an optional dict with the following (optional) keys: model_slug (str),
             revision_hash (str), revision_nr (int), threedi_version (str)
         progress_callback: an optional function that updates the progress. The function
@@ -250,8 +262,6 @@ def make_gridadmin(
         dem_path = Path(dem_path)
     if isinstance(out_path, str):
         out_path = Path(out_path)
-    if isinstance(model_area_path, str):
-        model_area_path = Path(model_area_path)
     extension = out_path.suffix.lower()
     if extension == ".h5":
         writer = _grid_to_hdf5
@@ -265,7 +275,6 @@ def make_gridadmin(
     grid = _make_gridadmin(
         sqlite_path,
         dem_path,
-        model_area_path,
         meta=meta,
         progress_callback=progress_callback,
     )
