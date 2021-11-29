@@ -8,7 +8,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import Material
 from threedigrid_builder.constants import NodeType
-
+from threedigrid_builder.grid import Grid
 import numpy as np
 import pygeos
 
@@ -35,6 +35,17 @@ class GeopackageOut(OutputInterface):
 
     def __exit__(self, *args, **kwargs):
         pass
+
+    def write(self, grid: Grid):
+        self.write_nodes(grid.nodes, epsg_code=grid.meta.epsg_code)
+        if grid.nodes_embedded is not None:
+            self.write_nodes_embedded(
+                grid.nodes_embedded, grid.nodes, epsg_code=grid.meta.epsg_code
+            )
+        self.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
+        self.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
+        self.write_levees(grid.levees, epsg_code=grid.meta.epsg_code)
+        self.write_breaches(grid.breaches, epsg_code=grid.meta.epsg_code)
 
     def write_nodes(self, nodes, epsg_code=None, **kwargs):
         """Write "nodes" and "cells" layers to a geopackage

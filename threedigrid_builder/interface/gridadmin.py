@@ -1,5 +1,5 @@
 from dataclasses import fields
-from threedigrid_builder.base import Breaches
+from threedigrid_builder.base import Breaches, Grid
 from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import Levees
@@ -145,6 +145,20 @@ class GridAdminOut(OutputInterface):
 
     def __exit__(self, *args, **kwargs):
         self._file.close()
+
+    def write(self, grid: Grid):
+        self.write_meta(grid.meta)
+        self.write_grid_counts(grid.nodes, grid.lines)
+        if grid.quadtree_stats is not None:
+            self.write_quadtree(grid.quadtree_stats)
+        self.write_nodes(grid.nodes)
+        self.write_nodes_embedded(grid.nodes_embedded)
+        self.write_lines(grid.lines)
+        self.write_pumps(grid.pumps)
+        if grid.cross_sections.tables is not None:
+            self.write_cross_sections(grid.cross_sections)
+        self.write_levees(grid.levees)
+        self.write_breaches(grid.breaches)
 
     def write_meta(self, meta: GridMeta):
         """Write the metadata to the gridadmin file.
