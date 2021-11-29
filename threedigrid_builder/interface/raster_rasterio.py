@@ -89,9 +89,6 @@ class RasterioInterface(RasterInterface):
             left + window.width * self.pixel_size,
             top,
         )
-        # self._i_off = window.col_off
-        # self._j_off = dem.height - window.row_off - window.height
-        # offset_model_area_dem = (self._i_off, self._j_off)
         self.transform = rasterio.transform.from_origin(
             left, top, self.pixel_size, self.pixel_size
         )
@@ -103,19 +100,3 @@ class RasterioInterface(RasterInterface):
             dtype=np.int32,
         )
         return window.width, window.height, bbox, data
-
-    # def create_model_area_tiff(self, out_filepath):
-
-    #     with rasterio.Env():
-    #         with rasterio.open(self.dem_filepath, "r") as dem:
-    #             profile = dem.profile
-    #             profile.update(
-    #                 width=self.width,
-    #                 height=self.height,
-    #                 out_shape=(self.height, self.width),
-    #                 transform=self.transform,
-    #                 dtype=np.int32,
-    #                 compress="lzw",
-    #             )
-    #             with rasterio.open(out_filepath, "w", **profile) as area_tiff:
-    #                 area_tiff.write(self._area_raster.astype(np.int32), 1)

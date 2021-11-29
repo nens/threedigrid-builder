@@ -10,6 +10,8 @@ Changelog of threedigrid-builder
 
 - Check the raster EPSG code and use it if the model does not have one.
 
+- Removed 'model_area_path' feature from application.
+
 
 0.7.0 (2021-11-25)
 ------------------

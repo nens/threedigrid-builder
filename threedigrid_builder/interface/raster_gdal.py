@@ -47,13 +47,7 @@ class GDALInterface(RasterInterface):
         del self._dataset
 
     def read(self):
-        if self.model_area_path is not None:
-            area_geometry = self._load_geometry(self.model_area_path)
-            width, height, bbox, data = self._create_area_arr_from_geometry(
-                area_geometry
-            )
-        else:
-            width, height, bbox, data = self._create_area_arr_from_dem()
+        width, height, bbox, data = self._create_area_arr_from_dem()
 
         return {
             "pixel_size": self.pixel_size,

@@ -33,7 +33,6 @@ def _default_progress_callback(progress: float, message: str):
 def _make_gridadmin(
     sqlite_path,
     dem_path=None,
-    model_area_path=None,
     meta=None,
     progress_callback=None,
 ):
@@ -56,10 +55,10 @@ def _make_gridadmin(
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
 
         try:
-            with RasterioInterface(dem_path, model_area_path) as raster:
+            with RasterioInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
         except ImportError:
-            with GDALInterface(dem_path, model_area_path) as raster:
+            with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
 
         # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)
@@ -221,7 +220,6 @@ def make_gridadmin(
     sqlite_path: Path,
     dem_path: Path,
     out_path: Path,
-    model_area_path: Optional[Path] = None,
     meta: dict = None,
     progress_callback: Optional[Callable[[float, str], None]] = None,
 ):
@@ -234,7 +232,6 @@ def make_gridadmin(
         dem_path: The path of the input DEM file (GeoTIFF)
         out_path: The path of the (to be created) output file. Allowed extensions
             are: .h5 (HDF5) and .gpkg (Geopackage)
-        model_area_path
         meta: an optional dict with the following (optional) keys: model_slug (str),
             revision_hash (str), revision_nr (int), threedi_version (str)
         progress_callback: an optional function that updates the progress. The function
@@ -250,8 +247,6 @@ def make_gridadmin(
         dem_path = Path(dem_path)
     if isinstance(out_path, str):
         out_path = Path(out_path)
-    if isinstance(model_area_path, str):
-        model_area_path = Path(model_area_path)
     extension = out_path.suffix.lower()
     if extension == ".h5":
         writer = _grid_to_hdf5
@@ -265,7 +260,6 @@ def make_gridadmin(
     grid = _make_gridadmin(
         sqlite_path,
         dem_path,
-        model_area_path,
         meta=meta,
         progress_callback=progress_callback,
     )
