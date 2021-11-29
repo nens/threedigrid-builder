@@ -78,12 +78,12 @@ assert len(LineType) == len(LINE_ORDER)
 class GridMeta:
     """Metadata that needs to end up in the gridadmin file."""
 
-    epsg_code: int
     model_name: str  # name from sqlite globalsettings.name
 
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
+    epsg_code: int = 28992  # SQLite EPSG is ignored if DEM file is present
     model_slug: Optional[str] = None  # from repository.slug
     revision_hash: Optional[str] = None  # from repository.revision.hash
     revision_nr: Optional[int] = None  # from repository.revision.number

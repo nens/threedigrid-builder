@@ -105,7 +105,6 @@ setup(
     install_requires=install_requires,
     extras_require={
         "test": test_requires,
-        "rasters": ["rasterio"],
         "gridadmin": ["h5py>=2.7"],
         "gpkg": ["geopandas"],
     },

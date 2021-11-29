@@ -16,3 +16,9 @@ def db():
     if not os.path.isfile(sqlite_path):
         pytest.skip("sample sqlite is not available", allow_module_level=True)
     return SQLite(sqlite_path)
+
+
+@pytest.fixture
+def dem_path():
+    """Yields a dem path"""
+    return data_path / "dem_test_5m.tif"

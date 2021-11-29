@@ -11,7 +11,6 @@ import pathlib
 
 
 project_root = pathlib.Path(__file__).resolve().parent.parent
-data_path = project_root / "integration_tests/data"
 unittests_data_path = project_root / "threedigrid_builder/tests/data"
 
 
@@ -24,9 +23,8 @@ def test_integration(tmp_path):
     progress_callback = Mock()
     make_grid(
         unittests_data_path / "v2_bergermeer.sqlite",
-        data_path / "dem_test_5m.tif",
+        unittests_data_path / "dem_test_5m.tif",
         tmp_path / "gridadmin.h5",
-        model_area_path=None,  # untested
         meta={
             "model_slug": "slug-123abc",
             "revision_hash": "123abc",
