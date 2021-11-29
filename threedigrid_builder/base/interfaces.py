@@ -56,7 +56,6 @@ class RasterInterface(ABC):
         self,
         path: Path,
         model_area_path: Optional[Path] = None,
-        epsg_code: Optional[int] = None,
     ):
         self.path = path
         self.model_area_path = model_area_path

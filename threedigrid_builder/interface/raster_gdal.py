@@ -24,6 +24,8 @@ class GDALInterface(RasterInterface):
 
         from osgeo import gdal
 
+        gdal.UseExceptions()
+
         super().__init__(*args, **kwargs)
         if self.model_area_path is not None:
             raise NotImplementedError("Model areas are not available with GDAL")
