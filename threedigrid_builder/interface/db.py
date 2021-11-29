@@ -287,7 +287,14 @@ class SQLite:
                     models.ImperviousSurface.area,
                     models.ImperviousSurface.dry_weather_flow,
                     models.ImperviousSurface.the_geom,
+                    models.ConnectionNode.id.label("connection_node_id"),
+                    models.ConnectionNode.the_geom.label("connection_node_the_geom"),
+                    models.ImperviousSurfaceMap.percentage
+
                 )
+                .select_from(models.ImperviousSurface)
+                .join(models.ImperviousSurfaceMap)
+                .join(models.ConnectionNode, models.ImperviousSurfaceMap.connection_node_id == models.ConnectionNode.id)
                 .order_by(models.ImperviousSurface.id)
                 .as_structarray()
             )
@@ -298,6 +305,7 @@ class SQLite:
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["connection_node_the_geom"] = self.reproject(arr["connection_node_the_geom"])
 
         return ImperviousSurfaces(**{name: arr[name] for name in arr.dtype.names})
 
