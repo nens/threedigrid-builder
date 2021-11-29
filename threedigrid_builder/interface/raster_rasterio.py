@@ -1,10 +1,26 @@
 from threedigrid_builder.base import RasterInterface
+from threedigrid_builder.exceptions import SchematisationError
 
 import json
 import numpy as np
 
 
 __all__ = ["RasterioInterface"]
+
+
+def get_epsg_code(crs):
+    """
+    Return epsg code from a osr.SpatialReference object
+    """
+    if crs.is_geographic:
+        raise SchematisationError(
+            f"The supplied DEM file has geographic projection '{str(crs)}'"
+        )
+    if not crs.is_epsg_code:
+        raise SchematisationError(
+            f"The supplied DEM file has a non-EPSG projection '{str(crs)}'"
+        )
+    return crs.to_epsg()
 
 
 class RasterioInterface(RasterInterface):
@@ -20,7 +36,7 @@ class RasterioInterface(RasterInterface):
         self._raster = rasterio.open(self.path, "r").__enter__()
         profile = self._raster.profile
         self.set_transform(profile["transform"][:6])
-        self.set_epsg_code(profile["crs"].to_epsg())
+        self.set_epsg_code(get_epsg_code(profile["crs"]))
         return self
 
     def __exit__(self, *args, **kwargs):

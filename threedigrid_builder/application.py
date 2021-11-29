@@ -56,19 +56,14 @@ def _make_gridadmin(
         # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
 
         try:
-            with RasterioInterface(
-                dem_path, model_area_path, grid.meta.epsg_code
-            ) as raster:
+            with RasterioInterface(dem_path, model_area_path) as raster:
                 subgrid_meta = raster.read()
         except ImportError:
-            with GDALInterface(
-                dem_path, model_area_path, grid.meta.epsg_code
-            ) as raster:
+            with GDALInterface(dem_path, model_area_path) as raster:
                 subgrid_meta = raster.read()
 
-        # patch epsg code if necessary
-        if grid.meta.epsg_code is None:
-            grid.meta.epsg_code = raster.epsg_code
+        # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)
+        grid.meta.epsg_code = raster.epsg_code
 
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")

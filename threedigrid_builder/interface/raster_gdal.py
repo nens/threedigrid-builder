@@ -1,4 +1,5 @@
 from threedigrid_builder.base import RasterInterface
+from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 
@@ -12,10 +13,15 @@ def get_epsg_code(sr):
     """
     Return epsg code from a osr.SpatialReference object
     """
-    key = str("GEOGCS") if sr.IsGeographic() else str("PROJCS")
-    name = sr.GetAuthorityName(key)
-    if name == "EPSG":
-        return int(sr.GetAuthorityCode(key))
+    if sr.IsGeographic():
+        raise SchematisationError(
+            f"The supplied DEM file has geographic projection '{sr.GetName()}'"
+        )
+    if sr.GetAuthorityName("PROJCS") != "EPSG":
+        raise SchematisationError(
+            f"The supplied DEM file has a none-EPSG projection '{sr.GetName()}'"
+        )
+    return int(sr.GetAuthorityCode("PROJCS"))
 
 
 class GDALInterface(RasterInterface):

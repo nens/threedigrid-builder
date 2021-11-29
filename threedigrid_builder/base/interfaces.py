@@ -60,7 +60,6 @@ class RasterInterface(ABC):
         self.path = path
         self.model_area_path = model_area_path
         self.transform = None
-        self.epsg_code = None
         super().__init__()
 
     def set_transform(self, transform):
@@ -83,12 +82,6 @@ class RasterInterface(ABC):
         self.transform = (a, b, c, d, e, f)
 
     def set_epsg_code(self, epsg_code):
-        if epsg_code is None:
-            return
-        if self.epsg_code is not None and epsg_code != self.epsg_code:
-            raise SchematisationError(
-                f"Raster and SQLite epsg code mismatch ({epsg_code} != {self.epsg_code})."
-            )
         self.epsg_code = epsg_code
 
     @property
