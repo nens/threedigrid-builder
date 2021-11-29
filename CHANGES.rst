@@ -14,6 +14,8 @@ Changelog of threedigrid-builder
 
 - Removed 'model_area_path' feature from application.
 
+- Removed the "sqlalchemy<1.4" contraint, this library is compatible with SQLAlchemy 1.4
+
 
 0.7.0 (2021-11-25)
 ------------------
