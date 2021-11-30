@@ -39,7 +39,7 @@ FortranCInterface_HEADER(FCMangle.h
 ###############################################################
 ##VERSION INFO                                               ##
 ###############################################################
-file (STRINGS "VERSION.rst" VERSION_NUMBER)
+file (STRINGS "LIBTHREEDIGRID_VERSION.rst" VERSION_NUMBER)
 message (STATUS libthreedigrid: ${VERSION_NUMBER}) 
 string(REPLACE "." ";" VERSION_LIST ${VERSION_NUMBER})
 message (STATUS "list is " ${VERSION_LIST}) 
