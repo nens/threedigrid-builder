@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.7.1 (2021-11-30)
+0.7.1 (unreleased)
 ------------------
 
 - Added has_max_infiltration_capacity flag.
