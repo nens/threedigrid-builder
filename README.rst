@@ -22,11 +22,19 @@ generated grid into a Geopackage or HDF5 file:
 
 .. code:: python
 
-  >>> from threedigrid_builder import make_grid
+  >>> from threedigrid_builder import make_gridadmin
   >>> sqlite_path = "/path/to/model.sqlite"
   >>> dem_path = "/path/to/dem.tiff"
   >>> out_path = "grid.gpkg"  # or "something.h5" for HDF5 output
-  >>> make_grid(sqlite_path, dem_path, out_path)
+  >>> make_gridadmin(sqlite_path, dem_path, out_path)
+
+
+Alternatively, the generated grid can be output in-memory:
+
+.. code:: python
+
+  >>> make_gridadmin(sqlite_path, dem_path)
+  {'nodes': {'id': array([   1,    2,    3, ..., 7903, 7904, 7905], dtype=int32), ...}
 
 
 Installation
