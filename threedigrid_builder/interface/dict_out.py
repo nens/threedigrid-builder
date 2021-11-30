@@ -26,6 +26,7 @@ NODE_FIELDS = (
     "content_type",
     "content_pk",
     "dmax",  # bottom level
+    "dimp",  # bottom level for groundwater
     "storage_area",
     "boundary_id",  # referring to the id of the boundary condition
     "boundary_type",
@@ -37,6 +38,8 @@ NODE_FIELDS = (
 CELL_FIELDS = (
     "id",
     "node_type",
+    "boundary_id",  # referring to the id of the boundary condition
+    "boundary_type",
     "has_dem_averaged",  # Boolean attribute to tell if dem is averaged for node.
 )
 
@@ -66,15 +69,12 @@ LINE_FIELDS = (
 
 EMBEDDED_NODE_FIELDS = (
     "id",
-    "node_type",
-    "calculation_type",
     "content_type",
     "content_pk",
-    "dmax",
     "embedded_in",
 )
 
-BREACH_FIELS = (
+BREACH_FIELDS = (
     "id",
     "levl",
     "content_pk",  # refers to v2_connected_pnt
@@ -99,8 +99,6 @@ META_FIELDS = (
     "has_max_infiltration_capacity",
     "has_interflow",
     "has_initial_waterlevels",
-    "extent_1d",
-    "extent_2d",
 )
 
 
@@ -190,7 +188,7 @@ class DictOut(OutputInterface):
         """
         node_data = nodes.to_dict()
 
-        is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+        is_2d = np.isin(nodes.node_type, (NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_BOUNDARIES))
 
         # construct points from nodes.coordinates
         node_geometries = np.empty(len(nodes), dtype=object)
@@ -317,7 +315,7 @@ class DictOut(OutputInterface):
         for field in ("id", "levl"):
             breach_data[field] = increase(breach_data[field])
 
-        breach_data = {field: breach_data[field] for field in BREACH_FIELS}
+        breach_data = {field: breach_data[field] for field in BREACH_FIELDS}
         breach_data["geometry"] = geometries
         return breach_data
 

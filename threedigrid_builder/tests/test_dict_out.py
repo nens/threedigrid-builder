@@ -46,7 +46,6 @@ def test_meta(dict_out):
         ("nodes", "id", 1),
         ("nodes", "dmax", 1.2),
         ("nodes_embedded", "embedded_in", 2),
-        ("nodes_embedded", "dmax", 2.3),
         ("lines", "id", 1),
         ("lines", "dpumax", 1.2),
         ("lines", "node_1", 1),  # reference to node
