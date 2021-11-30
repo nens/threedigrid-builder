@@ -48,7 +48,11 @@ First install sqlite and spatialite libraries, e.g. on Ubuntu::
 
   $ sudo apt-get install sqlite3 libsqlite3-mod-spatialite
 
-Then install the threedigrid-builder::
+For raster input, there are two options: GDAL and rasterio. If you do not have GDAL
+(and its Python bindings) present, be sure to include the `[rasters]` extra dependency
+while installing threedigrid-builder. If you have GDAL present, this can be omitted.
+
+Install the threedigrid-builder::
 
   $ pip install threedigrid-builder[rasters]
 
