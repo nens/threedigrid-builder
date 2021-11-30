@@ -81,7 +81,7 @@ install_requires = [
     "pygeos>=0.10",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
-    "sqlalchemy<1.4",
+    "sqlalchemy",
     "dataclasses ; python_version<'3.7'",
 ]
 
@@ -105,6 +105,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         "test": test_requires,
+        "rasters": ["rasterio"],
         "gridadmin": ["h5py>=2.7"],
         "gpkg": ["geopandas"],
     },
