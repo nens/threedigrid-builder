@@ -68,7 +68,7 @@ def grid_all():
         line=[[0, 1], [1, 2], [2, 3]],
     )
     meta = GridMeta(
-        epsg_code=12432634,
+        epsg_code=28992,
         model_name="test-name",
         grid_settings=GridSettings(
             use_2d=True,

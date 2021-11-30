@@ -1,3 +1,6 @@
+from threedigrid_builder.base import Breaches
+from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
@@ -6,7 +9,9 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import Material
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import GridMeta
 
+import dataclasses
 import numpy as np
 import pygeos
 
@@ -79,6 +84,26 @@ BREACH_FIELS = (
 )
 
 
+META_FIELDS = (
+    "epsg_code",
+    "threedigrid_builder_version",
+    "has_1d",
+    "has_2d",
+    "has_embedded",
+    "has_breaches",
+    "has_groundwater",
+    "has_groundwater_flow",
+    "has_interception",
+    "has_pumpstations",
+    "has_simple_infiltration",
+    "has_max_infiltration_capacity",
+    "has_interflow",
+    "has_initial_waterlevels",
+    "extent_1d",
+    "extent_2d",
+)
+
+
 def _enum_to_str(arr, enum_type):
     result = np.full_like(arr, "", dtype=object)
     result[arr != -9999] = [enum_type(x).name for x in arr[arr != -9999]]
@@ -116,6 +141,7 @@ class DictOut(OutputInterface):
         - lines: all flowlines as LineString geometries. lines interconnect nodes.
         - breaches: potential breach locations (Point geometries)
         - nodes_embedded: (virtual) nodes that are embedded into computational nodes
+        - meta: metadata (e.g. "epsg_code"). the fields are scalars, not 1D ndarrays
 
         Args:
             grid (Grid)
@@ -137,12 +163,14 @@ class DictOut(OutputInterface):
         nodes_emb = self.get_embedded(grid.nodes_embedded)
         lines = self.get_lines(grid.lines)
         breaches = self.get_breaches(grid.breaches)
+        meta = self.get_meta(grid.meta)
         result = {
             "nodes": nodes,
             "cells": cells,
             "lines": lines,
             "breaches": breaches,
             "nodes_embedded": nodes_emb,
+            "meta": meta,
         }
         if geom_serializer is not None:
             for key in result.keys():
@@ -151,7 +179,7 @@ class DictOut(OutputInterface):
                 result[key]["geometry"] = geom_serializer(result[key]["geometry"])
         return result
 
-    def get_nodes_cells(self, nodes):
+    def get_nodes_cells(self, nodes: Nodes):
         """Create "nodes" and "cells" dictionaries
 
         Args:
@@ -198,7 +226,7 @@ class DictOut(OutputInterface):
 
         return node_data_filt, cell_data
 
-    def get_embedded(self, nodes_embedded):
+    def get_embedded(self, nodes_embedded: Nodes):
         """Creates the "nodes_embedded" dictionary
 
         Args:
@@ -236,7 +264,7 @@ class DictOut(OutputInterface):
 
         return node_data_filt
 
-    def get_lines(self, lines):
+    def get_lines(self, lines: Lines):
         """Get "lines" dictionary
 
         Args:
@@ -263,7 +291,7 @@ class DictOut(OutputInterface):
         line_data["geometry"] = geometries
         return line_data
 
-    def get_breaches(self, breaches):
+    def get_breaches(self, breaches: Breaches):
         """Get "breaches" dictionary
 
         Args:
@@ -292,3 +320,8 @@ class DictOut(OutputInterface):
         breach_data = {field: breach_data[field] for field in BREACH_FIELS}
         breach_data["geometry"] = geometries
         return breach_data
+
+    def get_meta(self, meta: GridMeta):
+        meta_data = dataclasses.asdict(meta)
+        meta_data = {field: meta_data[field] for field in META_FIELDS}
+        return meta_data

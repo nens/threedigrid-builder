@@ -36,6 +36,10 @@ def test_nodes_embedded(dict_out):
     assert dict_out["nodes_embedded"]["id"].shape == (2,)
 
 
+def test_meta(dict_out):
+    assert dict_out["meta"]["epsg_code"] == 28992
+
+
 @pytest.mark.parametrize(
     "group,dataset,expected",
     [
