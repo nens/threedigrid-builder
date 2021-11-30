@@ -46,13 +46,13 @@ elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
     # Cython is required (except for sdist or the commands used by zest.releaser)
     if not cythonize:
         sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         libs = ["libthreedigrid"]
         runtime_lib_dirs = []
         include_dirs = ["libthreedigrid/include"]
     else:
         libs = ["threedigrid"]
-        runtime_lib_dirs=["./libthreedigrid/lib"]
+        runtime_lib_dirs = ["./libthreedigrid/lib"]
         include_dirs = []
     cython_opts = dict(
         libraries=libs,
@@ -60,7 +60,7 @@ elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
         # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         library_dirs=["./libthreedigrid/lib"],
         runtime_library_dirs=runtime_lib_dirs,
-        include_dirs=include_dirs
+        include_dirs=include_dirs,
     )
 
     cython_modules = [
@@ -73,7 +73,17 @@ elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
-version = open("VERSION.rst").read()
+
+def get_version():
+    # Edited from https://packaging.python.org/guides/single-sourcing-package-version/
+    init_path = pathlib.Path(__file__).parent / "threedigrid_builder/__init__.py"
+    for line in init_path.open("r").readlines():
+        if line.startswith("__version__"):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
+
 
 install_requires = [
     "numpy>=1.13",
@@ -89,7 +99,7 @@ test_requires = ["pytest"]
 
 setup(
     name="threedigrid-builder",
-    version=version,
+    version=get_version(),
     description="Generate a 3Di simulation grid from a model schematisation.",
     long_description=long_description,
     url="https://docs.3di.lizard.net/",
