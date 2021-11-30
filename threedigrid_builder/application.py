@@ -247,7 +247,7 @@ def make_gridadmin(
 
     progress_callback(0.95, "Writing gridadmin...")
     with Writer(out_path) as writer:
-        writer.write(grid)
+        return writer.write(grid)
 
 
 # Legacy
