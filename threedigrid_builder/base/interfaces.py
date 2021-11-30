@@ -15,6 +15,10 @@ class OutputInterface(ABC):
         self.path = path
         super().__init__()
 
+    @staticmethod
+    def available():
+        return True
+
     @abstractmethod
     def __enter__(self):
         pass

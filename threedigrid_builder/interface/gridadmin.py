@@ -1,5 +1,5 @@
 from dataclasses import fields
-from threedigrid_builder.base import Breaches, Grid
+from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import Levees
@@ -8,6 +8,7 @@ from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
@@ -135,9 +136,13 @@ def increase(arr):
 
 class GridAdminOut(OutputInterface):
     def __init__(self, path):
-        if h5py is None:
+        if not self.available():
             raise ImportError("Cannot write to HDF5 if h5py is not available.")
         super().__init__(path)
+
+    @staticmethod
+    def available():
+        return h5py is not None
 
     def __enter__(self):
         self._file = h5py.File(self.path, mode="w")

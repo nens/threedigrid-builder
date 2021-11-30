@@ -14,6 +14,9 @@ Changelog of threedigrid-builder
 
 - Removed 'model_area_path' feature from application.
 
+- Added an in-memory output interface. Supply out_path=None to instead of writing the
+  grid to a file, receive the grid as dictionaries of 1D ndarrays.
+
 
 0.7.0 (2021-11-25)
 ------------------
