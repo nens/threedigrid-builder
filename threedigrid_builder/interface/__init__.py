@@ -14,3 +14,4 @@ from .geopackage import *  # NOQA
 from .gridadmin import *  # NOQA
 from .raster_rasterio import *  # NOQA
 from .raster_gdal import *  # NOQA
+from .dict_out import *  # NOQA

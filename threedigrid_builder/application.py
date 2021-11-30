@@ -9,6 +9,7 @@ from pathlib import Path
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.interface import DictOut
 from threedigrid_builder.interface import GDALInterface
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
@@ -187,39 +188,10 @@ def _make_gridadmin(
     return grid
 
 
-def _grid_to_gpkg(grid, path):
-    with GeopackageOut(path) as out:
-        out.write_nodes(grid.nodes, epsg_code=grid.meta.epsg_code)
-        if grid.nodes_embedded is not None:
-            out.write_nodes_embedded(
-                grid.nodes_embedded, grid.nodes, epsg_code=grid.meta.epsg_code
-            )
-        out.write_lines(grid.lines, epsg_code=grid.meta.epsg_code)
-        out.write_pumps(grid.pumps, epsg_code=grid.meta.epsg_code)
-        out.write_levees(grid.levees, epsg_code=grid.meta.epsg_code)
-        out.write_breaches(grid.breaches, epsg_code=grid.meta.epsg_code)
-
-
-def _grid_to_hdf5(grid: Grid, path):
-    with GridAdminOut(path) as out:
-        out.write_meta(grid.meta)
-        out.write_grid_counts(grid.nodes, grid.lines)
-        if grid.quadtree_stats is not None:
-            out.write_quadtree(grid.quadtree_stats)
-        out.write_nodes(grid.nodes)
-        out.write_nodes_embedded(grid.nodes_embedded)
-        out.write_lines(grid.lines)
-        out.write_pumps(grid.pumps)
-        if grid.cross_sections.tables is not None:
-            out.write_cross_sections(grid.cross_sections)
-        out.write_levees(grid.levees)
-        out.write_breaches(grid.breaches)
-
-
 def make_gridadmin(
     sqlite_path: Path,
     dem_path: Path,
-    out_path: Path,
+    out_path: Optional[Path] = None,
     meta: dict = None,
     progress_callback: Optional[Callable[[float, str], None]] = None,
 ):
@@ -231,7 +203,8 @@ def make_gridadmin(
         sqlite_path: The path to the input schematisation (SQLite) file
         dem_path: The path of the input DEM file (GeoTIFF)
         out_path: The path of the (to be created) output file. Allowed extensions
-            are: .h5 (HDF5) and .gpkg (Geopackage)
+            are: .h5 (HDF5) and .gpkg (Geopackage). If not supplied, this function will
+            return an in-memory representation of the Grid.
         meta: an optional dict with the following (optional) keys: model_slug (str),
             revision_hash (str), revision_nr (int), threedi_version (str)
         progress_callback: an optional function that updates the progress. The function
@@ -245,15 +218,23 @@ def make_gridadmin(
         sqlite_path = Path(sqlite_path)
     if isinstance(dem_path, str):
         dem_path = Path(dem_path)
-    if isinstance(out_path, str):
-        out_path = Path(out_path)
-    extension = out_path.suffix.lower()
-    if extension == ".h5":
-        writer = _grid_to_hdf5
-    elif extension:
-        writer = _grid_to_gpkg
+    if out_path is None:
+        Writer = DictOut
     else:
-        raise ValueError(f"Unsupported output format '{extension}'")
+        if isinstance(out_path, str):
+            out_path = Path(out_path)
+        extension = out_path.suffix.lower()
+        if extension == ".h5":
+            Writer = GridAdminOut
+        elif extension == ".gpkg":
+            Writer = GeopackageOut
+        else:
+            raise ValueError(f"Unsupported output format '{extension}'")
+
+    if not Writer.available():
+        raise ImportError(
+            "This output format is not available because dependencies are missing."
+        )
     if progress_callback is None:
         progress_callback = _default_progress_callback
 
@@ -265,7 +246,8 @@ def make_gridadmin(
     )
 
     progress_callback(0.95, "Writing gridadmin...")
-    writer(grid, out_path)
+    with Writer(out_path) as writer:
+        return writer.write(grid)
 
 
 # Legacy
