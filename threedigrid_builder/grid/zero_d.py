@@ -236,6 +236,7 @@ class ImperviousSurface:
     dry_weather_flow: float
     the_geom: pygeos.Geometry
     connection_node_id: int
+    connection_node_row_id: int   # row nr (1 based) in v2_connection_nodes table
     connection_node_the_geom: pygeos.Geometry
     percentage: float
 
@@ -290,7 +291,7 @@ class ImperviousSurfaces:
         grid.surfaces.ka = params.ka
         grid.surfaces.kh = params.kh
 
-        grid.surfaces.cid = self.connection_node_id
+        grid.surfaces.cid = self.connection_node_row_id
         grid.surfaces.pk = self.connection_node_id
         grid.surfaces.nxc = connection_node_coords[:, 0]
         grid.surfaces.nyc = connection_node_coords[:, 1]
