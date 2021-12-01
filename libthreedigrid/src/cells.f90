@@ -136,7 +136,7 @@ module m_cells
         endif
 
         if (mn(1) > 1) then
-            if (i0 == 0) then
+            if (i0 == 1) then
                 continue
             elseif(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
                 l_u = l_u + 1
@@ -199,7 +199,7 @@ module m_cells
         endif
             
         if (mn(2) > 1) then
-            if (j0 == 0) then
+            if (j0 == 1) then
                 continue
             elseif(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
                 l_v = l_v + 1
