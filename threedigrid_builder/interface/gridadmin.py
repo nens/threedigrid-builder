@@ -8,6 +8,7 @@ from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
 from threedigrid_builder.base.surfaces import Surfaces
@@ -136,9 +137,13 @@ def increase(arr):
 
 class GridAdminOut(OutputInterface):
     def __init__(self, path):
-        if h5py is None:
+        if not self.available():
             raise ImportError("Cannot write to HDF5 if h5py is not available.")
         super().__init__(path)
+
+    @staticmethod
+    def available():
+        return h5py is not None
 
     def __enter__(self):
         self._file = h5py.File(self.path, mode="w")
@@ -146,6 +151,22 @@ class GridAdminOut(OutputInterface):
 
     def __exit__(self, *args, **kwargs):
         self._file.close()
+
+    def write(self, grid: Grid):
+        self.write_meta(grid.meta)
+        self.write_grid_counts(grid.nodes, grid.lines)
+        if grid.quadtree_stats is not None:
+            self.write_quadtree(grid.quadtree_stats)
+        self.write_nodes(grid.nodes)
+        self.write_nodes_embedded(grid.nodes_embedded)
+        self.write_lines(grid.lines)
+        self.write_pumps(grid.pumps)
+        if grid.cross_sections.tables is not None:
+            self.write_cross_sections(grid.cross_sections)
+        self.write_levees(grid.levees)
+        self.write_breaches(grid.breaches)
+        if grid.meta.has_0d:
+            self.write_surfaces(grid.surfaces)
 
     def write_meta(self, meta: GridMeta):
         """Write the metadata to the gridadmin file.
@@ -487,10 +508,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "outflow_delay", surfaces.outflow_delay, fill=default_fill_value, fill_nan=default_fill_value)
         self.write_dataset(group, "storage_limit", surfaces.storage_limit, fill=default_fill_value, fill_nan=default_fill_value)
 
-        # TODO: check if only do this in case of impervious surfaces
-        self.write_dataset(group, "surface_class", surfaces.surface_class.astype("S128"), fill=b"")
-        self.write_dataset(group, "surface_inclination", surfaces.surface_inclination.astype("S64"), fill=b"")
-        self.write_dataset(group, "surface_sub_class", surfaces.surface_sub_class.astype("S128"), fill=b"")
+        if len(surfaces.surface_class) > 0:
+            # Impervious surfaces
+            self.write_dataset(group, "surface_class", surfaces.surface_class.astype("S128"), fill=b"")
+            self.write_dataset(group, "surface_inclination", surfaces.surface_inclination.astype("S64"), fill=b"")
+            self.write_dataset(group, "surface_sub_class", surfaces.surface_sub_class.astype("S128"), fill=b"")
 
         self.write_dataset(group, "fac", surfaces.fac, fill=default_fill_value)
         self.write_dataset(group, "fb", surfaces.fb, fill=default_fill_value)

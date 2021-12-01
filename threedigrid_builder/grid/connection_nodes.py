@@ -234,6 +234,11 @@ def set_bottom_levels(nodes, lines):
     has_lower_dmax = nodes.dmax[is_manhole] < manhole_dmax
     if np.any(has_lower_dmax):
         ids = nodes.content_pk[is_manhole][has_lower_dmax]
+        
+        nodes.dmax[is_manhole][has_lower_dmax] = manhole_dmax[has_lower_dmax]
+        
+        return
+
         raise SchematisationError(
             f"Connection nodes {sorted(ids.tolist())} have a manhole with a "
             f"bottom_level that is above one ore more of the following connected "

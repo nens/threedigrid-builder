@@ -4,6 +4,13 @@ from threedigrid_builder.exceptions import SchematisationError
 import numpy as np
 
 
+try:
+    from osgeo import gdal
+
+    gdal.UseExceptions()
+except ImportError:
+    gdal = None
+
 __all__ = ["GDALInterface"]
 
 GT_TOLERANCE = 7
@@ -26,12 +33,8 @@ def get_epsg_code(sr):
 
 class GDALInterface(RasterInterface):
     def __init__(self, *args, **kwargs):
-        global gdal
-
-        from osgeo import gdal
-
-        gdal.UseExceptions()
-
+        if gdal is None:
+            raise ImportError("Cannot use GDALInterface if GDAL is not available.")
         super().__init__(*args, **kwargs)
         if self.model_area_path is not None:
             raise NotImplementedError("Model areas are not available with GDAL")

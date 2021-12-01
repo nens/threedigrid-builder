@@ -221,7 +221,10 @@ class Surface:
     min_infiltration_capacity: float
     infiltration_decay_constant: float
     infiltration_recovery_constant: float
-
+    connection_node_id: int
+    connection_node_row_id: int   # row nr (1 based) in v2_connection_nodes table
+    connection_node_the_geom: pygeos.Geometry
+    percentage: float
 
 class ImperviousSurface:
     id: int
@@ -241,10 +244,82 @@ class ImperviousSurface:
     percentage: float
 
 
+def fill_missing_centroids(centroids: np.ndarray, surface_ids: np.ndarray, connection_node_the_geom: np.ndarray):
+    no_centroid_mask = centroids == None
+
+    if np.any(no_centroid_mask):
+        # Try to fill empty centroids
+        for surface_id in np.unique(surface_ids[no_centroid_mask]):
+            surface_id_mask = surface_ids == surface_id
+            # Get centroid of 1 or more connection node geometries
+            centroids[surface_id_mask] = pygeos.centroid(
+                pygeos.union_all(connection_node_the_geom[surface_id_mask]))
+
+
 @array_of(Surface)
 class Surfaces:
     def apply(self, grid):
-        pass    
+        centroids = pygeos.centroid(self.the_geom)
+        no_centroid_mask = centroids == None
+
+        if np.any(no_centroid_mask):
+            fill_missing_centroids(
+                centroids, self.surface_id, self.connection_node_the_geom)
+
+        centroid_coords = pygeos.get_coordinates(centroids)
+        connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
+
+        _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
+
+        grid.surfaces.id = np.arange(1, len(unique_surfaces_mask) + 1, dtype=int)
+        grid.surfaces.centroid_x = centroid_coords[:, 0][unique_surfaces_mask]
+        grid.surfaces.centroid_y = centroid_coords[:, 1][unique_surfaces_mask]
+        grid.surfaces.code = self.code[unique_surfaces_mask]
+        grid.surfaces.display_name = self.display_name[unique_surfaces_mask]
+        grid.surfaces.nr_of_inhabitants = self.nr_of_inhabitants[unique_surfaces_mask]
+        grid.surfaces.area = self.area[unique_surfaces_mask]
+        grid.surfaces.dry_weather_flow = self.dry_weather_flow[unique_surfaces_mask]
+
+        grid.surfaces.outflow_delay = self.outflow_delay[unique_surfaces_mask] / 60.0
+        grid.surfaces.storage_limit = self.surface_layer_thickness[unique_surfaces_mask] / 1000.0
+        grid.surfaces.infiltration_flag = self.infiltration[unique_surfaces_mask].astype('bool')
+
+        grid.surfaces.fb = self.max_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
+        grid.surfaces.fe = self.min_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
+        grid.surfaces.ka = self.infiltration_decay_constant[unique_surfaces_mask] / 60.0 / 60.0
+        grid.surfaces.kh = self.infiltration_recovery_constant[unique_surfaces_mask] / 60.0 / 60.0
+
+        mask = np.invert(grid.surfaces.infiltration_flag)
+   
+        grid.surfaces.fb[mask] = 0.0
+        grid.surfaces.fe[mask] = 0.0
+        grid.surfaces.ka[mask] = 0.0
+        grid.surfaces.kh[mask] = 0.0
+
+        grid.surfaces.cid = self.connection_node_row_id
+        grid.surfaces.pk = self.connection_node_id
+        grid.surfaces.nxc = connection_node_coords[:, 0]
+        grid.surfaces.nyc = connection_node_coords[:, 1]
+        grid.surfaces.fac = self.percentage / 100.0
+
+        search_array = self.surface_id[unique_surfaces_mask]
+        sort_idx = np.argsort(self.surface_id[unique_surfaces_mask])
+        lookup = sort_idx[np.searchsorted(
+            search_array, self.surface_id, sorter=sort_idx)]
+
+        grid.surfaces.imp = lookup + 1 
+        grid.surfaces.function = self.function[unique_surfaces_mask]
+
+        # Find connection_node (calc) node id's
+        connection_node_mask = grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+        cc_node_ids = grid.nodes.content_pk[connection_node_mask]
+        node_ids = grid.nodes.id[connection_node_mask]
+
+        sort_idx = np.argsort(cc_node_ids)
+        lookup = sort_idx[np.searchsorted(
+            cc_node_ids, self.connection_node_id, sorter=sort_idx)]
+
+        grid.surfaces.cci = node_ids[lookup]       
 
 
 @array_of(ImperviousSurface)
@@ -254,15 +329,11 @@ class ImperviousSurfaces:
         no_centroid_mask = centroids == None
 
         if np.any(no_centroid_mask):
-            # Try to fill empty centroids
-            for surface_id in np.unique(self.surface_id[no_centroid_mask]):
-                surface_id_mask = self.surface_id == surface_id
-                centroids[surface_id_mask] =  pygeos.centroid(
-                    self.connection_node_the_geom[surface_id_mask])
+            fill_missing_centroids(
+                centroids, self.surface_id, self.connection_node_the_geom)
 
         centroid_coords = pygeos.get_coordinates(centroids)
         connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
-
 
         _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
 

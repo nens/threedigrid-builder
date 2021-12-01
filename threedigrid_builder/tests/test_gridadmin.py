@@ -1,114 +1,15 @@
-from threedigrid_builder.base import Breaches
-from threedigrid_builder.base import GridSettings
-from threedigrid_builder.base import Levees
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.grid import CrossSections
-from threedigrid_builder.grid import GridMeta
-from threedigrid_builder.grid import QuadtreeStats
 from threedigrid_builder.interface import GridAdminOut
 
 import h5py
 import numpy as np
-import pygeos
 import pytest
 
 
 @pytest.fixture(scope="session")
-def h5_out(tmpdir_factory):
-    nodes = Nodes(
-        id=[0, 1, 2],
-        dmax=[1.2, 2.2, 3.3],
-    )
-    lines = Lines(
-        id=[0, 1, 2, 3, 4],
-        dpumax=[1.2, 2.2, 3.3, 4.2, 5.1],
-        line=[[0, 1], [1, 2], [2, 0], [0, 2], [2, 1]],
-        line_geometries=[
-            pygeos.linestrings([[1, 1], [2, 2]]),
-            pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
-            None,
-            None,
-            None,
-        ],
-        cross1=[0, -9999, 1, 1, 2],
-        cross2=[-9999, -9999, -9999, -9999, 3],
-    )
-    pumps = Pumps(
-        id=[0, 1, 2],
-        capacity=[0.1, 1.2, 2.5],
-        line=[[0, 1], [1, 2], [2, 3]],
-    )
-    meta = GridMeta(
-        epsg_code=12432634,
-        model_name="test-name",
-        grid_settings=GridSettings(
-            use_2d=True,
-            use_1d_flow=True,
-            use_2d_flow=True,
-            use_0d_inflow=0,
-            grid_space=20.0,
-            dist_calc_points=25.0,
-            kmax=4,
-        ),
-        tables_settings=TablesSettings(
-            table_step_size=0.05,
-            frict_coef=0.03,
-            frict_coef_type=9,
-        ),
-    )
-    quadtree_stats = QuadtreeStats(
-        **{
-            "lgrmin": 5,
-            "kmax": 2,
-            "mmax": np.array([2, 4], dtype=np.int32),
-            "nmax": np.array([3, 5], dtype=np.int32),
-            "dx": np.array([1.0, 2.0], dtype=np.float64),
-            "dxp": 0.5,
-            "x0p": 10.0,
-            "y0p": 10.0,
-        }
-    )
-    cross_sections = CrossSections(
-        id=[0, 1, 2],
-        width_1d=[0.2, 1.5, 3.1],
-        count=[4, 2, -9999],
-        offset=[0, 4, -9999],
-    )
-    cross_sections.tables = np.random.random((6, 2))
-    nodes_embedded = Nodes(
-        id=[0, 1],
-        embedded_in=[1, 2],
-        dmax=[2.3, 0.2],
-    )
-    levees = Levees(
-        id=[0, 1],
-        the_geom=[
-            pygeos.linestrings([[1, 1], [2, 2]]),
-            pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
-        ],
-    )
-    breaches = Breaches(
-        id=[0, 1],
-        coordinates=[[0, 0], [1, 1]],
-        levl=[4, 3],
-        levee_id=[1, 0],
-    )
-
+def h5_out(tmpdir_factory, grid_all):
     path = tmpdir_factory.mktemp("h5") / "gridadmin.h5"
     with GridAdminOut(path) as out:
-        out.write_meta(meta)
-        out.write_grid_counts(nodes, lines)
-        out.write_quadtree(quadtree_stats)
-        out.write_nodes(nodes)
-        out.write_nodes_embedded(nodes_embedded)
-        out.write_lines(lines)
-        out.write_pumps(pumps)
-        out.write_cross_sections(cross_sections)
-        out.write_levees(levees)
-        out.write_breaches(breaches)
+        out.write(grid_all)
 
     with h5py.File(path, "r") as f:
         yield f
