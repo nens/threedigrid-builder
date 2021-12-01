@@ -485,9 +485,8 @@ class GridAdminOut(OutputInterface):
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
 
-
     def write_surfaces(self, surfaces: Surfaces):
-        
+
         # For now use 0 instead of NaN as fill value for surfaces
         # The calcore does not support NaN (for surfaces) yet
         default_fill_value = 0
@@ -495,24 +494,71 @@ class GridAdminOut(OutputInterface):
         group = self._file.create_group("surface")
         self.write_dataset(group, "id", surfaces.id, fill=default_fill_value)
         self.write_dataset(group, "code", surfaces.code.astype("S100"), fill=b"")
-        self.write_dataset(group, "display_name", surfaces.display_name.astype("S250"), fill=b"")
+        self.write_dataset(
+            group, "display_name", surfaces.display_name.astype("S250"), fill=b""
+        )
         self.write_dataset(group, "function", surfaces.function.astype("S64"), fill=b"")
 
-
-        self.write_dataset(group, "area", surfaces.area, fill=default_fill_value, fill_nan=default_fill_value)
-        self.write_dataset(group, "centroid_x", surfaces.centroid_x, fill=default_fill_value)
-        self.write_dataset(group, "centroid_y", surfaces.centroid_y, fill=default_fill_value)
-        self.write_dataset(group, "dry_weather_flow", surfaces.dry_weather_flow, fill=default_fill_value, fill_nan=default_fill_value)
-        self.write_dataset(group, "nr_of_inhabitants", surfaces.nr_of_inhabitants, fill=default_fill_value, fill_nan=default_fill_value)
+        self.write_dataset(
+            group,
+            "area",
+            surfaces.area,
+            fill=default_fill_value,
+            fill_nan=default_fill_value,
+        )
+        self.write_dataset(
+            group, "centroid_x", surfaces.centroid_x, fill=default_fill_value
+        )
+        self.write_dataset(
+            group, "centroid_y", surfaces.centroid_y, fill=default_fill_value
+        )
+        self.write_dataset(
+            group,
+            "dry_weather_flow",
+            surfaces.dry_weather_flow,
+            fill=default_fill_value,
+            fill_nan=default_fill_value,
+        )
+        self.write_dataset(
+            group,
+            "nr_of_inhabitants",
+            surfaces.nr_of_inhabitants,
+            fill=default_fill_value,
+            fill_nan=default_fill_value,
+        )
         self.write_dataset(group, "infiltration_flag", surfaces.infiltration_flag)
-        self.write_dataset(group, "outflow_delay", surfaces.outflow_delay, fill=default_fill_value, fill_nan=default_fill_value)
-        self.write_dataset(group, "storage_limit", surfaces.storage_limit, fill=default_fill_value, fill_nan=default_fill_value)
+        self.write_dataset(
+            group,
+            "outflow_delay",
+            surfaces.outflow_delay,
+            fill=default_fill_value,
+            fill_nan=default_fill_value,
+        )
+        self.write_dataset(
+            group,
+            "storage_limit",
+            surfaces.storage_limit,
+            fill=default_fill_value,
+            fill_nan=default_fill_value,
+        )
 
         if len(surfaces.surface_class) > 0:
             # Impervious surfaces
-            self.write_dataset(group, "surface_class", surfaces.surface_class.astype("S128"), fill=b"")
-            self.write_dataset(group, "surface_inclination", surfaces.surface_inclination.astype("S64"), fill=b"")
-            self.write_dataset(group, "surface_sub_class", surfaces.surface_sub_class.astype("S128"), fill=b"")
+            self.write_dataset(
+                group, "surface_class", surfaces.surface_class.astype("S128"), fill=b""
+            )
+            self.write_dataset(
+                group,
+                "surface_inclination",
+                surfaces.surface_inclination.astype("S64"),
+                fill=b"",
+            )
+            self.write_dataset(
+                group,
+                "surface_sub_class",
+                surfaces.surface_sub_class.astype("S128"),
+                fill=b"",
+            )
 
         self.write_dataset(group, "fac", surfaces.fac, fill=default_fill_value)
         self.write_dataset(group, "fb", surfaces.fb, fill=default_fill_value)
@@ -525,7 +571,6 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pk", surfaces.pk, fill=default_fill_value)
         self.write_dataset(group, "cci", surfaces.cci, fill=default_fill_value)
         self.write_dataset(group, "cid", surfaces.cid, fill=default_fill_value)
-
 
     def write_cross_sections(self, cross_sections: CrossSections):
         if cross_sections is None or cross_sections.tables is None:
@@ -571,7 +616,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "levmat", breaches.levmat)
         self.write_dataset(group, "coordinates", breaches.coordinates.T)
 
-    def write_dataset(self, group, name, values, fill=None, insert_dummy=True, fill_nan=None):
+    def write_dataset(
+        self, group, name, values, fill=None, insert_dummy=True, fill_nan=None
+    ):
         """Create the correct size dataset for writing to gridadmin.h5 and
         filling the extra indices with correct fillvalues.
 
@@ -586,7 +633,7 @@ class GridAdminOut(OutputInterface):
         if fill_nan is not None:
             if np.issubdtype(values.dtype, np.floating):
                 values[np.isnan(values)] = fill_nan
-           
+
         if fill is None:
             if np.issubdtype(values.dtype, np.floating):
                 fill = np.nan

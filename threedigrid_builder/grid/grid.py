@@ -698,7 +698,7 @@ class Grid:
             self.meta.zero_dim_extent = self.surfaces.get_extent()
 
         # TODO: calculate zero-dim-extent
-        # self.meta.zero_dim_extent = 
+        # self.meta.zero_dim_extent =
         self.meta.has_1d = (
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )

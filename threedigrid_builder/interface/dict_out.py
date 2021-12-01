@@ -188,7 +188,9 @@ class DictOut(OutputInterface):
         """
         node_data = nodes.to_dict()
 
-        is_2d = np.isin(nodes.node_type, (NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_BOUNDARIES))
+        is_2d = np.isin(
+            nodes.node_type, (NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_BOUNDARIES)
+        )
 
         # construct points from nodes.coordinates
         node_geometries = np.empty(len(nodes), dtype=object)

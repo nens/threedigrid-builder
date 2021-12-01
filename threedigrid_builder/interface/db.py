@@ -247,16 +247,14 @@ class SQLite:
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:
             connection_node_map_array = (
-                session.query(
-                    models.ConnectionNode.id
-                )
+                session.query(models.ConnectionNode.id)
                 .order_by(models.ConnectionNode.id)
                 .as_structarray()
             )
 
             arr = (
                 session.query(
-                    models.Surface.id.label('surface_id'),
+                    models.Surface.id.label("surface_id"),
                     models.Surface.function,
                     models.Surface.code,
                     models.Surface.display_name,
@@ -273,45 +271,58 @@ class SQLite:
                     models.SurfaceParameter.infiltration_recovery_constant,
                     models.ConnectionNode.id.label("connection_node_id"),
                     models.ConnectionNode.the_geom.label("connection_node_the_geom"),
-                    models.SurfaceMap.percentage
+                    models.SurfaceMap.percentage,
                 )
                 .select_from(models.Surface)
                 .join(models.SurfaceParameter)
-                .join(models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id)
-                .join(models.ConnectionNode, models.SurfaceMap.connection_node_id == models.ConnectionNode.id)
+                .join(
+                    models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id
+                )
+                .join(
+                    models.ConnectionNode,
+                    models.SurfaceMap.connection_node_id == models.ConnectionNode.id,
+                )
                 .order_by(models.Surface.id)
                 .as_structarray()
             )
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["connection_node_the_geom"] = self.reproject(arr["connection_node_the_geom"])
+        arr["connection_node_the_geom"] = self.reproject(
+            arr["connection_node_the_geom"]
+        )
 
         # Map connection_node_id to row_id of connection node table
         sort_idx = np.argsort(connection_node_map_array["id"])
-        connection_node_row_id = sort_idx[np.searchsorted(
-            connection_node_map_array["id"], arr["connection_node_id"], sorter=sort_idx)] + 1 
+        connection_node_row_id = (
+            sort_idx[
+                np.searchsorted(
+                    connection_node_map_array["id"],
+                    arr["connection_node_id"],
+                    sorter=sort_idx,
+                )
+            ]
+            + 1
+        )
 
         return Surfaces(
-            id=np.arange(0, len(arr['surface_id'] + 1), dtype=int),
+            id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
             connection_node_row_id=connection_node_row_id,
-            **{name: arr[name] for name in arr.dtype.names})
+            **{name: arr[name] for name in arr.dtype.names},
+        )
 
     def get_impervious_surfaces(self) -> ImperviousSurfaces:
         with self.get_session() as session:
 
             connection_node_map_array = (
-                session.query(
-                    models.ConnectionNode.id
-                )
+                session.query(models.ConnectionNode.id)
                 .order_by(models.ConnectionNode.id)
                 .as_structarray()
             )
 
-
             arr = (
                 session.query(
-                    models.ImperviousSurface.id.label('surface_id'),
+                    models.ImperviousSurface.id.label("surface_id"),
                     models.ImperviousSurface.code,
                     models.ImperviousSurface.display_name,
                     models.ImperviousSurface.surface_inclination,
@@ -323,12 +334,15 @@ class SQLite:
                     models.ImperviousSurface.the_geom,
                     models.ConnectionNode.id.label("connection_node_id"),
                     models.ConnectionNode.the_geom.label("connection_node_the_geom"),
-                    models.ImperviousSurfaceMap.percentage
-
+                    models.ImperviousSurfaceMap.percentage,
                 )
                 .select_from(models.ImperviousSurface)
                 .join(models.ImperviousSurfaceMap)
-                .join(models.ConnectionNode, models.ImperviousSurfaceMap.connection_node_id == models.ConnectionNode.id)
+                .join(
+                    models.ConnectionNode,
+                    models.ImperviousSurfaceMap.connection_node_id
+                    == models.ConnectionNode.id,
+                )
                 .order_by(models.ImperviousSurface.id)
                 .as_structarray()
             )
@@ -339,17 +353,28 @@ class SQLite:
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["connection_node_the_geom"] = self.reproject(arr["connection_node_the_geom"])
-
+        arr["connection_node_the_geom"] = self.reproject(
+            arr["connection_node_the_geom"]
+        )
 
         # Map connection_node_id to row_id of connection node table
         sort_idx = np.argsort(connection_node_map_array["id"])
-        connection_node_row_id = sort_idx[np.searchsorted(
-            connection_node_map_array["id"], arr["connection_node_id"], sorter=sort_idx)] + 1 
+        connection_node_row_id = (
+            sort_idx[
+                np.searchsorted(
+                    connection_node_map_array["id"],
+                    arr["connection_node_id"],
+                    sorter=sort_idx,
+                )
+            ]
+            + 1
+        )
 
         return ImperviousSurfaces(
-            id=np.arange(0, len(arr['surface_id'] + 1), dtype=int),
-            connection_node_row_id=connection_node_row_id, **{name: arr[name] for name in arr.dtype.names})
+            id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
+            connection_node_row_id=connection_node_row_id,
+            **{name: arr[name] for name in arr.dtype.names},
+        )
 
     def get_boundary_conditions_1d(self) -> BoundaryConditions1D:
         """Return BoundaryConditions1D"""

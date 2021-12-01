@@ -37,11 +37,17 @@ class Surface:
 @array_of(Surface)
 class Surfaces:
     """Zero-d surfaces."""
+
     def get_extent(self):
         if self.centroid_x is None or self.centroid_y is None:
             return None
 
-        extent = np.amin(self.centroid_x), np.amin(self.centroid_y), np.amax(self.centroid_x), np.amax(self.centroid_y)
+        extent = (
+            np.amin(self.centroid_x),
+            np.amin(self.centroid_y),
+            np.amax(self.centroid_x),
+            np.amax(self.centroid_y),
+        )
         if any(np.isnan(val) for val in extent):
             raise ValueError("Not all surface centroids have coordinates.")
         return extent

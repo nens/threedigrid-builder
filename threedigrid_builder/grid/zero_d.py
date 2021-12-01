@@ -20,143 +20,142 @@ SURFACE_TYPE_PROPERTIES = {
     # fe: Min infiltration capacity (mm/h)
     # ka: Time factor reduction (afname) of infiltration capacity (/h)
     # kh: Time factor recovery (herstel) of infiltration capacity (/h)
-
     # gesloten verharding, hellend
-    'gvh_hel': {
-        'outflow_delay': 0.5 / 60.0,
-        'surface_storage': 0.0 / 1000.0,
-        'infiltration': False,
-        'fb': 0.0 / 60.0 / 60.0 / 1000.0,   # for consistency
-        'fe': 0.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 0.0 / 60.0 / 60.0,
-        'kh': 0.0 / 60.0 / 60.0
+    "gvh_hel": {
+        "outflow_delay": 0.5 / 60.0,
+        "surface_storage": 0.0 / 1000.0,
+        "infiltration": False,
+        "fb": 0.0 / 60.0 / 60.0 / 1000.0,  # for consistency
+        "fe": 0.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 0.0 / 60.0 / 60.0,
+        "kh": 0.0 / 60.0 / 60.0,
     },
     # gesloten verharding, vlak
-    'gvh_vla': {
-        'outflow_delay': 0.2 / 60.0,
-        'surface_storage': 0.5 / 1000.0,
-        'infiltration': False,
-        'fb': 0.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 0.0 / 60.0 / 60.0,
-        'kh': 0.0 / 60.0 / 60.0
+    "gvh_vla": {
+        "outflow_delay": 0.2 / 60.0,
+        "surface_storage": 0.5 / 1000.0,
+        "infiltration": False,
+        "fb": 0.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 0.0 / 60.0 / 60.0,
+        "kh": 0.0 / 60.0 / 60.0,
     },
     # gesloten verharding, vlak uitgestrekt
-    'gvh_vlu': {
-        'outflow_delay': 0.1 / 60.0,
-        'surface_storage': 1.0 / 1000.0,
-        'infiltration': False,
-        'fb': 0.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 0.0 / 60.0 / 60.0,
-        'kh': 0.0 / 60.0 / 60.0
+    "gvh_vlu": {
+        "outflow_delay": 0.1 / 60.0,
+        "surface_storage": 1.0 / 1000.0,
+        "infiltration": False,
+        "fb": 0.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 0.0 / 60.0 / 60.0,
+        "kh": 0.0 / 60.0 / 60.0,
     },
     # open verharding, hellend
-    'ovh_hel': {
-        'outflow_delay': 0.5 / 60.0,
-        'surface_storage': 0.0 / 1000.0,
-        'infiltration': True,
-        'fb': 2.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.5 / 60.0 / 60.0 / 1000.0,
-        'ka': 3.0 / 60.0 / 60.0,
-        'kh': 0.1 / 60.0 / 60.0
+    "ovh_hel": {
+        "outflow_delay": 0.5 / 60.0,
+        "surface_storage": 0.0 / 1000.0,
+        "infiltration": True,
+        "fb": 2.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.5 / 60.0 / 60.0 / 1000.0,
+        "ka": 3.0 / 60.0 / 60.0,
+        "kh": 0.1 / 60.0 / 60.0,
     },
     # open verharding, vlak
-    'ovh_vla': {
-        'outflow_delay': 0.2 / 60.0,
-        'surface_storage': 0.5 / 1000.0,
-        'infiltration': True,
-        'fb': 2.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.5 / 60.0 / 60.0 / 1000.0,
-        'ka': 3.0 / 60.0 / 60.0,
-        'kh': 0.1 / 60.0 / 60.0
+    "ovh_vla": {
+        "outflow_delay": 0.2 / 60.0,
+        "surface_storage": 0.5 / 1000.0,
+        "infiltration": True,
+        "fb": 2.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.5 / 60.0 / 60.0 / 1000.0,
+        "ka": 3.0 / 60.0 / 60.0,
+        "kh": 0.1 / 60.0 / 60.0,
     },
     # open verharding, vlak uitgestrekt
-    'ovh_vlu': {
-        'outflow_delay': 0.1 / 60.0,
-        'surface_storage': 1.0 / 1000.0,
-        'infiltration': True,
-        'fb': 2.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.5 / 60.0 / 60.0 / 1000.0,
-        'ka': 3.0 / 60.0 / 60.0,
-        'kh': 0.1 / 60.0 / 60.0
+    "ovh_vlu": {
+        "outflow_delay": 0.1 / 60.0,
+        "surface_storage": 1.0 / 1000.0,
+        "infiltration": True,
+        "fb": 2.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.5 / 60.0 / 60.0 / 1000.0,
+        "ka": 3.0 / 60.0 / 60.0,
+        "kh": 0.1 / 60.0 / 60.0,
     },
     # dak, hellend
-    'dak_hel': {
-        'outflow_delay': 0.5 / 60.0,
-        'surface_storage': 0.0 / 1000.0,
-        'infiltration': False,
-        'fb': 0.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 0.0 / 60.0 / 60.0,
-        'kh': 0.0 / 60.0 / 60.0
+    "dak_hel": {
+        "outflow_delay": 0.5 / 60.0,
+        "surface_storage": 0.0 / 1000.0,
+        "infiltration": False,
+        "fb": 0.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 0.0 / 60.0 / 60.0,
+        "kh": 0.0 / 60.0 / 60.0,
     },
     # dak, vlak
-    'dak_vla': {
-        'outflow_delay': 0.2 / 60.0,
-        'surface_storage': 2.0 / 1000.0,
-        'infiltration': False,
-        'fb': 0.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 0.0 / 60.0 / 60.0,
-        'kh': 0.0 / 60.0 / 60.0
+    "dak_vla": {
+        "outflow_delay": 0.2 / 60.0,
+        "surface_storage": 2.0 / 1000.0,
+        "infiltration": False,
+        "fb": 0.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 0.0 / 60.0 / 60.0,
+        "kh": 0.0 / 60.0 / 60.0,
     },
     # dak, vlak uitgestrekt
-    'dak_vlu': {
-        'outflow_delay': 0.1 / 60.0,
-        'surface_storage': 4.0 / 1000.0,
-        'infiltration': False,
-        'fb': 0.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 0.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 0.0 / 60.0 / 60.0,
-        'kh': 0.0 / 60.0 / 60.0
+    "dak_vlu": {
+        "outflow_delay": 0.1 / 60.0,
+        "surface_storage": 4.0 / 1000.0,
+        "infiltration": False,
+        "fb": 0.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 0.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 0.0 / 60.0 / 60.0,
+        "kh": 0.0 / 60.0 / 60.0,
     },
     # onverhard, hellend
-    'onv_hel': {
-        'outflow_delay': 0.5 / 60.0,
-        'surface_storage': 2.0 / 1000.0,
-        'infiltration': True,
-        'fb': 5.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 1.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 3.0 / 60.0 / 60.0,
-        'kh': 0.1 / 60.0 / 60.0
+    "onv_hel": {
+        "outflow_delay": 0.5 / 60.0,
+        "surface_storage": 2.0 / 1000.0,
+        "infiltration": True,
+        "fb": 5.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 1.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 3.0 / 60.0 / 60.0,
+        "kh": 0.1 / 60.0 / 60.0,
     },
     # onverhard, vlak
-    'onv_vla': {
-        'outflow_delay': 0.2 / 60.0,
-        'surface_storage': 4.0 / 1000.0,
-        'infiltration': True,
-        'fb': 5.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 1.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 3.0 / 60.0 / 60.0,
-        'kh': 0.1 / 60.0 / 60.0
+    "onv_vla": {
+        "outflow_delay": 0.2 / 60.0,
+        "surface_storage": 4.0 / 1000.0,
+        "infiltration": True,
+        "fb": 5.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 1.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 3.0 / 60.0 / 60.0,
+        "kh": 0.1 / 60.0 / 60.0,
     },
     # onverhard, vlak uitgestrekt
-    'onv_vlu': {
-        'outflow_delay': 0.1 / 60.0,
-        'surface_storage': 6.0 / 1000.0,
-        'infiltration': True,
-        'fb': 5.0 / 60.0 / 60.0 / 1000.0,
-        'fe': 1.0 / 60.0 / 60.0 / 1000.0,
-        'ka': 3.0 / 60.0 / 60.0,
-        'kh': 0.1 / 60.0 / 60.0
-    }
+    "onv_vlu": {
+        "outflow_delay": 0.1 / 60.0,
+        "surface_storage": 6.0 / 1000.0,
+        "infiltration": True,
+        "fb": 5.0 / 60.0 / 60.0 / 1000.0,
+        "fe": 1.0 / 60.0 / 60.0 / 1000.0,
+        "ka": 3.0 / 60.0 / 60.0,
+        "kh": 0.1 / 60.0 / 60.0,
+    },
 }
 
 
-SURFACE_CLASS_MAP = dict([
-    ("pand", "dak"),
-    ("half_verhard", "onv"),
-    ("onverhard", "onv"),
-    ("open verharding", "ovh"),
-    ("gesloten verharding", "gvh")   
-])
+SURFACE_CLASS_MAP = dict(
+    [
+        ("pand", "dak"),
+        ("half_verhard", "onv"),
+        ("onverhard", "onv"),
+        ("open verharding", "ovh"),
+        ("gesloten verharding", "gvh"),
+    ]
+)
 
-SURFACE_INCLINATION_MAP = dict([
-    ("hellend", "hel"),
-    ("vlak", "vla"),
-    ("uitgestrekt", "vlu")
-])
+SURFACE_INCLINATION_MAP = dict(
+    [("hellend", "hel"), ("vlak", "vla"), ("uitgestrekt", "vlu")]
+)
 
 
 @dataclass
@@ -170,7 +169,9 @@ class SurfaceParams:
     kh: np.ndarray
 
     @classmethod
-    def from_surface_class_and_inclination(cls, surface_class: np.ndarray, surface_inclination: np.ndarray) -> "SurfaceParams":
+    def from_surface_class_and_inclination(
+        cls, surface_class: np.ndarray, surface_inclination: np.ndarray
+    ) -> "SurfaceParams":
         FIELDS = (
             ("outflow_delay", 0.0, np.float32),
             ("surface_storage", 0.0, np.float64),
@@ -184,7 +185,7 @@ class SurfaceParams:
         NO_INFILTRATION_SKIP = ("fb", "fe", "ka", "kh")
 
         kwargs = {}
-        for k,v, dtype in FIELDS:
+        for k, v, dtype in FIELDS:
             kwargs[k] = np.full(surface_class.shape, v, dtype)
 
         for sc in np.unique(surface_class):
@@ -213,7 +214,7 @@ class Surface:
     dry_weather_flow: float
     the_geom: pygeos.Geometry
 
-    # Surface Parameters   
+    # Surface Parameters
     outflow_delay: float
     surface_layer_thickness: float
     infiltration: float
@@ -222,9 +223,10 @@ class Surface:
     infiltration_decay_constant: float
     infiltration_recovery_constant: float
     connection_node_id: int
-    connection_node_row_id: int   # row nr (1 based) in v2_connection_nodes table
+    connection_node_row_id: int  # row nr (1 based) in v2_connection_nodes table
     connection_node_the_geom: pygeos.Geometry
     percentage: float
+
 
 class ImperviousSurface:
     id: int
@@ -239,12 +241,14 @@ class ImperviousSurface:
     dry_weather_flow: float
     the_geom: pygeos.Geometry
     connection_node_id: int
-    connection_node_row_id: int   # row nr (1 based) in v2_connection_nodes table
+    connection_node_row_id: int  # row nr (1 based) in v2_connection_nodes table
     connection_node_the_geom: pygeos.Geometry
     percentage: float
 
 
-def fill_missing_centroids(centroids: np.ndarray, surface_ids: np.ndarray, connection_node_the_geom: np.ndarray):
+def fill_missing_centroids(
+    centroids: np.ndarray, surface_ids: np.ndarray, connection_node_the_geom: np.ndarray
+):
     no_centroid_mask = centroids == None
 
     if np.any(no_centroid_mask):
@@ -253,7 +257,8 @@ def fill_missing_centroids(centroids: np.ndarray, surface_ids: np.ndarray, conne
             surface_id_mask = surface_ids == surface_id
             # Get centroid of 1 or more connection node geometries
             centroids[surface_id_mask] = pygeos.centroid(
-                pygeos.union_all(connection_node_the_geom[surface_id_mask]))
+                pygeos.union_all(connection_node_the_geom[surface_id_mask])
+            )
 
 
 @array_of(Surface)
@@ -264,7 +269,8 @@ class Surfaces:
 
         if np.any(no_centroid_mask):
             fill_missing_centroids(
-                centroids, self.surface_id, self.connection_node_the_geom)
+                centroids, self.surface_id, self.connection_node_the_geom
+            )
 
         centroid_coords = pygeos.get_coordinates(centroids)
         connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
@@ -281,16 +287,28 @@ class Surfaces:
         grid.surfaces.dry_weather_flow = self.dry_weather_flow[unique_surfaces_mask]
 
         grid.surfaces.outflow_delay = self.outflow_delay[unique_surfaces_mask] / 60.0
-        grid.surfaces.storage_limit = self.surface_layer_thickness[unique_surfaces_mask] / 1000.0
-        grid.surfaces.infiltration_flag = self.infiltration[unique_surfaces_mask].astype('bool')
+        grid.surfaces.storage_limit = (
+            self.surface_layer_thickness[unique_surfaces_mask] / 1000.0
+        )
+        grid.surfaces.infiltration_flag = self.infiltration[
+            unique_surfaces_mask
+        ].astype("bool")
 
-        grid.surfaces.fb = self.max_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
-        grid.surfaces.fe = self.min_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
-        grid.surfaces.ka = self.infiltration_decay_constant[unique_surfaces_mask] / 60.0 / 60.0
-        grid.surfaces.kh = self.infiltration_recovery_constant[unique_surfaces_mask] / 60.0 / 60.0
+        grid.surfaces.fb = (
+            self.max_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
+        )
+        grid.surfaces.fe = (
+            self.min_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
+        )
+        grid.surfaces.ka = (
+            self.infiltration_decay_constant[unique_surfaces_mask] / 60.0 / 60.0
+        )
+        grid.surfaces.kh = (
+            self.infiltration_recovery_constant[unique_surfaces_mask] / 60.0 / 60.0
+        )
 
         mask = np.invert(grid.surfaces.infiltration_flag)
-   
+
         grid.surfaces.fb[mask] = 0.0
         grid.surfaces.fe[mask] = 0.0
         grid.surfaces.ka[mask] = 0.0
@@ -304,22 +322,26 @@ class Surfaces:
 
         search_array = self.surface_id[unique_surfaces_mask]
         sort_idx = np.argsort(self.surface_id[unique_surfaces_mask])
-        lookup = sort_idx[np.searchsorted(
-            search_array, self.surface_id, sorter=sort_idx)]
+        lookup = sort_idx[
+            np.searchsorted(search_array, self.surface_id, sorter=sort_idx)
+        ]
 
-        grid.surfaces.imp = lookup + 1 
+        grid.surfaces.imp = lookup + 1
         grid.surfaces.function = self.function[unique_surfaces_mask]
 
         # Find connection_node (calc) node id's
-        connection_node_mask = grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+        connection_node_mask = (
+            grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+        )
         cc_node_ids = grid.nodes.content_pk[connection_node_mask]
         node_ids = grid.nodes.id[connection_node_mask]
 
         sort_idx = np.argsort(cc_node_ids)
-        lookup = sort_idx[np.searchsorted(
-            cc_node_ids, self.connection_node_id, sorter=sort_idx)]
+        lookup = sort_idx[
+            np.searchsorted(cc_node_ids, self.connection_node_id, sorter=sort_idx)
+        ]
 
-        grid.surfaces.cci = node_ids[lookup]       
+        grid.surfaces.cci = node_ids[lookup]
 
 
 @array_of(ImperviousSurface)
@@ -330,7 +352,8 @@ class ImperviousSurfaces:
 
         if np.any(no_centroid_mask):
             fill_missing_centroids(
-                centroids, self.surface_id, self.connection_node_the_geom)
+                centroids, self.surface_id, self.connection_node_the_geom
+            )
 
         centroid_coords = pygeos.get_coordinates(centroids)
         connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
@@ -342,7 +365,9 @@ class ImperviousSurfaces:
         grid.surfaces.centroid_y = centroid_coords[:, 1][unique_surfaces_mask]
         grid.surfaces.code = self.code[unique_surfaces_mask]
         grid.surfaces.display_name = self.display_name[unique_surfaces_mask]
-        grid.surfaces.surface_inclination = self.surface_inclination[unique_surfaces_mask]
+        grid.surfaces.surface_inclination = self.surface_inclination[
+            unique_surfaces_mask
+        ]
         grid.surfaces.surface_class = self.surface_class[unique_surfaces_mask]
 
         self.surface_sub_class[self.surface_sub_class == None] = b""
@@ -352,7 +377,9 @@ class ImperviousSurfaces:
         grid.surfaces.dry_weather_flow = self.dry_weather_flow[unique_surfaces_mask]
 
         params = SurfaceParams.from_surface_class_and_inclination(
-            self.surface_class[unique_surfaces_mask], self.surface_inclination[unique_surfaces_mask])
+            self.surface_class[unique_surfaces_mask],
+            self.surface_inclination[unique_surfaces_mask],
+        )
 
         grid.surfaces.outflow_delay = params.outflow_delay
         grid.surfaces.storage_limit = params.surface_storage
@@ -370,19 +397,23 @@ class ImperviousSurfaces:
 
         search_array = self.surface_id[unique_surfaces_mask]
         sort_idx = np.argsort(self.surface_id[unique_surfaces_mask])
-        lookup = sort_idx[np.searchsorted(
-            search_array, self.surface_id, sorter=sort_idx)]
+        lookup = sort_idx[
+            np.searchsorted(search_array, self.surface_id, sorter=sort_idx)
+        ]
 
-        grid.surfaces.imp = lookup + 1 
+        grid.surfaces.imp = lookup + 1
         grid.surfaces.function = np.full(len(unique_surfaces_mask), b"")
 
         # Find connection_node (calc) node id's
-        connection_node_mask = grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+        connection_node_mask = (
+            grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+        )
         cc_node_ids = grid.nodes.content_pk[connection_node_mask]
         node_ids = grid.nodes.id[connection_node_mask]
 
         sort_idx = np.argsort(cc_node_ids)
-        lookup = sort_idx[np.searchsorted(
-            cc_node_ids, self.connection_node_id, sorter=sort_idx)]
+        lookup = sort_idx[
+            np.searchsorted(cc_node_ids, self.connection_node_id, sorter=sort_idx)
+        ]
 
         grid.surfaces.cci = node_ids[lookup]
