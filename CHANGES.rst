@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.8.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added support for zero-d administration including surfaces and impervious surfaces.
 
 
 0.8.0 (2021-11-30)
