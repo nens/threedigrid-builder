@@ -469,11 +469,11 @@ class Grid:
         # Connection nodes: logic based on the connected objects
         connection_nodes_module.set_bottom_levels(self.nodes, self.lines)
 
+        # Fix channel, pipe and culvert lines: set dpumax of these lines that have no interpolated nodes
+        csl_module.fix_dpumax(self.lines, self.nodes)
+
         # Lines: based on the nodes
         self.lines.set_bottom_levels(self.nodes, allow_nan=True)
-
-        # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
-        csl_module.fix_dpumax(self.lines, self.nodes)
 
     def set_initial_waterlevels(self, connection_nodes, channels, pipes, culverts):
         """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
