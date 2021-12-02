@@ -551,11 +551,16 @@ class Grid:
     def set_cross_sections(self, definitions):
         """Set the cross sections on this grid object
 
+        Only the definitions that are actually used will be used.
+
         Args:
             definitions (CrossSectionDefinitions)
         """
-        # TODO Skip definitions that are not used (and remap cross_id1 and cross_id2)
-        self.cross_sections = definitions.convert()
+        cs_in_use = np.union1d(
+            np.unique(self.lines.cross_id1[self.lines.cross_id1 != -9999]),
+            np.unique(self.lines.cross_id2[self.lines.cross_id2 != -9999]),
+        )
+        self.cross_sections = definitions.convert(cs_in_use)
 
     def embed_nodes(self, embedded_node_id_counter):
         """Integrate embedded connection nodes into the 2D cells.
