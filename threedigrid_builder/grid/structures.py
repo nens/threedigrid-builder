@@ -3,7 +3,6 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import linear
 
 import itertools
@@ -81,14 +80,11 @@ class WeirOrifice:  # NL: stuw / doorlaat
 class WeirOrifices:
     content_type = None  # subclasses need to define this
 
-    def get_lines(
-        self, connection_nodes, definitions, line_id_counter, connection_node_offset=0
-    ):
+    def get_lines(self, connection_nodes, line_id_counter, connection_node_offset=0):
         """Convert weirs (or orifices) into lines
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
-            definitions (CrossSectionDefinitions): to map definition ids
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
               indices in the returned lines.line. Default 0.
@@ -101,8 +97,8 @@ class WeirOrifices:
             - content_pk: the id of the structure from which this line originates
             - kcu: the crest_type of the structure
             - dpumax: the crest_level of the structure
-            - cross1 & cross2: the index of the cross section definition
-            - cross_weight: 1.0 (which means that cross2 should be ignored)
+            - cross_id1 & cross_id2: the id of the cross section definition
+            - cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - frict_type1 & frict_type2: the friction type (both are equal)
             - frict_value1 & frict_value2: the friction value (both are equal)
             - invert_level_start_point: the crest_level of the structure
@@ -114,15 +110,6 @@ class WeirOrifices:
         line[:, 0] = connection_nodes.id_to_index(self.connection_node_start_id)
         line[:, 1] = connection_nodes.id_to_index(self.connection_node_end_id)
         line += connection_node_offset
-        try:
-            cross1 = definitions.id_to_index(
-                self.cross_section_definition_id, check_exists=True
-            )
-        except KeyError as e:
-            raise SchematisationError(
-                f"{self.__class__.__name__} {self.id[e.indices].tolist()} refer to "
-                f"non-existing cross section definitions."
-            )
         return Lines(
             id=itertools.islice(line_id_counter, len(self)),
             line=line,
@@ -130,8 +117,8 @@ class WeirOrifices:
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType
             dpumax=self.crest_level,
-            cross1=cross1,
-            cross2=cross1,
+            cross_id1=self.cross_section_definition_id,
+            cross_id2=self.cross_section_definition_id,
             cross_weight=1.0,
             frict_type1=self.friction_type,
             frict_value1=self.friction_value,

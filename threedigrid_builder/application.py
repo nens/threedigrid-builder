@@ -103,7 +103,6 @@ def _make_gridadmin(
         channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=channels,
-            definitions=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -114,15 +113,13 @@ def _make_gridadmin(
         )
 
         locations = db.get_cross_section_locations()
-        definitions = db.get_cross_section_definitions()
-        locations.apply_to_lines(channel_grid.lines, channels, definitions)
+        locations.apply_to_lines(channel_grid.lines, channels)
         grid += channel_grid
 
         pipes = db.get_pipes()
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=pipes,
-            definitions=definitions,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -136,7 +133,6 @@ def _make_gridadmin(
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=culverts,
-            definitions=definitions,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -152,7 +148,6 @@ def _make_gridadmin(
             connection_nodes=connection_nodes,
             weirs=weirs,
             orifices=orifices,
-            definitions=definitions,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
@@ -166,7 +161,7 @@ def _make_gridadmin(
             culverts=culverts,
         )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
-        grid.set_cross_sections(definitions)
+        grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:

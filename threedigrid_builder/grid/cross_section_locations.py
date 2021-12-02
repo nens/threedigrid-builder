@@ -1,6 +1,5 @@
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 import pygeos
@@ -23,13 +22,12 @@ class CrossSectionLocation:
 
 @array_of(CrossSectionLocation)
 class CrossSectionLocations:
-    def apply_to_lines(self, lines, channels, definitions, extrapolate=False):
+    def apply_to_lines(self, lines, channels, extrapolate=False):
         """Apply cross section locations to lines
 
         Args:
             lines (Lines): Changed inplace
             channels (Channels)
-            definitions (CrossSectionDefinition)
             extrapolate (bool): Whether to allow extrapolation. Extrapolation may occur
                 when there are multiple cross section locations and some line centers
                 are not in between them. When turned off, the values of those lines
@@ -38,8 +36,8 @@ class CrossSectionLocations:
 
         The following lines attributes are changed inplace:
 
-        - cross1: the id of the first cross section definition
-        - cross2: the id of the second cross section definition
+        - cross_id1: the id of the first cross section definition
+        - cross_id2: the id of the second cross section definition
         - cross_weight: the weight of the first cross section definition
         - frict_type1: the friction type of the first cross section location
         - frict_type2: the friction type of the second cross section location
@@ -60,21 +58,8 @@ class CrossSectionLocations:
 
         idx1 = self.id_to_index(cross_loc1)
         idx2 = self.id_to_index(cross_loc2)
-        # Fill cross1 and cross2 by mapping to CrossSectionDefinitions
-        try:
-            lines.cross1 = definitions.id_to_index(
-                self.definition_id[idx1],
-                check_exists=True,
-            )
-            lines.cross2 = definitions.id_to_index(
-                self.definition_id[idx2],
-                check_exists=True,
-            )
-        except KeyError as e:
-            raise SchematisationError(
-                f"Cross section locations {self.id[e.indices].tolist()} refer to "
-                f"non-existing cross section definitions."
-            )
+        lines.cross_id1 = self.definition_id[idx1]
+        lines.cross_id2 = self.definition_id[idx2]
         lines.cross_weight = cross_weight
 
         lines.frict_type1 = self.friction_type[idx1]

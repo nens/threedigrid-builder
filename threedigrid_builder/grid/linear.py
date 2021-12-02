@@ -2,7 +2,6 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import numpy as np
@@ -109,7 +108,6 @@ class BaseLinear:
     def get_lines(
         self,
         connection_nodes,
-        definitions,
         nodes,
         line_id_counter,
         connection_node_offset=0,
@@ -127,7 +125,6 @@ class BaseLinear:
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
-            definitions (CrossSectionDefinitions): to map definition ids
             nodes (Nodes): interpolated nodes (see interpolate_nodes)
             line_id_counter (iterable): an iterable yielding integers
             connection_node_offset (int): offset to give connection node
@@ -145,8 +142,8 @@ class BaseLinear:
             - kcu: the calculation_type of the linear object
             - line_geometries: the linestrings (segments of self.the_geom)
             These attributes are filled for pipes/culverts only:
-            - cross1 & cross2: the index of the cross section definition
-            - cross_weight: 1.0 (which means that cross2 should be ignored)
+            - cross_id1 & cross_id2: the id of the cross section definition
+            - cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - frict_type1 & frict_type2: the friction type (both are equal)
             - frict_value1 & frict_value2: the friction value (both are equal)
             - invert_level_start_point: copied from pipe/culvert
@@ -199,19 +196,11 @@ class BaseLinear:
 
         # conditionally add the cross section definition (for pipes and culverts only)
         try:
-            cross1 = definitions.id_to_index(
-                objs.cross_section_definition_id[segment_idx],
-                check_exists=True,
-            )
+            cross_id = objs.cross_section_definition_id[segment_idx]
             cross_weight = 1.0
         except AttributeError:
-            cross1 = -9999
+            cross_id = -9999
             cross_weight = np.nan
-        except KeyError as e:
-            raise SchematisationError(
-                f"{self.__class__.__name__} {self.id[e.indices].tolist()} refer to "
-                f"non-existing cross section definitions."
-            )
 
         # conditionally add the invert levels (for pipes and culverts only)
         try:
@@ -252,8 +241,8 @@ class BaseLinear:
             ds1d_half=(end_s - start_s) / 2,
             ds1d=end_s - start_s,
             kcu=objs.calculation_type[segment_idx],
-            cross1=cross1,
-            cross2=cross1,
+            cross_id1=cross_id,
+            cross_id2=cross_id,
             cross_weight=cross_weight,
             frict_type1=frict_type,
             frict_value1=frict_value,
