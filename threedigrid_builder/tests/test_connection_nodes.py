@@ -6,7 +6,6 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import CrossSectionLocations
@@ -183,12 +182,13 @@ def test_set_bottom_levels_multiple_nodes(_type):
 
 
 @pytest.mark.parametrize("structure_type", [Weirs, Orifices, Pipes, Culverts, Channels])
-def test_bottom_levels_above_invert_level(structure_type):
+def test_bottom_levels_above_invert_level(structure_type, caplog):
     nodes = Nodes(
         id=[1, 2],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         dmax=[10.0, 20.0],
         content_pk=[52, 22],
+        manhole_id=[3, 6],
     )
     lines = Lines(
         id=[1],
@@ -200,9 +200,8 @@ def test_bottom_levels_above_invert_level(structure_type):
     )
 
     # assert the resulting value of dmax
-    with pytest.raises(SchematisationError) as e:
-        set_bottom_levels(nodes, lines)
-        assert str(e).startswith("Connection nodes [22, 52] have a manhole")
+    set_bottom_levels(nodes, lines)
+    assert caplog.messages[0].startswith("Manholes [3, 6] have a bottom_level")
 
 
 def test_1d2d_properties(connection_nodes):

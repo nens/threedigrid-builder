@@ -16,6 +16,9 @@ Changelog of threedigrid-builder
 - Disable extrapolation for channel node/line attributes that are derived from
   crosssection locations.
 
+- Disable the SchematisationError when a Manhole has a bottom_level above a level
+  of a connected object. Instead, emit a warning through the logger.
+
 
 0.8.0 (2021-11-30)
 ------------------
