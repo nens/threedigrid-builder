@@ -14,7 +14,5 @@ module parameters
                           NODE_2D_BOUND = 5,&
                           NODE_2D_GW_BOUND = 6,&
                           NODE_1D_BOUND = 7
-
-#include <version.inc>
     
 end module parameters

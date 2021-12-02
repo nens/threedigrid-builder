@@ -35,40 +35,6 @@ FortranCInterface_HEADER(FCMangle.h
                          SYMBOL_NAMESPACE "FC_"
                          SYMBOLS mysub mymod:my_sub)
 
-						 
-###############################################################
-##VERSION INFO                                               ##
-###############################################################
-file (STRINGS "LIBTHREEDIGRID_VERSION.rst" VERSION_NUMBER)
-message (STATUS libthreedigrid: ${VERSION_NUMBER}) 
-string(REPLACE "." ";" VERSION_LIST ${VERSION_NUMBER})
-message (STATUS "list is " ${VERSION_LIST}) 
-list(LENGTH VERSION_LIST LEN_VERSION)
-list(GET VERSION_LIST 0 3di_VERSION_MAJOR)
-list(GET VERSION_LIST 1 3di_VERSION_MINOR)
-list(GET VERSION_LIST 2 3di_VERSION_PATCH)
-message (STATUS "Major " ${3di_VERSION_MAJOR}) 
-message (STATUS "Minor " ${3di_VERSION_MINOR}) 
-message (STATUS "Patch " ${3di_VERSION_PATCH}) 
-if(LEN_VERSION EQUAL 4)
-  list(GET VERSION_LIST 3 3di_VERSION_TWEAK)
-  message (STATUS "Tweak " ${3di_VERSION_TWEAK}) 
-  set (3di_VERSION ${3di_VERSION_MAJOR}.${3di_VERSION_MINOR}.${3di_VERSION_PATCH}.${3di_VERSION_TWEAK})
-else(LEN_VERSION EQUAL 4)
-  set (3di_VERSION ${3di_VERSION_MAJOR}.${3di_VERSION_MINOR}.${3di_VERSION_PATCH})
-endif()
-
-#if (3di_VERSION_TWEAK 
-set (VERSION ${3di_VERSION})
-message (STATUS "libthreedigrid version: " ${3di_VERSION}) 
-###############################################################
-##VERSION INFO                                               ##
-###############################################################
-
-
-
-
-
 ###############################################################
 ##BUILD TYPE                                                 ##
 ###############################################################
@@ -85,10 +51,6 @@ set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
       "Choose the installation directory"
       FORCE)
 SET(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/include)
-configure_file (
-    "${CMAKE_SOURCE_DIR}/version.inc.in"
-    "${CMAKE_Fortran_MODULE_DIRECTORY}/version.inc"
-    )
 
 ###############################################################
 ##BUILD TYPE                                                 ##
