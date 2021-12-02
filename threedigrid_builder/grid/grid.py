@@ -1,14 +1,12 @@
 from . import connection_nodes as connection_nodes_module
 from . import cross_section_locations as csl_module
-from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
 from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
+from . import dem_average_area as dem_average_area_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
-from threedigrid_builder.base import Breaches
-from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
@@ -78,12 +76,12 @@ assert len(LineType) == len(LINE_ORDER)
 class GridMeta:
     """Metadata that needs to end up in the gridadmin file."""
 
+    epsg_code: int
     model_name: str  # name from sqlite globalsettings.name
 
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
-    epsg_code: int = 28992  # SQLite EPSG is ignored if DEM file is present
     model_slug: Optional[str] = None  # from repository.slug
     revision_hash: Optional[str] = None  # from repository.revision.hash
     revision_nr: Optional[int] = None  # from repository.revision.number
@@ -102,7 +100,6 @@ class GridMeta:
     has_interception: bool = False
     has_pumpstations: bool = False
     has_simple_infiltration: bool = False
-    has_max_infiltration_capacity: bool = False
     has_interflow: bool = False
     has_initial_waterlevels: bool = True
 
@@ -142,8 +139,6 @@ class Grid:
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
         nodes_embedded=None,
-        levees=None,
-        breaches=None,
         meta=None,
         quadtree_stats=None,
     ):
@@ -165,10 +160,6 @@ class Grid:
             nodes_embedded = Nodes(id=[])
         elif not isinstance(nodes_embedded, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
-        if levees is not None and not isinstance(levees, Levees):
-            raise TypeError(f"Expected Levees instance, got {type(levees)}")
-        if breaches is not None and not isinstance(breaches, Breaches):
-            raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
@@ -176,8 +167,6 @@ class Grid:
         self.pumps = pumps
         self.cross_sections = cross_sections
         self.nodes_embedded = nodes_embedded
-        self.levees = levees
-        self.breaches = breaches
         self._cell_tree = None
 
     def __add__(self, other):
@@ -190,14 +179,7 @@ class Grid:
         new_attrs = {}
         for name in ("nodes", "lines", "nodes_embedded"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
-        for name in (
-            "meta",
-            "quadtree_stats",
-            "pumps",
-            "cross_sections",
-            "levees",
-            "breaches",
-        ):
+        for name in ("meta", "quadtree_stats", "pumps", "cross_sections"):
             if getattr(other, name) is None:
                 new_attrs[name] = getattr(self, name)
             else:
@@ -229,9 +211,6 @@ class Grid:
         meta.has_interception = s.interception_type is not None
         meta.has_groundwater_flow = s.groundwater_hydro_connectivity_type is not None
         meta.has_simple_infiltration = s.infiltration_rate_type is not None
-        meta.has_max_infiltration_capacity = (
-            s.max_infiltration_capacity_type is not None
-        )
         meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
@@ -472,7 +451,7 @@ class Grid:
         # Lines: based on the nodes
         self.lines.set_bottom_levels(self.nodes, allow_nan=True)
 
-        # Fix channel, pipe and culvert lines: set dpumax of these lines that have no interpolated nodes
+        # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
         csl_module.fix_dpumax(self.lines, self.nodes)
 
     def set_initial_waterlevels(self, connection_nodes, channels, pipes, culverts):
@@ -495,19 +474,16 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles, levees):
+    def set_obstacles(self, obstacles):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to 101 and changes flod and flou to crest_level.
 
-        Also store levees on this grid for later output (and Breach determination)
-
         Args:
             obstacles (Obstacles)
-            levees (Levees)
         """
-        self.levees = levees
-        obstacles_module.apply_obstacles(self.lines, obstacles, levees)
+        if len(obstacles) > 0:
+            obstacles_module.apply_obstacles(self.lines, obstacles)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
@@ -591,15 +567,6 @@ class Grid:
             line_id_counter,
         )
 
-    def add_breaches(self, connected_points):
-        """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
-        references a Levee, it will result in a Breach. The Breach gets the properties
-        from the Levee (max_breach_depth, material) but these may be unset.
-        """
-        self.lines.set_line_coords(self.nodes)
-        self.lines.fix_line_geometries()
-        self.breaches = connected_points.get_breaches(self.lines, self.levees)
-
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.
 
@@ -610,7 +577,7 @@ class Grid:
             dem_average_area_module.apply_dem_average_areas(
                 self.nodes, self.cell_tree, dem_average_areas
             )
-
+        
     def sort(self):
         """Sort the nodes and lines into the order required by the calculation core.
 
@@ -628,16 +595,22 @@ class Grid:
         old_node_ids = self.nodes.id.copy()
         self.nodes.reorder(node_sorter)
         self.nodes.id[:] = np.arange(len(self.nodes))
-        old_line_ids = self.lines.id.copy()
         self.lines.reorder(line_sorter)
         self.lines.id[:] = np.arange(len(self.lines))
 
-        # create mapping with the node new ids on the position of the old node ids
-        new_node_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
-        new_node_ids[old_node_ids[node_sorter]] = self.nodes.id
+        # create a mapping with new node ids on the position of the old node ids
+        new_ids = np.empty(old_node_ids[-1] + 1, dtype=self.nodes.id.dtype)
+        new_ids[old_node_ids[node_sorter]] = self.nodes.id
 
-        # apply the node id mappings to lines.line
-        self.lines.line[:] = np.take(new_node_ids, self.lines.line)
+        # apply the mapping to lines.line and optionally to pumps and embedded nodes
+        self.lines.line[:] = np.take(new_ids, self.lines.line)
+        if self.pumps is not None:
+            mask = self.pumps.line != -9999
+            self.pumps.line[mask] = np.take(new_ids, self.pumps.line[mask])
+        if self.nodes_embedded is not None:
+            self.nodes_embedded.embedded_in = np.take(
+                new_ids, self.nodes_embedded.embedded_in
+            )
 
         # sort boundary lines so that they internally match the boundary node order
         BOUNDARY_NODE_TYPES = (
@@ -647,21 +620,6 @@ class Grid:
         )
         bc_node_ids = self.nodes.id[np.isin(self.nodes.node_type, BOUNDARY_NODE_TYPES)]
         self.lines.sort_by_nodes(bc_node_ids)
-
-        # create mapping with the line new ids on the position of the old line ids
-        new_line_ids = np.empty(old_line_ids[-1] + 1, dtype=self.lines.id.dtype)
-        new_line_ids[old_line_ids[line_sorter]] = self.lines.id
-
-        # apply the mappings to other datasets that contain references to nodes or lines
-        if self.pumps is not None:
-            mask = self.pumps.line != -9999
-            self.pumps.line[mask] = np.take(new_node_ids, self.pumps.line[mask])
-        if self.nodes_embedded is not None:
-            self.nodes_embedded.embedded_in = np.take(
-                new_node_ids, self.nodes_embedded.embedded_in
-            )
-        if self.breaches is not None:
-            self.breaches.levl = np.take(new_line_ids, self.breaches.levl)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
@@ -680,6 +638,5 @@ class Grid:
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )
         self.meta.has_2d = self.meta.extent_2d is not None
-        self.meta.has_breaches = self.breaches is not None and len(self.breaches) > 0
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True
