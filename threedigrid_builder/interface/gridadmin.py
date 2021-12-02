@@ -8,6 +8,7 @@ from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
@@ -135,9 +136,13 @@ def increase(arr):
 
 class GridAdminOut(OutputInterface):
     def __init__(self, path):
-        if h5py is None:
+        if not self.available():
             raise ImportError("Cannot write to HDF5 if h5py is not available.")
         super().__init__(path)
+
+    @staticmethod
+    def available():
+        return h5py is not None
 
     def __enter__(self):
         self._file = h5py.File(self.path, mode="w")
@@ -145,6 +150,20 @@ class GridAdminOut(OutputInterface):
 
     def __exit__(self, *args, **kwargs):
         self._file.close()
+
+    def write(self, grid: Grid):
+        self.write_meta(grid.meta)
+        self.write_grid_counts(grid.nodes, grid.lines)
+        if grid.quadtree_stats is not None:
+            self.write_quadtree(grid.quadtree_stats)
+        self.write_nodes(grid.nodes)
+        self.write_nodes_embedded(grid.nodes_embedded)
+        self.write_lines(grid.lines)
+        self.write_pumps(grid.pumps)
+        if grid.cross_sections.tables is not None:
+            self.write_cross_sections(grid.cross_sections)
+        self.write_levees(grid.levees)
+        self.write_breaches(grid.breaches)
 
     def write_meta(self, meta: GridMeta):
         """Write the metadata to the gridadmin file.
