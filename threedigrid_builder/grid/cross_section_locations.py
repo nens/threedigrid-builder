@@ -251,16 +251,7 @@ def fix_dpumax(lines, nodes):
             invert_level_start_point and invert_level_end_point attributes.
     """
     # find the channel lines that connect 2 connection nodes
-    line_idx = np.where(
-        np.isin(
-            lines.content_type,
-            [
-                ContentType.TYPE_V2_CHANNEL,
-                ContentType.TYPE_V2_PIPE,
-                ContentType.TYPE_V2_CULVERT,
-            ],
-        )
-    )[0]
+    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
     node_idx = nodes.id_to_index(lines.line[line_idx])
     is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
     line_idx = line_idx[is_cn.all(axis=1)]
