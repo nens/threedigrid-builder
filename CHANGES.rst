@@ -13,6 +13,9 @@ Changelog of threedigrid-builder
   bottom_levels of the two adjacent nodes, which gave wrong results for lines attached
   to manholes.
 
+- Disable extrapolation for channel node/line attributes that are derived from
+  crosssection locations.
+
 
 0.8.0 (2021-11-30)
 ------------------

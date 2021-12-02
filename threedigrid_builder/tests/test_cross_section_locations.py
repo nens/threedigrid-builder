@@ -11,6 +11,7 @@ from threedigrid_builder.grid.cross_section_locations import (
 )
 from threedigrid_builder.grid.cross_section_locations import compute_weights
 
+import numpy as np
 import pygeos
 import pytest
 
@@ -71,7 +72,8 @@ def definitions():
     return CrossSectionDefinitions(id=[3, 4, 5])
 
 
-def test_compute_weights(locations, channels, channel_lines):
+@pytest.mark.parametrize("extrapolate", [True, False])
+def test_compute_weights(locations, channels, channel_lines, extrapolate):
     """The test set has the following situation:
 
     - channel 51 with no added nodes and with 1 cs location
@@ -97,9 +99,11 @@ def test_compute_weights(locations, channels, channel_lines):
     expected_cross_loc1 = [1, 5, 3, 3, 3, 6, 6]
     expected_cross_loc2 = [1, 5, 2, 2, 2, 6, 6]
     expected_weight = [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
+    if not extrapolate:
+        expected_weight = np.clip(expected_weight, 0, 1)
 
     cross_loc1, cross_loc2, cross_weights = compute_weights(
-        channel_lines.content_pk, channel_lines.s1d, locations, channels
+        channel_lines.content_pk, channel_lines.s1d, locations, channels, extrapolate
     )
 
     assert_equal(cross_loc1, expected_cross_loc1)
@@ -118,7 +122,11 @@ def test_compute_weights_edge_effects(channels):
     expected_weight = [1.0, 0.0, 1.0, 1.0]
 
     cross_loc1, cross_loc2, cross_weights = compute_weights(
-        [51, 51, 52, 52], [0.0, 3.0, 0.0, 55.0], locations, channels[:2]
+        [51, 51, 52, 52],
+        [0.0, 3.0, 0.0, 55.0],
+        locations,
+        channels[:2],
+        extrapolate=True,
     )
 
     assert_equal(cross_loc1, expected_cross_loc1)
@@ -126,19 +134,30 @@ def test_compute_weights_edge_effects(channels):
     assert_almost_equal(cross_weights, expected_weight)
 
 
-def test_compute_bottom_level(locations, channels, channel_lines):
+@pytest.mark.parametrize(
+    "extrapolate,expected",
+    [
+        (True, [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]),
+        (False, [1.0, 5.0, 3.0, 2.65, 2.0, 6.0, 6.0]),
+    ],
+)
+def test_compute_bottom_level(
+    locations, channels, channel_lines, extrapolate, expected
+):
     """Same setup as test_compute_weights, but now testing the derived bottom levels"""
-    expected = [1.0, 5.0, 3.75, 2.65, 1.55, 6.0, 6.0]
-
     actual = compute_bottom_level(
-        channel_lines.content_pk, channel_lines.s1d, locations, channels
+        channel_lines.content_pk,
+        channel_lines.s1d,
+        locations,
+        channels,
+        extrapolate=extrapolate,
     )
 
     assert_almost_equal(actual, expected)
 
 
 def test_apply_to_lines(channels, channel_lines, locations, definitions):
-    locations.apply_to_lines(channel_lines, channels, definitions)
+    locations.apply_to_lines(channel_lines, channels, definitions, extrapolate=False)
 
     assert_equal(channel_lines.cross1, [0, 1, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.cross2, [0, 1, 0, 0, 0, 2, 2])
@@ -146,6 +165,21 @@ def test_apply_to_lines(channels, channel_lines, locations, definitions):
     assert_equal(channel_lines.frict_type2, [1, 2, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.frict_value1, [30, 0.02, 40, 40, 40, 0.03, 0.03])
     assert_equal(channel_lines.frict_value2, [30, 0.02, 35, 35, 35, 0.03, 0.03])
+    assert_almost_equal(
+        channel_lines.cross_weight, [1.0, 1.0, 1.0, 0.65, 0.0, 1.0, 1.0]
+    )
+    assert_almost_equal(
+        channel_lines.invert_level_start_point, [1.0, 5.0, 3.0, 3.0, 2.1, 6.0, 6.0]
+    )
+    assert_almost_equal(
+        channel_lines.invert_level_end_point, [1.0, 5.0, 3.0, 2.1, 2.0, 6.0, 6.0]
+    )
+    assert_almost_equal(channel_lines.dpumax, [1.0, 5.0, 3, 3.0, 2.1, 6.0, 6.0])
+
+
+def test_apply_to_lines_extrapolate(channels, channel_lines, locations, definitions):
+    locations.apply_to_lines(channel_lines, channels, definitions, extrapolate=True)
+
     assert_almost_equal(
         channel_lines.cross_weight, [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]
     )

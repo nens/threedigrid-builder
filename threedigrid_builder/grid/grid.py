@@ -1,5 +1,4 @@
 from . import connection_nodes as connection_nodes_module
-from . import cross_section_locations as csl_module
 from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
 from . import initial_waterlevels as initial_waterlevels_module
