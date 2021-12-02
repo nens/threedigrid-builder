@@ -8,6 +8,11 @@ Changelog of threedigrid-builder
 
 - Fixed __version__ attribute and  "threedigrid_builder_version" HDF5 attribute.
 
+- Set the dpumax of a 1D line (channel, pipe, culvert, weir, orifice) always to the
+  largest of its two invert levels. Previously, it was set to the largest of the two
+  bottom_levels of the two adjacent nodes, which gave wrong results for lines attached
+  to manholes.
+
 
 0.8.0 (2021-11-30)
 ------------------

@@ -10,7 +10,6 @@ from threedigrid_builder.grid.cross_section_locations import (
     compute_bottom_level,
 )
 from threedigrid_builder.grid.cross_section_locations import compute_weights
-from threedigrid_builder.grid.cross_section_locations import fix_dpumax
 
 import pygeos
 import pytest
@@ -138,19 +137,6 @@ def test_compute_bottom_level(locations, channels, channel_lines):
     assert_almost_equal(actual, expected)
 
 
-def test_fix_dpumax(channel_nodes, channel_lines):
-    """For the channels that have no interpolated nodes, set dpumax if it is higher"""
-    channel_lines.invert_level_start_point[:] = [2, 4, 9, 9, 9, 9, 9]
-    channel_lines.invert_level_end_point[:] = [3, 6, 9, 9, 9, 9, 9]
-
-    fix_dpumax(channel_lines, channel_nodes)
-
-    # The first two lines are from channels with no interpolated nodes, there the
-    # dpumax is updated in case it becomes higher. The other lines have
-    # interpolated nodes; they are untouched
-    assert_almost_equal(channel_lines.dpumax, [3.0, 5.0, 0, 0, 0, 0, 0])
-
-
 def test_apply_to_lines(channels, channel_lines, locations, definitions):
     locations.apply_to_lines(channel_lines, channels, definitions)
 
@@ -169,3 +155,4 @@ def test_apply_to_lines(channels, channel_lines, locations, definitions):
     assert_almost_equal(
         channel_lines.invert_level_end_point, [1.0, 5.0, 3.2, 2.1, 1.0, 6.0, 6.0]
     )
+    assert_almost_equal(channel_lines.dpumax, [1.0, 5.0, 4.3, 3.2, 2.1, 6.0, 6.0])

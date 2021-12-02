@@ -1,5 +1,4 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.exceptions import SchematisationError
 
@@ -34,6 +33,7 @@ class CrossSectionLocations:
         - cross_weight: the weight of the first cross section definition
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
+        - dpumax: the largest of the two invert levels
         """
         # Mask the lines to only the Channel lines
         cross_loc1, cross_loc2, cross_weight = compute_weights(
@@ -79,6 +79,9 @@ class CrossSectionLocations:
             lines.s1d + (lines.ds1d / 2),
             self,
             channels,
+        )
+        lines.dpumax = np.maximum(
+            lines.invert_level_start_point, lines.invert_level_end_point
         )
 
 
@@ -233,35 +236,3 @@ def compute_bottom_level(channel_id, ds, cs, channels, cs_attr="reference_level"
     """
     cross_loc1, cross_loc2, cross_weight = compute_weights(channel_id, ds, cs, channels)
     return interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr)
-
-
-def fix_dpumax(lines, nodes):
-    """Fix the line bottom levels (dpumax) for channels that have no added nodes.
-
-    The new value is the reference_level of the channel's cross section location
-    *only* if that is higher than the already present dpumax. If the channel has
-    multiple cs locations, inter/extrapolate on the line midpoint.
-
-    This should be called *after* assigning dpumax to all lines and *after* computing
-    the invert levels of the lines.
-
-    Args:
-        nodes (Nodes)
-        lines (Lines): the dpumax is adjusted where necessary. Needs the
-            invert_level_start_point and invert_level_end_point attributes.
-    """
-    # find the channel lines that connect 2 connection nodes
-    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
-    node_idx = nodes.id_to_index(lines.line[line_idx])
-    is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
-    line_idx = line_idx[is_cn.all(axis=1)]
-
-    # average between the invert levels
-    new_dpumax = (
-        lines.invert_level_start_point[line_idx]
-        + lines.invert_level_end_point[line_idx]
-    ) / 2
-
-    # set the new dpumax, including only the lines that have a lower dpumax
-    mask = lines.dpumax[line_idx] < new_dpumax
-    lines.dpumax[line_idx[mask]] = new_dpumax[mask]
