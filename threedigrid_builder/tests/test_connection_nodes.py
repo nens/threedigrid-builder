@@ -196,12 +196,15 @@ def test_bottom_levels_above_invert_level(structure_type, caplog):
         content_pk=2,
         line=[[1, 2]],
         invert_level_start_point=3.0,
-        invert_level_end_point=3.0,
+        invert_level_end_point=20.0,
     )
 
-    # assert the resulting value of dmax
+    # setting the bottom levels emits a warning
     set_bottom_levels(nodes, lines)
-    assert caplog.messages[0].startswith("Manholes [3, 6] have a bottom_level")
+    assert caplog.messages[0].startswith("Manholes [3] have a bottom_level")
+
+    # assert the resulting value of dmax
+    assert_almost_equal(nodes.dmax, [3.0, 20.0])
 
 
 def test_1d2d_properties(connection_nodes):
