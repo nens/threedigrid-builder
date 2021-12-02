@@ -1,4 +1,5 @@
-from numpy.testing import assert_array_equal, assert_almost_equal
+from numpy.testing import assert_almost_equal
+from numpy.testing import assert_array_equal
 from threedigrid_builder.application import make_grid
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import LineType
@@ -8,6 +9,7 @@ from unittest.mock import Mock
 import h5py
 import numpy as np
 import pathlib
+import threedigrid_builder
 
 
 project_root = pathlib.Path(__file__).resolve().parent.parent
@@ -111,8 +113,7 @@ def test_integration(tmp_path):
         ## BREACHES
         assert f["breaches"]["id"][:].tolist() == [0, 1]
         assert_almost_equal(
-            f["breaches"]["coordinates"][:, 1], [108990.32, 517277.12],
-            decimal=2
+            f["breaches"]["coordinates"][:, 1], [108990.32, 517277.12], decimal=2
         )
 
         ## COUNTS
@@ -134,6 +135,40 @@ def test_integration(tmp_path):
             "ngrtot": 0,
             "nob2dg": 0,
             "nob2ds": 0,
+        }
+
+        ## ATTRIBUTES
+        attrs = {
+            k: (v.decode() if isinstance(v, bytes) else v) for (k, v) in f.attrs.items()
+        }
+        assert_almost_equal(
+            attrs.pop("extent_1d"), [105427.6, 511727.1, 115887.0, 523463.3], decimal=1
+        )
+        assert_almost_equal(
+            attrs.pop("extent_2d"), [106314, 514912, 111114, 519872], decimal=1
+        )
+        assert attrs == {
+            "epsg_code": 28992,
+            "has_1d": True,
+            "has_2d": True,
+            "has_breaches": True,
+            "has_embedded": False,
+            "has_groundwater": True,
+            "has_groundwater_flow": True,
+            "has_initial_waterlevels": True,
+            "has_interception": True,
+            "has_interflow": False,
+            "has_max_infiltration_capacity": False,
+            "has_pumpstations": True,
+            "has_simple_infiltration": False,
+            "model_name": "simple_infil_no_grndwtr",
+            "model_slug": "slug-123abc",
+            "revision_hash": "123abc",
+            "revision_nr": 24,
+            "threedi_tables_version": "",
+            "threedi_version": "1.2.3.dev",
+            "threedicore_version": "",
+            "threedigrid_builder_version": threedigrid_builder.__version__,
         }
 
     # progress increases
