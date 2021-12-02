@@ -556,10 +556,8 @@ class Grid:
         Args:
             definitions (CrossSectionDefinitions)
         """
-        cs_in_use = np.union1d(
-            np.unique(self.lines.cross_id1[self.lines.cross_id1 != -9999]),
-            np.unique(self.lines.cross_id2[self.lines.cross_id2 != -9999]),
-        )
+        cs_in_use = np.union1d(self.lines.cross_id1, self.lines.cross_id2)
+        cs_in_use = cs_in_use[cs_in_use != -9999]
         self.cross_sections = definitions.convert(cs_in_use)
 
     def embed_nodes(self, embedded_node_id_counter):
