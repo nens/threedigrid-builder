@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.8.1 (unreleased)
 ------------------
 
-- Dropped support for Python 3.6
+- Dropped support for Python 3.6.
 
 - Fixed __version__ attribute and  "threedigrid_builder_version" HDF5 attribute.
 
