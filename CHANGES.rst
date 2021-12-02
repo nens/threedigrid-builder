@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.8.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Dropped support for Python 3.6
 
 
 0.8.0 (2021-11-30)

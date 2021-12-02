@@ -15,12 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 2017
-          - python: 3.6
-            numpy: numpy==1.13.*
-            display_name: "2017"
-            pins: "h5py==2.7.* sqlalchemy==1.1.15"
-            extras: "[test,gridadmin,rasters]"
           # 2018
           - python: 3.7
             numpy: numpy==1.15.*
