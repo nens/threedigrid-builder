@@ -404,8 +404,19 @@ class GridAdminOut(OutputInterface):
         )
         self.write_dataset(group, "flod", lines.flod)
         self.write_dataset(group, "flou", lines.flou)
-        self.write_dataset(group, "cross_id1", increase(lines.cross_id1))
-        self.write_dataset(group, "cross_id2", increase(lines.cross_id2))
+
+        cross1 = lines.cross_id1.copy()
+        cross1[cross1 != -9999] = (
+            np.digitize(cross1[cross1 != -9999], cross_sections.content_pk, right=True)
+            + 1
+        )
+        cross2 = lines.cross_id2.copy()
+        cross2[cross2 != -9999] = (
+            np.digitize(cross2[cross2 != -9999], cross_sections.content_pk, right=True)
+            + 1
+        )
+        self.write_dataset(group, "cross1", cross1)
+        self.write_dataset(group, "cross2", cross2)
         self.write_dataset(group, "frict_type1", lines.frict_type1)
         self.write_dataset(group, "frict_type2", lines.frict_type2)
         self.write_dataset(group, "frict_value1", lines.frict_value1)
