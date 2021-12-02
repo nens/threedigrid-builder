@@ -64,27 +64,6 @@ class Lines:
         self.line_coords[to_fix, :2] = start
         self.line_coords[to_fix, 2:] = end
 
-    def set_bottom_levels(self, nodes, allow_nan=False):
-        """Set bottom levels (dpumax) for lines.
-
-        The bottom level for a line is the largest of the bottom level (dmax) of the
-        two nodes the line is attached to, except for weirs and orifices, where it
-        equals the crest_level (should be set already to dpumax).
-
-        Args:
-            nodes (Nodes): nodes from which to take the dmax
-            allow_nan (bool): whether to error if any dmax is NaN. If True, NaN is
-                propagated to dpumax if any of the two dmax is NaN. Default False.
-        """
-        mask = ~np.isfinite(self.dpumax)  # filter out already set dpumax (weir/orifice)
-        if not mask.any():
-            return
-        node_dmax = nodes.dmax.take(nodes.id_to_index(self.line[mask]))
-        if not allow_nan and np.any(~np.isfinite(node_dmax)):
-            raise ValueError("Found NaN after setting bottom levels")
-        with np.errstate(invalid="ignore"):  # suppress warnings on max(nan, nan)
-            self.dpumax[mask] = np.max(node_dmax, axis=1)
-
     def fix_line_geometries(self):
         """Construct line_geometries from line_coords, where necessary"""
         to_fix = pygeos.is_missing(self.line_geometries)
