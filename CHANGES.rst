@@ -4,7 +4,20 @@ Changelog of threedigrid-builder
 0.8.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Dropped support for Python 3.6
+
+- Fixed __version__ attribute and  "threedigrid_builder_version" HDF5 attribute.
+
+- Set the dpumax of a 1D line (channel, pipe, culvert, weir, orifice) always to the
+  largest of its two invert levels. Previously, it was set to the largest of the two
+  bottom_levels of the two adjacent nodes, which gave wrong results for lines attached
+  to manholes.
+
+- Disable extrapolation for channel node/line attributes that are derived from
+  crosssection locations.
+
+- Disable the SchematisationError when a Manhole has a bottom_level above a level
+  of a connected object. Instead, emit a warning through the logger.
 
 
 0.8.0 (2021-11-30)

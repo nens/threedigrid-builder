@@ -101,10 +101,13 @@ class WeirOrifices:
             - content_pk: the id of the structure from which this line originates
             - kcu: the crest_type of the structure
             - dpumax: the crest_level of the structure
-            - cross1: the index of the cross section definition
+            - cross1 & cross2: the index of the cross section definition
             - cross_weight: 1.0 (which means that cross2 should be ignored)
+            - frict_type1 & frict_type2: the friction type (both are equal)
+            - frict_value1 & frict_value2: the friction value (both are equal)
             - invert_level_start_point: the crest_level of the structure
             - invert_level_end_point: the crest_level of the structure
+            - discharge_coefficient_positive and _negative: taken from the structure
         """
         # map connection node IDs to node indices
         line = np.empty((len(self), 2), dtype=np.int32, order="F")

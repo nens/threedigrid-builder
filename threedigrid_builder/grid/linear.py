@@ -144,8 +144,15 @@ class BaseLinear:
             - ds1d: the arclength of the line
             - kcu: the calculation_type of the linear object
             - line_geometries: the linestrings (segments of self.the_geom)
-            - cross1: the index of the cross section definition
+            These attributes are filled for pipes/culverts only:
+            - cross1 & cross2: the index of the cross section definition
             - cross_weight: 1.0 (which means that cross2 should be ignored)
+            - frict_type1 & frict_type2: the friction type (both are equal)
+            - frict_value1 & frict_value2: the friction value (both are equal)
+            - invert_level_start_point: copied from pipe/culvert
+            - invert_level_end_point: copied from pipe/culvert
+            - dpumax: largest of the two invert levels
+            - discharge_coefficient_positive & _positive: culverts only
             The lines are ordered by content_pk and then by position on the linestring.
         """
         if embedded_mode:
@@ -210,9 +217,11 @@ class BaseLinear:
         try:
             invert_start = self.compute_bottom_level(content_pk, start_s)
             invert_end = self.compute_bottom_level(content_pk, end_s)
+            dpumax = np.maximum(invert_start, invert_end)
         except AttributeError:
-            invert_end = invert_start = np.nan
+            invert_end = invert_start = dpumax = np.nan
 
+        # conditionally add friction type and value (for pipes and culverts only)
         try:
             frict_type = objs.friction_type[segment_idx]
             frict_value = objs.friction_value[segment_idx]
@@ -252,6 +261,7 @@ class BaseLinear:
             frict_value2=frict_value,
             invert_level_start_point=invert_start,
             invert_level_end_point=invert_end,
+            dpumax=dpumax,
             discharge_coefficient_positive=dc_positive,
             discharge_coefficient_negative=dc_negative,
         )
