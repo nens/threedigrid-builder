@@ -1,5 +1,4 @@
 from . import connection_nodes as connection_nodes_module
-from . import cross_section_locations as csl_module
 from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
 from . import initial_waterlevels as initial_waterlevels_module
@@ -360,10 +359,15 @@ class Grid:
             - lines.line_geometries: a segment of the channel geometry
             - lines.ds1d: the length of the line
             - lines.s1d: the position of the line's velocity point along the object
-            - lines.cross1: the cross section definition id of the line (pipe/culvert)
-            - lines.cross_weight: always 1.0 (pipe/culvert)
-            - lines.invert_level_start_point: invert level at line start (pipe/culvert)
-            - lines.invert_level_end_point: invert level at line end (pipe/culvert)
+             These attributes are filled for pipes/culverts only:
+            - lines.cross1 & cross2: the index of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
+            - lines.frict_type1 & frict_type2: the friction type (both are equal)
+            - lines.frict_value1 & frict_value2: the friction value (both are equal)
+            - lines.invert_level_start_point: copied from pipe/culvert
+            - lines.invert_level_end_point: copied from pipe/culvert
+            - lines.dpumax: largest of the two invert levels
+            - lines.discharge_coefficient_positive & _positive: culverts only
         """
         objects.set_geometries(connection_nodes)
         nodes = objects.interpolate_nodes(node_id_counter, global_dist_calc_points)
@@ -434,7 +438,14 @@ class Grid:
             - lines.content_type: culvert, weir, or orifice
             - lines.content_pk: the id of the object from which this line originates
             - lines.kcu: from the object's calculation_type
-            - lines.line_geometries: a segment of the culvert's geometry or none
+            - lines.dpumax: the crest_level of the structure
+            - lines.cross1 & cross2: the index of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
+            - lines.frict_type1 & frict_type2: the friction type (both are equal)
+            - lines.frict_value1 & frict_value2: the friction value (both are equal)
+            - lines.invert_level_start_point: the crest_level of the structure
+            - lines.invert_level_end_point: the crest_level of the structure
+            - lines.discharge_coefficient_positive and _negative: taken from the structure
         """
         lines = weirs.get_lines(
             connection_nodes, definitions, line_id_counter, connection_node_offset
@@ -452,28 +463,37 @@ class Grid:
         connection_nodes_module.set_calculation_types(self.nodes, self.lines)
 
     def set_bottom_levels(self):
-        """Set the bottom levels (dmax and dpumax) for 1D nodes and lines
+        """Set the bottom levels (dmax) for 1D nodes
 
         This assumes that the channel weights have been computed already.
 
         The levels are based on:
-        1. channel, pipe, culvert nodes: use invert level start & end of the lines
+        1. channel, pipe, culvert nodes: use line invert levels
         2. connection nodes: see connection_nodes.set_bottom_levels
-        3. lines: dpumax = greatest of the two neighboring nodes dmax
-          - except for channels with no interpolated nodes: take reference level, but
-            only if that is higher than the two neighboring nodes.
         """
-        CH = ContentType.TYPE_V2_CHANNEL
-        PI = ContentType.TYPE_V2_PIPE
-        CV = ContentType.TYPE_V2_CULVERT
+        # All 1D lines should already have a dpumax
+        LINE_TYPE_1D = [
+            LineType.LINE_1D_EMBEDDED,
+            LineType.LINE_1D_ISOLATED,
+            LineType.LINE_1D_CONNECTED,
+            LineType.LINE_1D_LONG_CRESTED,
+            LineType.LINE_1D_SHORT_CRESTED,
+            LineType.LINE_1D_DOUBLE_CONNECTED,
+        ]
+        is_1d_line = np.isin(self.lines.kcu, LINE_TYPE_1D)
+        if is_1d_line.any() and not np.isfinite(self.lines.dpumax[is_1d_line]).all():
+            raise RuntimeError("Encountered 1D lines without dpumax set.")
 
-        # Channels, Pipes, Culverts, interpolated nodes which require dmax update:
-        mask = np.isin(self.nodes.content_type, [CH, PI, CV]) & ~np.isfinite(
-            self.nodes.dmax
-        )
-
+        # Channels, Pipes, Culverts, interpolated nodes
+        CONTENT_TYPE_LINEAR = [
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_PIPE,
+            ContentType.TYPE_V2_CULVERT,
+        ]
+        mask = np.isin(self.nodes.content_type, CONTENT_TYPE_LINEAR)
         # Get the invert level from the connecting line. Each interpolated node has
         # by definition exactly one line going from it. So we can do this:
+
         sorter = np.argsort(self.lines.line[:, 0])
         idx = np.searchsorted(self.lines.line[sorter, 0], self.nodes.id[mask])
         assert np.all(self.lines.line[sorter, 0][idx] == self.nodes.id[mask])
@@ -481,12 +501,6 @@ class Grid:
 
         # Connection nodes: logic based on the connected objects
         connection_nodes_module.set_bottom_levels(self.nodes, self.lines)
-
-        # Lines: based on the nodes
-        self.lines.set_bottom_levels(self.nodes, allow_nan=True)
-
-        # Fix channel lines: set dpumax of channel lines that have no interpolated nodes
-        csl_module.fix_dpumax(self.lines, self.nodes)
 
     def set_initial_waterlevels(self, connection_nodes, channels, pipes, culverts):
         """Apply initial waterlevels (global or per connection nodes) to all 1D nodes.
@@ -605,6 +619,9 @@ class Grid:
         )
 
     def add_0d(self, surfaces: Union[Surfaces, ImperviousSurfaces]):
+        """
+        Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
+        """
         surfaces.apply(self)
 
     def add_breaches(self, connected_points):
@@ -697,8 +714,6 @@ class Grid:
         if self.surfaces:
             self.meta.zero_dim_extent = self.surfaces.get_extent()
 
-        # TODO: calculate zero-dim-extent
-        # self.meta.zero_dim_extent =
         self.meta.has_1d = (
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )

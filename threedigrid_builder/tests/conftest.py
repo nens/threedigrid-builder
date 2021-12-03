@@ -5,6 +5,7 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
+from threedigrid_builder.base import Surfaces
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import CrossSections
 from threedigrid_builder.grid import Grid
@@ -44,6 +45,7 @@ def grid_all():
     nodes = Nodes(
         id=[0, 1, 2],
         dmax=[1.2, 2.2, 3.3],
+        content_pk=[0, 1, 2],
         coordinates=[(1, 1), (2, 2), (3, 3)],
         bounds=[(0, 0, 1, 1), (0, 0, 0, 0), (0, 0, 0, 0)],
         node_type=[NodeType.NODE_2D_OPEN_WATER] + 2 * [NodeType.NODE_1D_NO_STORAGE],
@@ -74,7 +76,7 @@ def grid_all():
             use_2d=True,
             use_1d_flow=True,
             use_2d_flow=True,
-            use_0d_inflow=False,
+            use_0d_inflow=True,
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,
@@ -122,12 +124,41 @@ def grid_all():
         levl=[4, 3],
         levee_id=[1, 0],
     )
+    surfaces = Surfaces(
+        id=[0, 1],
+        code=[b"1", b"2"],
+        display_name=[b"d1", b"d2"],
+        function=[b"f1", b"f2"],
+        area=[1.0, 2.0],
+        centroid_x=[1.0, 2.0],
+        centroid_y=[1.0, 2.0],
+        dry_weather_flow=[1.2, 1.2],
+        nr_of_inhabitants=[1000.0, 2000.0],
+        infiltration_flag=[True, False],
+        outflow_delay=[1.1, 1.2],
+        storage_limit=[10.0, 20.0],
+        fac=[1.0, 0.0],
+        fb=[1.0, 0.0],
+        fe=[1.0, 0.0],
+        imp=[1, 2],
+        ka=[1.0, 0.0],
+        kh=[1.0, 0.0],
+        nxc=[1.1, 2.1],
+        nyc=[1.3, 2.3],
+        pk=[1, 2],
+        cci=[1, 2],
+        cid=[1, 2],
+        surface_class=None,
+        surface_inclination=None,
+        surface_sub_class=None,
+    )
+
     return Grid(
         nodes,
         lines,
         pumps,
         cross_sections,
-        None,
+        surfaces,
         nodes_embedded,
         levees,
         breaches,

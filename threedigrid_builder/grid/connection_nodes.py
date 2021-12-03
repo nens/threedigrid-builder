@@ -5,12 +5,14 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
+import logging
 import numpy as np
 import pygeos
 
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["ConnectionNodes"]
 
@@ -205,7 +207,7 @@ def set_bottom_levels(nodes, lines):
     ]
 
     is_connection_node = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-    is_manhole = is_connection_node & np.isfinite(nodes.dmax)
+    is_manhole = nodes.manhole_id != -9999
     # Copy the dmax of the manholes for later reference
     manhole_dmax = nodes.dmax[is_manhole].copy()
     # Get ids of the relevant nodes (including manholes for checking bottom levels)
@@ -233,9 +235,9 @@ def set_bottom_levels(nodes, lines):
     # Check if the new node dmax is below the original manhole dmax
     has_lower_dmax = nodes.dmax[is_manhole] < manhole_dmax
     if np.any(has_lower_dmax):
-        ids = nodes.content_pk[is_manhole][has_lower_dmax]
-        raise SchematisationError(
-            f"Connection nodes {sorted(ids.tolist())} have a manhole with a "
+        ids = nodes.manhole_id[is_manhole][has_lower_dmax]
+        logger.warning(
+            f"Manholes {sorted(ids.tolist())} have a "
             f"bottom_level that is above one ore more of the following connected "
             f"objects: channel reference level, pipe/culvert invert level, "
             f"weir/orifice crest level."

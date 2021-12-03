@@ -313,6 +313,9 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_almost_equal(lines.s1d, expected_centers)
     assert_almost_equal(lines.ds1d, expected_sizes)
     assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
+    assert_almost_equal(lines.invert_level_start_point, [1.0, 2.0, 2.0, 2.5, 3.5])
+    assert_almost_equal(lines.invert_level_end_point, [2.0, 3.0, 2.5, 3.5, 4])
+    assert_almost_equal(lines.dpumax, [2, 3, 2.5, 3.5, 4])
 
 
 def test_get_lines_embedded_mode(connection_nodes, two_linear_objects, definitions):

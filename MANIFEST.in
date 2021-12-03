@@ -1,5 +1,4 @@
 include LICENSE
-include VERSION.rst
 recursive-include threedigrid_builder *.pyx *.pxd
 recursive-include * *.rst
 recursive-exclude .venv *

@@ -167,9 +167,7 @@ def test_set_calculation_types(set_calculation_types, grid):
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
-@mock.patch.object(Lines, "set_bottom_levels", new=mock.Mock())
-@mock.patch("threedigrid_builder.grid.cross_section_locations.fix_dpumax")
-def test_set_bottom_levels(fix_dpumax, cn_compute):
+def test_set_bottom_levels(cn_compute):
     CH = ContentType.TYPE_V2_CHANNEL
     CN = ContentType.TYPE_V2_CONNECTION_NODES
     PI = ContentType.TYPE_V2_PIPE
@@ -198,12 +196,6 @@ def test_set_bottom_levels(fix_dpumax, cn_compute):
 
     # connection node set_bottom_levels was called correctly
     cn_compute.assert_called_with(grid.nodes, grid.lines)
-
-    # lines set_bottom_levels was called correctly
-    lines.set_bottom_levels.assert_called_with(grid.nodes, allow_nan=True)
-
-    # fix_dpumax was called correctly
-    fix_dpumax.assert_called_with(grid.lines, grid.nodes)
 
 
 @mock.patch("threedigrid_builder.grid.initial_waterlevels.compute_initial_waterlevels")

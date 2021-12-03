@@ -1,5 +1,4 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.exceptions import SchematisationError
 
@@ -24,16 +23,31 @@ class CrossSectionLocation:
 
 @array_of(CrossSectionLocation)
 class CrossSectionLocations:
-    def apply_to_lines(self, lines, channels, definitions):
+    def apply_to_lines(self, lines, channels, definitions, extrapolate=False):
         """Apply cross section locations to lines
+
+        Args:
+            lines (Lines): Changed inplace
+            channels (Channels)
+            definitions (CrossSectionDefinition)
+            extrapolate (bool): Whether to allow extrapolation. Extrapolation may occur
+                when there are multiple cross section locations and some line centers
+                are not in between them. When turned off, the values of those lines
+                become equal to the values of the closest cross section location.
+                Default False.
 
         The following lines attributes are changed inplace:
 
         - cross1: the id of the first cross section definition
         - cross2: the id of the second cross section definition
         - cross_weight: the weight of the first cross section definition
+        - frict_type1: the friction type of the first cross section location
+        - frict_type2: the friction type of the second cross section location
+        - frict_value1: the friction value of the first cross section location
+        - frict_value2: the friction value of the second cross section location
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
+        - dpumax: the largest of the two invert levels
         """
         # Mask the lines to only the Channel lines
         cross_loc1, cross_loc2, cross_weight = compute_weights(
@@ -41,6 +55,7 @@ class CrossSectionLocations:
             lines.s1d,
             self,
             channels,
+            extrapolate=extrapolate,
         )
 
         idx1 = self.id_to_index(cross_loc1)
@@ -73,16 +88,21 @@ class CrossSectionLocations:
             lines.s1d - (lines.ds1d / 2),
             self,
             channels,
+            extrapolate=extrapolate,
         )
         lines.invert_level_end_point = compute_bottom_level(
             lines.content_pk,
             lines.s1d + (lines.ds1d / 2),
             self,
             channels,
+            extrapolate=extrapolate,
+        )
+        lines.dpumax = np.maximum(
+            lines.invert_level_start_point, lines.invert_level_end_point
         )
 
 
-def compute_weights(channel_id, points, cs, channels):
+def compute_weights(channel_id, points, cs, channels, extrapolate):
     """Compute cross section weights for points on channels.
 
     Points on channels are specified with their channel id and the distance along that
@@ -97,6 +117,7 @@ def compute_weights(channel_id, points, cs, channels):
             channel_id and ordered (per channel) in ascending order.
         cs (CrossSectionLocations)
         channels (Channels): Used to lookup the channel geometry
+        extrapolate (bool): Whether to allow the weight to go outside of [0, 1]
 
     Returns:
         tuple of cross_loc1, cross_loc2, cross_weight
@@ -157,17 +178,17 @@ def compute_weights(channel_id, points, cs, channels):
     # in the channel so we assign the same cross_idx to both 1 and 2.
 
     # Fix situations where cs_idx_1 is incorrect
-    extrapolate = (cs_channel_idx[cs_idx_1] != points_channel_idx) | out_of_bounds_1
-    cs_idx_1[extrapolate] = cs_idx_2[extrapolate]
-    cs_idx_2[extrapolate] = np.clip(cs_idx_2[extrapolate] + 1, None, len(cs) - 1)
-    equalize = extrapolate & (cs_channel_idx[cs_idx_2] != points_channel_idx)
+    extrap_mask = (cs_channel_idx[cs_idx_1] != points_channel_idx) | out_of_bounds_1
+    cs_idx_1[extrap_mask] = cs_idx_2[extrap_mask]
+    cs_idx_2[extrap_mask] = np.clip(cs_idx_2[extrap_mask] + 1, None, len(cs) - 1)
+    equalize = extrap_mask & (cs_channel_idx[cs_idx_2] != points_channel_idx)
     cs_idx_2[equalize] -= 1
 
     # Fix situations where cs_idx_2 is incorrect
-    extrapolate = (cs_channel_idx[cs_idx_2] != points_channel_idx) | out_of_bounds_2
-    cs_idx_2[extrapolate] = cs_idx_1[extrapolate]
-    cs_idx_1[extrapolate] = np.clip(cs_idx_2[extrapolate] - 1, 0, None)
-    equalize = extrapolate & (cs_channel_idx[cs_idx_1] != points_channel_idx)
+    extrap_mask = (cs_channel_idx[cs_idx_2] != points_channel_idx) | out_of_bounds_2
+    cs_idx_2[extrap_mask] = cs_idx_1[extrap_mask]
+    cs_idx_1[extrap_mask] = np.clip(cs_idx_2[extrap_mask] - 1, 0, None)
+    equalize = extrap_mask & (cs_channel_idx[cs_idx_1] != points_channel_idx)
     cs_idx_1[equalize] += 1
 
     # Map index to id and create the array that matches the input channel_id and ds
@@ -187,6 +208,9 @@ def compute_weights(channel_id, points, cs, channels):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
         cross_weight = (s_2 - points_cum) / (s_2 - s_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
+
+    if not extrapolate:
+        cross_weight = np.clip(cross_weight, 0.0, 1.0)
 
     return cross_loc1, cross_loc2, cross_weight
 
@@ -213,7 +237,9 @@ def interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr="reference_lev
     return cross_weight * left + (1 - cross_weight) * right
 
 
-def compute_bottom_level(channel_id, ds, cs, channels, cs_attr="reference_level"):
+def compute_bottom_level(
+    channel_id, ds, cs, channels, cs_attr="reference_level", extrapolate=False
+):
     """Compute levels by interpolating/extrapolating between cross sections
 
     This can be used at nodes (for dmax) or at line centres (for dpumax).
@@ -224,6 +250,11 @@ def compute_bottom_level(channel_id, ds, cs, channels, cs_attr="reference_level"
         cs (CrossSectionLocations): the reference_level is inter/extrapolated
         channels (Channels): see compute_weights
         cs_attr ({"reference_level", "bank_level"})
+        extrapolate (bool): Whether to allow extrapolation. Extrapolation may occur
+            when there are multiple cross section locations and some points (ds)
+            are not in between them. When turned off, the values at those points
+            become equal to the values of the closest cross section locations.
+            Default False.
 
     Returns:
         an array of the same shape as channel_id containing the interpolated values
@@ -231,37 +262,7 @@ def compute_bottom_level(channel_id, ds, cs, channels, cs_attr="reference_level"
     See also:
         compute_weights: computes the interpolation weights
     """
-    cross_loc1, cross_loc2, cross_weight = compute_weights(channel_id, ds, cs, channels)
+    cross_loc1, cross_loc2, cross_weight = compute_weights(
+        channel_id, ds, cs, channels, extrapolate=extrapolate
+    )
     return interpolate(cross_loc1, cross_loc2, cross_weight, cs, cs_attr)
-
-
-def fix_dpumax(lines, nodes):
-    """Fix the line bottom levels (dpumax) for channels that have no added nodes.
-
-    The new value is the reference_level of the channel's cross section location
-    *only* if that is higher than the already present dpumax. If the channel has
-    multiple cs locations, inter/extrapolate on the line midpoint.
-
-    This should be called *after* assigning dpumax to all lines and *after* computing
-    the invert levels of the lines.
-
-    Args:
-        nodes (Nodes)
-        lines (Lines): the dpumax is adjusted where necessary. Needs the
-            invert_level_start_point and invert_level_end_point attributes.
-    """
-    # find the channel lines that connect 2 connection nodes
-    line_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
-    node_idx = nodes.id_to_index(lines.line[line_idx])
-    is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
-    line_idx = line_idx[is_cn.all(axis=1)]
-
-    # average between the invert levels
-    new_dpumax = (
-        lines.invert_level_start_point[line_idx]
-        + lines.invert_level_end_point[line_idx]
-    ) / 2
-
-    # set the new dpumax, including only the lines that have a lower dpumax
-    mask = lines.dpumax[line_idx] < new_dpumax
-    lines.dpumax[line_idx[mask]] = new_dpumax[mask]
