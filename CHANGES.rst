@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.8.2 (unreleased)
+0.8.2 (2021-12-05)
 ------------------
 
 - Fixed the Linux wheel distribution. These are now built with manylinux2014 instead of
