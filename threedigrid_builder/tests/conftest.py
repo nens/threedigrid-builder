@@ -112,7 +112,7 @@ def grid_all():
     levees = Levees(
         id=[0, 1],
         the_geom=[
-            pygeos.linestrings([[1, 1], [2, 2]]),
+            pygeos.linestrings([[1, 1], [2, 2], [4, 4]]),
             pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
         ],
     )

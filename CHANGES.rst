@@ -9,6 +9,9 @@ Changelog of threedigrid-builder
 - Removed cross1 & cross2 in the in-memory or geopackage output and added cross_id1 and
   cross_id2.
 
+- Fixed bug where writing a single line geometry or geometries of equal size would
+  result in an incorrect cast to a numpy object dtype.
+
 
 0.8.2 (2021-12-05)
 ------------------

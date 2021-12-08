@@ -584,9 +584,14 @@ class GridAdminOut(OutputInterface):
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))
         except AttributeError:  # Pre h5py 2.10
             vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+        
+        # insert line geometry data preserving its original type
+        geometry_data = np.empty(len(line_geometries), dtype=object)
+        geometry_data[:] = line_geometries
+
         group.create_dataset(
             name,
-            data=np.array(line_geometries, dtype=object),
+            data=geometry_data,
             dtype=vlen_dtype,
             **HDF5_SETTINGS,
         )
