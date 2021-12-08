@@ -97,9 +97,9 @@ def _set_initialization_type(
     dct, global_field, file_field=None, type_field=None, default=None
 ):
     """Set the InitializationType depending on global_field and file_field."""
-    if file_field is None or "":
+    if not file_field:
         file_field = f"{global_field}_file"
-    if type_field is None or "":
+    if not type_field :
         type_field = f"{global_field}_type"
 
     # If the ``file_field`` contains a value, the initialization type will be changed to
