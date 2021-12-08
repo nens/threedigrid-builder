@@ -55,8 +55,8 @@ LINE_FIELDS = (
     "invert_level_start_point",  # bottom level at line start
     "invert_level_end_point",  # bottom level at line end
     "flod",  # obstacle height
-    "cross1",  # the id of the cross section definition
-    "cross2",  # the id of the cross section definition
+    "cross_id1",  # the id of the cross section definition
+    "cross_id2",  # the id of the cross section definition
     "cross_weight",
     "frict_type1",
     "frict_type2",
@@ -280,7 +280,7 @@ class DictOut(OutputInterface):
         line_data["content_type"] = _enum_to_str(line_data["content_type"], ContentType)
 
         # go from 0-based to 1-based indexing
-        for field in ("id", "line", "cross1", "cross2"):
+        for field in ("id", "line"):
             line_data[field] = increase(line_data[field])
 
         # cast lines.line to 2 1D arrays

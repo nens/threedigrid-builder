@@ -298,3 +298,15 @@ def test_sort_boundary_conditions():
     assert_array_equal(
         grid.lines.line, [[0, 1], [2, 0], [0, 3], [0, 4], [5, 1], [1, 6]]
     )
+
+
+def test_set_cross_sections(grid):
+    definitions = mock.Mock()
+    grid.lines = Lines(
+        id=[0, 1, 2, 3], cross_id1=[2, 5, 2, -9999], cross_id2=[2, -9999, 3, 4]
+    )
+
+    grid.set_cross_sections(definitions)
+
+    assert_array_equal(definitions.convert.call_args[0][0], [2, 3, 4, 5])
+    assert grid.cross_sections is definitions.convert.return_value

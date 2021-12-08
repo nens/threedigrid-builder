@@ -59,8 +59,8 @@ def grid_all():
             None,
             None,
         ],
-        cross1=[0, -9999, 1, 1, 2],
-        cross2=[-9999, -9999, -9999, -9999, 3],
+        cross_id1=[4, -9999, 3, 3, 4],
+        cross_id2=[-9999, -9999, -9999, -9999, 6],
     )
     pumps = Pumps(
         id=[0, 1, 2],
@@ -98,6 +98,7 @@ def grid_all():
     )
     cross_sections = CrossSections(
         id=[0, 1, 2],
+        content_pk=[3, 4, 6],
         width_1d=[0.2, 1.5, 3.1],
         count=[4, 2, -9999],
         offset=[0, 4, -9999],

@@ -1,3 +1,4 @@
+from numpy.testing import assert_equal
 from threedigrid_builder.interface import GridAdminOut
 
 import h5py
@@ -155,6 +156,12 @@ def test_line_geometries(h5_out):
     assert np.isnan(data[0]).all()
     assert data[1].tolist() == [1, 2, 1, 2]
     assert data[2].tolist() == [1, 2, 3, 1, 2, 3]
+
+
+def test_line_cross_mapping(h5_out):
+    # cross ids should be mapped to (1 based) cross indexes
+    assert_equal(h5_out["lines"]["cross1"][1:], [2, -9999, 1, 1, 2])
+    assert_equal(h5_out["lines"]["cross2"][1:], [-9999, -9999, -9999, -9999, 3])
 
 
 @pytest.mark.parametrize(
@@ -379,7 +386,7 @@ def test_write_breaches(h5_out, dataset, shape, dtype):
         ("cross_sections", "width_1d", 0.2),
         ("cross_sections", "offset", 0),  # reference to tables dataset, not increased
         ("lines", "line", [1, 2]),  # reference to node
-        ("lines", "cross1", 1),  # reference to cross section
+        ("lines", "cross1", 2),  # reference to cross section
         ("lines", "cross2", -9999),  # reference to cross section
         ("pumps", "node1_id", 1),  # reference to node
         ("pumps", "node2_id", 2),  # reference to node
