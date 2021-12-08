@@ -201,7 +201,7 @@ class SQLite:
             _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
             # max_infiltration_capacity_file has no corresponding global value!
             infiltration["max_infiltration_capacity_file"] = infiltration.get("max_infiltration_capacity_file")
-            if infiltration["max_infiltration_capacity_file"] is not None and not "":
+            if not infiltration["max_infiltration_capacity_file"]:
                 infiltration["max_infiltration_capacity_type"] = NO_AGG
             else:
                 infiltration["max_infiltration_capacity_type"] = None
