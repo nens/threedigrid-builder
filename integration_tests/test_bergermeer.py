@@ -172,7 +172,7 @@ def test_integration(tmp_path):
             "threedi_version": "1.2.3.dev",
             "threedicore_version": "",
             "threedigrid_builder_version": threedigrid_builder.__version__,
-            'has_0d': False, 
+            "has_0d": False,
         }
 
     # progress increases

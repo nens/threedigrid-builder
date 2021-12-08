@@ -11,7 +11,7 @@ from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
-from threedigrid_builder.base.surfaces import Surfaces
+from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 
 import numpy as np
 import pygeos
@@ -166,7 +166,7 @@ class GridAdminOut(OutputInterface):
         self.write_levees(grid.levees)
         self.write_breaches(grid.breaches)
         if grid.meta.has_0d:
-            self.write_surfaces(grid.surfaces)
+            self.write_surfaces(grid.surfaces, grid.surface_maps)
 
     def write_meta(self, meta: GridMeta):
         """Write the metadata to the gridadmin file.
@@ -485,7 +485,7 @@ class GridAdminOut(OutputInterface):
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
 
-    def write_surfaces(self, surfaces: Surfaces):
+    def write_surfaces(self, surfaces: Surfaces, surface_maps: SurfaceMaps):
 
         # For now use 0 instead of NaN as fill value for surfaces
         # The calcore does not support NaN (for surfaces) yet
@@ -542,7 +542,7 @@ class GridAdminOut(OutputInterface):
             fill_nan=default_fill_value,
         )
 
-        if len(surfaces.surface_class) > 0:
+        if surfaces.surface_class is not None and np.any(surfaces.surface_class != None):  # noqa
             # Impervious surfaces
             self.write_dataset(
                 group, "surface_class", surfaces.surface_class.astype("S128"), fill=b""
@@ -560,17 +560,21 @@ class GridAdminOut(OutputInterface):
                 fill=b"",
             )
 
-        self.write_dataset(group, "fac", surfaces.fac, fill=default_fill_value)
+        # Surface params
         self.write_dataset(group, "fb", surfaces.fb, fill=default_fill_value)
         self.write_dataset(group, "fe", surfaces.fe, fill=default_fill_value)
-        self.write_dataset(group, "imp", surfaces.imp, fill=default_fill_value)
         self.write_dataset(group, "ka", surfaces.ka, fill=default_fill_value)
         self.write_dataset(group, "kh", surfaces.kh, fill=default_fill_value)
-        self.write_dataset(group, "nxc", surfaces.nxc, fill=default_fill_value)
-        self.write_dataset(group, "nyc", surfaces.nyc, fill=default_fill_value)
-        self.write_dataset(group, "pk", surfaces.pk, fill=default_fill_value)
-        self.write_dataset(group, "cci", surfaces.cci, fill=default_fill_value)
-        self.write_dataset(group, "cid", surfaces.cid, fill=default_fill_value)
+
+        # Surface maps (surface to connectionodes)
+        self.write_dataset(group, "fac", surface_maps.fac, fill=default_fill_value)
+        self.write_dataset(group, "nxc", surface_maps.nxc, fill=default_fill_value)
+        self.write_dataset(group, "nyc", surface_maps.nyc, fill=default_fill_value)
+        self.write_dataset(group, "pk", surface_maps.pk, fill=default_fill_value)
+        self.write_dataset(group, "cci", surface_maps.cci, fill=default_fill_value)
+        self.write_dataset(group, "cid", surface_maps.cid, fill=default_fill_value)
+        # Note: +1 for Fortran 1-based indexing
+        self.write_dataset(group, "imp", surface_maps.imp + 1, fill=default_fill_value)
 
     def write_cross_sections(self, cross_sections: CrossSections):
         if cross_sections is None or cross_sections.tables is None:

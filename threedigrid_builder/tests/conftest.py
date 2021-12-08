@@ -6,6 +6,7 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.base import Surfaces
+from threedigrid_builder.base.surfaces import SurfaceMaps
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import CrossSections
 from threedigrid_builder.grid import Grid
@@ -137,20 +138,24 @@ def grid_all():
         infiltration_flag=[True, False],
         outflow_delay=[1.1, 1.2],
         storage_limit=[10.0, 20.0],
-        fac=[1.0, 0.0],
         fb=[1.0, 0.0],
         fe=[1.0, 0.0],
-        imp=[1, 2],
         ka=[1.0, 0.0],
         kh=[1.0, 0.0],
-        nxc=[1.1, 2.1],
-        nyc=[1.3, 2.3],
-        pk=[1, 2],
-        cci=[1, 2],
-        cid=[1, 2],
         surface_class=None,
         surface_inclination=None,
         surface_sub_class=None,
+    )
+
+    surface_maps = SurfaceMaps(
+        id=[1, 2, 3],
+        imp=[1, 2, 1],
+        fac=[1.0, 0.0, 0.5],
+        nxc=[1.1, 2.1, 1.3],
+        nyc=[1.3, 2.3, 1.5],
+        pk=[1, 2, 3],
+        cci=[1, 2, 2],
+        cid=[1, 2, 2],
     )
 
     return Grid(
@@ -159,6 +164,7 @@ def grid_all():
         pumps,
         cross_sections,
         surfaces,
+        surface_maps,
         nodes_embedded,
         levees,
         breaches,

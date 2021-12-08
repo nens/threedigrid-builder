@@ -17,10 +17,9 @@ from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
-from threedi_modelchecker.threedi_model.constants import InflowType
+from threedigrid_builder.constants import InflowType
 from typing import Callable
 from typing import Optional
-from typing import Union
 
 import itertools
 import logging

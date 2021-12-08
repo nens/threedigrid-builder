@@ -137,6 +137,7 @@ class InterflowType(IntEnum):
     LOCAL_DEEPEST_POINT_CONSTANT_POROSITY = 3
     GLOBAL_DEEPEST_POINT_CONSTANT_POROSITY = 4
 
+
 @unique
 class SurfaceClass(str, Enum):
     GESLOTEN_VERHARDING = "gesloten verharding"
@@ -145,6 +146,13 @@ class SurfaceClass(str, Enum):
     ONVERHARD = "onverhard"
     PAND = "pand"
 
+
 class Material(IntEnum):
     SAND = 1
     CLAY = 2
+
+
+class InflowType(IntEnum):
+    NO_INFLOW = 0
+    IMPERVIOUS_SURFACE = 1
+    SURFACE = 2

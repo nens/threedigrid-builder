@@ -206,7 +206,7 @@ class SQLite:
             infiltration["max_infiltration_capacity_type"] = (
                 NO_AGG if infiltration["max_infiltration_capacity_file"] is not None else None
             )
-            
+
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)
             _set_initialization_type(groundwater, "groundwater_impervious_layer_level")

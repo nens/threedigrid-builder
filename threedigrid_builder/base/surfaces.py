@@ -2,10 +2,11 @@ from .array import array_of
 import numpy as np
 
 
-__all__ = ["Surfaces"]
+__all__ = ["Surfaces", "SurfaceMaps"]
 
 
 class Surface:
+    # Fields for every surface
     id: int
     code: str
     display_name: str
@@ -18,20 +19,28 @@ class Surface:
     infiltration_flag: bool
     outflow_delay: float
     storage_limit: float
-    fac: float
-    fb: float
-    fe: float
-    imp: int
-    ka: float
-    kh: float
-    nxc: float
-    nyc: float
-    pk: int
-    cci: int
-    cid: int
+    fb: float  # max_infiltration_capacity
+    fe: float  # min_infiltration_capacity
+    ka: float  # infiltration_decay_constant
+    kh: float  # infiltration_recovery_constant
+
+    # Only filled in for impervious surfaces
     surface_class: str
     surface_inclination: str
     surface_sub_class: str
+
+
+class SurfaceMap:
+    # Fields for mapping surface to connection node mapping
+    # (surfaces can be connected to multiple connection_nodes)
+    id: int
+    fac: float  # Fraction of water on surface that is going to connection-node (0-1)
+    imp: int  # 0-based index to surface array's (see Surface above)
+    nxc: float  # Connection node x coordinate
+    nyc: float  # Connection node y coordinate
+    pk: int  # connection_node id
+    cci: int  # Connection node id
+    cid: int  # Connection node sqlite row id
 
 
 @array_of(Surface)
@@ -51,3 +60,9 @@ class Surfaces:
         if any(np.isnan(val) for val in extent):
             raise ValueError("Not all surface centroids have coordinates.")
         return extent
+
+
+@array_of(SurfaceMap)
+class SurfaceMaps:
+    """Zero-d surfaces maps."""
+    pass

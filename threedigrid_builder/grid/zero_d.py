@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from threedi_modelchecker.threedi_model.models import ImperviousSurface
 from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import SurfaceClass
 from threedigrid_builder.constants import ContentType
-
+from threedigrid_builder.base.nodes import Nodes
+from threedigrid_builder.base import surfaces
+from typing import Optional, Dict
 import pygeos
 import numpy as np
 
@@ -247,25 +248,42 @@ class ImperviousSurface(BaseSurface):
 def fill_missing_centroids(
     centroids: np.ndarray, surface_ids: np.ndarray, connection_node_the_geom: np.ndarray
 ):
-    no_centroid_mask = centroids == None
+    """
+    Fill any missing centroids with (centroids of the) connection node geometries
+    """
+    no_centroid_mask = pygeos.is_missing(centroids)
 
     if np.any(no_centroid_mask):
         # Try to fill empty centroids
-        for surface_id in np.unique(surface_ids[no_centroid_mask]):
-            surface_id_mask = surface_ids == surface_id
-            # Get centroid of 1 or more connection node geometries
-            centroids[surface_id_mask] = pygeos.centroid(
-                pygeos.union_all(connection_node_the_geom[surface_id_mask])
-            )
+        empty_surface_ids = surface_ids[no_centroid_mask]
+        s_unique = np.unique(empty_surface_ids)
+        sort_idx = np.argsort(s_unique)
+        lookup = sort_idx[
+            np.searchsorted(s_unique, empty_surface_ids, sorter=sort_idx)
+        ]
+
+        computed_centroids = pygeos.centroid(
+            pygeos.multipoints(
+                connection_node_the_geom[no_centroid_mask], lookup)
+        )
+
+        centroids[no_centroid_mask] = computed_centroids[lookup]
 
 
 class BaseSurfaces:
-    def apply(self, grid):
-        """
-        'Surfaces' and 'ImperviousSurfaces' share these same fields.
-        """
+    @property
+    def unique_surfaces_mask(self) -> np.ndarray:
+        if not hasattr(self, "_unique_surfaces_mask"):
+            _, self._unique_surfaces_mask = np.unique(
+                self.surface_id, return_index=True)
+        return self._unique_surfaces_mask
+
+    def as_grid_surfaces(self, extra_fields: Optional[Dict] = None) -> surfaces.Surfaces:
+        if extra_fields is None:
+            extra_fields = {}
+
         centroids = pygeos.centroid(self.the_geom)
-        no_centroid_mask = centroids == None
+        no_centroid_mask = pygeos.is_missing(centroids)
 
         if np.any(no_centroid_mask):
             fill_missing_centroids(
@@ -273,109 +291,117 @@ class BaseSurfaces:
             )
 
         centroid_coords = pygeos.get_coordinates(centroids)
-        connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
 
-        _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
+        return surfaces.Surfaces(
+            id=np.arange(1, len(self.unique_surfaces_mask) + 1, dtype=int),
+            code=self.code[self.unique_surfaces_mask],
+            display_name=self.display_name[self.unique_surfaces_mask],
+            area=self.area[self.unique_surfaces_mask],
+            centroid_x=centroid_coords[:, 0][self.unique_surfaces_mask],
+            centroid_y=centroid_coords[:, 1][self.unique_surfaces_mask],
+            dry_weather_flow=self.dry_weather_flow[self.unique_surfaces_mask],
+            nr_of_inhabitants=self.nr_of_inhabitants[self.unique_surfaces_mask],
+            **extra_fields
+        )
 
-        grid.surfaces.id = np.arange(1, len(unique_surfaces_mask) + 1, dtype=int)
-        grid.surfaces.centroid_x = centroid_coords[:, 0][unique_surfaces_mask]
-        grid.surfaces.centroid_y = centroid_coords[:, 1][unique_surfaces_mask]
-        grid.surfaces.code = self.code[unique_surfaces_mask]
-        grid.surfaces.display_name = self.display_name[unique_surfaces_mask]
-        grid.surfaces.nr_of_inhabitants = self.nr_of_inhabitants[unique_surfaces_mask]
-        grid.surfaces.area = self.area[unique_surfaces_mask]
-        grid.surfaces.dry_weather_flow = self.dry_weather_flow[unique_surfaces_mask]
-
-        grid.surfaces.cid = self.connection_node_row_id
-        grid.surfaces.pk = self.connection_node_id
-        grid.surfaces.nxc = connection_node_coords[:, 0]
-        grid.surfaces.nyc = connection_node_coords[:, 1]
-        grid.surfaces.fac = self.percentage / 100.0
-
-        search_array = self.surface_id[unique_surfaces_mask]
-        sort_idx = np.argsort(self.surface_id[unique_surfaces_mask])
-        lookup = sort_idx[
+    def as_surface_maps(self, nodes: Nodes) -> surfaces.SurfaceMaps:
+        search_array = self.surface_id[self.unique_surfaces_mask]
+        sort_idx = np.argsort(self.surface_id[self.unique_surfaces_mask])
+        imp_lookup = sort_idx[
             np.searchsorted(search_array, self.surface_id, sorter=sort_idx)
         ]
-
-        grid.surfaces.imp = lookup + 1
+        connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
 
         # Find connection_node (calc) node id's
         connection_node_mask = (
-            grid.nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+            nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
         )
-        cc_node_ids = grid.nodes.content_pk[connection_node_mask]
-        node_ids = grid.nodes.id[connection_node_mask]
+        cc_node_ids = nodes.content_pk[connection_node_mask]
+        node_ids = nodes.id[connection_node_mask]
 
         sort_idx = np.argsort(cc_node_ids)
-        lookup = sort_idx[
+        cc_lookup = sort_idx[
             np.searchsorted(cc_node_ids, self.connection_node_id, sorter=sort_idx)
         ]
 
-        grid.surfaces.cci = node_ids[lookup]
+        return surfaces.SurfaceMaps(
+            id=np.arange(1, len(self.connection_node_id) + 1, dtype=int),
+            cid=self.connection_node_row_id,
+            pk=self.connection_node_id,
+            nxc=connection_node_coords[:, 0],
+            nyc=connection_node_coords[:, 1],
+            fac=self.percentage / 100.0,
+            imp=imp_lookup,
+            cci=node_ids[cc_lookup]
+        )
 
 
 @array_of(Surface)
 class Surfaces(BaseSurfaces):
-    def apply(self, grid):
-        super().apply(grid)
 
+    def as_grid_surfaces(self) -> surfaces.Surfaces:
         _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
-        grid.surfaces.outflow_delay = self.outflow_delay[unique_surfaces_mask] / 60.0
-        grid.surfaces.storage_limit = (
-            self.surface_layer_thickness[unique_surfaces_mask] / 1000.0
-        )
-        grid.surfaces.infiltration_flag = self.infiltration[
-            unique_surfaces_mask
-        ].astype("bool")
 
-        grid.surfaces.function = self.function[unique_surfaces_mask]
-
-        grid.surfaces.fb = (
-            self.max_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
+        infiltration_flag = self.infiltration[unique_surfaces_mask].astype("bool")
+        fb = (
+            self.max_infiltration_capacity[unique_surfaces_mask] / (60.0 * 60.0 * 1000.0)
         )
-        grid.surfaces.fe = (
-            self.min_infiltration_capacity[unique_surfaces_mask] / 60.0 / 60.0 / 1000.0
+        fe = (
+            self.min_infiltration_capacity[unique_surfaces_mask] / (60.0 * 60.0 * 1000.0)
         )
-        grid.surfaces.ka = (
-            self.infiltration_decay_constant[unique_surfaces_mask] / 60.0 / 60.0
+        ka = (
+            self.infiltration_decay_constant[unique_surfaces_mask] / (60.0 * 60.0)
         )
-        grid.surfaces.kh = (
-            self.infiltration_recovery_constant[unique_surfaces_mask] / 60.0 / 60.0
+        kh = (
+            self.infiltration_recovery_constant[unique_surfaces_mask] / (60.0 * 60.0)
         )
 
-        mask = np.invert(grid.surfaces.infiltration_flag)
+        mask = np.invert(infiltration_flag)
 
-        grid.surfaces.fb[mask] = 0.0
-        grid.surfaces.fe[mask] = 0.0
-        grid.surfaces.ka[mask] = 0.0
-        grid.surfaces.kh[mask] = 0.0
+        fb[mask] = 0.0
+        fe[mask] = 0.0
+        ka[mask] = 0.0
+        kh[mask] = 0.0
+
+        extra_fields = dict(
+            outflow_delay=self.outflow_delay[unique_surfaces_mask] / 60.0,
+            storage_limit=self.surface_layer_thickness[unique_surfaces_mask] / 1000.0,
+            infiltration_flag=self.infiltration[unique_surfaces_mask].astype("bool"),
+            function=self.function[unique_surfaces_mask],
+            fb=fb,
+            fe=fe,
+            ka=ka,
+            kh=kh
+        )
+
+        return super().as_grid_surfaces(extra_fields)
 
 
 @array_of(ImperviousSurface)
 class ImperviousSurfaces(BaseSurfaces):
-    def apply(self, grid):
-        super().apply(grid)
 
-        _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
-        grid.surfaces.surface_inclination = self.surface_inclination[
-            unique_surfaces_mask
-        ]
-        grid.surfaces.surface_class = self.surface_class[unique_surfaces_mask]
-        self.surface_sub_class[self.surface_sub_class == None] = b""
-        grid.surfaces.surface_sub_class = self.surface_sub_class[unique_surfaces_mask]
-
-        grid.surfaces.function = np.full(len(unique_surfaces_mask), b"")
-
+    def as_grid_surfaces(self) -> surfaces.Surfaces:
         params = SurfaceParams.from_surface_class_and_inclination(
-            self.surface_class[unique_surfaces_mask],
-            self.surface_inclination[unique_surfaces_mask],
+            self.surface_class[self.unique_surfaces_mask],
+            self.surface_inclination[self.unique_surfaces_mask],
+        )
+        surface_sub_class = self.surface_sub_class[self.unique_surfaces_mask]
+        surface_sub_class[pygeos.is_missing(surface_sub_class)] = b""
+
+        extra_fields = dict(
+            surface_inclination=self.surface_inclination[
+                self.unique_surfaces_mask
+            ],
+            surface_class=self.surface_class[self.unique_surfaces_mask],
+            surface_sub_class=surface_sub_class,
+            function=np.full(len(self.unique_surfaces_mask), b""),
+            outflow_delay=params.outflow_delay,
+            storage_limit=params.surface_storage,
+            infiltration_flag=params.infiltration,
+            fb=params.fb,
+            fe=params.fe,
+            ka=params.ka,
+            kh=params.kh
         )
 
-        grid.surfaces.outflow_delay = params.outflow_delay
-        grid.surfaces.storage_limit = params.surface_storage
-        grid.surfaces.infiltration_flag = params.infiltration
-        grid.surfaces.fb = params.fb
-        grid.surfaces.fe = params.fe
-        grid.surfaces.ka = params.ka
-        grid.surfaces.kh = params.kh
+        return super().as_grid_surfaces(extra_fields)

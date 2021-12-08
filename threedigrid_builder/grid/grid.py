@@ -11,14 +11,15 @@ from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import Surfaces as GridSurfaces
+from threedigrid_builder.base import Surfaces
+from threedigrid_builder.base import SurfaceMaps
 from threedigrid_builder.base import replace
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid.zero_d import Surfaces, ImperviousSurfaces
+from threedigrid_builder.grid import zero_d
 
 from typing import Optional
 from typing import Tuple, Union
@@ -145,7 +146,8 @@ class Grid:
         lines: Lines,
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
-        surfaces: Optional[GridSurfaces] = None,
+        surfaces: Optional[Surfaces] = None,
+        surface_maps : Optional[SurfaceMaps] = None,
         nodes_embedded=None,
         levees=None,
         breaches=None,
@@ -172,9 +174,14 @@ class Grid:
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
 
         if surfaces is None:
-            surfaces = GridSurfaces(id=[])
-        elif not isinstance(surfaces, GridSurfaces):
+            surfaces = Surfaces(id=[])
+        elif not isinstance(surfaces, Surfaces):
             raise TypeError(f"Expected Surfaces instance, got {type(surfaces)}")
+
+        if surface_maps is None:
+            surface_maps = SurfaceMaps(id=[])
+        elif not isinstance(surface_maps, SurfaceMaps):
+            raise TypeError(f"Expected SurfaceMaps instance, got {type(surface_maps)}")
 
         if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
@@ -184,6 +191,7 @@ class Grid:
         self.lines = lines
         self.meta = meta
         self.surfaces = surfaces
+        self.surface_maps = surface_maps
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
@@ -618,11 +626,12 @@ class Grid:
             line_id_counter,
         )
 
-    def add_0d(self, surfaces: Union[Surfaces, ImperviousSurfaces]):
+    def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """
         Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
         """
-        surfaces.apply(self)
+        self.surfaces = surfaces.as_grid_surfaces()
+        self.surface_maps = surfaces.as_surface_maps(self.nodes)
 
     def add_breaches(self, connected_points):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
