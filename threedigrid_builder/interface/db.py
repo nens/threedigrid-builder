@@ -304,7 +304,6 @@ class SQLite:
                     sorter=sort_idx,
                 )
             ]
-            + 1
         )
 
         return Surfaces(
@@ -369,7 +368,6 @@ class SQLite:
                     sorter=sort_idx,
                 )
             ]
-            + 1
         )
 
         return ImperviousSurfaces(

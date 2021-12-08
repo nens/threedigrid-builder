@@ -572,8 +572,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "nyc", surface_maps.nyc, fill=default_fill_value)
         self.write_dataset(group, "pk", surface_maps.pk, fill=default_fill_value)
         self.write_dataset(group, "cci", surface_maps.cci, fill=default_fill_value)
-        self.write_dataset(group, "cid", surface_maps.cid, fill=default_fill_value)
         # Note: +1 for Fortran 1-based indexing
+        self.write_dataset(group, "cid", surface_maps.cid + 1, fill=default_fill_value)
         self.write_dataset(group, "imp", surface_maps.imp + 1, fill=default_fill_value)
 
     def write_cross_sections(self, cross_sections: CrossSections):
