@@ -636,6 +636,7 @@ class GridAdminOut(OutputInterface):
 
         if fill_nan is not None:
             if np.issubdtype(values.dtype, np.floating):
+                values = values.copy()
                 values[np.isnan(values)] = fill_nan
 
         if fill is None:
