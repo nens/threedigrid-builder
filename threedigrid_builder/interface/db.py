@@ -207,7 +207,7 @@ class SQLite:
             )
             if (
                 infiltration["max_infiltration_capacity_file"] is not None
-                and infiltration["max_infiltration_capacity_file"] == ""
+                and infiltration["max_infiltration_capacity_file"] != ""
             ):
                 infiltration["max_infiltration_capacity_type"] = NO_AGG
             else:
