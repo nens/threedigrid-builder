@@ -97,9 +97,9 @@ def _set_initialization_type(
     dct, global_field, file_field=None, type_field=None, default=None
 ):
     """Set the InitializationType depending on global_field and file_field."""
-    if file_field is None:
+    if not file_field:
         file_field = f"{global_field}_file"
-    if type_field is None:
+    if not type_field :
         type_field = f"{global_field}_type"
 
     # If the ``file_field`` contains a value, the initialization type will be changed to
@@ -200,9 +200,12 @@ class SQLite:
         if infiltration:
             _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
             # max_infiltration_capacity_file has no corresponding global value!
-            infiltration["max_infiltration_capacity_file"] = (
-                NO_AGG if infiltration.get("max_infiltration_capacity_file") else None
-            )
+            infiltration["max_infiltration_capacity_file"] = infiltration.get("max_infiltration_capacity_file")
+            if not infiltration["max_infiltration_capacity_file"]:
+                infiltration["max_infiltration_capacity_type"] = NO_AGG
+            else:
+                infiltration["max_infiltration_capacity_type"] = None
+            
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)
             _set_initialization_type(groundwater, "groundwater_impervious_layer_level")
