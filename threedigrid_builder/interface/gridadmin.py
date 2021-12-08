@@ -159,10 +159,9 @@ class GridAdminOut(OutputInterface):
             self.write_quadtree(grid.quadtree_stats)
         self.write_nodes(grid.nodes)
         self.write_nodes_embedded(grid.nodes_embedded)
-        self.write_lines(grid.lines)
+        self.write_lines(grid.lines, grid.cross_sections)
         self.write_pumps(grid.pumps)
-        if grid.cross_sections.tables is not None:
-            self.write_cross_sections(grid.cross_sections)
+        self.write_cross_sections(grid.cross_sections)
         self.write_levees(grid.levees)
         self.write_breaches(grid.breaches)
         if grid.meta.has_0d:
@@ -346,15 +345,15 @@ class GridAdminOut(OutputInterface):
         # unknown
         self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 
-    def write_lines(self, lines):
+    def write_lines(self, lines, cross_sections):
         """Write the "lines" group in the gridadmin file
 
         Raises a ValueError if it exists already.
 
         Notes:
             Some datasets were 64-bit integers, but now they are saved as 32-bit integers.
-            The following datasets were added: ds1d, dpumax, flod, flou, cross1, cross2,
-            cross_weight
+            The following datasets were added: ds1d, dpumax, flod, flou, cross1,
+            cross2, cross_weight
             For floats (double) we use NaN instead of -9999.0 to denote empty.
 
         Args:
@@ -408,8 +407,17 @@ class GridAdminOut(OutputInterface):
         )
         self.write_dataset(group, "flod", lines.flod)
         self.write_dataset(group, "flou", lines.flou)
-        self.write_dataset(group, "cross1", increase(lines.cross1))
-        self.write_dataset(group, "cross2", increase(lines.cross2))
+
+        cross1 = lines.cross_id1.copy()
+        cross1[cross1 != -9999] = np.digitize(
+            cross1[cross1 != -9999], cross_sections.content_pk, right=True
+        )
+        cross2 = lines.cross_id2.copy()
+        cross2[cross2 != -9999] = np.digitize(
+            cross2[cross2 != -9999], cross_sections.content_pk, right=True
+        )
+        self.write_dataset(group, "cross1", increase(cross1))
+        self.write_dataset(group, "cross2", increase(cross2))
         self.write_dataset(group, "frict_type1", lines.frict_type1)
         self.write_dataset(group, "frict_type2", lines.frict_type2)
         self.write_dataset(group, "frict_value1", lines.frict_value1)
@@ -577,7 +585,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "imp", surface_maps.imp + 1, fill=default_fill_value)
 
     def write_cross_sections(self, cross_sections: CrossSections):
-        if cross_sections is None or cross_sections.tables is None:
+        if len(cross_sections) == 0:
             return
         group = self._file.create_group("cross_sections")
 
@@ -679,9 +687,14 @@ class GridAdminOut(OutputInterface):
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))
         except AttributeError:  # Pre h5py 2.10
             vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+        
+        # insert line geometry data preserving its original type
+        geometry_data = np.empty(len(line_geometries), dtype=object)
+        geometry_data[:] = line_geometries
+
         group.create_dataset(
             name,
-            data=np.array(line_geometries, dtype=object),
+            data=geometry_data,
             dtype=vlen_dtype,
             **HDF5_SETTINGS,
         )

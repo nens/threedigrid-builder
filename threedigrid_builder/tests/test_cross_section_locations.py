@@ -156,11 +156,11 @@ def test_compute_bottom_level(
     assert_almost_equal(actual, expected)
 
 
-def test_apply_to_lines(channels, channel_lines, locations, definitions):
-    locations.apply_to_lines(channel_lines, channels, definitions, extrapolate=False)
+def test_apply_to_lines(channels, channel_lines, locations):
+    locations.apply_to_lines(channel_lines, channels, extrapolate=False)
 
-    assert_equal(channel_lines.cross1, [0, 1, 1, 1, 1, 2, 2])
-    assert_equal(channel_lines.cross2, [0, 1, 0, 0, 0, 2, 2])
+    assert_equal(channel_lines.cross_id1, [3, 4, 4, 4, 4, 5, 5])
+    assert_equal(channel_lines.cross_id2, [3, 4, 3, 3, 3, 5, 5])
     assert_equal(channel_lines.frict_type1, [1, 2, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.frict_type2, [1, 2, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.frict_value1, [30, 0.02, 40, 40, 40, 0.03, 0.03])
@@ -177,8 +177,8 @@ def test_apply_to_lines(channels, channel_lines, locations, definitions):
     assert_almost_equal(channel_lines.dpumax, [1.0, 5.0, 3, 3.0, 2.1, 6.0, 6.0])
 
 
-def test_apply_to_lines_extrapolate(channels, channel_lines, locations, definitions):
-    locations.apply_to_lines(channel_lines, channels, definitions, extrapolate=True)
+def test_apply_to_lines_extrapolate(channels, channel_lines, locations):
+    locations.apply_to_lines(channel_lines, channels, extrapolate=True)
 
     assert_almost_equal(
         channel_lines.cross_weight, [1.0, 1.0, 1.75, 0.65, -0.45, 1.0, 1.0]

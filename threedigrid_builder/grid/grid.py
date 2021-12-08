@@ -326,7 +326,6 @@ class Grid:
         cls,
         connection_nodes,
         objects,
-        definitions,
         cell_tree,
         global_dist_calc_points,
         embedded_cutoff_threshold,
@@ -340,7 +339,6 @@ class Grid:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             objects (Channels, Pipes, Culverts)
-            definitions (CrossSectionDefinitions): to map definition ids
             cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             embedded_cutoff_threshold (float): The min length of an embedded line.
@@ -368,8 +366,8 @@ class Grid:
             - lines.ds1d: the length of the line
             - lines.s1d: the position of the line's velocity point along the object
              These attributes are filled for pipes/culverts only:
-            - lines.cross1 & cross2: the index of the cross section definition
-            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
+            - lines.cross_id1 & cross_id2: the id of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - lines.frict_type1 & frict_type2: the friction type (both are equal)
             - lines.frict_value1 & frict_value2: the friction value (both are equal)
             - lines.invert_level_start_point: copied from pipe/culvert
@@ -381,7 +379,6 @@ class Grid:
         nodes = objects.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = objects.get_lines(
             connection_nodes,
-            definitions,
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
@@ -395,7 +392,6 @@ class Grid:
             # And construct the lines (also connecting to connection nodes)
             lines_embedded = objects.get_lines(
                 connection_nodes,
-                definitions,
                 nodes_embedded,
                 line_id_counter,
                 connection_node_offset=connection_node_offset,
@@ -416,7 +412,6 @@ class Grid:
         connection_nodes,
         weirs,
         orifices,
-        definitions,
         line_id_counter,
         connection_node_offset=0,
     ):
@@ -426,7 +421,6 @@ class Grid:
             connection_nodes (ConnectionNodes): used to map ids to indices
             weirs (Weirs)
             orifices (Orifices)
-            definitions (CrossSectionDefinitions)
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
@@ -447,8 +441,8 @@ class Grid:
             - lines.content_pk: the id of the object from which this line originates
             - lines.kcu: from the object's calculation_type
             - lines.dpumax: the crest_level of the structure
-            - lines.cross1 & cross2: the index of the cross section definition
-            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
+            - lines.cross_id1 & cross_id2: the id of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - lines.frict_type1 & frict_type2: the friction type (both are equal)
             - lines.frict_value1 & frict_value2: the friction value (both are equal)
             - lines.invert_level_start_point: the crest_level of the structure
@@ -456,10 +450,10 @@ class Grid:
             - lines.discharge_coefficient_positive and _negative: taken from the structure
         """
         lines = weirs.get_lines(
-            connection_nodes, definitions, line_id_counter, connection_node_offset
+            connection_nodes, line_id_counter, connection_node_offset
         )
         lines += orifices.get_lines(
-            connection_nodes, definitions, line_id_counter, connection_node_offset
+            connection_nodes, line_id_counter, connection_node_offset
         )
         return cls(Nodes(id=[]), lines)
 
@@ -578,11 +572,14 @@ class Grid:
     def set_cross_sections(self, definitions):
         """Set the cross sections on this grid object
 
+        Only the definitions that are actually used will be used.
+
         Args:
             definitions (CrossSectionDefinitions)
         """
-        # TODO Skip definitions that are not used (and remap cross1 and cross2)
-        self.cross_sections = definitions.convert()
+        cs_in_use = np.union1d(self.lines.cross_id1, self.lines.cross_id2)
+        cs_in_use = cs_in_use[cs_in_use != -9999]
+        self.cross_sections = definitions.convert(cs_in_use)
 
     def embed_nodes(self, embedded_node_id_counter):
         """Integrate embedded connection nodes into the 2D cells.

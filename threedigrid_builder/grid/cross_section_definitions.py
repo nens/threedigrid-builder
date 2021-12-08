@@ -18,17 +18,33 @@ class CrossSectionDefinition:
 
 @array_of(CrossSectionDefinition)
 class CrossSectionDefinitions:
-    def convert(self):
-        """Convert to CrossSections."""
+    def convert(self, ids):
+        """Convert to CrossSections.
+
+        Args:
+            ids (ndarray of int): A list of cross section definition ids to convert.
+        """
+        try:
+            idx = self.id_to_index(ids, check_exists=True)
+        except KeyError as e:
+            if len(e.values) > 10:
+                id_msg = str(e.values[:10].tolist()).replace("]", ", ...]")
+            else:
+                id_msg = str(e.values.tolist())
+            raise SchematisationError(
+                f"One or more objects refer to non-existing cross section definitions "
+                f"{id_msg}."
+            )
+
         result = CrossSections(
-            id=range(len(self.id)),
-            content_pk=self.id,
-            code=self.code,
+            id=range(len(idx)),
+            content_pk=ids,
+            code=self.code[idx],
             count=0,
         )
         offset = 0
         tables = []
-        for i, shape in enumerate(self.shape):
+        for i, shape in enumerate(self.shape[idx]):
             tabulator = tabulators[shape]
             result.shape[i], result.width_1d[i], table = tabulator(
                 shape, self.width[i], self.height[i]
