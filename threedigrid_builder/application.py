@@ -6,15 +6,18 @@ This layer depends on the interfaces as well as on the domain layer.
 """
 
 from pathlib import Path
+from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid.zero_d import ImperviousSurfaces
 from threedigrid_builder.interface import DictOut
 from threedigrid_builder.interface import GDALInterface
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
+from threedigrid_builder.constants import InflowType
 from typing import Callable
 from typing import Optional
 
@@ -179,6 +182,19 @@ def _make_gridadmin(
         )
         grid.add_breaches(connected_points)
 
+    if grid_settings.use_0d_inflow in (
+        InflowType.IMPERVIOUS_SURFACE.value,
+        InflowType.SURFACE.value,
+    ):
+        # process zero-d information, either using the 'v2_surfaces'
+        # or 'v2_impervious_surfaces' table.
+        progress_callback(0.95, "Processing 0D domain...")
+        if grid_settings.use_0d_inflow == InflowType.SURFACE.value:
+            surfaces: Surfaces = db.get_surfaces()
+        else:
+            surfaces: ImperviousSurfaces = db.get_impervious_surfaces()
+        grid.add_0d(surfaces)
+
     grid.finalize()
     return grid
 
@@ -240,7 +256,7 @@ def make_gridadmin(
         progress_callback=progress_callback,
     )
 
-    progress_callback(0.95, "Writing gridadmin...")
+    progress_callback(0.99, "Writing gridadmin...")
     with Writer(out_path) as writer:
         return writer.write(grid)
 

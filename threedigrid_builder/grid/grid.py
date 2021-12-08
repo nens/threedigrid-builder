@@ -11,14 +11,18 @@ from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import Surfaces
+from threedigrid_builder.base import SurfaceMaps
 from threedigrid_builder.base import replace
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import zero_d
+
 from typing import Optional
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import pygeos
@@ -92,6 +96,7 @@ class GridMeta:
     threedi_tables_version: Optional[str] = None  # filled in threedi-tables
 
     # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
+    has_0d: bool = False
     has_1d: bool = False
     has_2d: bool = False
     has_embedded: bool = False
@@ -107,6 +112,7 @@ class GridMeta:
 
     extent_1d: Optional[Tuple[float, float, float, float]] = None
     extent_2d: Optional[Tuple[float, float, float, float]] = None
+    zero_dim_extent: Optional[Tuple[float, float, float, float]] = None
 
     @classmethod
     def from_dict(cls, dct):
@@ -140,6 +146,8 @@ class Grid:
         lines: Lines,
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
+        surfaces: Optional[Surfaces] = None,
+        surface_maps : Optional[SurfaceMaps] = None,
         nodes_embedded=None,
         levees=None,
         breaches=None,
@@ -164,6 +172,17 @@ class Grid:
             nodes_embedded = Nodes(id=[])
         elif not isinstance(nodes_embedded, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
+
+        if surfaces is None:
+            surfaces = Surfaces(id=[])
+        elif not isinstance(surfaces, Surfaces):
+            raise TypeError(f"Expected Surfaces instance, got {type(surfaces)}")
+
+        if surface_maps is None:
+            surface_maps = SurfaceMaps(id=[])
+        elif not isinstance(surface_maps, SurfaceMaps):
+            raise TypeError(f"Expected SurfaceMaps instance, got {type(surface_maps)}")
+
         if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
         if breaches is not None and not isinstance(breaches, Breaches):
@@ -171,6 +190,8 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
+        self.surfaces = surfaces
+        self.surface_maps = surface_maps
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
@@ -187,7 +208,7 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines", "nodes_embedded"):
+        for name in ("nodes", "lines", "nodes_embedded", "surfaces"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in (
             "meta",
@@ -602,6 +623,13 @@ class Grid:
             line_id_counter,
         )
 
+    def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
+        """
+        Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
+        """
+        self.surfaces = surfaces.as_grid_surfaces()
+        self.surface_maps = surfaces.as_surface_maps(self.nodes)
+
     def add_breaches(self, connected_points):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
         references a Levee, it will result in a Breach. The Breach gets the properties
@@ -680,6 +708,7 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
+        self.meta: GridMeta
         if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
         self.meta.has_initial_waterlevels = np.isfinite(
@@ -687,9 +716,14 @@ class Grid:
         ).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
+
+        if self.surfaces:
+            self.meta.zero_dim_extent = self.surfaces.get_extent()
+
         self.meta.has_1d = (
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )
+        self.meta.has_0d = self.meta.zero_dim_extent is not None
         self.meta.has_2d = self.meta.extent_2d is not None
         self.meta.has_breaches = self.breaches is not None and len(self.breaches) > 0
         if len(self.nodes_embedded) > 0:

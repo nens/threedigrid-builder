@@ -9,6 +9,9 @@ import pytest
 @pytest.fixture(scope="session")
 def h5_out(tmpdir_factory, grid_all):
     path = tmpdir_factory.mktemp("h5") / "gridadmin.h5"
+
+    grid_all.meta.has_0d = True
+
     with GridAdminOut(path) as out:
         out.write(grid_all)
 
@@ -227,8 +230,10 @@ def test_write_meta(h5_out, dataset, shape, dtype):
         ("epsg_code", (), "int32"),  # changed to int
         ("has_1d", (), "bool"),  # changed to bool
         ("has_2d", (), "bool"),  # changed to bool
+        ("has_0d", (), "bool"),
         ("extent_1d", (4,), "float64"),
         ("extent_2d", (4,), "float64"),
+        ("zero_dim_extent", (4,), "float64"),
         ("has_breaches", (), "bool"),  # changed to bool
         ("has_groundwater", (), "bool"),  # changed to bool
         ("has_groundwater_flow", (), "bool"),  # changed to bool
@@ -399,3 +404,36 @@ def test_not_off_by_one(h5_out, group, dataset, expected):
     # gridadmin contains a dummy element at index 0 (so index 1 is the first)
     # references should also be increased by one
     assert h5_out[group][dataset][..., 1].tolist() == expected
+
+
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("area", (3,), "float64"),
+        ("cci", (4,), "int32"),
+        ("centroid_x", (3,), "float64"),
+        ("centroid_y", (3,), "float64"),
+        ("cid", (4,), "int32"),
+        ("code", (3,), "|S100"),
+        ("display_name", (3,), "|S250"),
+        ("dry_weather_flow", (3,), "float64"),
+        ("fac", (4,), "float64"),
+        ("fb", (3,), "float64"),
+        ("fe", (3,), "float64"),
+        ("function", (3,), "|S64"),
+        ("id", (3,), "int32"),
+        ("imp", (4,), "int32"),
+        ("infiltration_flag", (3,), "bool"),
+        ("ka", (3,), "float64"),
+        ("kh", (3,), "float64"),
+        ("nr_of_inhabitants", (3,), "float64"),
+        ("nxc", (4,), "float64"),
+        ("nyc", (4,), "float64"),
+        ("outflow_delay", (3,), "float64"),
+        ("pk", (4,), "int32"),
+        ("storage_limit", (3,), "float64"),
+    ],
+)
+def test_write_surface(h5_out, dataset, shape, dtype):
+    assert h5_out["surface"][dataset].shape == shape
+    assert h5_out["surface"][dataset].dtype == np.dtype(dtype)

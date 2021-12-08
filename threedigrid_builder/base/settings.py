@@ -29,6 +29,7 @@ class GridSettings:
     use_2d: bool
     use_1d_flow: bool
     use_2d_flow: bool
+    use_0d_inflow: int
     grid_space: float
     dist_calc_points: float
     kmax: int

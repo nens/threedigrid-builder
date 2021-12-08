@@ -147,6 +147,9 @@ def test_integration(tmp_path):
         assert_almost_equal(
             attrs.pop("extent_2d"), [106314, 514912, 111114, 519872], decimal=1
         )
+
+        assert np.all(np.isnan(attrs.pop("zero_dim_extent")))
+
         assert attrs == {
             "epsg_code": 28992,
             "has_1d": True,
@@ -169,6 +172,7 @@ def test_integration(tmp_path):
             "threedi_version": "1.2.3.dev",
             "threedicore_version": "",
             "threedigrid_builder_version": threedigrid_builder.__version__,
+            "has_0d": False,
         }
 
     # progress increases

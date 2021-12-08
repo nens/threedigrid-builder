@@ -23,6 +23,8 @@ Changelog of threedigrid-builder
 0.8.1 (2021-12-05)
 ------------------
 
+- Added support for zero-d administration including surfaces and impervious surfaces.
+
 - Dropped support for Python 3.6.
 
 - Fixed __version__ attribute and  "threedigrid_builder_version" HDF5 attribute.
