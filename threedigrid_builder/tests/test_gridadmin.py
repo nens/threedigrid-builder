@@ -337,7 +337,7 @@ def test_write_levees(h5_out, dataset, shape, dtype):
 def test_write_levees_coords(h5_out):
     # coords are stored as a variable-length array [x, x, ..., y, y, ...]
     data = h5_out["levees"]["coords"][:]
-    assert data[0].tolist() == [1, 2, 1, 2]
+    assert data[0].tolist() == [1, 2, 4, 1, 2, 4]
     assert data[1].tolist() == [1, 2, 3, 1, 2, 3]
 
 

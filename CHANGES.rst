@@ -4,7 +4,8 @@ Changelog of threedigrid-builder
 0.8.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed bug where writing a single line geometry or geometries of equal size would
+  result in an incorrect cast to a numpy object dtype.
 
 
 0.8.2 (2021-12-05)
