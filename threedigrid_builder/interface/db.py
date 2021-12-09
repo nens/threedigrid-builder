@@ -254,12 +254,6 @@ class SQLite:
 
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:
-            connection_node_map_array = (
-                session.query(models.ConnectionNode.id)
-                .order_by(models.ConnectionNode.id)
-                .as_structarray()
-            )
-
             arr = (
                 session.query(
                     models.Surface.id.label("surface_id"),
@@ -300,33 +294,13 @@ class SQLite:
             arr["connection_node_the_geom"]
         )
 
-        # Map connection_node_id to row_id of connection node table
-        sort_idx = np.argsort(connection_node_map_array["id"])
-        connection_node_row_id = (
-            sort_idx[
-                np.searchsorted(
-                    connection_node_map_array["id"],
-                    arr["connection_node_id"],
-                    sorter=sort_idx,
-                )
-            ]
-        )
-
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
-            connection_node_row_id=connection_node_row_id,
             **{name: arr[name] for name in arr.dtype.names},
         )
 
     def get_impervious_surfaces(self) -> ImperviousSurfaces:
         with self.get_session() as session:
-
-            connection_node_map_array = (
-                session.query(models.ConnectionNode.id)
-                .order_by(models.ConnectionNode.id)
-                .as_structarray()
-            )
-
             arr = (
                 session.query(
                     models.ImperviousSurface.id.label("surface_id"),
@@ -364,21 +338,8 @@ class SQLite:
             arr["connection_node_the_geom"]
         )
 
-        # Map connection_node_id to row_id of connection node table
-        sort_idx = np.argsort(connection_node_map_array["id"])
-        connection_node_row_id = (
-            sort_idx[
-                np.searchsorted(
-                    connection_node_map_array["id"],
-                    arr["connection_node_id"],
-                    sorter=sort_idx,
-                )
-            ]
-        )
-
         return ImperviousSurfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
-            connection_node_row_id=connection_node_row_id,
             **{name: arr[name] for name in arr.dtype.names},
         )
 

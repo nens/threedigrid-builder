@@ -39,8 +39,7 @@ class SurfaceMap:
     nxc: float  # Connection node x coordinate
     nyc: float  # Connection node y coordinate
     pk: int  # connection_node id
-    cci: int  # Connection node id
-    cid: int  # Connection node sqlite row id
+    cci: int  # node id
 
 
 @array_of(Surface)

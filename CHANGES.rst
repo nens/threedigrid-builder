@@ -12,6 +12,7 @@ Changelog of threedigrid-builder
 - Fixed bug where writing a single line geometry or geometries of equal size would
   result in an incorrect cast to a numpy object dtype.
 
+- Fixed bug with zero-d administration `cci` (index needs to be 1-based), removed `cid` field.
 
 0.8.2 (2021-12-05)
 ------------------

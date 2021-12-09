@@ -59,7 +59,6 @@ def test_surfaces(grid_all):
         dry_weather_flow=[1.0, 2.0, 2.0],
         the_geom=[pygeos.points([1.0, 2.0]), None, None],
         connection_node_id=[1, 2, 1],
-        connection_node_row_id=[1, 2, 1],
         connection_node_the_geom=[
             pygeos.points([1.0, 2.0]),
             pygeos.points([2.0, 3.0]),
@@ -110,7 +109,6 @@ def test_surfaces(grid_all):
         ("nyc", (3,), "float64"),
         ("pk", (3,), "int32"),
         ("cci", (3,), "int32"),
-        ("cid", (3,), "int32"),
     )
 
     grid_surface_maps = surface.as_surface_maps(grid_all.nodes)
@@ -119,8 +117,6 @@ def test_surfaces(grid_all):
         value = getattr(grid_surface_maps, name)
         assert value.shape == shape
         assert value.dtype == np.dtype(dtype)
-
-    assert np.all(grid_surface_maps.cid == np.array([1, 2, 1]))
 
 
 def test_impervioussurfaces(grid_all):
@@ -137,7 +133,6 @@ def test_impervioussurfaces(grid_all):
         dry_weather_flow=[1.0, 2.0, 2.0],
         the_geom=[pygeos.points([1.0, 2.0]), None, None],
         connection_node_id=[1, 2, 1],
-        connection_node_row_id=[1, 2, 1],
         connection_node_the_geom=[
             pygeos.points([1.0, 2.0]),
             pygeos.points([2.0, 3.0]),
@@ -192,7 +187,6 @@ def test_impervioussurfaces(grid_all):
         ("nyc", (3,), "float64"),
         ("pk", (3,), "int32"),
         ("cci", (3,), "int32"),
-        ("cid", (3,), "int32"),
     )
     grid_surface_maps = surface.as_surface_maps(grid_all.nodes)
 
@@ -200,5 +194,3 @@ def test_impervioussurfaces(grid_all):
         value = getattr(grid_surface_maps, name)
         assert value.shape == shape
         assert value.dtype == np.dtype(dtype)
-
-    assert np.all(grid_surface_maps.cid == np.array([1, 2, 1]))

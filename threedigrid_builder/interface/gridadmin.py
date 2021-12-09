@@ -579,10 +579,10 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "nxc", surface_maps.nxc, fill=default_fill_value)
         self.write_dataset(group, "nyc", surface_maps.nyc, fill=default_fill_value)
         self.write_dataset(group, "pk", surface_maps.pk, fill=default_fill_value)
-        self.write_dataset(group, "cci", surface_maps.cci, fill=default_fill_value)
+
         # Note: +1 for Fortran 1-based indexing
-        self.write_dataset(group, "cid", surface_maps.cid + 1, fill=default_fill_value)
-        self.write_dataset(group, "imp", surface_maps.imp + 1, fill=default_fill_value)
+        self.write_dataset(group, "cci", increase(surface_maps.cci), fill=default_fill_value)
+        self.write_dataset(group, "imp", increase(surface_maps.imp), fill=default_fill_value)
 
     def write_cross_sections(self, cross_sections: CrossSections):
         if len(cross_sections) == 0:
@@ -687,7 +687,7 @@ class GridAdminOut(OutputInterface):
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))
         except AttributeError:  # Pre h5py 2.10
             vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
-        
+
         # insert line geometry data preserving its original type
         geometry_data = np.empty(len(line_geometries), dtype=object)
         geometry_data[:] = line_geometries
