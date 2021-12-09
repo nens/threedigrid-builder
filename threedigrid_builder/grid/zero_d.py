@@ -213,7 +213,6 @@ class BaseSurface:
     the_geom: pygeos.Geometry
 
     connection_node_id: int
-    connection_node_row_id: int  # row nr (1 based) in v2_connection_nodes table
     connection_node_the_geom: pygeos.Geometry
     percentage: float
 
@@ -326,7 +325,6 @@ class BaseSurfaces:
 
         return surfaces.SurfaceMaps(
             id=np.arange(1, len(self.connection_node_id) + 1, dtype=int),
-            cid=self.connection_node_row_id,
             pk=self.connection_node_id,
             nxc=connection_node_coords[:, 0],
             nyc=connection_node_coords[:, 1],

@@ -156,7 +156,6 @@ def grid_all():
         nyc=[1.3, 2.3, 1.5],
         pk=[1, 2, 3],
         cci=[1, 2, 2],
-        cid=[1, 2, 2],
     )
 
     return Grid(

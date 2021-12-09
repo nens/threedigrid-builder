@@ -413,7 +413,6 @@ def test_not_off_by_one(h5_out, group, dataset, expected):
         ("cci", (4,), "int32"),
         ("centroid_x", (3,), "float64"),
         ("centroid_y", (3,), "float64"),
-        ("cid", (4,), "int32"),
         ("code", (3,), "|S100"),
         ("display_name", (3,), "|S250"),
         ("dry_weather_flow", (3,), "float64"),
