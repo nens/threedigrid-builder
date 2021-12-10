@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 from enum import unique
 
 
@@ -139,6 +139,20 @@ class InterflowType(IntEnum):
 
 
 @unique
+class SurfaceClass(str, Enum):
+    GESLOTEN_VERHARDING = "gesloten verharding"
+    OPEN_VERHARDING = "open verharding"
+    HALF_VERHARD = "half verhard"
+    ONVERHARD = "onverhard"
+    PAND = "pand"
+
+
 class Material(IntEnum):
     SAND = 1
     CLAY = 2
+
+
+class InflowType(IntEnum):
+    NO_INFLOW = 0
+    IMPERVIOUS_SURFACE = 1
+    SURFACE = 2

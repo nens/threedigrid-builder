@@ -50,8 +50,7 @@ def test_meta(dict_out):
         ("lines", "dpumax", 1.2),
         ("lines", "node_1", 1),  # reference to node
         ("lines", "node_2", 2),  # reference to node
-        ("lines", "cross1", 1),  # reference to cross section
-        ("lines", "cross2", -9999),  # reference to cross section
+        ("lines", "cross_id1", 4),  # reference to cross section def id, not increased
         ("breaches", "id", 1),
         ("breaches", "levl", 5),  # reference to line
         ("breaches", "levee_id", 1),  # reference to levee, not increased

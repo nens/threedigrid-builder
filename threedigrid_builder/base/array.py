@@ -148,7 +148,7 @@ class ArrayDataClass:
         self.id = id
 
         # convert each field to an array and set it to self
-        fields = self.data_class.__annotations__
+        fields = typing.get_type_hints(self.data_class)
         for name, elem_type in fields.items():
             if name == "id":
                 continue
@@ -184,7 +184,7 @@ class ArrayDataClass:
             )
         new_fields = {
             name: np.concatenate((getattr(self, name), getattr(other, name)))
-            for name in self.data_class.__annotations__.keys()
+            for name in typing.get_type_hints(self.data_class).keys()
         }
         return self.__class__(**new_fields)
 
@@ -225,13 +225,13 @@ class ArrayDataClass:
         return np.take(self.id, index)  # same as self.id[index]
 
     def to_dict(self):
-        fields = self.data_class.__annotations__
+        fields = typing.get_type_hints(self.data_class)
         return {field: getattr(self, field) for field in fields}
 
     def __getitem__(self, idx):
         """Create a masked copy of this arraay dataclass"""
         args = {}
-        for field in self.data_class.__annotations__:
+        for field in typing.get_type_hints(self.data_class):
             args[field] = getattr(self, field)[idx]
         return self.__class__(**args)
 
@@ -240,7 +240,7 @@ class ArrayDataClass:
 
         Note that this skips self.id: the records are renumbered.
         """
-        for field in self.data_class.__annotations__:
+        for field in typing.get_type_hints(self.data_class):
             if field == "id":
                 continue
             setattr(self, field, getattr(self, field)[idx])
@@ -285,7 +285,7 @@ class array_of:
 
     def __init__(self, data_class):
         """Validate the dataclass passed into the decorator"""
-        fields = data_class.__annotations__
+        fields = typing.get_type_hints(data_class)
 
         # id must be present
         if "id" not in fields:

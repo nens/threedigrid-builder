@@ -42,7 +42,7 @@ def test_convert_multiple(cross_section_definitions):
             SHP.TABULATED_RECTANGLE: mock.Mock(return_value=(6, 11.0, table_2)),
         },
     ):
-        actual = cross_section_definitions.convert()
+        actual = cross_section_definitions.convert([1, 3, 9])
 
         assert len(actual) == 3
         assert_array_equal(actual.id, [0, 1, 2])
@@ -54,6 +54,28 @@ def test_convert_multiple(cross_section_definitions):
         assert_array_equal(actual.offset, [0, 0, 9])
         assert_array_equal(actual.count, [0, 9, 4])
         assert_array_equal(actual.tables, np.concatenate([table_1, table_2], axis=0))
+
+
+def test_convert_multiple_filtered(cross_section_definitions):
+    with mock.patch.dict(
+        "threedigrid_builder.grid.cross_section_definitions.tabulators",
+        {
+            SHP.CIRCLE: mock.Mock(return_value=(1, 0.1, None)),
+        },
+    ):
+        actual = cross_section_definitions.convert([1])
+
+        assert len(actual) == 1
+        assert_array_equal(actual.id, [0])
+        assert_array_equal(actual.content_pk, [1])
+
+
+def test_convert_nonexisting_id(cross_section_definitions):
+    with pytest.raises(
+        SchematisationError,
+        match=r"One or more objects refer to non-existing cross section definitions \[2, 4\].",
+    ):
+        cross_section_definitions.convert([1, 2, 3, 4])
 
 
 def test_tabulate_builtin():

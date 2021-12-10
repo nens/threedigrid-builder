@@ -361,3 +361,15 @@ def test_get_dem_average(db):
     dem_avg_areas = db.get_dem_average_areas()
     # no dem_average_areas in test dataset
     assert len(dem_avg_areas) == 0
+
+
+def test_get_surfaces(db):
+    surfaces = db.get_surfaces()
+    # No surfaces in test dataset
+    assert len(surfaces) == 0
+
+
+def test_get_impervious_surfaces(db):
+    impervious_surfaces = db.get_impervious_surfaces()
+    # No impervious_surfaces in test dataset
+    assert len(impervious_surfaces) == 0

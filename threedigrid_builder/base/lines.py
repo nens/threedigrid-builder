@@ -32,8 +32,8 @@ class Line:
     invert_level_end_point: float  # bottom level at line end
     flod: float  # obstacle height
     flou: float  # obstacle height
-    cross1: int  # the id of the cross section definition
-    cross2: int  # the id of the cross section definition
+    cross_id1: int  # the id of the cross section definition
+    cross_id2: int  # the id of the cross section definition
     frict_type1: int  # Friction type
     frict_type2: int  # Friction type
     frict_value1: float  # Friction type

@@ -6,7 +6,6 @@ from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import CrossSectionDefinitions
 from threedigrid_builder.grid import linear
 
 import itertools
@@ -99,11 +98,6 @@ def two_linear_objects():
         discharge_coefficient_positive=[0.8, 0.5],
         discharge_coefficient_negative=[0.5, 0.8],
     )
-
-
-@pytest.fixture
-def definitions():
-    return CrossSectionDefinitions(id=[17, 18])
 
 
 @pytest.mark.parametrize(
@@ -281,7 +275,7 @@ def test_interpolate_nodes_skips_embedded(two_linear_objects):
     assert_array_equal(nodes.calculation_type, 1)
 
 
-def test_get_lines(connection_nodes, two_linear_objects, definitions):
+def test_get_lines(connection_nodes, two_linear_objects):
     nodes = Nodes(
         id=[10, 11, 12],
         content_pk=[1, 2, 2],
@@ -290,7 +284,6 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
 
     lines = two_linear_objects.get_lines(
         connection_nodes,
-        definitions,
         nodes,
         itertools.count(start=0),
         connection_node_offset=100,
@@ -305,8 +298,8 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_array_equal(lines.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
-    assert_array_equal(lines.cross1, [0, 0, 1, 1, 1])
-    assert_array_equal(lines.cross2, [0, 0, 1, 1, 1])
+    assert_array_equal(lines.cross_id1, [17, 17, 18, 18, 18])
+    assert_array_equal(lines.cross_id2, [17, 17, 18, 18, 18])
     assert_array_equal(lines.cross_weight, 1.0)
     assert_array_equal(lines.discharge_coefficient_positive, [0.8, 1.0, 0.5, 1.0, 1.0])
     assert_array_equal(lines.discharge_coefficient_negative, [1.0, 0.5, 1.0, 1.0, 0.8])
@@ -318,7 +311,7 @@ def test_get_lines(connection_nodes, two_linear_objects, definitions):
     assert_almost_equal(lines.dpumax, [2, 3, 2.5, 3.5, 4])
 
 
-def test_get_lines_embedded_mode(connection_nodes, two_linear_objects, definitions):
+def test_get_lines_embedded_mode(connection_nodes, two_linear_objects):
     nodes = Nodes(
         id=[10, 11, 12],
         content_pk=[1, 2, 2],
@@ -329,7 +322,6 @@ def test_get_lines_embedded_mode(connection_nodes, two_linear_objects, definitio
     two_linear_objects.calculation_type[:] = CalculationType.EMBEDDED
     lines = two_linear_objects.get_lines(
         connection_nodes,
-        definitions,
         nodes,
         itertools.count(start=0),
         connection_node_offset=100,
@@ -344,7 +336,6 @@ def test_get_lines_non_embedded_mode_skips(connection_nodes, two_linear_objects)
     two_linear_objects.calculation_type[1] = CalculationType.EMBEDDED
     lines = two_linear_objects.get_lines(
         connection_nodes,
-        None,
         Nodes(id=[]),
         itertools.count(start=0),
         connection_node_offset=100,
@@ -358,7 +349,6 @@ def test_get_lines_embedded_mode_skips(connection_nodes, two_linear_objects):
     two_linear_objects.calculation_type[1] = CalculationType.EMBEDDED
     lines = two_linear_objects.get_lines(
         connection_nodes,
-        None,
         Nodes(id=[]),
         itertools.count(start=0),
         connection_node_offset=100,
@@ -384,7 +374,7 @@ def test_get_lines_one_linear_object(
         s1d=[0.1] * (len(linear_object_idx)),  # some number, doesn't matter
     )
     lines = one_linear_object.get_lines(
-        connection_nodes, None, nodes, itertools.count(start=0)
+        connection_nodes, nodes, itertools.count(start=0)
     )
 
     assert_array_equal(lines.line, expected)
@@ -412,7 +402,7 @@ def test_get_lines_two_linear_objects(
     )
 
     lines = two_linear_objects.get_lines(
-        connection_nodes, None, nodes, itertools.count(start=0)
+        connection_nodes, nodes, itertools.count(start=0)
     )
 
     assert_array_equal(lines.line, expected)

@@ -11,14 +11,18 @@ from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
+from threedigrid_builder.base import Surfaces
+from threedigrid_builder.base import SurfaceMaps
 from threedigrid_builder.base import replace
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.grid import zero_d
+
 from typing import Optional
-from typing import Tuple
+from typing import Tuple, Union
 
 import itertools
 import numpy as np
@@ -93,6 +97,7 @@ class GridMeta:
     threedi_tables_version: Optional[str] = None  # filled in threedi-tables
 
     # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
+    has_0d: bool = False
     has_1d: bool = False
     has_2d: bool = False
     has_embedded: bool = False
@@ -108,6 +113,7 @@ class GridMeta:
 
     extent_1d: Optional[Tuple[float, float, float, float]] = None
     extent_2d: Optional[Tuple[float, float, float, float]] = None
+    zero_dim_extent: Optional[Tuple[float, float, float, float]] = None
 
     @classmethod
     def from_dict(cls, dct):
@@ -141,6 +147,8 @@ class Grid:
         lines: Lines,
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
+        surfaces: Optional[Surfaces] = None,
+        surface_maps : Optional[SurfaceMaps] = None,
         nodes_embedded=None,
         levees=None,
         breaches=None,
@@ -165,6 +173,17 @@ class Grid:
             nodes_embedded = Nodes(id=[])
         elif not isinstance(nodes_embedded, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes_embedded)}")
+
+        if surfaces is None:
+            surfaces = Surfaces(id=[])
+        elif not isinstance(surfaces, Surfaces):
+            raise TypeError(f"Expected Surfaces instance, got {type(surfaces)}")
+
+        if surface_maps is None:
+            surface_maps = SurfaceMaps(id=[])
+        elif not isinstance(surface_maps, SurfaceMaps):
+            raise TypeError(f"Expected SurfaceMaps instance, got {type(surface_maps)}")
+
         if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
         if breaches is not None and not isinstance(breaches, Breaches):
@@ -172,6 +191,8 @@ class Grid:
         self.nodes = nodes
         self.lines = lines
         self.meta = meta
+        self.surfaces = surfaces
+        self.surface_maps = surface_maps
         self.quadtree_stats = quadtree_stats
         self.pumps = pumps
         self.cross_sections = cross_sections
@@ -188,7 +209,7 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines", "nodes_embedded"):
+        for name in ("nodes", "lines", "nodes_embedded", "surfaces"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in (
             "meta",
@@ -306,7 +327,6 @@ class Grid:
         cls,
         connection_nodes,
         objects,
-        definitions,
         cell_tree,
         global_dist_calc_points,
         embedded_cutoff_threshold,
@@ -320,7 +340,6 @@ class Grid:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             objects (Channels, Pipes, Culverts)
-            definitions (CrossSectionDefinitions): to map definition ids
             cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             embedded_cutoff_threshold (float): The min length of an embedded line.
@@ -348,8 +367,8 @@ class Grid:
             - lines.ds1d: the length of the line
             - lines.s1d: the position of the line's velocity point along the object
              These attributes are filled for pipes/culverts only:
-            - lines.cross1 & cross2: the index of the cross section definition
-            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
+            - lines.cross_id1 & cross_id2: the id of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - lines.frict_type1 & frict_type2: the friction type (both are equal)
             - lines.frict_value1 & frict_value2: the friction value (both are equal)
             - lines.invert_level_start_point: copied from pipe/culvert
@@ -361,7 +380,6 @@ class Grid:
         nodes = objects.interpolate_nodes(node_id_counter, global_dist_calc_points)
         lines = objects.get_lines(
             connection_nodes,
-            definitions,
             nodes,
             line_id_counter,
             connection_node_offset=connection_node_offset,
@@ -375,7 +393,6 @@ class Grid:
             # And construct the lines (also connecting to connection nodes)
             lines_embedded = objects.get_lines(
                 connection_nodes,
-                definitions,
                 nodes_embedded,
                 line_id_counter,
                 connection_node_offset=connection_node_offset,
@@ -396,7 +413,6 @@ class Grid:
         connection_nodes,
         weirs,
         orifices,
-        definitions,
         line_id_counter,
         connection_node_offset=0,
     ):
@@ -406,7 +422,6 @@ class Grid:
             connection_nodes (ConnectionNodes): used to map ids to indices
             weirs (Weirs)
             orifices (Orifices)
-            definitions (CrossSectionDefinitions)
             global_dist_calc_points (float): Default node interdistance.
             node_id_counter (iterable): an iterable yielding integers
             line_id_counter (iterable): an iterable yielding integers
@@ -427,8 +442,8 @@ class Grid:
             - lines.content_pk: the id of the object from which this line originates
             - lines.kcu: from the object's calculation_type
             - lines.dpumax: the crest_level of the structure
-            - lines.cross1 & cross2: the index of the cross section definition
-            - lines.cross_weight: 1.0 (which means that cross2 should be ignored)
+            - lines.cross_id1 & cross_id2: the id of the cross section definition
+            - lines.cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - lines.frict_type1 & frict_type2: the friction type (both are equal)
             - lines.frict_value1 & frict_value2: the friction value (both are equal)
             - lines.invert_level_start_point: the crest_level of the structure
@@ -436,10 +451,10 @@ class Grid:
             - lines.discharge_coefficient_positive and _negative: taken from the structure
         """
         lines = weirs.get_lines(
-            connection_nodes, definitions, line_id_counter, connection_node_offset
+            connection_nodes, line_id_counter, connection_node_offset
         )
         lines += orifices.get_lines(
-            connection_nodes, definitions, line_id_counter, connection_node_offset
+            connection_nodes, line_id_counter, connection_node_offset
         )
         return cls(Nodes(id=[]), lines)
 
@@ -558,11 +573,14 @@ class Grid:
     def set_cross_sections(self, definitions):
         """Set the cross sections on this grid object
 
+        Only the definitions that are actually used will be used.
+
         Args:
             definitions (CrossSectionDefinitions)
         """
-        # TODO Skip definitions that are not used (and remap cross1 and cross2)
-        self.cross_sections = definitions.convert()
+        cs_in_use = np.union1d(self.lines.cross_id1, self.lines.cross_id2)
+        cs_in_use = cs_in_use[cs_in_use != -9999]
+        self.cross_sections = definitions.convert(cs_in_use)
 
     def embed_nodes(self, embedded_node_id_counter):
         """Integrate embedded connection nodes into the 2D cells.
@@ -605,6 +623,13 @@ class Grid:
             culverts,
             line_id_counter,
         )
+
+    def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
+        """
+        Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
+        """
+        self.surfaces = surfaces.as_grid_surfaces()
+        self.surface_maps = surfaces.as_surface_maps(self.nodes)
 
     def add_breaches(self, connected_points):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
@@ -740,6 +765,7 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.set_discharge_coefficients()
+        self.meta: GridMeta
         if len(self.pumps) > 0:
             self.meta.has_pumpstations = True
         self.meta.has_initial_waterlevels = np.isfinite(
@@ -747,9 +773,14 @@ class Grid:
         ).any()
         self.meta.extent_1d = self.nodes.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
+
+        if self.surfaces:
+            self.meta.zero_dim_extent = self.surfaces.get_extent()
+
         self.meta.has_1d = (
             self.meta.extent_1d is not None or len(self.nodes_embedded) > 0
         )
+        self.meta.has_0d = self.meta.zero_dim_extent is not None
         self.meta.has_2d = self.meta.extent_2d is not None
         self.meta.has_breaches = self.breaches is not None and len(self.breaches) > 0
         if len(self.nodes_embedded) > 0:

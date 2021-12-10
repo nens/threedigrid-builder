@@ -6,15 +6,18 @@ This layer depends on the interfaces as well as on the domain layer.
 """
 
 from pathlib import Path
+from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid.zero_d import ImperviousSurfaces
 from threedigrid_builder.interface import DictOut
 from threedigrid_builder.interface import GDALInterface
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
+from threedigrid_builder.constants import InflowType
 from typing import Callable
 from typing import Optional
 
@@ -111,7 +114,6 @@ def _make_gridadmin(
         channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=channels,
-            definitions=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -122,15 +124,13 @@ def _make_gridadmin(
         )
 
         locations = db.get_cross_section_locations()
-        definitions = db.get_cross_section_definitions()
-        locations.apply_to_lines(channel_grid.lines, channels, definitions)
+        locations.apply_to_lines(channel_grid.lines, channels)
         grid += channel_grid
 
         pipes = db.get_pipes()
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=pipes,
-            definitions=definitions,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -144,7 +144,6 @@ def _make_gridadmin(
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=culverts,
-            definitions=definitions,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -160,7 +159,6 @@ def _make_gridadmin(
             connection_nodes=connection_nodes,
             weirs=weirs,
             orifices=orifices,
-            definitions=definitions,
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
@@ -174,7 +172,7 @@ def _make_gridadmin(
             culverts=culverts,
         )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
-        grid.set_cross_sections(definitions)
+        grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
@@ -191,6 +189,19 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
         grid.add_breaches(connected_points)
+
+    if grid_settings.use_0d_inflow in (
+        InflowType.IMPERVIOUS_SURFACE.value,
+        InflowType.SURFACE.value,
+    ):
+        # process zero-d information, either using the 'v2_surfaces'
+        # or 'v2_impervious_surfaces' table.
+        progress_callback(0.95, "Processing 0D domain...")
+        if grid_settings.use_0d_inflow == InflowType.SURFACE.value:
+            surfaces: Surfaces = db.get_surfaces()
+        else:
+            surfaces: ImperviousSurfaces = db.get_impervious_surfaces()
+        grid.add_0d(surfaces)
 
     grid.finalize()
     return grid
@@ -253,7 +264,7 @@ def make_gridadmin(
         progress_callback=progress_callback,
     )
 
-    progress_callback(0.95, "Writing gridadmin...")
+    progress_callback(0.99, "Writing gridadmin...")
     with Writer(out_path) as writer:
         return writer.write(grid)
 
