@@ -20,6 +20,7 @@ from threedigrid_builder.constants import NodeType
 from typing import Optional
 from typing import Tuple
 
+import itertools
 import numpy as np
 import pygeos
 import threedigrid_builder
@@ -613,6 +614,62 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.breaches = connected_points.get_breaches(self.lines, self.levees)
+
+    def add_groundwater_nodes(self, nodes, node_id_counter):
+        """Add groundwater nodes from open water nodes."""
+        open_water_nodes = nodes[np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)]
+        id_n = itertools.islice(node_id_counter, len(open_water_nodes))
+        self.nodes += Nodes(
+            id=id_n,
+            node_type=NodeType.NODE_2D_GROUNDWATER,
+            bounds=open_water_nodes.bounds,
+            pixel_coords=open_water_nodes.pixel_coords,
+            nodk=open_water_nodes.nodk,
+            nodm=open_water_nodes.nodm,
+            nodn=open_water_nodes.nodn,
+        )
+
+    def add_groundwater_vertical_lines(self, nodes, line_id_counter):
+        """Add vertical lines between open water - and groundwater nodes."""
+        open_water_nodes = nodes[np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)]
+        groundwater_nodes = nodes[np.isin(nodes.node_type, NodeType.NODE_2D_GROUNDWATER)]
+        id_n = itertools.islice(line_id_counter, len(open_water_nodes))
+        self.lines += Lines(
+            id=id_n,
+            kcu=LineType.LINE_2D_VERTICAL,
+            line=np.stack((open_water_nodes.id, groundwater_nodes.id), axis=1),
+            lik=open_water_nodes.nodk,
+            lim=open_water_nodes.nodm,
+            lin=open_water_nodes.nodn,
+            line_coords=np.hstack((open_water_nodes.coordinates, open_water_nodes.coordinates)),
+        )
+
+    def add_groundwater_lines(self, lines, line_id_counter):
+        """Add groundwater lines from open water - and obstacle lines."""
+        open_water_lines = lines[
+            np.isin(
+                lines.kcu,
+                (
+                    LineType.LINE_2D_U,
+                    LineType.LINE_2D_V,
+                    LineType.LINE_2D,
+                    LineType.LINE_2D_OBSTACLE,
+                    LineType.LINE_2D_OBSTACLE_U,
+                    LineType.LINE_2D_OBSTACLE_V,
+                )
+            )
+        ]
+        id_n = itertools.islice(line_id_counter, len(open_water_lines))
+        self.lines += Lines(
+            id=id_n,
+            kcu=LineType.LINE_2D_GROUNDWATER,
+            line=open_water_lines.line,
+            lik=open_water_lines.lik,
+            lim=open_water_lines.lim,
+            lin=open_water_lines.lin,
+            line_geometries=open_water_lines.line_geometries,
+            line_coords=open_water_lines.line_coords,
+        )
 
     def set_dem_averaged_cells(self, dem_average_areas):
         """Determine which nodes need to be dem averaged during tables preprocessing.

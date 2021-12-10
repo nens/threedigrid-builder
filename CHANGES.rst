@@ -7,6 +7,8 @@ Changelog of threedigrid-builder
 - Fixed bug where writing a single line geometry or geometries of equal size would
   result in an incorrect cast to a numpy object dtype.
 
+- Added groundwater 2D nodes, 2D vertical lines, and 2D groundwater lines.
+
 
 0.8.2 (2021-12-05)
 ------------------

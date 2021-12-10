@@ -79,7 +79,15 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
+
+        # Groundwater
+        grid.add_groundwater_nodes(grid.nodes, node_id_counter)
+        grid.add_groundwater_vertical_lines(grid.nodes, line_id_counter)
+
         grid.set_obstacles(db.get_obstacles(), db.get_levees())
+        if 'use_2d_groundwater_flow' in settings and settings.use_2d_groundwater_flow:
+            grid.add_groundwater_lines(grid.lines, line_id_counter)
+
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,

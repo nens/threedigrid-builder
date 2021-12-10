@@ -216,6 +216,8 @@ class GridAdminOut(OutputInterface):
             ("lgrtot", LINE_TYPES_2D_GROUNDWATER),
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),
+            ("lgutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
+            ("lgvtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
         ]:
             count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
             group.create_dataset(dataset_name, data=count, dtype="i4")
@@ -227,10 +229,6 @@ class GridAdminOut(OutputInterface):
         ]:
             count = len(np.unique(nodes.boundary_id[nodes.node_type == node_type]))
             group.create_dataset(dataset_name, data=count, dtype="i4")
-
-        # To be implemented when groundwater is done:
-        for field in ("lgutot", "lgvtot"):
-            group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
         """Write the "grid_coordinate_attributes" group in the gridadmin file.
