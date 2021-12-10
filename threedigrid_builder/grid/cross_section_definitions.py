@@ -47,7 +47,7 @@ class CrossSectionDefinitions:
         for i, shape in enumerate(self.shape[idx]):
             tabulator = tabulators[shape]
             result.shape[i], result.width_1d[i], table = tabulator(
-                shape, self.width[i], self.height[i]
+                shape, self.width[idx][i], self.height[idx][i]
             )
             if table is not None:
                 result.count[i] = len(table)
