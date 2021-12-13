@@ -44,10 +44,15 @@ class CrossSectionDefinitions:
         )
         offset = 0
         tables = []
+
+        # Numpy array views on width/height based on idx
+        width_idx = self.width[idx]
+        height_idx = self.height[idx]
+
         for i, shape in enumerate(self.shape[idx]):
             tabulator = tabulators[shape]
             result.shape[i], result.width_1d[i], table = tabulator(
-                shape, self.width[idx][i], self.height[idx][i]
+                shape, width_idx[i], height_idx[i]
             )
             if table is not None:
                 result.count[i] = len(table)
