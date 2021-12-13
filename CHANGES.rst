@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Added groundwater 2D nodes, 2D vertical lines, and 2D groundwater lines.
 
+- Bugfix: cross section tabulate used wrong width/height.
+
 
 0.8.3 (2021-12-09)
 ------------------
