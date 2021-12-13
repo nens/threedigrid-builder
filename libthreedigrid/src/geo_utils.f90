@@ -1,5 +1,7 @@
 module m_grid_utils
 
+    use iso_fortran_env, only : int8
+
     implicit none
 
     contains
@@ -76,6 +78,31 @@ module m_grid_utils
         j3 = min(j3, size(raster, 2))
 
     end subroutine crop_pix_coords_to_raster
+
+    function pad_area_mask(raster, i0, i1, j0, j1) result(padded_raster)
+
+        integer, intent(in) :: raster(:,:)
+        integer, intent(in) :: i0
+        integer, intent(in) :: i1
+        integer, intent(in) :: j0
+        integer, intent(in) :: j1
+        integer(kind=int8), allocatable :: padded_raster(:, :)
+        integer :: i_size, j_size, size_raster_i, size_raster_j
+        integer :: i0r, i1r
+        integer :: j0r, j1r
+        integer :: i0p, i1p
+        integer :: j0p, j1p
+
+        size_raster_i = size(raster, 1)
+        size_raster_j = size(raster, 2)
+        i_size = max(0, i1, size_raster_i)
+        j_size = max(0, j1, size_raster_j)
+        allocate(padded_raster(1:i_size, 1:j_size))
+        padded_raster = 0
+
+        padded_raster(1:size_raster_i, 1:size_raster_j) = int(raster(1:size_raster_i, 1:size_raster_j), KIND=int8)
+
+    end function pad_area_mask
 
     function get_lg_corners(k, m, n) result(mn)
 
