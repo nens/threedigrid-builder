@@ -107,9 +107,7 @@ module m_cells
         !!!!! U - direction !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(3) < size(quad_idx, 1)) then
-            if (i1 == size(area_mask, 1)) then
-                continue
-            elseif(lg(mn(3)+1, mn(2)) == k .and. any(minval(area_mask(i1:i1+1,j0:j1), 1) > 0)) then
+            if(lg(mn(3)+1, mn(2)) == k .and. any(minval(area_mask(i1:i1+1,j0:j1), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3)+1, mn(2)) 
@@ -140,9 +138,7 @@ module m_cells
         endif
 
         if (mn(1) > 1) then
-            if (i0 == 1) then
-                continue
-            elseif(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
+            if(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1)-1, mn(2))
@@ -170,9 +166,7 @@ module m_cells
         !!!!! V - direction !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(4) < size(quad_idx, 2)) then
-            if (j1 == size(area_mask, 2)) then
-                continue
-            elseif (lg(mn(1), mn(4)+1) == k .and. any(minval(area_mask(i0:i1,j1:j1+1), 2) > 0)) then
+            if (lg(mn(1), mn(4)+1) == k .and. any(minval(area_mask(i0:i1,j1:j1+1), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(4)+1)
@@ -203,9 +197,7 @@ module m_cells
         endif
             
         if (mn(2) > 1) then
-            if (j0 == 1) then
-                continue
-            elseif(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
+            if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(2)-1)
