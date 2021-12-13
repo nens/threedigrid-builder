@@ -19,6 +19,7 @@ from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
 
 from typing import Optional
@@ -643,6 +644,10 @@ class Grid:
     def add_groundwater_nodes(self, nodes, node_id_counter):
         """Add groundwater nodes from open water nodes."""
         open_water_nodes = nodes[np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)]
+        if len(open_water_nodes) == 0:
+            raise SchematisationError(
+                "Unable to create groundwater nodes, no open water nodes found."
+            )
         id_n = itertools.islice(node_id_counter, len(open_water_nodes))
         self.nodes += Nodes(
             id=id_n,
@@ -652,6 +657,7 @@ class Grid:
             nodk=open_water_nodes.nodk,
             nodm=open_water_nodes.nodm,
             nodn=open_water_nodes.nodn,
+            coordinates=open_water_nodes.coordinates,
         )
 
     def add_groundwater_vertical_lines(self, nodes, line_id_counter):
@@ -692,8 +698,8 @@ class Grid:
             lik=open_water_lines.lik,
             lim=open_water_lines.lim,
             lin=open_water_lines.lin,
-            line_geometries=open_water_lines.line_geometries,
             line_coords=open_water_lines.line_coords,
+            cross_pix_coords=open_water_lines.cross_pix_coords,
         )
 
     def set_dem_averaged_cells(self, dem_average_areas):

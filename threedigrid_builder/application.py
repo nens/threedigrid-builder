@@ -88,7 +88,7 @@ def _make_gridadmin(
         grid.add_groundwater_vertical_lines(grid.nodes, line_id_counter)
 
         grid.set_obstacles(db.get_obstacles(), db.get_levees())
-        if 'use_2d_groundwater_flow' in settings and settings.use_2d_groundwater_flow:
+        if grid.meta.has_groundwater_flow:
             grid.add_groundwater_lines(grid.lines, line_id_counter)
 
         grid.set_boundary_conditions_2d(

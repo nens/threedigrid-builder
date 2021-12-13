@@ -64,11 +64,11 @@ def test_integration(tmp_path):
         )
 
         ## LINES
-        assert f["lines"]["id"].shape == (20879,)  # Inpy: (31916, )
+        assert f["lines"]["id"].shape == (31916,)  # Inpy: (31916, )
         assert_array_equal(f["lines"]["id"][:], np.arange(f["lines"]["id"].shape[0]))
         assert count_unique(f["lines"]["kcu"]) == {
             -9999: 1,  # Inpy: 0: 1
-            # Inpy: LineType.LINE_2D_GROUNDWATER: 11037,
+            LineType.LINE_2D_GROUNDWATER: 11037,
             LineType.LINE_1D_ISOLATED: 716,
             LineType.LINE_1D_CONNECTED: 1545,
             LineType.LINE_1D_SHORT_CRESTED: 56,
@@ -82,7 +82,7 @@ def test_integration(tmp_path):
             LineType.LINE_2D_VERTICAL: 5374,
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 16412,  # Inpy: 29380
+            b"": 27449,  # Inpy: 29380
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,
@@ -122,7 +122,7 @@ def test_integration(tmp_path):
             "ingrw1d": 0,
             "l1dtot": 2532,
             "l2dtot": 11037,
-            "lgrtot": 5374,
+            "lgrtot": 16411,
             "lgutot": 5476,
             "lgvtot": 5561,
             "liutot": 5476,
