@@ -70,7 +70,7 @@ jobs:
         shell: bash
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
-          pip install ${{ matrix.numpy }
+          pip install ${{ matrix.numpy }}
           pip install -e .${{ matrix.extras }} ${{ matrix.deps }} pygdal==3.0.4.*
           pip list
 
