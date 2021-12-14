@@ -59,12 +59,12 @@ jobs:
         run: |
           sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
 
-      #- uses: actions/cache@v2
-      #  with:
-      #    path: ~/.cache/pip
-      #    key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('setup.py') }}
-      #    restore-keys: |
-      #      ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-
 
       - name: Install python dependencies
         shell: bash
