@@ -17,8 +17,32 @@ except ImportError:
     from setuptools import Extension
     from setuptools import setup
 
+def get_version():
+    # Edited from https://packaging.python.org/guides/single-sourcing-package-version/
+    init_path = pathlib.Path(__file__).parent / "threedigrid_builder/__init__.py"
+    for line in init_path.open("r").readlines():
+        if line.startswith("__version__"):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
 
-ext_modules = []
+
+long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
+
+
+install_requires = [
+    "numpy>=1.13",
+    "threedi-modelchecker>=0.12",
+    "pygeos>=0.10",
+    "pyproj>=3",
+    "condenser[geo]>=0.1.1",
+    "sqlalchemy",
+    "dataclasses ; python_version<'3.7'",
+]
+
+test_requires = ["pytest"]
+
 
 if "clean" in sys.argv:
     # delete any previously compiled files
@@ -64,31 +88,6 @@ ext_modules = [
     )
 ]
 
-long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
-
-
-def get_version():
-    # Edited from https://packaging.python.org/guides/single-sourcing-package-version/
-    init_path = pathlib.Path(__file__).parent / "threedigrid_builder/__init__.py"
-    for line in init_path.open("r").readlines():
-        if line.startswith("__version__"):
-            delim = '"' if '"' in line else "'"
-            return line.split(delim)[1]
-    else:
-        raise RuntimeError("Unable to find version string.")
-
-
-install_requires = [
-    "numpy>=1.13",
-    "threedi-modelchecker>=0.12",
-    "pygeos>=0.10",
-    "pyproj>=3",
-    "condenser[geo]>=0.1.1",
-    "sqlalchemy",
-    "dataclasses ; python_version<'3.7'",
-]
-
-test_requires = ["pytest"]
 
 setup(
     name="threedigrid-builder",
