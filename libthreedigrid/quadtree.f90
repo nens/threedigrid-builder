@@ -1,7 +1,7 @@
 module m_quadtree
 
     use parameters, only : NODATA
-    use iso_fortran_env, only : int8
+    use iso_fortran_env, only : int16
 
     implicit none
 
@@ -86,13 +86,13 @@ module m_quadtree
 
     subroutine make_quadtree(kmax, mmax, nmax, lgrmin, area_mask, quad_idx, lg, n_cells, n_lines)
     !!! Entry point for creating quadtree by setting lg array and then finding number of active cells and lines.
-        use iso_fortran_env, only : int8
+        use iso_fortran_env, only : int16
 
         integer, intent(in) :: kmax ! Maximum refinement levels
         integer, intent(in) :: mmax(:) ! X Dimension of each refinement level
         integer, intent(in) :: nmax(:) ! Y Dimension of each refinement level
         integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
-        integer*2, intent(in) :: area_mask(:, :) ! Array with active pixels of model.
+        integer(kind=int16), intent(in) :: area_mask(:, :) ! Array with active pixels of model.
         integer, intent(inout) :: lg(:, :) ! Array with all refinement levels.
         integer, intent(inout) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
         integer, intent(inout) :: n_cells ! counter for active cells
@@ -182,18 +182,18 @@ module m_quadtree
     !!! Counting active cells and lines based on area_mask of active pixels.
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster, pad_area_mask
         use m_cells, only : set_2d_computational_lines
-        use iso_fortran_env, only : int8
+        use iso_fortran_env, only : int16
 
         integer, intent(in) :: kmax
         integer, intent(in) :: mmax(:)
         integer, intent(in) :: nmax(:)
         integer, intent(in) :: lgrmin
         integer, intent(inout) :: lg(:,:)
-        integer(kind=int8), intent(in) :: area_mask(:,:)
+        integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
         integer, intent(inout) :: n_line_u
         integer, intent(inout) :: n_line_v
-        integer(kind=int8), allocatable:: area_mask_padded(:, :)
+        integer(kind=int16), allocatable:: area_mask_padded(:, :)
         integer :: k
         integer :: m,n
         integer :: mn(4)

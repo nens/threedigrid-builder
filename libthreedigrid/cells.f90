@@ -1,6 +1,6 @@
 module m_cells
 
-    use iso_fortran_env, only: int8
+    use iso_fortran_env, only: int16
 
     contains
 
@@ -9,7 +9,7 @@ module m_cells
         line,cross_pix_coords, n_line_u)
         !!! Entry point for setting nodes and lines and there necessary attributes.
         use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners, pad_area_mask
-        use iso_fortran_env, only : int8
+        use iso_fortran_env, only : int16
 
         double precision, intent(in) :: origin(2) ! Origin of Quadtree grid
         integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
@@ -19,7 +19,7 @@ module m_cells
         double precision, intent(in) :: dx(:) ! Cell size of each refinement level
         integer, intent(inout) :: lg(:, :) ! Array with all refinement levels.
         integer, intent(inout) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
-        integer(kind=int8), intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
+        integer(kind=int16), intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
         integer, intent(inout) :: nodk(:) ! Array with refinement level of comp node
         integer, intent(inout) :: nodm(:) ! Array with x or m coordinate on its refinement level grid
         integer, intent(inout) :: nodn(:) ! Array with y or n coordinate on its refinement level grid
@@ -29,7 +29,7 @@ module m_cells
         integer, intent(inout) :: line(:, :) ! Array with connecting nodes of line.
         integer, intent(inout) :: cross_pix_coords(:, :) ! Array pixel indices of line interface
         integer, intent(in) :: n_line_u ! Number of active u-dir lines.
-        integer(kind=int8), allocatable :: area_mask_padded(:, :)
+        integer(kind=int16), allocatable :: area_mask_padded(:, :)
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -86,7 +86,7 @@ module m_cells
         integer, intent(in) :: mn(4)
         integer, intent(in) :: lg(:,:)
         integer, intent(in) :: lgrmin
-        integer(kind=int8), intent(in) :: area_mask(:,:)
+        integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)
