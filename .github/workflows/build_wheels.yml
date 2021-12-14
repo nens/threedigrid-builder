@@ -38,6 +38,8 @@ jobs:
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_TEST_EXTRAS: test,gridadmin
           CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests
+          CIBW_BUILD_VERBOSITY: 1
+
 
       - uses: actions/upload-artifact@v2
         with:
