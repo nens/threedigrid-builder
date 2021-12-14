@@ -81,10 +81,10 @@ ext_modules = [
             "./libthreedigrid/geo_utils.f90",
             "./libthreedigrid/cells.f90",
             "./libthreedigrid/quadtree.f90",
-    ],
-    f2py_options=["--f2cmap", "./libthreedigrid/.f2py_f2cmap"],
-    extra_f90_compile_args=comp_flags,
-    define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+        ],
+        f2py_options=["--f2cmap", "./libthreedigrid/.f2py_f2cmap"],
+        extra_f90_compile_args=comp_flags,
+        define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
 ]
 
