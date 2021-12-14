@@ -36,33 +36,33 @@ if "clean" in sys.argv:
     print("removing build folder")
     if os.path.isdir(p / "build"):
         shutil.rmtree(p / "build")
-
-if "debug" in sys.argv:
-    # Set debug compiler flags of fortran lib when required.
-    sys.argv.remove("debug")
-    comp_flags = ["-O0", "-g"]
-    macro = [("F2PY_REPORT_ON_ARRAY_COPY", "2")]
-else:
-    # Otherwise set normal compiler flags.
-    comp_flags = ["-O3"]
-    macro = []
-
-ext_modules = [
-    Extension(
-        name="threedigrid_builder.grid._fwrapper",
-        sources=[
-            "./libthreedigrid/wrapper.pyf",
-            "./libthreedigrid/parameters.f90",
-            "./libthreedigrid/array_utils.f90",
-            "./libthreedigrid/geo_utils.f90",
-            "./libthreedigrid/cells.f90",
-            "./libthreedigrid/quadtree.f90",
-    ],
-    f2py_options=["--f2cmap", "./libthreedigrid/.f2py_f2cmap"],
-    extra_f90_compile_args=comp_flags,
-    define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-    )
-]
+elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
+    if "debug" in sys.argv:
+        # Set debug compiler flags of fortran lib when required.
+        sys.argv.remove("debug")
+        comp_flags = ["-O0", "-g"]
+        macro = [("F2PY_REPORT_ON_ARRAY_COPY", "2")]
+    else:
+        # Otherwise set normal compiler flags.
+        comp_flags = ["-O3"]
+        macro = []
+    
+    ext_modules = [
+        Extension(
+            name="threedigrid_builder.grid._fwrapper",
+            sources=[
+                "./libthreedigrid/wrapper.pyf",
+                "./libthreedigrid/parameters.f90",
+                "./libthreedigrid/array_utils.f90",
+                "./libthreedigrid/geo_utils.f90",
+                "./libthreedigrid/cells.f90",
+                "./libthreedigrid/quadtree.f90",
+        ],
+        f2py_options=["--f2cmap", "./libthreedigrid/.f2py_f2cmap"],
+        extra_f90_compile_args=comp_flags,
+        define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+        )
+    ]
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
