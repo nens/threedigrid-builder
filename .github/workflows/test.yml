@@ -70,7 +70,6 @@ jobs:
         shell: bash
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
-          pip install cython ${{ matrix.numpy }}
           pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.deps }} pygdal==3.0.4.*
           pip list
 

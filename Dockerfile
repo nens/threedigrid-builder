@@ -13,7 +13,6 @@ COPY ./requirements.txt /threedigrid-builder/
 
 RUN pip3 install -r /threedigrid-builder/requirements.txt \
     && pip3 install GDAL==2.1.0 --global-option=build_ext \
-    && pip3 install cython \
     && pip3 install -r /threedigrid-builder/requirements.txt
 
 COPY . /threedigrid-builder

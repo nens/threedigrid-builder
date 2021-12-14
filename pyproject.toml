@@ -1,5 +1,4 @@
 [build-system]
-# numpy and Cython are required to execute setup.py to build Cython extensions
 requires = [
     "setuptools",
     "wheel",
@@ -11,5 +10,4 @@ requires = [
     "numpy==1.21.3; python_version=='3.10'",
     # do not pin numpy on future versions of python to avoid incompatible numpy and python versions
     "numpy; python_version>='3.11'",
-    "Cython>=0.29",
 ]
