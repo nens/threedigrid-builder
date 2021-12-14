@@ -29,15 +29,11 @@ jobs:
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-9
             LDFLAGS=-Wl,-rpath
-          CIBW_BEFORE_ALL: |
-            cat WHEEL_LICENSE_POSIX >> LICENSE
-          CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
-          #CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
-          #CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
-          #  delvewheel repair -w {dest_dir}
-          #  --no-mangle "libwinpthread-1.dll" {wheel}
+          CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
+            delvewheel repair --lib-sdir . -w {dest_dir} {wheel}
           CIBW_TEST_EXTRAS: test,gridadmin
-          CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests
+          CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder
           CIBW_BUILD_VERBOSITY: 1
 
 
