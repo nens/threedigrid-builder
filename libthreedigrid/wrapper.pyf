@@ -1,0 +1,59 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module _fwrapper ! in 
+    interface  ! in :_fwrapper
+        module m_quadtree ! in :_fwrapper:./libthreedigrid/src/quadtree.f90
+            use parameters, only: nodata
+            subroutine set_refinement(refine_id,refine_geom,refine_level,refine_type,bbox,mmax,nmax,dx,lg) ! in :_fwrapper:./libthreedigrid/src/quadtree.f90:m_quadtree
+                use m_grid_utils, only: get_cell_geom,find_cell_intersects,geom_in_polygon,feature_in_bbox
+                integer intent(in) :: refine_id
+                double precision dimension(:,:),intent(in) :: refine_geom
+                integer intent(in) :: refine_level
+                integer intent(in) :: refine_type
+                double precision dimension(4),intent(in) :: bbox
+                integer dimension(:),intent(in) :: mmax
+                integer dimension(:),intent(in) :: nmax
+                double precision dimension(:),intent(in) :: dx
+                integer dimension(:,:),intent(inout) :: lg
+            end subroutine set_refinement
+            subroutine make_quadtree(kmax,mmax,nmax,lgrmin,area_mask,quad_idx,lg,n_cells,n_lines) ! in :_fwrapper:./libthreedigrid/src/quadtree.f90:m_quadtree
+                integer intent(in) :: kmax
+                integer dimension(:),intent(in) :: mmax
+                integer dimension(:),intent(in) :: nmax
+                integer intent(in) :: lgrmin
+                integer(kind=2) dimension(:,:),intent(in) :: area_mask
+                integer dimension(:,:),intent(inout) :: lg
+                integer dimension(:,:),intent(inout) :: quad_idx
+                integer intent(inout) :: n_cells
+                integer intent(inout) :: n_lines(2)
+            end subroutine make_quadtree
+        end module m_quadtree
+        module m_cells ! in :_fwrapper:./libthreedigrid/src/cells.f90
+            subroutine set_2d_computational_nodes_lines(origin,lgrmin,kmax,mmax,nmax,dx,lg,quad_idx,area_mask,nodk,nodm,nodn,bounds,coords,pixel_coords,line,cross_pix_coords, n_line_u) ! in :_fwrapper:./libthreedigrid/src/cells.f90:m_cells
+                use m_grid_utils, only: get_lg_corners,get_cell_bbox,get_pix_corners,pad_area_mask
+                double precision dimension(2),intent(in) :: origin
+                integer intent(in) :: lgrmin
+                integer intent(in) :: kmax
+                integer dimension(:),intent(in) :: mmax
+                integer dimension(:),intent(in) :: nmax
+                double precision dimension(:),intent(in) :: dx
+                integer dimension(:,:),intent(inout) :: lg
+                integer dimension(:,:),intent(inout) :: quad_idx
+                integer(kind=2) dimension(:,:),intent(inout) :: area_mask
+                integer dimension(:),intent(inout) :: nodk
+                integer dimension(:),intent(inout) :: nodm
+                integer dimension(:),intent(inout) :: nodn
+                double precision dimension(:,:),intent(inout) :: bounds
+                double precision dimension(:,:),intent(inout) :: coords
+                integer dimension(:,:),intent(inout) :: pixel_coords
+                integer dimension(:,:),intent(inout) :: line
+                integer dimension(:,:),intent(inout) :: cross_pix_coords
+                integer, intent(in) :: n_line_u
+            end subroutine set_2d_computational_nodes_lines
+        end module m_cells
+    end interface 
+end python module _fwrapper
+
+! This file was auto-generated with f2py (version:1.21.4).
+! See http://cens.ioc.ee/projects/f2py2e/
