@@ -20,13 +20,7 @@ jobs:
         env:
           CIBW_PLATFORM: "linux"
           CIBW_BUILD: "cp37-manylinux_x86_64"  # matches calccore python version
-          CIBW_ENVIRONMENT_LINUX:
-            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
-          # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
-          # into /usr/local/bin
           CIBW_BEFORE_ALL: |
-            pip install cmake &&
-            ./build.sh &&
             cat WHEEL_LICENSE_POSIX >> LICENSE
 
       - name: Clear previous wheels

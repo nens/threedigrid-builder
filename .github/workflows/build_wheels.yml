@@ -28,20 +28,12 @@ jobs:
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-9
-            LDFLAGS=-Wl,-rpath,${{ github.workspace }}/libthreedigrid/lib
-          CIBW_ENVIRONMENT_LINUX:
-            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/project/libthreedigrid/lib/
-          # Before creating the wheel, we build libthreedigrid (fortran) and copy the libraries
-          # into /usr/local/bin
           CIBW_BEFORE_ALL: |
-            pip install cmake &&
-            ./build.sh &&
             cat WHEEL_LICENSE_POSIX >> LICENSE
-          CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_WINDOWS >> LICENSE
+          CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
             delvewheel repair -w {dest_dir}
-            --add-path ${{ github.workspace }}\libthreedigrid\bin
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_TEST_EXTRAS: test,gridadmin
           CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests

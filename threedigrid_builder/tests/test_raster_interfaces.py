@@ -38,7 +38,7 @@ def test_read(interface, dem_path):
     with interface(dem_path) as dem:
         result = dem.read()
         assert result["area_mask"].shape == (9517, 9726)
-        assert result["area_mask"].dtype == np.int8
+        assert result["area_mask"].dtype == np.int16
         assert np.count_nonzero(result["area_mask"] == 1) == 47180799
         assert result["pixel_size"] == 0.5
         assert result["width"] == 9517
