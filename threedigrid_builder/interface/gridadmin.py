@@ -218,10 +218,19 @@ class GridAdminOut(OutputInterface):
             ("lgrtot", LINE_TYPES_2D_GROUNDWATER),
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),
+        ]:
+            count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
+
+        # Groundwater lines from open water lines
+        for dataset_name, kcu_values in [
             ("lgutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
             ("lgvtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
         ]:
-            count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
+            if self._file.attrs["has_groundwater_flow"]:
+                count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
+            else:
+                count = 0
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
         # the number of unique boundaries (only 2D)
