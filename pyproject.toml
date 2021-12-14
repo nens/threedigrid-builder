@@ -1,5 +1,4 @@
 [build-system]
-build-backend = "setuptools.build_meta"
 requires = [
     "setuptools!=58.5.*",
     "wheel",
@@ -12,3 +11,4 @@ requires = [
     # do not pin numpy on future versions of python to avoid incompatible numpy and python versions
     "numpy; python_version>='3.11'",
 ]
+build-backend = "setuptools.build_meta"
