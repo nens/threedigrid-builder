@@ -63,7 +63,7 @@ class RasterioInterface(RasterInterface):
             "height": height,
             "bbox": bbox,
             "area_mask": np.flipud(data).T.astype(
-                dtype=np.int32, copy=False, order="F"
+                dtype=np.int16, copy=False, order="F"
             ),
         }
 

@@ -1,75 +1,67 @@
-from setuptools import Extension
 from setuptools import find_packages
-from setuptools import setup
-from setuptools.command.build_ext import build_ext as _build_ext
 
-import builtins
+import os
 import pathlib
+import setuptools  # noqa
+import shutil
 import sys
 
 
-# Skip Cython build if not available (for source distributions)
 try:
-    from Cython.Build import cythonize
+    from numpy.distutils.core import Extension
+    from numpy.distutils.core import setup
 except ImportError:
-    cythonize = None
-
-
-# Add numpy include dirs without importing numpy on module level.
-# derived from scikit-hep:
-# https://github.com/scikit-hep/root_numpy/pull/292
-class build_ext(_build_ext):
-    def finalize_options(self):
-        _build_ext.finalize_options(self)
-
-        # Prevent numpy from thinking it is still in its setup process:
-        try:
-            del builtins.__NUMPY_SETUP__
-        except AttributeError:
-            pass
-
-        import numpy
-
-        self.include_dirs.append(numpy.get_include())
+    if not any(x in sys.argv for x in {"sdist", "--version", "egg_info"}):
+        sys.exit("ERROR: Numpy is required to build threedigrid-builder from source.")
+    # stuff like "python setup.py --version" should be allowed without Numpy:
+    from setuptools import Extension
+    from setuptools import setup
 
 
 ext_modules = []
 
 if "clean" in sys.argv:
-    # delete any previously Cythonized or compiled files
-    p = pathlib.Path("threedigrid_builder")
-    for pattern in ["*.c", "*.so", "*.pyd", "*.dll"]:
-        for filename in p.glob("**/" + pattern):
+    # delete any previously compiled files
+    sys.argv.remove("clean")
+    p = pathlib.Path(".")
+    for pattern in [
+        "libthreedigrid/*.c",
+        "libthreedigrid/*.f",
+        "libthreedigrid/*.mod",
+        "threedigrid_builder/*.so",
+    ]:
+        for filename in p.glob(pattern):
             print("removing '{}'".format(filename))
             filename.unlink()
-elif all(x not in sys.argv for x in {"sdist", "--version", "egg_info"}):
-    # Cython is required (except for sdist or the commands used by zest.releaser)
-    if not cythonize:
-        sys.exit("ERROR: Cython is required to build threedigrid-builder from source.")
-    if sys.platform == "win32":
-        libs = ["libthreedigrid"]
-        runtime_lib_dirs = []
-        include_dirs = ["libthreedigrid/include"]
-    else:
-        libs = ["threedigrid"]
-        runtime_lib_dirs = ["./libthreedigrid/lib"]
-        include_dirs = []
-    cython_opts = dict(
-        libraries=libs,
-        # We can enable this once Cython 0.3 is released:
-        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-        library_dirs=["./libthreedigrid/lib"],
-        runtime_library_dirs=runtime_lib_dirs,
-        include_dirs=include_dirs,
+    print("removing build folder")
+    if os.path.isdir(p / "build"):
+        shutil.rmtree(p / "build")
+
+if "debug" in sys.argv:
+    # Set debug compiler flags of fortran lib when required.
+    sys.argv.remove("debug")
+    comp_flags = ["-O0", "-g"]
+    macro = [("F2PY_REPORT_ON_ARRAY_COPY", "2")]
+else:
+    # Otherwise set normal compiler flags.
+    comp_flags = ["-O3"]
+    macro = []
+
+ext_modules = [
+    Extension(
+        name="threedigrid_builder.grid._fwrapper",
+        sources=[
+            "./libthreedigrid/wrapper.pyf",
+            "./libthreedigrid/parameters.f90",
+            "./libthreedigrid/array_utils.f90",
+            "./libthreedigrid/geo_utils.f90",
+            "./libthreedigrid/cells.f90",
+            "./libthreedigrid/quadtree.f90",
+    ],
+    extra_f90_compile_args=comp_flags,
+    define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
-
-    cython_modules = [
-        Extension(
-            "*", sources=["threedigrid_builder/grid/fwrapper/*.pyx"], **cython_opts
-        )
-    ]
-
-    ext_modules += cythonize(cython_modules, language_level=3)
+]
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
@@ -134,7 +126,5 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "License :: Other/Proprietary License",
     ],
-    cmdclass={"build_ext": build_ext},
     zip_safe=False,
-    package_data={"threedigrid_builder.lib": ["../libthreedigrid/lib/*"]},
 )

@@ -2,9 +2,8 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid.fwrapper import create_quadtree
-from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
-from threedigrid_builder.grid.fwrapper import set_refinement
+from ._fwrapper import m_quadtree
+from ._fwrapper import m_cells
 
 import itertools
 import math
@@ -72,8 +71,10 @@ class QuadTree:
         self.quad_idx = np.empty(
             (self.mmax[0], self.nmax[0]), dtype=np.int32, order="F"
         )
+        self.n_cells = np.array(0, dtype=np.int32)
+        self.n_lines = np.array([0, 0], dtype=np.int32)
 
-        self.n_cells, self.n_lines = create_quadtree(
+        m_quadtree.make_quadtree(
             self.kmax,
             self.mmax,
             self.nmax,
@@ -81,6 +82,8 @@ class QuadTree:
             subgrid_meta["area_mask"],
             self.quad_idx,
             self.lg,
+            self.n_cells,
+            self.n_lines
         )
 
     def __repr__(self):
@@ -104,16 +107,16 @@ class QuadTree:
         """
         for i in range(len(refinements.id)):
             geom = np.asfortranarray(pygeos.get_coordinates(refinements.the_geom[i]))
-            set_refinement(
-                id=refinements.id[i],
-                geom=geom,
-                level=refinements.refinement_level[i],
-                type=pygeos.get_type_id(refinements.the_geom[i]),
-                bbox=subgrid_bbox,
-                mmax=self.mmax,
-                nmax=self.nmax,
-                dx=self.dx,
-                lg=self.lg,
+            m_quadtree.set_refinement(
+                refinements.id[i],
+                geom,
+                refinements.refinement_level[i],
+                pygeos.get_type_id(refinements.the_geom[i]),
+                subgrid_bbox,
+                self.mmax,
+                self.nmax,
+                self.dx,
+                self.lg,
             )
 
     def get_nodes_lines(self, area_mask, node_id_counter, line_id_counter):
@@ -150,8 +153,8 @@ class QuadTree:
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
         cross_pix_coords = np.full((total_lines, 4), -9999, dtype=np.int32, order="F")
 
-        set_2d_computational_nodes_lines(
-            np.array([self.origin[0], self.origin[1]]),
+        m_cells.set_2d_computational_nodes_lines(
+            np.array([self.origin[0], self.origin[1]], dtype=np.float64),
             self.min_cell_pixels,
             self.kmax,
             self.mmax,
@@ -169,7 +172,6 @@ class QuadTree:
             line,
             cross_pix_coords,
             self.n_lines[0],
-            self.n_lines[1],
         )
 
         idx = line[np.arange(total_lines), np.argmin(nodk[line[:, :]], axis=1)]
