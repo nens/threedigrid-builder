@@ -111,7 +111,7 @@ def test_surfaces(grid_all):
         ("cci", (3,), "int32"),
     )
 
-    grid_surface_maps = surface.as_surface_maps(grid_all.nodes)
+    grid_surface_maps = surface.as_surface_maps(grid_all.nodes, grid_all.nodes_embedded)
 
     for name, shape, dtype in expected:
         value = getattr(grid_surface_maps, name)
@@ -188,7 +188,7 @@ def test_impervioussurfaces(grid_all):
         ("pk", (3,), "int32"),
         ("cci", (3,), "int32"),
     )
-    grid_surface_maps = surface.as_surface_maps(grid_all.nodes)
+    grid_surface_maps = surface.as_surface_maps(grid_all.nodes, grid_all.nodes_embedded)
 
     for name, shape, dtype in expected:
         value = getattr(grid_surface_maps, name)
