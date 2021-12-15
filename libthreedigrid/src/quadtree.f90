@@ -2,6 +2,7 @@ module m_quadtree
 
     use parameters, only : NODATA
     use iso_c_binding
+    use iso_fortran_env, only : int16
 
     implicit none
 
@@ -101,7 +102,7 @@ module m_quadtree
         integer(kind=c_int), intent(in) :: mmax(kmax) ! X Dimension of each refinement level
         integer(kind=c_int), intent(in) :: nmax(kmax) ! Y Dimension of each refinement level
         integer(kind=c_int), intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
-        integer(kind=c_int), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
+        integer(kind=c_int16_t), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
         integer(kind=c_int), intent(inout) :: lg(i0,i1) ! Array with all refinement levels.
         integer(kind=c_int), intent(inout) :: quad_idx(i0,i1) ! Array with idx of cell at lg refinement locations
         integer(kind=c_int), intent(inout) :: n_cells ! counter for active cells
@@ -191,7 +192,7 @@ module m_quadtree
 
     subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
     !!! Counting active cells and lines based on area_mask of active pixels.
-        use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster
+        use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster, pad_area_mask
         use m_cells, only : set_2d_computational_lines
 
         integer, intent(in) :: kmax
@@ -199,42 +200,45 @@ module m_quadtree
         integer, intent(in) :: nmax(:)
         integer, intent(in) :: lgrmin
         integer, intent(inout) :: lg(:,:)
-        integer, intent(in) :: area_mask(:,:)
+        integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
         integer, intent(inout) :: n_line_u
         integer, intent(inout) :: n_line_v
+        integer(kind=int16), allocatable:: area_mask_padded(:, :)
         integer :: k
         integer :: m,n
         integer :: mn(4)
         integer :: i0, i1, j0, j1, i2, i3, j2, j3
         integer :: n_cells
         
-
+        
         n_cells = 0
         n_line_u = 0
         n_line_v = 0
         quad_idx = 0
+        call get_pix_corners(kmax, mmax(kmax), nmax(kmax), lgrmin, i0, i1, j0, j1)
+        area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
-                    call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1, i2, i3, j2, j3)
-                    call crop_pix_coords_to_raster(area_mask, i0, i1, j0, j1, i2, i3, j2, j3)
+                    call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
                     mn = get_lg_corners(k, m, n)
                     i1 = min(i1, size(area_mask, 1))
                     j1 = min(j1, size(area_mask, 2))
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                        if (all(area_mask(i0:i1, j0:j1) == 0)) then
+                        if (all(area_mask_padded(i0:i1, j0:j1) == 0)) then
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
                         else
                             n_cells = n_cells + 1
                             lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                             quad_idx(mn(1):mn(3),mn(2):mn(4)) = n_cells
-                            call set_2d_computational_lines(n_line_u, n_line_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx)
+                            call set_2d_computational_lines(n_line_u, n_line_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx)
                         endif
                     endif
                 enddo
             enddo
         enddo
+        deallocate(area_mask_padded)
         write(*,*) '** INFO: No. active 2D computational cells: ', n_cells
         write(*,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
 

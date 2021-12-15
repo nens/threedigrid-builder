@@ -239,6 +239,10 @@ class SQLite:
             self._epsg_code = self.get_settings()["epsg_code"]
         return self._epsg_code
 
+    @epsg_code.setter
+    def epsg_code(self, value: int):
+        self._epsg_code = value
+
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
 

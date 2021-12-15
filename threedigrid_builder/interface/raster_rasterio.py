@@ -25,7 +25,7 @@ def get_epsg_code(crs):
         raise SchematisationError(
             f"The supplied DEM file has a non-EPSG projection '{str(crs)}'"
         )
-    return crs.to_epsg()
+    return int(crs.to_epsg())
 
 
 class RasterioInterface(RasterInterface):
@@ -63,7 +63,7 @@ class RasterioInterface(RasterInterface):
             "height": height,
             "bbox": bbox,
             "area_mask": np.flipud(data).T.astype(
-                dtype=np.int32, copy=False, order="F"
+                dtype=np.int16, copy=False, order="F"
             ),
         }
 

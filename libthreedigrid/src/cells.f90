@@ -1,6 +1,7 @@
 module m_cells
 
     use iso_c_binding
+    use iso_fortran_env, only: int16
 
     contains
 
@@ -8,7 +9,7 @@ module m_cells
         lg, size_i, size_j, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords, size_n,&
         area_mask, size_a, size_b, line, cross_pix_coords, n_line_u, n_line_v) bind(c, name="f_set_2d_computational_nodes_lines")
         !!! Entry point for setting nodes and lines and there necessary attributes.
-        use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners
+        use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners, pad_area_mask
 
         integer(kind=c_int), intent(in) :: size_a
         integer(kind=c_int), intent(in) :: size_b
@@ -29,11 +30,12 @@ module m_cells
         real(kind=c_double), intent(inout) :: bounds(size_n, 4) ! Bbox of comp cell
         real(kind=c_double), intent(inout) :: coords(size_n, 2) ! Cell center coordinates
         integer(kind=c_int), intent(inout) :: pixel_coords(size_n, 4) ! pixel bbox of comp cell
-        integer(kind=c_int), intent(inout) :: area_mask(size_a,size_b) ! Array with active pixels of model.
+        integer(kind=c_int16_t), intent(inout) :: area_mask(size_a,size_b) ! Array with active pixels of model.
         integer(kind=c_int), intent(in) :: n_line_u ! Number of active u-dir lines.
         integer(kind=c_int), intent(in) :: n_line_v  ! Number of active v-dir lines.
         integer(kind=c_int), intent(inout) :: line(n_line_u+n_line_v, 2) ! Array with connecting nodes of line.
         integer(kind=c_int), intent(inout) :: cross_pix_coords(n_line_u+n_line_v, 4) ! Array pixel indices of line interface
+        integer(kind=int16), allocatable :: area_mask_padded(:, :)
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -46,6 +48,8 @@ module m_cells
         l_u = 0
         l_v = n_line_u
         line = 0
+        call get_pix_corners(kmax, mmax(kmax), nmax(kmax), lgrmin, i0, i1, j0, j1)
+        area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
@@ -60,7 +64,7 @@ module m_cells
                         ! We inverse the y-axis for pixel_coords to comply with geotiffs in future use.
                         ! And do some index fiddling because python starts indexing at 0 and has open end indexing.
                         pixel_coords(nod, :) = (/ i0 - 1, j0 - 1, i1, j1 /)
-                        call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line, cross_pix_coords)
+                        call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx, nod, line, cross_pix_coords)
                         nod = nod + 1
                     else
                         continue
@@ -68,6 +72,7 @@ module m_cells
                 enddo
             enddo
         enddo
+        deallocate(area_mask_padded)
         write(*,*) '** INFO: Number of 2D nodes is: ', nod - 1
         write(*,*) '** INFO: Number of 2D lines is: ', l_u + l_v
         write(*,*) '** INFO: Done setting 2D calculation cells.'
@@ -86,7 +91,7 @@ module m_cells
         integer, intent(in) :: mn(4)
         integer, intent(in) :: lg(:,:)
         integer, intent(in) :: lgrmin
-        integer, intent(in) :: area_mask(:,:)
+        integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)
@@ -97,15 +102,12 @@ module m_cells
         !! U direction
 
         call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1, i2, i3, j2, j3)
-        call crop_pix_coords_to_raster(area_mask, i0, i1, j0, j1, i2, i3, j2, j3)
 
         !!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!! U - direction !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(3) < size(quad_idx, 1)) then
-            if (i1 == size(area_mask, 1)) then
-                continue
-            elseif(lg(mn(3)+1, mn(2)) == k .and. any(minval(area_mask(i1:i1+1,j0:j1), 1) > 0)) then
+            if(lg(mn(3)+1, mn(2)) == k .and. any(minval(area_mask(i1:i1+1,j0:j1), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3)+1, mn(2)) 
@@ -136,9 +138,7 @@ module m_cells
         endif
 
         if (mn(1) > 1) then
-            if (i0 == 1) then
-                continue
-            elseif(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
+            if(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1)-1, mn(2))
@@ -166,9 +166,7 @@ module m_cells
         !!!!! V - direction !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(4) < size(quad_idx, 2)) then
-            if (j1 == size(area_mask, 2)) then
-                continue
-            elseif (lg(mn(1), mn(4)+1) == k .and. any(minval(area_mask(i0:i1,j1:j1+1), 2) > 0)) then
+            if (lg(mn(1), mn(4)+1) == k .and. any(minval(area_mask(i0:i1,j1:j1+1), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(4)+1)
@@ -199,9 +197,7 @@ module m_cells
         endif
             
         if (mn(2) > 1) then
-            if (j0 == 1) then
-                continue
-            elseif(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
+            if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(2)-1)

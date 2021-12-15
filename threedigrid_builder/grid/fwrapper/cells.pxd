@@ -18,7 +18,7 @@ cdef extern:
         double *coords,
         int *pixel_coords,
         int *size_n,
-        int *area_mask,
+        short *area_mask,
         int *size_a,
         int *size_b,
         int *line,

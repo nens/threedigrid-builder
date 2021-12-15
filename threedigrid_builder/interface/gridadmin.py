@@ -59,11 +59,6 @@ LINE_TYPES_2D = (
     LineType.LINE_2D_OBSTACLE_V,
 )
 
-LINE_TYPES_2D_GROUNDWATER = (
-    LineType.LINE_2D_GROUNDWATER,
-    LineType.LINE_2D_VERTICAL,
-)
-
 # Some default settings for h5py datasets
 HDF5_SETTINGS = {
     "compression": "gzip",  # more compatible than lzf and better compression
@@ -215,11 +210,22 @@ class GridAdminOut(OutputInterface):
             ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
             ("l1dtot", LINE_TYPES_1D),
             ("l2dtot", LINE_TYPES_2D),
-            ("lgrtot", LINE_TYPES_2D_GROUNDWATER),
+            ("lgrtot", LineType.LINE_2D_VERTICAL),
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),
         ]:
             count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
+            group.create_dataset(dataset_name, data=count, dtype="i4")
+
+        # Groundwater lines from open water lines
+        for dataset_name, kcu_values in [
+            ("lgutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
+            ("lgvtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
+        ]:
+            if self._file.attrs["has_groundwater_flow"]:
+                count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
+            else:
+                count = 0
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
         # the number of unique boundaries (only 2D)
@@ -229,10 +235,6 @@ class GridAdminOut(OutputInterface):
         ]:
             count = len(np.unique(nodes.boundary_id[nodes.node_type == node_type]))
             group.create_dataset(dataset_name, data=count, dtype="i4")
-
-        # To be implemented when groundwater is done:
-        for field in ("lgutot", "lgvtot"):
-            group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
         """Write the "grid_coordinate_attributes" group in the gridadmin file.
