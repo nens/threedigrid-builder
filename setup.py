@@ -74,7 +74,7 @@ else:
 if sys.platform == "win32":
     f2py_options = ["compiler", "mingw32"]
 elif sys.platform == "darwin":
-    f2py_options = ["--f90exec", "/usr/local/bin/gfortran-9"]
+    f2py_options = ["f90exec", "/usr/local/bin/gfortran-9"]
 else:
     f2py_options = []
 

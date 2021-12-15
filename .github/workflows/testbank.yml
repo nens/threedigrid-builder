@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - master
-  pull_request:  # also build on PRs touching this file
-    paths:
-      - ".github/workflows/testbank.yml"
+  #pull_request:  # also build on PRs touching this file
+  #  paths:
+  #    - ".github/workflows/testbank.yml"
 
 jobs:
   build_wheels:
