@@ -73,10 +73,11 @@ else:
 
 if sys.platform == "win32":
     f2py_options = ["compiler", "mingw32"]
-elif sys.platform == "darwin":
-    comp_flags = comp_flags + ["-undefined dynamic_lookup"]
 else:
     f2py_options = []
+
+if sys.platform == "darwin":
+    comp_flags = comp_flags + ["-undefined dynamic_lookup"]
 
 ext_modules = [
     Extension(
