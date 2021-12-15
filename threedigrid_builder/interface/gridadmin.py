@@ -222,6 +222,17 @@ class GridAdminOut(OutputInterface):
             count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
             group.create_dataset(dataset_name, data=count, dtype="i4")
 
+        # Groundwater lines from open water lines
+        for dataset_name, kcu_values in [
+            ("lgutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
+            ("lgvtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
+        ]:
+            if self._file.attrs["has_groundwater_flow"]:
+                count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
+            else:
+                count = 0
+            group.create_dataset(dataset_name, data=count, dtype="i4")
+
         # the number of unique boundaries (only 2D)
         for dataset_name, node_type in [
             ("nob2ds", NodeType.NODE_2D_BOUNDARIES),
@@ -229,10 +240,6 @@ class GridAdminOut(OutputInterface):
         ]:
             count = len(np.unique(nodes.boundary_id[nodes.node_type == node_type]))
             group.create_dataset(dataset_name, data=count, dtype="i4")
-
-        # To be implemented when groundwater is done:
-        for field in ("lgutot", "lgvtot"):
-            group.create_dataset(field, data=0, dtype="i4")
 
     def write_quadtree(self, quadtree_statistics):
         """Write the "grid_coordinate_attributes" group in the gridadmin file.
