@@ -68,6 +68,9 @@ def _make_gridadmin(
         # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)
         grid.meta.epsg_code = raster.epsg_code
 
+        # Use raster epsg_code instead of the one from global_settings
+        db.epsg_code = raster.epsg_code
+
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")
         quadtree = QuadTree(

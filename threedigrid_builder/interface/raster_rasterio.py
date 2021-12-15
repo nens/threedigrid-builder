@@ -25,7 +25,7 @@ def get_epsg_code(crs):
         raise SchematisationError(
             f"The supplied DEM file has a non-EPSG projection '{str(crs)}'"
         )
-    return crs.to_epsg()
+    return int(crs.to_epsg())
 
 
 class RasterioInterface(RasterInterface):
