@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.8.4 (unreleased)
+0.9.0 (2021-12-15)
 ------------------
 
 - Add padding to area_mask for creating quadtree.
