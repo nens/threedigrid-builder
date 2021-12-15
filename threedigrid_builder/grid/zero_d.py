@@ -303,7 +303,7 @@ class BaseSurfaces:
             **extra_fields
         )
 
-    def as_surface_maps(self, nodes: Nodes) -> surfaces.SurfaceMaps:
+    def as_surface_maps(self, nodes: Nodes, nodes_embedded: Nodes) -> surfaces.SurfaceMaps:
         search_array = self.surface_id[self.unique_surfaces_mask]
         sort_idx = np.argsort(self.surface_id[self.unique_surfaces_mask])
         imp_lookup = sort_idx[
@@ -311,12 +311,16 @@ class BaseSurfaces:
         ]
         connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
 
-        # Find connection_node (calc) node id's
+        # Find connection_node (calc) node id's both in nodes and embedded nodes
         connection_node_mask = (
             nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
         )
-        cc_node_ids = nodes.content_pk[connection_node_mask]
-        node_ids = nodes.id[connection_node_mask]
+        embedded_mask = (
+            nodes_embedded.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
+        )
+
+        cc_node_ids = np.concatenate((nodes.content_pk[connection_node_mask], nodes_embedded.content_pk[embedded_mask]))
+        node_ids = np.concatenate((nodes.id[connection_node_mask], nodes_embedded.embedded_in[embedded_mask]))
 
         sort_idx = np.argsort(cc_node_ids)
         cc_lookup = sort_idx[

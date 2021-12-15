@@ -630,7 +630,7 @@ class Grid:
         Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
         """
         self.surfaces = surfaces.as_grid_surfaces()
-        self.surface_maps = surfaces.as_surface_maps(self.nodes)
+        self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
 
     def add_breaches(self, connected_points):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
