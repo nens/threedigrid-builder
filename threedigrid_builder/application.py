@@ -86,9 +86,9 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
 
-        # Groundwater
-        grid.add_groundwater_nodes(grid.nodes, node_id_counter)
-        grid.add_groundwater_vertical_lines(grid.nodes, line_id_counter)
+        if grid.meta.has_groundwater:
+            grid.add_groundwater_nodes(grid.nodes, node_id_counter)
+            grid.add_groundwater_vertical_lines(grid.nodes, line_id_counter)
 
         grid.set_obstacles(db.get_obstacles(), db.get_levees())
         if grid.meta.has_groundwater_flow:

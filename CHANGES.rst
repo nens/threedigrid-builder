@@ -6,7 +6,9 @@ Changelog of threedigrid-builder
 
 - Bugfix: use DEM epsg_code for 2D models.
 
-- Bugfix: Small fix for lgrtot
+- Bugfix: Small fix for lgrtot.
+
+- Bugfix: Small fix adding groundwater cells.
 
 
 0.9.0 (2021-12-15)
