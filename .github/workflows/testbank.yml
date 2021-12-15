@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - master
-  #pull_request:  # also build on PRs touching this file
-  #  paths:
-  #    - ".github/workflows/testbank.yml"
 
 jobs:
   build_wheels:
@@ -23,7 +20,6 @@ jobs:
           CIBW_BEFORE_ALL: |
             cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BUILD_VERBOSITY: 1
-
 
       - name: Clear previous wheels
         run: rm -f /var/wheels/threedigrid_builder*

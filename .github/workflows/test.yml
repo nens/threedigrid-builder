@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - master
-  #pull_request:
+  pull_request:
 
 jobs:
   TestLinux:
@@ -15,11 +15,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 2018
+          # oldest supported versions
           - python: 3.7
-            numpy: numpy==1.15.*
-            display_name: "2018"
-            pins: "h5py==2.9.* sqlalchemy==1.2.15"
+            numpy: numpy==1.14.*
+            display_name: "oldest supported"
+            pins: "h5py==2.7.* sqlalchemy==1.2.15"
             extras: "[test,gridadmin,rasters]"
           # 2019
           - python: 3.8

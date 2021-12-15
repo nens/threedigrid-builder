@@ -32,13 +32,12 @@ long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").r
 
 
 install_requires = [
-    "numpy>=1.13",
+    "numpy>=1.14",
     "threedi-modelchecker>=0.12",
     "pygeos>=0.10",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
     "sqlalchemy",
-    "dataclasses ; python_version<'3.7'",
 ]
 
 test_requires = ["pytest"]
