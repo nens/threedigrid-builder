@@ -47,12 +47,12 @@ def test_integration(tmp_path):
         )
 
         ## NODES
-        assert f["nodes"]["id"].shape == (7906,)  # Inpy: (13280, )
+        assert f["nodes"]["id"].shape == (13280,)
         assert_array_equal(f["nodes"]["id"][:], np.arange(f["nodes"]["id"].shape[0]))
         assert count_unique(f["nodes"]["node_type"]) == {
             -9999: 1,
             NodeType.NODE_2D_OPEN_WATER: 5374,
-            # Inpy: NodeType.NODE_2D_GROUNDWATER: 5374,
+            NodeType.NODE_2D_GROUNDWATER: 5374,
             NodeType.NODE_1D_NO_STORAGE: 2485,  # Inpy: 2527
             NodeType.NODE_1D_STORAGE: 42,  # Inpy: 0
             NodeType.NODE_1D_BOUNDARIES: 4,
@@ -64,11 +64,11 @@ def test_integration(tmp_path):
         )
 
         ## LINES
-        assert f["lines"]["id"].shape == (15505,)  # Inpy: (31916, )
+        assert f["lines"]["id"].shape == (31916,)  # Inpy: (31916, )
         assert_array_equal(f["lines"]["id"][:], np.arange(f["lines"]["id"].shape[0]))
         assert count_unique(f["lines"]["kcu"]) == {
             -9999: 1,  # Inpy: 0: 1
-            # Inpy: LineType.LINE_2D_GROUNDWATER: 11037,
+            LineType.LINE_2D_GROUNDWATER: 11037,
             LineType.LINE_1D_ISOLATED: 716,
             LineType.LINE_1D_CONNECTED: 1545,
             LineType.LINE_1D_SHORT_CRESTED: 56,
@@ -79,10 +79,10 @@ def test_integration(tmp_path):
             # Inpy: LineType.LINE_1D2D_POSSIBLE_BREACH: 1,
             LineType.LINE_2D: 9544,  # Inpy: 9553
             LineType.LINE_2D_OBSTACLE: 1493,  # Inpy: 1484
-            # Inpy: LineType.LINE_2D_VERTICAL: 5374
+            LineType.LINE_2D_VERTICAL: 5374,
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 11038,  # Inpy: 29380
+            b"": 27449,  # Inpy: 29380
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,
@@ -122,9 +122,9 @@ def test_integration(tmp_path):
             "ingrw1d": 0,
             "l1dtot": 2532,
             "l2dtot": 11037,
-            "lgrtot": 0,
-            "lgutot": 0,
-            "lgvtot": 0,
+            "lgrtot": 16411,
+            "lgutot": 5476,
+            "lgvtot": 5561,
             "liutot": 5476,
             "livtot": 5561,
             "n1dobc": 4,
@@ -132,7 +132,7 @@ def test_integration(tmp_path):
             "n2dobc": 0,
             "n2dtot": 5374,
             "ngr2bc": 0,
-            "ngrtot": 0,
+            "ngrtot": 5374,
             "nob2dg": 0,
             "nob2ds": 0,
         }
