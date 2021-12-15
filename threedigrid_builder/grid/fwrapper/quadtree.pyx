@@ -51,7 +51,7 @@ cpdef create_quadtree(
     int[:] mmax,
     int[:] nmax,
     int lgrmin,
-    int[::1,:] area_mask,
+    short[::1,:] area_mask,
     int[::1,:] quad_idx,
     int[::1,:] lg,
 ):

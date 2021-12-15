@@ -12,7 +12,7 @@ def set_2d_computational_nodes_lines(
     double[:] dx,
     int[::1,:] lg,
     int[::1,:] quad_idx,
-    int[::1,:] area_mask,
+    short[::1,:] area_mask,
     int[:] nodk,
     int[:] nodm,
     int[:] nodn,

@@ -22,7 +22,7 @@ cdef extern:
         int *mmax,
         int *nmax,
         int *lgrmin,
-        int *area_mask,
+        short *area_mask,
         int *lg,
         int *quad_idx,
         int *n0,

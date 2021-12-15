@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.8.4 (unreleased)
 ------------------
 
+- Add padding to area_mask for creating quadtree.
+
 - Added groundwater 2D nodes, 2D vertical lines, and 2D groundwater lines.
 
 - Bugfix: cross section tabulate used wrong width/height.
