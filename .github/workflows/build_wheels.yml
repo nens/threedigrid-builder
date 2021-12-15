@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - martijn-f2py
     tags:
       - '*'
   pull_request:  # also build on PRs touching this file
