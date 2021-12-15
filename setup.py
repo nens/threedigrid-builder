@@ -71,9 +71,6 @@ else:
     comp_flags = ["-O3"]
     macro = []
 
-if sys.platform == "darwin":
-    comp_flags = comp_flags + ["-undefined dynamic_lookup"]
-
 ext_modules = [
     Extension(
         name="threedigrid_builder.grid._fwrapper",
@@ -86,7 +83,6 @@ ext_modules = [
             "./libthreedigrid/quadtree.f90",
         ],
         language="f90",
-        extra_f90_compile_args=comp_flags,
         define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
 ]
