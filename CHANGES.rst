@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.8.4 (unreleased)
 ------------------
 
+- Added groundwater 2D nodes, 2D vertical lines, and 2D groundwater lines.
+
 - Bugfix: cross section tabulate used wrong width/height.
 
 
@@ -19,6 +21,7 @@ Changelog of threedigrid-builder
   result in an incorrect cast to a numpy object dtype.
 
 - Fixed bug with zero-d administration `cci` (index needs to be 1-based), removed `cid` field.
+
 
 0.8.2 (2021-12-05)
 ------------------
