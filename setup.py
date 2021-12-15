@@ -71,13 +71,6 @@ else:
     comp_flags = ["-O3"]
     macro = []
 
-if sys.platform == "win32":
-    f2py_options = ["compiler", "mingw32"]
-elif sys.platform == "darwin":
-    f2py_options = ["f90exec", "/usr/local/bin/gfortran-9"]
-else:
-    f2py_options = []
-
 if sys.platform == "darwin":
     comp_flags = comp_flags + ["-undefined dynamic_lookup"]
 
@@ -92,7 +85,7 @@ ext_modules = [
             "./libthreedigrid/cells.f90",
             "./libthreedigrid/quadtree.f90",
         ],
-        f2py_options=f2py_options + ["f2cmap"],
+        language="f90",
         extra_f90_compile_args=comp_flags,
         define_macros=macro + [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
