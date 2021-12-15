@@ -32,7 +32,7 @@ jobs:
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_MACOS: >-
-            sudo ln -s /usr/local/bin/gfortran-9 /usr/local/bin/gfortran
+            sudo ln -s /usr/local/bin/gfortran-10 /usr/local/bin/gfortran
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
             delvewheel repair --ignore-in-wheel -w {dest_dir} {wheel}
