@@ -1,6 +1,6 @@
 module m_grid_utils
 
-    use iso_fortran_env, only : int8
+    use iso_fortran_env, only : int16
 
     implicit none
 
@@ -81,12 +81,12 @@ module m_grid_utils
 
     function pad_area_mask(raster, i0, i1, j0, j1) result(padded_raster)
 
-        integer, intent(in) :: raster(:,:)
+        integer(kind=int16), intent(in) :: raster(:,:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
         integer, intent(in) :: j0
         integer, intent(in) :: j1
-        integer(kind=int8), allocatable :: padded_raster(:, :)
+        integer(kind=int16), allocatable :: padded_raster(:, :)
         integer :: i_size, j_size, size_raster_i, size_raster_j
         integer :: i0r, i1r
         integer :: j0r, j1r
@@ -100,7 +100,7 @@ module m_grid_utils
         allocate(padded_raster(1:i_size, 1:j_size))
         padded_raster = 0
 
-        padded_raster(1:size_raster_i, 1:size_raster_j) = int(raster(1:size_raster_i, 1:size_raster_j), KIND=int8)
+        padded_raster(1:size_raster_i, 1:size_raster_j) = raster(1:size_raster_i, 1:size_raster_j)
 
     end function pad_area_mask
 

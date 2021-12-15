@@ -1,7 +1,7 @@
 module m_cells
 
     use iso_c_binding
-    use iso_fortran_env, only: int8
+    use iso_fortran_env, only: int16
 
     contains
 
@@ -30,12 +30,12 @@ module m_cells
         real(kind=c_double), intent(inout) :: bounds(size_n, 4) ! Bbox of comp cell
         real(kind=c_double), intent(inout) :: coords(size_n, 2) ! Cell center coordinates
         integer(kind=c_int), intent(inout) :: pixel_coords(size_n, 4) ! pixel bbox of comp cell
-        integer(kind=c_int), intent(inout) :: area_mask(size_a,size_b) ! Array with active pixels of model.
+        integer(kind=c_int16_t), intent(inout) :: area_mask(size_a,size_b) ! Array with active pixels of model.
         integer(kind=c_int), intent(in) :: n_line_u ! Number of active u-dir lines.
         integer(kind=c_int), intent(in) :: n_line_v  ! Number of active v-dir lines.
         integer(kind=c_int), intent(inout) :: line(n_line_u+n_line_v, 2) ! Array with connecting nodes of line.
         integer(kind=c_int), intent(inout) :: cross_pix_coords(n_line_u+n_line_v, 4) ! Array pixel indices of line interface
-        integer(kind=int8), allocatable :: area_mask_padded(:, :)
+        integer(kind=int16), allocatable :: area_mask_padded(:, :)
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -91,7 +91,7 @@ module m_cells
         integer, intent(in) :: mn(4)
         integer, intent(in) :: lg(:,:)
         integer, intent(in) :: lgrmin
-        integer(kind=int8), intent(in) :: area_mask(:,:)
+        integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)

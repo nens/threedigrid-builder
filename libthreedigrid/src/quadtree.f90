@@ -2,7 +2,7 @@ module m_quadtree
 
     use parameters, only : NODATA
     use iso_c_binding
-    use iso_fortran_env, only : int8
+    use iso_fortran_env, only : int16
 
     implicit none
 
@@ -102,7 +102,7 @@ module m_quadtree
         integer(kind=c_int), intent(in) :: mmax(kmax) ! X Dimension of each refinement level
         integer(kind=c_int), intent(in) :: nmax(kmax) ! Y Dimension of each refinement level
         integer(kind=c_int), intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
-        integer(kind=c_int), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
+        integer(kind=c_int16_t), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
         integer(kind=c_int), intent(inout) :: lg(i0,i1) ! Array with all refinement levels.
         integer(kind=c_int), intent(inout) :: quad_idx(i0,i1) ! Array with idx of cell at lg refinement locations
         integer(kind=c_int), intent(inout) :: n_cells ! counter for active cells
@@ -200,11 +200,11 @@ module m_quadtree
         integer, intent(in) :: nmax(:)
         integer, intent(in) :: lgrmin
         integer, intent(inout) :: lg(:,:)
-        integer, intent(in) :: area_mask(:,:)
+        integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
         integer, intent(inout) :: n_line_u
         integer, intent(inout) :: n_line_v
-        integer(kind=int8), allocatable:: area_mask_padded(:, :)
+        integer(kind=int16), allocatable:: area_mask_padded(:, :)
         integer :: k
         integer :: m,n
         integer :: mn(4)
@@ -222,7 +222,6 @@ module m_quadtree
             do m=1,mmax(k)
                 do n=1,nmax(k)
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
-                    ! call crop_pix_coords_to_raster(area_mask, i0, i1, j0, j1, i2, i3, j2, j3)
                     mn = get_lg_corners(k, m, n)
                     i1 = min(i1, size(area_mask, 1))
                     j1 = min(j1, size(area_mask, 2))
