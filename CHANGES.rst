@@ -10,6 +10,10 @@ Changelog of threedigrid-builder
 
 - Bugfix: Small fix adding groundwater cells.
 
+- Bugfix: Fix pump.line remapping in case of embedded nodes.
+
+- Bugfix: Remap surface_map.cci on grid.sort().
+
 
 0.9.0 (2021-12-15)
 ------------------
