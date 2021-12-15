@@ -696,11 +696,13 @@ class Grid:
             mask = self.pumps.line != -9999
             self.pumps.line[mask] = np.take(new_node_ids, self.pumps.line[mask])
         if self.nodes_embedded is not None:
-            self.nodes_embedded.embedded_in = np.take(
+            self.nodes_embedded.embedded_in[:] = np.take(
                 new_node_ids, self.nodes_embedded.embedded_in
             )
         if self.breaches is not None:
-            self.breaches.levl = np.take(new_line_ids, self.breaches.levl)
+            self.breaches.levl[:] = np.take(new_line_ids, self.breaches.levl)
+        if self.surface_maps is not None:
+            self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""

@@ -73,6 +73,11 @@ def embed_nodes(grid, embedded_node_id_counter):
     # map node indices (fixes node replacement and node renumbering in one go)
     grid.nodes.id[:] = np.arange(len(grid.nodes))
     grid.lines.line[:] = np.take(new_ids, grid.lines.line)
+    if grid.pumps is not None:
+        mask = grid.pumps.line != -9999
+        grid.pumps.line[mask] = np.take(new_ids, grid.pumps.line[mask])
+    if grid.surface_maps is not None:
+        grid.surface_maps.cci[:] = np.take(new_ids, grid.surface_maps.cci)
 
     # check if there are no cells connecting to itself
     is_self_connected = grid.lines.line[:, 0] == grid.lines.line[:, 1]
