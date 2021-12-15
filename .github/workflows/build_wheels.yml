@@ -31,7 +31,6 @@ jobs:
           CIBW_ENVIRONMENT_MACOS:
             F77=/usr/local/bin/gfortran-9
             F90=/usr/local/bin/gfortran-9
-            # https://github.com/conda-forge/f90wrap-feedstock/issues/1
             LDFLAGS="-undefined dynamic_lookup -bundle -Wl,-rpath"
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
