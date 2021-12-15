@@ -30,7 +30,7 @@ jobs:
             FC=gfortran-9
             LDFLAGS=-Wl,-rpath
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
-          CIBW_BEFORE_ALL_WINDOWS: build.cmd && cat WHEEL_LICENSE_WINDOWS >> LICENSE
+          CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_MACOS: >-
             sudo ln -s /usr/local/bin/gfortran-9 /usr/local/bin/gfortran
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
