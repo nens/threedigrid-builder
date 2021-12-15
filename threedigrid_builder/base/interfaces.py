@@ -66,7 +66,7 @@ class RasterInterface(ABC):
 
         self.transform = (a, b, c, d, e, f)
 
-    def set_epsg_code(self, epsg_code):
+    def set_epsg_code(self, epsg_code: int):
         self.epsg_code = epsg_code
 
     @property
