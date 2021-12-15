@@ -122,7 +122,7 @@ def test_integration(tmp_path):
             "ingrw1d": 0,
             "l1dtot": 2532,
             "l2dtot": 11037,
-            "lgrtot": 16411,
+            "lgrtot": 5374,
             "lgutot": 5476,
             "lgvtot": 5561,
             "liutot": 5476,

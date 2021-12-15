@@ -59,11 +59,6 @@ LINE_TYPES_2D = (
     LineType.LINE_2D_OBSTACLE_V,
 )
 
-LINE_TYPES_2D_GROUNDWATER = (
-    LineType.LINE_2D_GROUNDWATER,
-    LineType.LINE_2D_VERTICAL,
-)
-
 # Some default settings for h5py datasets
 HDF5_SETTINGS = {
     "compression": "gzip",  # more compatible than lzf and better compression
@@ -215,7 +210,7 @@ class GridAdminOut(OutputInterface):
             ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
             ("l1dtot", LINE_TYPES_1D),
             ("l2dtot", LINE_TYPES_2D),
-            ("lgrtot", LINE_TYPES_2D_GROUNDWATER),
+            ("lgrtot", LineType.LINE_2D_VERTICAL),
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),
         ]:
