@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Bugfix: Small fix for lgrtot
 
+- Added pixel_width to groundwater nodes.
+
 
 0.9.0 (2021-12-15)
 ------------------

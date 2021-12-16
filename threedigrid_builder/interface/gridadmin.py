@@ -274,7 +274,9 @@ class GridAdminOut(OutputInterface):
 
         # Some convenient masks:
         is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-        is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+        is_2d = np.isin(
+            nodes.node_type, [NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_GROUNDWATER]
+        )
 
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)
@@ -552,7 +554,9 @@ class GridAdminOut(OutputInterface):
             fill_nan=default_fill_value,
         )
 
-        if surfaces.surface_class is not None and np.any(surfaces.surface_class != None):  # noqa
+        if surfaces.surface_class is not None and np.any(
+            surfaces.surface_class != None
+        ):  # noqa
             # Impervious surfaces
             self.write_dataset(
                 group, "surface_class", surfaces.surface_class.astype("S128"), fill=b""
@@ -583,8 +587,12 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pk", surface_maps.pk, fill=default_fill_value)
 
         # Note: +1 for Fortran 1-based indexing
-        self.write_dataset(group, "cci", increase(surface_maps.cci), fill=default_fill_value)
-        self.write_dataset(group, "imp", increase(surface_maps.imp), fill=default_fill_value)
+        self.write_dataset(
+            group, "cci", increase(surface_maps.cci), fill=default_fill_value
+        )
+        self.write_dataset(
+            group, "imp", increase(surface_maps.imp), fill=default_fill_value
+        )
 
     def write_cross_sections(self, cross_sections: CrossSections):
         if len(cross_sections) == 0:
