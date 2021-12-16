@@ -275,7 +275,9 @@ class GridAdminOut(OutputInterface):
 
         # Some convenient masks:
         is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-        is_2d = nodes.node_type == NodeType.NODE_2D_OPEN_WATER
+        is_2d = np.isin(
+            nodes.node_type, [NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_GROUNDWATER]
+        )
 
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)

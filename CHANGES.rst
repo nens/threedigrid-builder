@@ -21,6 +21,8 @@ Changelog of threedigrid-builder
 
 - Bugfix: also need to evaluate embedded nodes for connection node mapping for zero-d surface maps.
 
+- Added pixel_width to groundwater nodes.
+
 
 0.9.0 (2021-12-15)
 ------------------
