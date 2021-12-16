@@ -5,13 +5,14 @@ from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.base import unpack_optional_type
+from threedigrid_builder.base.surfaces import SurfaceMaps
+from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
-from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 
 import numpy as np
 import pygeos
@@ -552,7 +553,9 @@ class GridAdminOut(OutputInterface):
             fill_nan=default_fill_value,
         )
 
-        if surfaces.surface_class is not None and np.any(surfaces.surface_class != None):  # noqa
+        if surfaces.surface_class is not None and np.any(
+            surfaces.surface_class != None  # NOQA
+        ):  # noqa
             # Impervious surfaces
             self.write_dataset(
                 group, "surface_class", surfaces.surface_class.astype("S128"), fill=b""
@@ -583,8 +586,12 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pk", surface_maps.pk, fill=default_fill_value)
 
         # Note: +1 for Fortran 1-based indexing
-        self.write_dataset(group, "cci", increase(surface_maps.cci), fill=default_fill_value)
-        self.write_dataset(group, "imp", increase(surface_maps.imp), fill=default_fill_value)
+        self.write_dataset(
+            group, "cci", increase(surface_maps.cci), fill=default_fill_value
+        )
+        self.write_dataset(
+            group, "imp", increase(surface_maps.imp), fill=default_fill_value
+        )
 
     def write_cross_sections(self, cross_sections: CrossSections):
         if len(cross_sections) == 0:

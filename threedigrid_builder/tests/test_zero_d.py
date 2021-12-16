@@ -1,14 +1,13 @@
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid.zero_d import ImperviousSurfaces
+from threedigrid_builder.grid.zero_d import SURFACE_CLASS_MAP
+from threedigrid_builder.grid.zero_d import SURFACE_INCLINATION_MAP
+from threedigrid_builder.grid.zero_d import SURFACE_TYPE_PROPERTIES
+from threedigrid_builder.grid.zero_d import SurfaceParams
+from threedigrid_builder.grid.zero_d import Surfaces
+
 import numpy as np
 import pygeos
-from threedigrid_builder.grid.zero_d import (
-    SurfaceParams,
-    SURFACE_CLASS_MAP,
-    SURFACE_INCLINATION_MAP,
-    SURFACE_TYPE_PROPERTIES,
-)
-from threedigrid_builder.grid.zero_d import Surfaces
-from threedigrid_builder.grid.zero_d import ImperviousSurfaces
-from threedigrid_builder.constants import ContentType
 
 
 def test_surface_params():
@@ -177,7 +176,8 @@ def test_impervioussurfaces(grid_all):
 
     # Check one of the SurfaceParams
     assert np.all(
-        grid_surfaces.outflow_delay == np.array([0.5 / 60.0, 0.2 / 60.0], dtype="float32")
+        grid_surfaces.outflow_delay
+        == np.array([0.5 / 60.0, 0.2 / 60.0], dtype="float32")
     )
 
     expected = (
