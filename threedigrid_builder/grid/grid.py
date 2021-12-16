@@ -630,7 +630,7 @@ class Grid:
         Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
         """
         self.surfaces = surfaces.as_grid_surfaces()
-        self.surface_maps = surfaces.as_surface_maps(self.nodes)
+        self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
 
     def add_breaches(self, connected_points):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
@@ -759,11 +759,13 @@ class Grid:
             mask = self.pumps.line != -9999
             self.pumps.line[mask] = np.take(new_node_ids, self.pumps.line[mask])
         if self.nodes_embedded is not None:
-            self.nodes_embedded.embedded_in = np.take(
+            self.nodes_embedded.embedded_in[:] = np.take(
                 new_node_ids, self.nodes_embedded.embedded_in
             )
         if self.breaches is not None:
-            self.breaches.levl = np.take(new_line_ids, self.breaches.levl)
+            self.breaches.levl[:] = np.take(new_line_ids, self.breaches.levl)
+        if self.surface_maps is not None:
+            self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""

@@ -1,12 +1,26 @@
 Changelog of threedigrid-builder
 ================================
 
-0.9.1 (unreleased)
+0.9.2 (unreleased)
+------------------
+
+- Nothing changed yet.
+
+
+0.9.1 (2021-12-16)
 ------------------
 
 - Bugfix: use DEM epsg_code for 2D models.
 
-- Bugfix: Small fix for lgrtot
+- Bugfix: Small fix for lgrtot.
+
+- Bugfix: Small fix adding groundwater cells.
+
+- Bugfix: Fix pump.line remapping in case of embedded nodes.
+
+- Bugfix: Remap surface_map.cci on grid.sort().
+
+- Bugfix: also need to evaluate embedded nodes for connection node mapping for zero-d surface maps.
 
 - Added pixel_width to groundwater nodes.
 
