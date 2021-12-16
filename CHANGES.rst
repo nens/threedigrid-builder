@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.9.1 (unreleased)
+0.9.1 (2021-12-16)
 ------------------
 
 - Bugfix: use DEM epsg_code for 2D models.
