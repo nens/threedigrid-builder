@@ -375,11 +375,13 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         a = np.take(a, mask)
         # If there is no array to search in: raise directly
         if len(a) == 0:
-            raise DoesNotExist(
-                "search encountered missing elements",
-                values=v,
-                indices=np.arange(v.shape[0]),
-            )
+            if check_exists:
+                raise DoesNotExist(
+                    "search encountered missing elements",
+                    values=v,
+                    indices=np.arange(v.shape[0]),
+                )
+            return np.zeros(len(v), dtype=int)
 
     if assume_ordered:
         ind = np.searchsorted(a, v)
