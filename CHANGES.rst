@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.9.2 (unreleased)
+0.9.2 (2021-12-17)
 ------------------
 
 - Temporarily disable groundwater.
