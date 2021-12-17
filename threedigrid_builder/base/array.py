@@ -369,7 +369,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
     """
     v = np.asarray(v)
     if v.size == 0:
-        return np.empty((0,), dtype=int)
+        return np.empty_like(v, dtype=int)
 
     if mask is not None:
         mask = np.asarray(mask)
