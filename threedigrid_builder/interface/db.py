@@ -30,12 +30,12 @@ from threedigrid_builder.grid import CrossSectionLocations
 from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import DemAverageAreas
 from threedigrid_builder.grid import GridRefinements
+from threedigrid_builder.grid import ImperviousSurfaces
 from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
-from threedigrid_builder.grid import Weirs
 from threedigrid_builder.grid import Surfaces
-from threedigrid_builder.grid import ImperviousSurfaces
+from threedigrid_builder.grid import Weirs
 from typing import Callable
 from typing import ContextManager
 from typing import Tuple

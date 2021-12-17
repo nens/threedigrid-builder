@@ -1,4 +1,5 @@
 from .array import array_of
+
 import numpy as np
 
 
@@ -64,4 +65,5 @@ class Surfaces:
 @array_of(SurfaceMap)
 class SurfaceMaps:
     """Zero-d surfaces maps."""
+
     pass

@@ -335,3 +335,47 @@ def test_search_check_exists_mask():
         )
         assert_equal(e.indices, [0])
         assert_equal(e.values, [4])
+
+
+def test_search_empty():
+    actual = search(
+        [],
+        [4, 1, 2],
+        assume_ordered=False,
+        check_exists=False,
+    )
+
+    assert_equal(actual, [0, 0, 0])
+
+
+def test_search_empty_check_exists():
+    with pytest.raises(KeyError):
+        search(
+            [],
+            [4, 1, 2],
+            assume_ordered=False,
+            check_exists=True,
+        )
+
+
+def test_search_empty_mask():
+    actual = search(
+        [0],
+        [4, 1, 2],
+        mask=[False],
+        assume_ordered=False,
+        check_exists=False,
+    )
+
+    assert_equal(actual, [0, 0, 0])
+
+
+def test_search_empty_mask_check_exists():
+    with pytest.raises(KeyError):
+        search(
+            [0],
+            [4, 1, 2],
+            mask=[False],
+            assume_ordered=False,
+            check_exists=True,
+        )

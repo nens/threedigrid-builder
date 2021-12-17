@@ -4,8 +4,8 @@ from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.base import Surfaces
+from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.base.surfaces import SurfaceMaps
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import CrossSections

@@ -7,6 +7,7 @@ This layer depends on the interfaces as well as on the domain layer.
 
 from pathlib import Path
 from threedigrid_builder.base.surfaces import Surfaces
+from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
@@ -17,7 +18,6 @@ from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
 from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
-from threedigrid_builder.constants import InflowType
 from typing import Callable
 from typing import Optional
 

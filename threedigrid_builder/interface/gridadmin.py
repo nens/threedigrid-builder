@@ -5,13 +5,14 @@ from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.base import unpack_optional_type
+from threedigrid_builder.base.surfaces import SurfaceMaps
+from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
-from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 
 import numpy as np
 import pygeos
@@ -557,7 +558,7 @@ class GridAdminOut(OutputInterface):
         )
 
         if surfaces.surface_class is not None and np.any(
-            surfaces.surface_class != None
+            surfaces.surface_class != None  # NOQA
         ):  # noqa
             # Impervious surfaces
             self.write_dataset(
