@@ -11,9 +11,9 @@ from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import Surfaces
-from threedigrid_builder.base import SurfaceMaps
 from threedigrid_builder.base import replace
+from threedigrid_builder.base import SurfaceMaps
+from threedigrid_builder.base import Surfaces
 from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
@@ -21,9 +21,9 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
-
 from typing import Optional
-from typing import Tuple, Union
+from typing import Tuple
+from typing import Union
 
 import itertools
 import numpy as np
@@ -149,7 +149,7 @@ class Grid:
         pumps: Optional[Pumps] = None,
         cross_sections: Optional[CrossSections] = None,
         surfaces: Optional[Surfaces] = None,
-        surface_maps : Optional[SurfaceMaps] = None,
+        surface_maps: Optional[SurfaceMaps] = None,
         nodes_embedded=None,
         levees=None,
         breaches=None,
@@ -663,7 +663,9 @@ class Grid:
     def add_groundwater_vertical_lines(self, nodes, line_id_counter):
         """Add vertical lines between open water - and groundwater nodes."""
         open_water_nodes = nodes[np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)]
-        groundwater_nodes = nodes[np.isin(nodes.node_type, NodeType.NODE_2D_GROUNDWATER)]
+        groundwater_nodes = nodes[
+            np.isin(nodes.node_type, NodeType.NODE_2D_GROUNDWATER)
+        ]
         id_n = itertools.islice(line_id_counter, len(open_water_nodes))
         self.lines += Lines(
             id=id_n,
@@ -672,7 +674,9 @@ class Grid:
             lik=open_water_nodes.nodk,
             lim=open_water_nodes.nodm,
             lin=open_water_nodes.nodn,
-            line_coords=np.hstack((open_water_nodes.coordinates, open_water_nodes.coordinates)),
+            line_coords=np.hstack(
+                (open_water_nodes.coordinates, open_water_nodes.coordinates)
+            ),
         )
 
     def add_groundwater_lines(self, lines, line_id_counter):
@@ -687,7 +691,7 @@ class Grid:
                     LineType.LINE_2D_OBSTACLE,
                     LineType.LINE_2D_OBSTACLE_U,
                     LineType.LINE_2D_OBSTACLE_V,
-                )
+                ),
             )
         ]
         id_n = itertools.islice(line_id_counter, len(open_water_lines))

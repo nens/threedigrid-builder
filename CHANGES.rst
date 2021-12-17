@@ -4,8 +4,7 @@ Changelog of threedigrid-builder
 0.9.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Bugfix: Edge case with connected points.
 
 0.9.1 (2021-12-16)
 ------------------

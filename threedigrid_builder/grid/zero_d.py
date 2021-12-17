@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import SurfaceClass
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.base.nodes import Nodes
 from threedigrid_builder.base import surfaces
-from typing import Optional, Dict
-import pygeos
+from threedigrid_builder.base.nodes import Nodes
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.constants import SurfaceClass
+from typing import Dict
+from typing import Optional
+
 import numpy as np
+import pygeos
+
 
 __all__ = ["Surfaces", "ImperviousSurfaces"]
 
@@ -257,13 +260,10 @@ def fill_missing_centroids(
         empty_surface_ids = surface_ids[no_centroid_mask]
         s_unique = np.unique(empty_surface_ids)
         sort_idx = np.argsort(s_unique)
-        lookup = sort_idx[
-            np.searchsorted(s_unique, empty_surface_ids, sorter=sort_idx)
-        ]
+        lookup = sort_idx[np.searchsorted(s_unique, empty_surface_ids, sorter=sort_idx)]
 
         computed_centroids = pygeos.centroid(
-            pygeos.multipoints(
-                connection_node_the_geom[no_centroid_mask], lookup)
+            pygeos.multipoints(connection_node_the_geom[no_centroid_mask], lookup)
         )
 
         centroids[no_centroid_mask] = computed_centroids[lookup]
@@ -274,10 +274,13 @@ class BaseSurfaces:
     def unique_surfaces_mask(self) -> np.ndarray:
         if not hasattr(self, "_unique_surfaces_mask"):
             _, self._unique_surfaces_mask = np.unique(
-                self.surface_id, return_index=True)
+                self.surface_id, return_index=True
+            )
         return self._unique_surfaces_mask
 
-    def as_grid_surfaces(self, extra_fields: Optional[Dict] = None) -> surfaces.Surfaces:
+    def as_grid_surfaces(
+        self, extra_fields: Optional[Dict] = None
+    ) -> surfaces.Surfaces:
         if extra_fields is None:
             extra_fields = {}
 
@@ -303,7 +306,9 @@ class BaseSurfaces:
             **extra_fields
         )
 
-    def as_surface_maps(self, nodes: Nodes, nodes_embedded: Nodes) -> surfaces.SurfaceMaps:
+    def as_surface_maps(
+        self, nodes: Nodes, nodes_embedded: Nodes
+    ) -> surfaces.SurfaceMaps:
         search_array = self.surface_id[self.unique_surfaces_mask]
         sort_idx = np.argsort(self.surface_id[self.unique_surfaces_mask])
         imp_lookup = sort_idx[
@@ -319,8 +324,15 @@ class BaseSurfaces:
             nodes_embedded.content_type == ContentType.TYPE_V2_CONNECTION_NODES.value
         )
 
-        cc_node_ids = np.concatenate((nodes.content_pk[connection_node_mask], nodes_embedded.content_pk[embedded_mask]))
-        node_ids = np.concatenate((nodes.id[connection_node_mask], nodes_embedded.embedded_in[embedded_mask]))
+        cc_node_ids = np.concatenate(
+            (
+                nodes.content_pk[connection_node_mask],
+                nodes_embedded.content_pk[embedded_mask],
+            )
+        )
+        node_ids = np.concatenate(
+            (nodes.id[connection_node_mask], nodes_embedded.embedded_in[embedded_mask])
+        )
 
         sort_idx = np.argsort(cc_node_ids)
         cc_lookup = sort_idx[
@@ -334,29 +346,24 @@ class BaseSurfaces:
             nyc=connection_node_coords[:, 1],
             fac=self.percentage / 100.0,
             imp=imp_lookup,
-            cci=node_ids[cc_lookup]
+            cci=node_ids[cc_lookup],
         )
 
 
 @array_of(Surface)
 class Surfaces(BaseSurfaces):
-
     def as_grid_surfaces(self) -> surfaces.Surfaces:
         _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
 
         infiltration_flag = self.infiltration[unique_surfaces_mask].astype("bool")
-        fb = (
-            self.max_infiltration_capacity[unique_surfaces_mask] / (60.0 * 60.0 * 1000.0)
+        fb = self.max_infiltration_capacity[unique_surfaces_mask] / (
+            60.0 * 60.0 * 1000.0
         )
-        fe = (
-            self.min_infiltration_capacity[unique_surfaces_mask] / (60.0 * 60.0 * 1000.0)
+        fe = self.min_infiltration_capacity[unique_surfaces_mask] / (
+            60.0 * 60.0 * 1000.0
         )
-        ka = (
-            self.infiltration_decay_constant[unique_surfaces_mask] / (60.0 * 60.0)
-        )
-        kh = (
-            self.infiltration_recovery_constant[unique_surfaces_mask] / (60.0 * 60.0)
-        )
+        ka = self.infiltration_decay_constant[unique_surfaces_mask] / (60.0 * 60.0)
+        kh = self.infiltration_recovery_constant[unique_surfaces_mask] / (60.0 * 60.0)
 
         mask = np.invert(infiltration_flag)
 
@@ -373,7 +380,7 @@ class Surfaces(BaseSurfaces):
             fb=fb,
             fe=fe,
             ka=ka,
-            kh=kh
+            kh=kh,
         )
 
         return super().as_grid_surfaces(extra_fields)
@@ -381,7 +388,6 @@ class Surfaces(BaseSurfaces):
 
 @array_of(ImperviousSurface)
 class ImperviousSurfaces(BaseSurfaces):
-
     def as_grid_surfaces(self) -> surfaces.Surfaces:
         params = SurfaceParams.from_surface_class_and_inclination(
             self.surface_class[self.unique_surfaces_mask],
@@ -391,9 +397,7 @@ class ImperviousSurfaces(BaseSurfaces):
         surface_sub_class[pygeos.is_missing(surface_sub_class)] = b""
 
         extra_fields = dict(
-            surface_inclination=self.surface_inclination[
-                self.unique_surfaces_mask
-            ],
+            surface_inclination=self.surface_inclination[self.unique_surfaces_mask],
             surface_class=self.surface_class[self.unique_surfaces_mask],
             surface_sub_class=surface_sub_class,
             function=np.full(len(self.unique_surfaces_mask), b""),
@@ -403,7 +407,7 @@ class ImperviousSurfaces(BaseSurfaces):
             fb=params.fb,
             fe=params.fe,
             ka=params.ka,
-            kh=params.kh
+            kh=params.kh,
         )
 
         return super().as_grid_surfaces(extra_fields)
