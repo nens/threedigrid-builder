@@ -17,6 +17,8 @@ import numpy as np
 import pygeos
 
 
+GROUNDWATER_ENABLED = False
+
 try:
     import h5py
 except ImportError:
@@ -222,7 +224,7 @@ class GridAdminOut(OutputInterface):
             ("lgutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
             ("lgvtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
         ]:
-            if self._file.attrs["has_groundwater_flow"]:
+            if self._file.attrs["has_groundwater_flow"] and GROUNDWATER_ENABLED:
                 count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
             else:
                 count = 0
