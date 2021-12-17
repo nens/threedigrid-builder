@@ -368,7 +368,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
       missing values and the indices of them into ``v``.
     """
     v = np.asarray(v)
-    if len(v) == 0:
+    if v.size == 0:
         return np.empty((0,), dtype=int)
 
     if mask is not None:
