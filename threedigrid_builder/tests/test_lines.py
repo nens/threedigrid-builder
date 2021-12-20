@@ -1,5 +1,6 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_equal
+from pygeos.testing import assert_geometries_equal
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 
@@ -44,9 +45,10 @@ def test_fix_line_geometries(lines):
 
     lines.fix_line_geometries()
 
-    assert pygeos.equals(lines.line_geometries[0], pygeos.linestrings([(1, 1), (2, 2)]))
-    assert pygeos.equals(lines.line_geometries[1], pygeos.linestrings([(5, 5), (6, 6)]))
-    assert pygeos.equals(lines.line_geometries[2], pygeos.linestrings([(1, 1), (3, 3)]))
+    expected = pygeos.linestrings(
+        [[(1, 1), (2, 2)], [(5, 5), (6, 6)], [(1, 1), (3, 3)]]
+    )
+    assert_geometries_equal(lines.line_geometries, expected)
     assert_almost_equal(lines.ds1d, [np.sqrt(2), 16.0, 2 * np.sqrt(2)])
 
 

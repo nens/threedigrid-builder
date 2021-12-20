@@ -1,5 +1,6 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
+from pygeos.testing import assert_geometries_equal
 from threedigrid_builder.base import array_of
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
@@ -408,26 +409,25 @@ def test_get_lines_two_linear_objects(
     assert_array_equal(lines.line, expected)
 
 
-def test_set_geometries(two_linear_objects, connection_nodes):
-    two_linear_objects.the_geom[0] = None
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (None, [(0, 21), (3, 42)]),
+        ([(0, 21), (3, 42)], [(0, 21), (3, 42)]),
+        ([(0, 21), (1, 2), (3, 42)], [(0, 21), (1, 2), (3, 42)]),
+        ([(0, 21), (3, 42)][::-1], [(0, 21), (3, 42)]),
+        ([(0, 21), (1, 2), (3, 42)][::-1], [(0, 21), (1, 2), (3, 42)]),
+        ([(1, 21), (3, 41)], [(1, 21), (3, 41)]),
+        ([(3, 41), (1, 21)], [(1, 21), (3, 41)]),
+    ],
+)
+def test_set_geometries(two_linear_objects, connection_nodes, geom, expected):
+    two_linear_objects.the_geom[0] = pygeos.linestrings(geom) if geom else None
     two_linear_objects.set_geometries(connection_nodes)
 
-    expected_geometries = [
-        pygeos.linestrings([(0, 21), (3, 42)]),
-        two_linear_objects.the_geom[1],
-    ]
-    assert pygeos.equals(two_linear_objects.the_geom, expected_geometries).all()
+    expected_geometry = pygeos.linestrings(expected)
+    assert_geometries_equal(two_linear_objects.the_geom[0], expected_geometry)
 
-
-def test_set_geometries_reversed(two_linear_objects, connection_nodes):
-    two_linear_objects.the_geom[0] = pygeos.linestrings([(3, 42), (1, 1), (0, 21)])
-    two_linear_objects.set_geometries(connection_nodes)
-
-    expected_geometries = [
-        pygeos.linestrings([(0, 21), (1, 2), (3, 42)]),
-        two_linear_objects.the_geom[1],
-    ]
-    assert pygeos.equals(two_linear_objects.the_geom, expected_geometries).all()
 
 def test_interpolate_nodes_no_geometries(two_linear_objects):
     two_linear_objects.the_geom[:] = None

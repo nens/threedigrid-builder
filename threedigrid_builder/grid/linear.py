@@ -50,11 +50,16 @@ class BaseLinear:
         line_start = pygeos.get_point(self.the_geom[has_geom], 0)
         line_end = pygeos.get_point(self.the_geom[has_geom], -1)
         needs_reversion = has_geom[
-            (pygeos.distance(node_start, line_start) > pygeos.distance(node_start, line_end))
-            & (pygeos.distance(node_end, line_end) > pygeos.distance(node_end, line_start))
+            (
+                pygeos.distance(node_start, line_start)
+                > pygeos.distance(node_start, line_end)
+            )
+            & (
+                pygeos.distance(node_end, line_end)
+                > pygeos.distance(node_end, line_start)
+            )
         ]
         self.the_geom[needs_reversion] = pygeos.reverse(self.the_geom[needs_reversion])
-
 
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute nodes on each linear object with constant intervals
