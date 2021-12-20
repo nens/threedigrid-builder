@@ -419,6 +419,16 @@ def test_set_geometries(two_linear_objects, connection_nodes):
     assert pygeos.equals(two_linear_objects.the_geom, expected_geometries).all()
 
 
+def test_set_geometries_reversed(two_linear_objects, connection_nodes):
+    two_linear_objects.the_geom[0] = pygeos.linestrings([(3, 42), (1, 1), (0, 21)])
+    two_linear_objects.set_geometries(connection_nodes)
+
+    expected_geometries = [
+        pygeos.linestrings([(0, 21), (1, 2), (3, 42)]),
+        two_linear_objects.the_geom[1],
+    ]
+    assert pygeos.equals(two_linear_objects.the_geom, expected_geometries).all()
+
 def test_interpolate_nodes_no_geometries(two_linear_objects):
     two_linear_objects.the_geom[:] = None
     with pytest.raises(ValueError, match=".*encountered without a geometry."):

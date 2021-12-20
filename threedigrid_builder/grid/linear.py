@@ -17,26 +17,44 @@ class BaseLinear:
     def set_geometries(self, connection_nodes):
         """Set the_geom from connection nodes where necessary.
 
+        This also reverses geometries if necessary.
+
         Args:
             connection_nodes (ConnectionNodes): to take the coordinates from
         """
         has_no_geom = pygeos.is_missing(self.the_geom)
-        if not has_no_geom.any():
-            return
 
-        # construct the culvert geometries
+        # get the start and end points
         points_1 = connection_nodes.the_geom[
-            connection_nodes.id_to_index(self.connection_node_start_id[has_no_geom])
+            connection_nodes.id_to_index(self.connection_node_start_id)
         ]
         points_2 = connection_nodes.the_geom[
-            connection_nodes.id_to_index(self.connection_node_end_id[has_no_geom])
+            connection_nodes.id_to_index(self.connection_node_end_id)
         ]
+
+        # construct the geometries where necessary
         coordinates = np.empty((np.count_nonzero(has_no_geom), 2, 2))
-        coordinates[:, 0, 0] = pygeos.get_x(points_1)
-        coordinates[:, 0, 1] = pygeos.get_y(points_1)
-        coordinates[:, 1, 0] = pygeos.get_x(points_2)
-        coordinates[:, 1, 1] = pygeos.get_y(points_2)
+        coordinates[:, 0, 0] = pygeos.get_x(points_1[has_no_geom])
+        coordinates[:, 0, 1] = pygeos.get_y(points_1[has_no_geom])
+        coordinates[:, 1, 0] = pygeos.get_x(points_2[has_no_geom])
+        coordinates[:, 1, 1] = pygeos.get_y(points_2[has_no_geom])
         self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
+
+        has_geom = np.where(~has_no_geom)[0]
+        if len(has_geom) == 0:
+            return
+
+        # reverse the geometries where necessary
+        node_start = points_1[has_geom]
+        node_end = points_2[has_geom]
+        line_start = pygeos.get_point(self.the_geom[has_geom], 0)
+        line_end = pygeos.get_point(self.the_geom[has_geom], -1)
+        needs_reversion = has_geom[
+            (pygeos.distance(node_start, line_start) > pygeos.distance(node_start, line_end))
+            & (pygeos.distance(node_end, line_end) > pygeos.distance(node_end, line_start))
+        ]
+        self.the_geom[needs_reversion] = pygeos.reverse(self.the_geom[needs_reversion])
+
 
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute nodes on each linear object with constant intervals
