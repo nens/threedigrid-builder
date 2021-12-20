@@ -60,24 +60,29 @@ module m_quadtree
         endif
 
         write(*,*) '** INFO: Start applying refinement with refinement level and type: ', refine_id, refine_level, refine_type
-        cross=.FALSE.
         do n=mnmin(2), mnmax(2)
             do m=mnmin(1), mnmax(1)
+                cross=.FALSE.
                 cell_geom = get_cell_geom(bbox(1), bbox(2), m, n, dx(1))
-                if (minval(cell_geom(:,1))>=minval(refine_geom(:,1)) - dx(1).and.&
+                if (minval(refine_geom(:, 1)) > minval(cell_geom(:, 1)) .and.&
+                    maxval(refine_geom(:, 1)) < maxval(cell_geom(:, 1)) .and.&
+                    minval(refine_geom(:, 2)) > minval(cell_geom(:, 2)).and.&
+                    maxval(refine_geom(:, 1)) < maxval(cell_geom(:, 2))) then
+                    cross = .TRUE.
+                elseif (minval(cell_geom(:,1))>=minval(refine_geom(:,1)) - dx(1).and.&
                     maxval(cell_geom(:,1))<=maxval(refine_geom(:,1)) + dx(1).and.&
                     minval(cell_geom(:,2))>=minval(refine_geom(:,2)) - dx(1).and.&
                     maxval(cell_geom(:,2))<=maxval(refine_geom(:,2)) + dx(1)) then
                     if (refine_type==LINESTRING) then
-                        cross = find_cell_intersects(refine_geom, cell_geom)  !!TODO: Check linestrings that fall within smallest cell of quadtree.
+                        cross = find_cell_intersects(refine_geom, cell_geom)
                     elseif(refine_type==POLY) then
                         cross = geom_in_polygon(refine_geom, cell_geom)
                     endif
+                endif
 
-                    if (cross) then
-                        lg(m,n) = min(lg(m,n), refine_level)
-                        status = 1
-                    endif
+                if (cross) then
+                    lg(m,n) = min(lg(m,n), refine_level)
+                    status = 1
                 else
                     cycle
                 endif
