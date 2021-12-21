@@ -292,6 +292,9 @@ class SQLite:
                 .as_structarray()
             )
 
+        # filter out invalid geometries
+        arr = arr[pygeos.is_valid(arr["the_geom"])]
+
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
         arr["connection_node_the_geom"] = self.reproject(
@@ -331,6 +334,9 @@ class SQLite:
                 .order_by(models.ImperviousSurface.id)
                 .as_structarray()
             )
+
+        # filter out invalid geometries
+        arr = arr[pygeos.is_valid(arr["the_geom"])]
 
         # convert enums to values
         arr["surface_class"] = [x.value for x in arr["surface_class"]]
@@ -611,6 +617,10 @@ class SQLite:
                     models.GridRefinement.display_name,
                     models.GridRefinement.refinement_level,
                 )
+                .filter(
+                    models.GridRefinement.the_geom.isnot(None),
+                    models.GridRefinement.refinement_level.isnot(None),
+                )
                 .order_by(models.GridRefinement.id)
                 .as_structarray()
             )
@@ -622,10 +632,17 @@ class SQLite:
                     models.GridRefinementArea.display_name,
                     models.GridRefinementArea.refinement_level,
                 )
+                .filter(
+                    models.GridRefinementArea.the_geom.isnot(None),
+                    models.GridRefinementArea.refinement_level.isnot(None),
+                )
                 .order_by(models.GridRefinementArea.id)
                 .as_structarray()
             )
             arr = np.concatenate((arr1, arr2))
+
+        # filter out invalid geometries
+        arr = arr[pygeos.is_valid(arr["the_geom"])]
 
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
@@ -645,6 +662,9 @@ class SQLite:
                 .as_structarray()
             )
             arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # filter out invalid geometries
+        arr = arr[pygeos.is_valid(arr["the_geom"])]
 
         return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
