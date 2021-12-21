@@ -46,13 +46,9 @@ class GridSettings:
 
     def __post_init__(self):
         # validations
-        fields = []
         if self.use_2d:
-            fields += ["grid_space", "kmax"]
-        if self.use_1d_flow:
-            fields += ["dist_calc_points"]
-        for field in fields:
-            greater_zero_check(self, field)
+            for field in ["grid_space", "kmax"]:
+                greater_zero_check(self, field)
 
 
 @dataclass

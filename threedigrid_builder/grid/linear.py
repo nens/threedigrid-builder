@@ -95,9 +95,17 @@ class BaseLinear:
                 f"{self.__class__.__name__} encountered without a geometry."
             )
 
+        # normalize global dist_calc_points
+        if (
+            global_dist_calc_points is None
+            or np.isnan(global_dist_calc_points)
+            or global_dist_calc_points <= 0.0
+        ):
+            global_dist_calc_points = np.inf  # means: no interpolation
+
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points[not_embedded].copy()
-        dists[~np.isfinite(dists)] = global_dist_calc_points
+        dists[np.isnan(dists)] = global_dist_calc_points
         dists[dists <= 0] = global_dist_calc_points
 
         # interpolate the node geometries
@@ -422,6 +430,7 @@ def segmentize(linestrings, desired_segment_size):
         desired_segment_size (ndarray of float): the desired size of the segments; the
            actual size will depend on the linestring length and is computed by rounding
            ``line length / size`` to the nearest integer.
+           Inf inputs will lead to no segmentation for that line (n_segments=1)
 
     Returns:
         nodes: the points where segments connect.

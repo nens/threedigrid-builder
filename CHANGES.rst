@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.11.0 (unreleased)
 -------------------
 
+- Accept dist_calc_points <= 0; the effect is that there are no interpolated nodes.
+
 - Ignore grid refinements with NULLs in their type or geometry fields.
 
 - Ignore (impervious) surfaces, grid refinements, and dem averages areas with invalid
