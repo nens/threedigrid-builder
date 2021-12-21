@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.9.3 (unreleased)
 ------------------
 
+- Bugfix: Added support for refinement geometries within smallest Grid cell.
+
 - Reverse the order of coordinates in channel and culvert geometries if necessary.
 
 
