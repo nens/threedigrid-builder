@@ -231,12 +231,35 @@ def test_line_substring_many(random_lines):
         (8.0, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
         (9.0, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
         (100.0, np.empty((0, 2), dtype=float)),
+        (0.0, np.empty((0, 2), dtype=float)),
+        (-9999.0, np.empty((0, 2), dtype=float)),
+        (np.nan, np.empty((0, 2), dtype=float)),
     ],
 )
 def test_interpolate_nodes_one_linear_object(dist, expected, one_linear_object):
     one_linear_object.dist_calc_points[0] = dist
     nodes = one_linear_object.interpolate_nodes(
         itertools.count(start=2), global_dist_calc_points=74.0
+    )
+
+    assert_array_equal(nodes.id, range(2, 2 + len(expected)))
+    assert_almost_equal(nodes.coordinates, expected, decimal=7)
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
+    assert_array_equal(nodes.content_pk, 1)
+    assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
+    assert_array_equal(nodes.calculation_type, 2)
+
+    expected_size = 12.0 / (len(expected) + 1)
+    assert_array_equal(nodes.s1d, np.arange(1, len(expected) + 1) * expected_size)
+
+
+@pytest.mark.parametrize("global_value", [0.0, -9999.0, np.nan, None])
+def test_interpolate_nodes_global_none(one_linear_object, global_value):
+    expected = np.empty((0, 2), dtype=float)
+
+    one_linear_object.dist_calc_points[0] = np.nan
+    nodes = one_linear_object.interpolate_nodes(
+        itertools.count(start=2), global_dist_calc_points=global_value
     )
 
     assert_array_equal(nodes.id, range(2, 2 + len(expected)))
