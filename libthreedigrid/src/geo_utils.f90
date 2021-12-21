@@ -169,7 +169,6 @@ module m_grid_utils
         integer :: i, j
         double precision :: intersection(2)
 
-        cross=.FALSE.
         do i=1, size(geom1, 1) - 1
             do j=1, size(geom2, 1) - 1
                 cross = .FALSE.

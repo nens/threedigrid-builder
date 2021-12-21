@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.9.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Bugfix: Added support for refinement geometries within smallest Grid cell.
 
 
 0.9.2 (2021-12-17)
