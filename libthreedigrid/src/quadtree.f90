@@ -67,7 +67,7 @@ module m_quadtree
                 if (minval(refine_geom(:, 1)) > minval(cell_geom(:, 1)) .and.&
                     maxval(refine_geom(:, 1)) < maxval(cell_geom(:, 1)) .and.&
                     minval(refine_geom(:, 2)) > minval(cell_geom(:, 2)).and.&
-                    maxval(refine_geom(:, 1)) < maxval(cell_geom(:, 2))) then
+                    maxval(refine_geom(:, 2)) < maxval(cell_geom(:, 2))) then
                     cross = .TRUE.
                 elseif (minval(cell_geom(:,1))>=minval(refine_geom(:,1)) - dx(1).and.&
                     maxval(cell_geom(:,1))<=maxval(refine_geom(:,1)) + dx(1).and.&

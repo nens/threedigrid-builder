@@ -47,6 +47,20 @@ def quadtree_line_refinement(subgrid_meta):
         refinements=refinement,
     )
 
+@pytest.fixture
+def quadtree_small_line_refinement(subgrid_meta):
+    refinement = GridRefinements(
+        id=np.array([1]),
+        refinement_level=np.array([1]),
+        the_geom=pygeos.linestrings([[[10.1, 17.9], [10.9, 17.9]]]),
+    )
+    return QuadTree(
+        subgrid_meta=subgrid_meta,
+        num_refine_levels=3,
+        min_gridsize=1.0,
+        refinements=refinement,
+    )
+
 
 @pytest.fixture
 def quadtree_poly_refinement(subgrid_meta):
@@ -130,6 +144,30 @@ def test_quadtree_poly_refinement(quadtree_poly_refinement):
         dtype=np.int32,
     )
     assert_array_equal(quadtree_poly_refinement.lg, expected_lg[::-1].T)
+
+
+def test_quadtree_small_line_refinement(quadtree_small_line_refinement):
+
+    assert quadtree_small_line_refinement.kmax == 3
+    assert np.size(quadtree_small_line_refinement.mmax) == 3
+    assert quadtree_small_line_refinement.mmax[2] == 3
+    assert quadtree_small_line_refinement.nmax[2] == 2
+    assert quadtree_small_line_refinement.dx[0] == 1.0
+
+    expected_lg = np.array(
+        [
+            [1, 1, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
+            [1, 1, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
+            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
+            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+        ],
+        dtype=np.int32,
+    )
+    assert_array_equal(quadtree_small_line_refinement.lg, expected_lg[::-1].T)
 
 
 def test_nodes_from_quadtree_line(quadtree_line_refinement, subgrid_meta):
