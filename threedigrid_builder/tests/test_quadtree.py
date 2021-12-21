@@ -47,6 +47,7 @@ def quadtree_line_refinement(subgrid_meta):
         refinements=refinement,
     )
 
+
 @pytest.fixture
 def quadtree_small_line_refinement(subgrid_meta):
     refinement = GridRefinements(
