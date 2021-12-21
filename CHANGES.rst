@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.9.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Reverse the order of coordinates in channel and culvert geometries if necessary.
 
 
 0.9.2 (2021-12-17)

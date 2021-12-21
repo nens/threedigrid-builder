@@ -1,3 +1,4 @@
+from pygeos.testing import assert_geometries_equal
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Pumps
@@ -65,7 +66,7 @@ def test_get_channels(db):
 
     # some test samples
     assert len(channels.id) == 1175
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         channels.the_geom[0],
         pygeos.Geometry(
             "LINESTRING (109798 518896, 109815 518823, 109818 518812, 109822 518800, 109834 518750)"
@@ -87,7 +88,7 @@ def test_get_connected_points(db):
 
     assert len(connected_points) == 1931
     assert connected_points.id[56] == 57
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         connected_points.the_geom[1321],
         pygeos.Geometry("POINT (109012 517295)"),
         tolerance=1,
@@ -107,7 +108,7 @@ def test_get_connection_nodes(db):
 
     # some test samples
     assert len(connection_nodes.id) == 1360
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         connection_nodes.the_geom[0],
         pygeos.Geometry("POINT (110404 517792)"),
         tolerance=1,
@@ -147,7 +148,7 @@ def test_get_cross_section_locations(db):
 
     # some test samples
     assert len(locations.id) == 1175
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         locations.the_geom[96], pygeos.Geometry("POINT (111104 521655)"), tolerance=1
     )
     assert locations.id[11] == 12
@@ -164,14 +165,14 @@ def test_get_grid_refinements(db):
 
     # some test samples
     assert len(grid_refinements.id) == 6
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         grid_refinements.the_geom[3],
         pygeos.Geometry(
             "LINESTRING (110173 517604, 110327 517527, 110461 517809, 110249 517909, 110147 517700, 110304 517616, 110368 517765, 110280 517816, 110242 517726, 110300 517701, 110316 517749)"
         ),
         tolerance=1,
     )
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         grid_refinements.the_geom[4],
         pygeos.Geometry(
             "POLYGON ((108334 517481, 108701 517460, 108686 517171, 108324 517197, 108334 517481))"
@@ -190,7 +191,7 @@ def test_get_levees(db):
 
     assert len(levees) == 3
     assert levees.id[1] == 2
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         pygeos.get_point(levees.the_geom[0], 0),
         pygeos.Geometry("POINT (110241 519070)"),
         tolerance=1,
@@ -311,7 +312,7 @@ def test_get_culverts(db):
 
     assert culverts.id[89] == 2000112
     assert culverts.code[35] == "500"
-    assert pygeos.equals_exact(
+    assert_geometries_equal(
         culverts.the_geom[36],
         pygeos.Geometry("LINESTRING (108351 516428, 108357 516430)"),
         tolerance=1,

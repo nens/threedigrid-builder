@@ -190,3 +190,18 @@ def test_apply_to_lines_extrapolate(channels, channel_lines, locations):
         channel_lines.invert_level_end_point, [1.0, 5.0, 3.2, 2.1, 1.0, 6.0, 6.0]
     )
     assert_almost_equal(channel_lines.dpumax, [1.0, 5.0, 4.3, 3.2, 2.1, 6.0, 6.0])
+
+
+def test_apply_to_lines_project_locations(channels, channel_lines, locations):
+    # CrossSectionLocations are not on the channels
+    # - channel 51 (cs index 0): displaced 1 (should be projected on the line)
+    # - channel 52 (cs index 3): displaced far away (should be projected to line end)
+    locations.the_geom[0] = pygeos.points((1, 1))  # id = 1
+    locations.the_geom[3] = pygeos.points((1000, 3))  # id = 5
+    locations.apply_to_lines(channel_lines, channels, extrapolate=False)
+
+    assert_equal(channel_lines.cross_id1, [3, 4, 4, 4, 4, 5, 5])
+    assert_equal(channel_lines.cross_id2, [3, 4, 3, 3, 3, 5, 5])
+    assert_almost_equal(
+        channel_lines.cross_weight, [1.0, 1.0, 1.0, 0.65, 0.0, 1.0, 1.0]
+    )
