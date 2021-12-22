@@ -640,7 +640,7 @@ class Grid:
         """
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
-        self.fix_ds1d()
+        self.lines.fix_ds1d()
         self.breaches = connected_points.get_breaches(self.lines, self.levees)
 
     def add_groundwater_nodes(self, nodes, node_id_counter):
