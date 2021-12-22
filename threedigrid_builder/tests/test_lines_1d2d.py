@@ -38,7 +38,7 @@ def grid2d():
         nodes=Nodes(
             id=[0, 1],
             node_type=NodeType.NODE_2D_OPEN_WATER,
-            bounds=[(0, 0, 1, 1), (1, 0, 2, 1)],
+            bounds=[(0, 0, 1, 1), (1, 0, 3, 2)],
         ),
         lines=Lines(id=[0]),
     )
@@ -50,28 +50,28 @@ def empty_connected_points():
 
 
 @pytest.mark.parametrize(
-    "node_coordinates,expected_lines",
+    "node_coordinates,expected_lines,expected_ds1d",
     [
-        ([(0.5, 0.5)], [(0, 7)]),  # first cell, center
-        ([(0, 0.5)], [(0, 7)]),  # first cell, left edge
-        ([(0.5, 1)], [(0, 7)]),  # first cell, top edge
-        ([(0.5, 0)], [(0, 7)]),  # first cell, bottom edge
-        ([(0, 1)], [(0, 7)]),  # first cell, topleft corner
-        ([(0, 0)], [(0, 7)]),  # first cell, bottomleft corner
-        ([(1.5, 0.5)], [(1, 7)]),  # second cell, center
-        ([(2, 0.5)], [(1, 7)]),  # second cell, right edge
-        ([(1.5, 1)], [(1, 7)]),  # second cell, top edge
-        ([(1.5, 0)], [(1, 7)]),  # second cell, bottom edge
-        ([(2, 1)], [(1, 7)]),  # second cell, topright corner
-        ([(2, 0)], [(1, 7)]),  # second cell, bottomright corner
-        ([(1, 1)], [(0, 7)]),  # edge between: top corner
-        ([(1, 0)], [(0, 7)]),  # edge between: bottom corner
-        ([(1, 0.5)], [(0, 7)]),  # edge between: middle
-        ([(0.5, 0.5), (0.5, 0.9)], [(0, 7), (0, 8)]),  # two cells, same
-        ([(0.5, 0.5), (1.5, 0.5)], [(0, 7), (1, 8)]),  # two cells, different
+        ([(0.5, 0.5)], [(0, 7)], [1]),  # first cell, center
+        ([(0, 0.5)], [(0, 7)], [1]),  # first cell, left edge
+        ([(0.5, 1)], [(0, 7)], [1]),  # first cell, top edge
+        ([(0.5, 0)], [(0, 7)], [1]),  # first cell, bottom edge
+        ([(0, 1)], [(0, 7)], [1]),  # first cell, topleft corner
+        ([(0, 0)], [(0, 7)], [1]),  # first cell, bottomleft corner
+        ([(2, 1)], [(1, 7)], [2]),  # second cell, center
+        ([(3, 1)], [(1, 7)], [2]),  # second cell, right edge
+        ([(2, 2)], [(1, 7)], [2]),  # second cell, top edge
+        ([(2, 0)], [(1, 7)], [2]),  # second cell, bottom edge
+        ([(3, 2)], [(1, 7)], [2]),  # second cell, topright corner
+        ([(3, 0)], [(1, 7)], [2]),  # second cell, bottomright corner
+        ([(1, 1)], [(0, 7)], [1]),  # edge between: top corner
+        ([(1, 0)], [(0, 7)], [1]),  # edge between: bottom corner
+        ([(1, 0.5)], [(0, 7)], [1]),  # edge between: middle
+        ([(0.5, 0.5), (0.5, 0.9)], [(0, 7), (0, 8)], [1, 1]),  # two cells, same
+        ([(0.5, 0.5), (2, 1)], [(0, 7), (1, 8)], [1, 2]),  # two cells, different
     ],
 )
-def test_get_lines(node_coordinates, expected_lines, grid2d, empty_connected_points):
+def test_get_lines(node_coordinates, expected_lines, expected_ds1d, grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
         id=[7, 8][: len(node_coordinates)],
         coordinates=node_coordinates,
@@ -101,10 +101,11 @@ def test_get_lines(node_coordinates, expected_lines, grid2d, empty_connected_poi
     )
 
     assert_array_equal(actual_lines.line, expected_lines)
+    assert_array_equal(actual_lines.ds1d, expected_ds1d)
 
 
 @pytest.mark.parametrize(
-    "node_coordinates", [(-1e-7, 0.5), (2.0001, 1.5), (1, 1.0001), (1, -1e-7)]
+    "node_coordinates", [(-1e-7, 0.5), (3.0001, 3.5), (1, 2.0001), (1, -1e-7)]
 )
 def test_get_lines_no_cell(node_coordinates, grid2d, empty_connected_points):
     grid2d.nodes += Nodes(
