@@ -385,6 +385,9 @@ class ConnectedPoints:
         cell_idx = idx[1]
         cell_id = nodes.index_to_id(cell_idx)  # convert to cell ids
 
+        # Set length of 1D2D line based on 2D cell width.
+        ds1d = nodes.bounds[cell_idx, 2] - nodes.bounds[cell_idx, 0]
+
         # Identify different types of objects and dispatch to the associated functions
         is_ch = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
         is_cn = nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
@@ -442,14 +445,13 @@ class ConnectedPoints:
             ],
         )
 
-        ds1d = nodes.bounds[cell_idx, 2] - nodes.bounds[cell_idx, 0]
-
         return Lines(
             id=itertools.islice(line_id_counter, n_lines),
             line=np.array([cell_id, node_id]).T,
             kcu=kcu,
             dpumax=dpumax,
             ds1d=ds1d,
+            ds1d_half=0.5 * ds1d[:],
             content_type=content_type,
             content_pk=content_pk,
         )

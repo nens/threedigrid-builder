@@ -49,7 +49,15 @@ def test_fix_line_geometries(lines):
         [[(1, 1), (2, 2)], [(5, 5), (6, 6)], [(1, 1), (3, 3)]]
     )
     assert_geometries_equal(lines.line_geometries, expected)
-    assert_almost_equal(lines.ds1d, [np.sqrt(2), 16.0, 2 * np.sqrt(2)])
+
+
+def test_fix_ds1d(lines):
+    lines.line_geometries = pygeos.linestrings(
+        [[(1, 1), (2, 2)], [(5, 5), (6, 6)], [(1, 1), (3, 3)]]
+    )
+    lines.fix_ds1d()
+
+    assert_almost_equal(lines.ds1d, [np.sqrt(2), 16.0, 2.0])
 
 
 def test_set_discharge_coefficients(lines):
