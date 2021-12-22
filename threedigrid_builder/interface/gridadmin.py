@@ -328,6 +328,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pixel_width", pixel_width)
 
         # can be collected from SQLite, but empty for now:
+        import pdb; pdb.set_trace()
         self.write_dataset(
             group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b""
         )
@@ -348,7 +349,7 @@ class GridAdminOut(OutputInterface):
             group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
         )
         self.write_dataset(group, "width", np.full(shape, np.nan, dtype=np.float64))
-
+        # sewage type
         # unknown
         self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 

@@ -20,6 +20,7 @@ class Channel:
     connection_node_start_id: int
     connection_node_end_id: int
     calculation_type: CalculationType
+    # display_name: str
 
 
 @array_of(Channel)

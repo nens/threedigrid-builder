@@ -29,7 +29,7 @@ class Culvert:  # NL: duiker
     friction_type: FrictionType
     friction_value: float
     # zoom_category
-    # display_name
+    display_name: str
 
 
 @array_of(Culvert)
@@ -72,7 +72,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     friction_type: FrictionType
     friction_value: float
     # zoom_category
-    # display_name
+    display_name: str
     # sewerage
 
 

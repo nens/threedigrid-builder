@@ -590,6 +590,7 @@ class SQLite:
                     models.Culvert.discharge_coefficient_positive,
                     models.Culvert.friction_type,
                     models.Culvert.friction_value,
+                    models.Culvert.display_name,
                 )
                 .order_by(models.Culvert.id)
                 .as_structarray()
@@ -779,6 +780,7 @@ class SQLite:
                     models.Weir.discharge_coefficient_positive,
                     models.Weir.friction_type,
                     models.Weir.friction_value,
+                    models.Weir.display_name,
                 )
                 .order_by(models.Weir.id)
                 .as_structarray()
