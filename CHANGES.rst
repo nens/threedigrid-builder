@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.11.0 (unreleased)
+0.11.0 (2021-12-22)
 -------------------
 
 - Accept dist_calc_points <= 0; the effect is that there are no interpolated nodes.
