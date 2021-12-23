@@ -223,6 +223,7 @@ def test_get_pipes(db):
     assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
+    assert pipes.display_name[33] == "71518_71517"
 
 
 def test_get_settings(db):
@@ -328,6 +329,7 @@ def test_get_culverts(db):
     assert culverts.discharge_coefficient_positive[0] == 0.8
     assert culverts.friction_type[28] == FrictionType.MANNING
     assert culverts.friction_value[36] == 0.03
+    assert culverts.display_name[32] == "KDU-Q-18482"
 
 
 def test_get_orifices(db):
@@ -356,7 +358,7 @@ def test_get_weirs(db):
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
-    assert weirs.display_name[33] == "KST-JF-98"
+    assert weirs.display_name[33] == "KST-JL-76"
 
 
 def test_get_dem_average(db):

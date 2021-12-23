@@ -328,7 +328,6 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pixel_width", pixel_width)
 
         # can be collected from SQLite, but empty for now:
-        import pdb; pdb.set_trace()
         self.write_dataset(
             group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b""
         )
@@ -453,6 +452,7 @@ class GridAdminOut(OutputInterface):
             group, "line_geometries", lines.line_geometries
         )
 
+        self.write_dataset(group, "display_name", lines.display_name)
         # can be collected from SQLite, but empty for now:
         self.write_dataset(group, "connection_node_end_pk", fill_int)
         self.write_dataset(group, "connection_node_start_pk", fill_int)

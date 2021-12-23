@@ -153,6 +153,7 @@ class BaseLinear:
         - connection_node_end_id
         - calculation_type
         - cross_section_definition_id (pipes and culverts only)
+        - display_name
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
@@ -197,6 +198,8 @@ class BaseLinear:
             objs.the_geom, segment_counts, nodes.s1d
         )
         segments = line_substring(objs.the_geom, start_s, end_s, segment_idx)
+
+        display_name = np.take(self.display_name, segment_idx)
 
         # set the right node indices for each segment
         first_idx, last_idx = counts_to_ranges(segment_counts)
@@ -284,6 +287,7 @@ class BaseLinear:
             dpumax=dpumax,
             discharge_coefficient_positive=dc_positive,
             discharge_coefficient_negative=dc_negative,
+            display_name=display_name,
         )
 
     def compute_bottom_level(self, ids, s):

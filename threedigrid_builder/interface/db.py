@@ -478,6 +478,7 @@ class SQLite:
                     models.Channel.connection_node_start_id,
                     models.Channel.connection_node_end_id,
                     models.Channel.calculation_type,
+                    models.Channel.display_name,
                 )
                 .order_by(models.Channel.id)
                 .as_structarray()
@@ -729,6 +730,7 @@ class SQLite:
                     models.Pipe.connection_node_start_id,
                     models.Pipe.connection_node_end_id,
                     models.Pipe.cross_section_definition_id,
+                    models.Pipe.display_name,
                 )
                 .order_by(models.Pipe.id)
                 .as_structarray()
@@ -753,6 +755,7 @@ class SQLite:
                     models.Pumpstation.start_level,
                     models.Pumpstation.lower_stop_level,
                     models.Pumpstation.upper_stop_level,
+                    models.Pumpstation.display_name,
                 )
                 .order_by(models.Pumpstation.id)
                 .as_structarray()

@@ -104,6 +104,7 @@ class WeirOrifices:
             - invert_level_start_point: the crest_level of the structure
             - invert_level_end_point: the crest_level of the structure
             - discharge_coefficient_positive and _negative: taken from the structure
+            - display_name: the assigned name
         """
         # map connection node IDs to node indices
         line = np.empty((len(self), 2), dtype=np.int32, order="F")
@@ -128,6 +129,7 @@ class WeirOrifices:
             invert_level_end_point=self.crest_level,
             discharge_coefficient_positive=self.discharge_coefficient_positive,
             discharge_coefficient_negative=self.discharge_coefficient_negative,
+            display_name=self.display_name
         )
 
 
