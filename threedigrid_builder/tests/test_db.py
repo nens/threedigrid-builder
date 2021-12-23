@@ -332,7 +332,7 @@ def test_get_culverts(db):
     assert culverts.friction_type[28] == FrictionType.MANNING
     assert culverts.friction_value[36] == 0.03
     assert culverts.display_name[32] == "KDU-Q-18482"
-    assert culverts.zoom_category[15] == "KDU-Q-18542"
+    assert culverts.zoom_category[15] == 2
 
 
 def test_get_orifices(db):
@@ -362,7 +362,7 @@ def test_get_weirs(db):
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
-    assert weirs.zoom_category[15] == "KVD-OH-3602"
+    assert weirs.zoom_category[15] == 2
 
 
 def test_get_dem_average(db):
