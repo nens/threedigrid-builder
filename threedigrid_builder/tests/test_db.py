@@ -80,6 +80,7 @@ def test_get_channels(db):
     assert channels.connection_node_start_id[536] == 1377
     assert channels.connection_node_end_id[1163] == 1056
     assert channels.id[1174] == 666668899
+    assert channels.display_name[33] == "801"
 
 
 def test_get_connected_points(db):
@@ -302,6 +303,7 @@ def test_get_pumps(db):
     assert pumps.start_level[0] == -4.0
     assert pumps.lower_stop_level[18] == -1.9
     assert np.isnan(pumps.upper_stop_level[15])
+    assert pumps.display_name[10] == "KGM-JL-18"
 
 
 def test_get_culverts(db):

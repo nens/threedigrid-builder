@@ -708,6 +708,7 @@ class SQLite:
                     models.Orifice.discharge_coefficient_positive,
                     models.Orifice.friction_type,
                     models.Orifice.friction_value,
+                    models.Orifice.display_name,
                 )
                 .order_by(models.Orifice.id)
                 .as_structarray()
