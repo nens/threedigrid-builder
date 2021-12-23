@@ -593,6 +593,7 @@ class SQLite:
                     models.Culvert.friction_type,
                     models.Culvert.friction_value,
                     models.Culvert.display_name,
+                    models.Culvert.zoom_category,
                 )
                 .order_by(models.Culvert.id)
                 .as_structarray()
@@ -708,6 +709,7 @@ class SQLite:
                     models.Orifice.discharge_coefficient_positive,
                     models.Orifice.friction_type,
                     models.Orifice.friction_value,
+                    models.Orifice.zoom_category,
                 )
                 .order_by(models.Orifice.id)
                 .as_structarray()
@@ -736,6 +738,7 @@ class SQLite:
                     models.Pipe.connection_node_end_id,
                     models.Pipe.cross_section_definition_id,
                     models.Pipe.display_name,
+                    models.Pipe.zoom_category,
                 )
                 .order_by(models.Pipe.id)
                 .as_structarray()
@@ -761,6 +764,7 @@ class SQLite:
                     models.Pumpstation.lower_stop_level,
                     models.Pumpstation.upper_stop_level,
                     models.Pumpstation.display_name,
+                    models.Pumpstation.zoom_category,
                 )
                 .order_by(models.Pumpstation.id)
                 .as_structarray()
@@ -789,6 +793,7 @@ class SQLite:
                     models.Weir.friction_type,
                     models.Weir.friction_value,
                     models.Weir.display_name,
+                    models.Weir.zoom_category,
                 )
                 .order_by(models.Weir.id)
                 .as_structarray()

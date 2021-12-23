@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Added display name to culverts, weirs, pipes, pumps, channels
 
+- Added zoom category to pumps, pipes, culverts, orifices, weirs.
+
 
 0.11.0 (2021-12-22)
 -------------------

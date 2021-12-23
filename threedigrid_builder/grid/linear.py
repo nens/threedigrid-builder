@@ -264,6 +264,12 @@ class BaseLinear:
             dc_positive = 1.0
             dc_negative = 1.0
 
+        # conditionally add zoom category (pipe and culverts only)
+        try:
+            zoom_category = objs.zoom_category
+        except AttributeError:
+            zoom_category = np.full(len(segments), -9999, dtype=np.int32)
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -288,6 +294,7 @@ class BaseLinear:
             discharge_coefficient_positive=dc_positive,
             discharge_coefficient_negative=dc_negative,
             display_name=display_name,
+            zoom_category=zoom_category,
         )
 
     def compute_bottom_level(self, ids, s):

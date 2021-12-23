@@ -224,6 +224,7 @@ def test_get_pipes(db):
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
     assert pipes.display_name[33] == "71518_71517"
+    assert pipes.zoom_category[15] == 3
 
 
 def test_get_settings(db):
@@ -302,6 +303,7 @@ def test_get_pumps(db):
     assert pumps.start_level[0] == -4.0
     assert pumps.lower_stop_level[18] == -1.9
     assert np.isnan(pumps.upper_stop_level[15])
+    assert pumps.zoom_category[15] == 5
 
 
 def test_get_culverts(db):
@@ -330,6 +332,7 @@ def test_get_culverts(db):
     assert culverts.friction_type[28] == FrictionType.MANNING
     assert culverts.friction_value[36] == 0.03
     assert culverts.display_name[32] == "KDU-Q-18482"
+    assert culverts.zoom_category[15] == "KDU-Q-18542"
 
 
 def test_get_orifices(db):
@@ -359,6 +362,7 @@ def test_get_weirs(db):
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
+    assert weirs.zoom_category[15] == "KVD-OH-3602"
 
 
 def test_get_dem_average(db):
