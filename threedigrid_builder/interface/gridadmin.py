@@ -348,7 +348,6 @@ class GridAdminOut(OutputInterface):
             group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
         )
         self.write_dataset(group, "width", np.full(shape, np.nan, dtype=np.float64))
-        # sewage type
         # unknown
         self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 
@@ -452,7 +451,6 @@ class GridAdminOut(OutputInterface):
             group, "line_geometries", lines.line_geometries
         )
 
-        self.write_dataset(group, "display_name", lines.display_name)
         # can be collected from SQLite, but empty for now:
         self.write_dataset(group, "connection_node_end_pk", fill_int)
         self.write_dataset(group, "connection_node_start_pk", fill_int)
@@ -492,11 +490,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "start_level", pumps.start_level)
         self.write_dataset(group, "type", pumps.type_)
         self.write_dataset(group, "upper_stop_level", pumps.upper_stop_level)
+        self.write_dataset(
+            group, "display_name", pumps.display_name.astype("S64"), fill=b""
+        )
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(
-            group, "display_name", np.full(len(pumps), b"", dtype="S64"), fill=b""
-        )
         self.write_dataset(
             group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
         )
