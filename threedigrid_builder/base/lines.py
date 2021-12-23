@@ -74,6 +74,14 @@ class Lines:
         self.line_geometries[to_fix] = pygeos.linestrings(
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
+
+    def fix_ds1d(self):
+        """Construct line distance (ds1d) from line_geometries, where necessary"""
+        to_fix = np.isnan(self.ds1d)
+        if not to_fix.any():
+            return
+        if np.any(pygeos.is_missing(self.line_geometries[to_fix])):
+            raise ValueError("No line geometries available")
         self.ds1d[to_fix] = pygeos.length(self.line_geometries[to_fix])
         self.ds1d_half[to_fix] = 0.5 * self.ds1d[to_fix]
 

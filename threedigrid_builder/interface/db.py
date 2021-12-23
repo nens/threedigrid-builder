@@ -19,6 +19,7 @@ from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import InitializationType
+from threedigrid_builder.constants import LineType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
@@ -602,6 +603,10 @@ class SQLite:
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
+        # When no calculation type is provides we default to isolated
+        arr["calculation_type"][
+            arr["calculation_type"] == -9999
+        ] = LineType.LINE_1D_ISOLATED
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
 

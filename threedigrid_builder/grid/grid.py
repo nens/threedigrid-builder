@@ -614,6 +614,7 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
+
         self.lines += connected_points.get_lines(
             self.cell_tree,
             self.nodes,
@@ -639,6 +640,7 @@ class Grid:
         """
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
+        self.lines.fix_ds1d()
         self.breaches = connected_points.get_breaches(self.lines, self.levees)
 
     def add_groundwater_nodes(self, nodes, node_id_counter):
@@ -776,6 +778,7 @@ class Grid:
         self.sort()
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
+        self.lines.fix_ds1d()
         self.lines.set_discharge_coefficients()
         self.meta: GridMeta
         if len(self.pumps) > 0:

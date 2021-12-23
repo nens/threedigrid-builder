@@ -1,7 +1,13 @@
 Changelog of threedigrid-builder
 ================================
 
-0.11.0 (unreleased)
+0.12.0 (unreleased)
+-------------------
+
+- Bugfix: Set culvert calculation_type to isolated when not provided.
+
+
+0.11.0 (2021-12-22)
 -------------------
 
 - Accept dist_calc_points <= 0; the effect is that there are no interpolated nodes.
@@ -10,6 +16,8 @@ Changelog of threedigrid-builder
 
 - Ignore (impervious) surfaces, grid refinements, and dem averages areas with invalid
   geometries (mostly, polygons with self-intersections).
+
+- Set ds1d of 1d2d lines to 2d cell_width.
 
 
 0.10.0 (2021-12-21)
