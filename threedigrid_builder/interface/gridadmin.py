@@ -348,6 +348,7 @@ class GridAdminOut(OutputInterface):
             group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
         )
         self.write_dataset(group, "width", np.full(shape, np.nan, dtype=np.float64))
+
         # unknown
         self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 

@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Bugfix: Set culvert calculation_type to isolated when not provided.
 
+- Added display name to culverts, weirs, pipes, pumps, channels
+
 
 0.11.0 (2021-12-22)
 -------------------

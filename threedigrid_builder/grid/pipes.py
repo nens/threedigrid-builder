@@ -27,8 +27,8 @@ class Pipe:
     the_geom: pygeos.Geometry
     # zoom_category
     display_name: str
-    # profile_num #
-    # original_length #
+    # profile_num
+    # original_length
     # material
 
 
