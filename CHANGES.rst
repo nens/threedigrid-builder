@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.12.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Bugfix: Set culvert calculation_type to isolated when not provided.
 
 
 0.11.0 (2021-12-22)
