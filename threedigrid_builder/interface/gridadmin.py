@@ -342,7 +342,7 @@ class GridAdminOut(OutputInterface):
             group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
         )
         self.write_dataset(
-            group, "drain_level", np.full(shape, np.nan, dtype=np.float64)
+            group, "drain_level", np.full(shape, nodes.drain_level, dtype=np.float64)
         )
         self.write_dataset(
             group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
