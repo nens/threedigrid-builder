@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.12.0 (unreleased)
 -------------------
 
+- Add drain_level of manholes to gridadmin.
+
 - Bugfix: Set culvert calculation_type to isolated when not provided.
 
 
