@@ -34,6 +34,7 @@ class Node:
     has_dem_averaged: int  # Boolean attribute to tell if dem is averaged for node.
     boundary_type: BoundaryType
     manhole_id: int  # referring to the id of a manhole
+    drain_level: float # Drain level entered for manholes
     initial_waterlevel: float
 
 
