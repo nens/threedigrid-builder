@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.12.0 (unreleased)
+0.12.0 (2021-12-27)
 -------------------
 
 - Add drain_level of manholes to gridadmin.
