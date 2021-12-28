@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.13.0 (unreleased)
+0.13.0 (2021-12-28)
 -------------------
 
 - Enable groundwater and write dimp to nodes.
