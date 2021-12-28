@@ -30,9 +30,6 @@ __all__ = ["make_grid", "make_gridadmin"]
 logger = logging.getLogger(__name__)
 
 
-GROUNDWATER_ENABLED = False
-
-
 def _default_progress_callback(progress: float, message: str):
     logger.info("Progress: %d, Message: %s", progress * 100, message)
 
@@ -89,12 +86,12 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
 
-        if grid.meta.has_groundwater and GROUNDWATER_ENABLED:
+        if grid.meta.has_groundwater:
             grid.add_groundwater_nodes(grid.nodes, node_id_counter)
             grid.add_groundwater_vertical_lines(grid.nodes, line_id_counter)
 
         grid.set_obstacles(db.get_obstacles(), db.get_levees())
-        if grid.meta.has_groundwater_flow and GROUNDWATER_ENABLED:
+        if grid.meta.has_groundwater_flow:
             grid.add_groundwater_lines(grid.lines, line_id_counter)
 
         grid.set_boundary_conditions_2d(
