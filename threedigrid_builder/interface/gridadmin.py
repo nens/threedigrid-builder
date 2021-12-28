@@ -326,11 +326,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "y_coordinate", nodes.coordinates[:, 1])
         self.write_dataset(group, "pixel_coords", nodes.pixel_coords.T)
         self.write_dataset(group, "pixel_width", pixel_width)
+        self.write_dataset(
+            group, "display_name", nodes.display_name.astype("S64"), fill=b""
+        )
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(
-            group, "display_name", np.full(len(nodes), b"", dtype="S64"), fill=b""
-        )
         self.write_dataset(
             group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
         )
