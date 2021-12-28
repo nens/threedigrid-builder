@@ -710,6 +710,7 @@ class SQLite:
                     models.Orifice.friction_type,
                     models.Orifice.friction_value,
                     models.Orifice.zoom_category,
+                    models.Orifice.display_name,
                 )
                 .order_by(models.Orifice.id)
                 .as_structarray()
