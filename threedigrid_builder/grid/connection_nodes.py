@@ -31,6 +31,7 @@ class ConnectionNode:
     manhole_shape: str  # enum with classes "00", "01", "02"
     manhole_width: float
     initial_waterlevel: float
+    display_name: str
 
 
 @array_of(ConnectionNode)
@@ -67,6 +68,7 @@ class ConnectionNodes:
             dmax=self.bottom_level,
             manhole_id=self.manhole_id,
             storage_area=self.storage_area,
+            display_name=self.display_name
         )
         return nodes
 

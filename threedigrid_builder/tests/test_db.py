@@ -129,6 +129,7 @@ def test_get_connection_nodes(db):
     assert connection_nodes.surface_level[35] == -0.54
     assert connection_nodes.manhole_shape[40] == "00"
     assert connection_nodes.manhole_width[32] == 0.8
+    assert connection_nodes.display_name[33] == "71512"
 
 
 def test_get_cross_section_definitions(db):
