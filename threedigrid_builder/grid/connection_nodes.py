@@ -32,6 +32,7 @@ class ConnectionNode:
     manhole_width: float
     initial_waterlevel: float
     display_name: str
+    zoom_category: int
 
 
 @array_of(ConnectionNode)

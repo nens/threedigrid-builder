@@ -511,6 +511,7 @@ class SQLite:
                     models.Manhole.shape.label("manhole_shape"),
                     models.Manhole.width.label("manhole_width"),
                     models.Manhole.display_name,
+                    models.Manhole.zoom_category,
                 )
                 .join(models.ConnectionNode.manholes, isouter=True)
                 .distinct(models.ConnectionNode.id)

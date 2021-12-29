@@ -526,6 +526,15 @@ class Grid:
             culverts=culverts,
         )
 
+    def set_zoom_category(self, connection_nodes: connection_nodes_module.ConnectionNodes):
+        """Set zoom category from connection nodes manholes."""
+        is_manhole = self.nodes.manhole_id != -9999
+        cn_idx = np.where(is_manhole)[0]
+
+        self.nodes.zoom_category[cn_idx] = connection_nodes.zoom_category[
+            connection_nodes.id_to_index(self.nodes.content_pk[cn_idx])
+        ]
+
     def set_obstacles(self, obstacles, levees):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.

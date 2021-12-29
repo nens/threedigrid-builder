@@ -329,11 +329,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "display_name", nodes.display_name.astype("S64"), fill=b""
         )
+        self.write_dataset(group, "zoom_category", nodes.zoom_category)
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(
-            group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
-        )
         # (manhole specific:)
         self.write_dataset(
             group, "manhole_indicator", np.full(len(nodes), -9999, dtype="i4")

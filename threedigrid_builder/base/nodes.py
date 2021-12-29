@@ -35,6 +35,7 @@ class Node:
     boundary_type: BoundaryType
     manhole_id: int  # referring to the id of a manhole
     initial_waterlevel: float
+    zoom_category: int
 
 
 @array_of(Node)

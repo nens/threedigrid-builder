@@ -177,6 +177,7 @@ def _make_gridadmin(
             pipes=pipes,
             culverts=culverts,
         )
+        grid.set_zoom_category(connection_nodes)
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
