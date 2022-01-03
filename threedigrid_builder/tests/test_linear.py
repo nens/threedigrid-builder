@@ -62,6 +62,7 @@ class LinearObject:
     invert_level_end_point: float
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
+    display_name: str
 
 
 @array_of(LinearObject)

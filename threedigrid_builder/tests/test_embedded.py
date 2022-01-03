@@ -30,6 +30,7 @@ class LinearObject:
     calculation_type: CalculationType
     connection_node_start_id: int
     connection_node_end_id: int
+    display_name: str
 
 
 @array_of(LinearObject)

@@ -20,7 +20,7 @@ class Pump:
     lower_stop_level: float
     upper_stop_level: float
     # zoom_category
-    # display_name
+    display_name: str
     # sewerage
     # Generated fields:
     content_pk: int

@@ -26,7 +26,7 @@ class Pipe:
     friction_value: float
     the_geom: pygeos.Geometry
     # zoom_category
-    # display_name
+    display_name: str
     # profile_num
     # original_length
     # material

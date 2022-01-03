@@ -80,6 +80,7 @@ def test_get_channels(db):
     assert channels.connection_node_start_id[536] == 1377
     assert channels.connection_node_end_id[1163] == 1056
     assert channels.id[1174] == 666668899
+    assert channels.display_name[33] == "801"
 
 
 def test_get_connected_points(db):
@@ -128,6 +129,7 @@ def test_get_connection_nodes(db):
     assert connection_nodes.surface_level[35] == -0.54
     assert connection_nodes.manhole_shape[40] == "00"
     assert connection_nodes.manhole_width[32] == 0.8
+    assert connection_nodes.display_name[33] == "71512"
 
 
 def test_get_cross_section_definitions(db):
@@ -223,6 +225,7 @@ def test_get_pipes(db):
     assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
+    assert pipes.display_name[33] == "71518_71517"
 
 
 def test_get_settings(db):
@@ -301,6 +304,7 @@ def test_get_pumps(db):
     assert pumps.start_level[0] == -4.0
     assert pumps.lower_stop_level[18] == -1.9
     assert np.isnan(pumps.upper_stop_level[15])
+    assert pumps.display_name[10] == "KGM-JL-18"
 
 
 def test_get_culverts(db):
@@ -328,6 +332,7 @@ def test_get_culverts(db):
     assert culverts.discharge_coefficient_positive[0] == 0.8
     assert culverts.friction_type[28] == FrictionType.MANNING
     assert culverts.friction_value[36] == 0.03
+    assert culverts.display_name[32] == "KDU-Q-18482"
 
 
 def test_get_orifices(db):
@@ -356,6 +361,7 @@ def test_get_weirs(db):
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
+    assert weirs.display_name[33] == "KST-JL-76"
 
 
 def test_get_dem_average(db):
