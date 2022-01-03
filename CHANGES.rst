@@ -10,6 +10,8 @@ Changelog of threedigrid-builder
 
 - Added zoom category to pumps, pipes, culverts, orifices, weirs, manholes.
 
+- Write connection node start and end pk to lines.
+
 
 0.11.0 (2021-12-22)
 -------------------
