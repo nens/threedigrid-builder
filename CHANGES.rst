@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.14.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add nodm and nodn for 2D boundary nodes.
 
 
 0.13.0 (2021-12-28)
