@@ -195,15 +195,13 @@ class BoundaryConditions2D:
             new_nodes.boundary_id[:] = self.id[bc_idx]
             new_nodes.boundary_type[:] = self.boundary_type[bc_idx]
             new_nodes.node_type[:] = NodeType.NODE_2D_BOUNDARIES
-            new_nodes.nodm = nodes.nodm[node_idx]
-            new_nodes.nodn = nodes.nodn[node_idx]
 
             # Get the cross_pix_coords before resetting the pixel_coords
             cross_pix_coords = np.array(
                 [new_nodes.pixel_coords[:, x] for x in cross_pix_coords_cols]
             ).T
 
-            # a boundary cell has no real place on the nodgrid or on the pixels:
+            # a boundary cell has no real place on the pixels:
             new_nodes.pixel_coords[:] = -9999
 
             # the bounds and coordinates are shifted:
