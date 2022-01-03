@@ -36,6 +36,7 @@ class Node:
     manhole_id: int  # referring to the id of a manhole
     initial_waterlevel: float
     zoom_category: int
+    drain_level: float
 
 
 @array_of(Node)

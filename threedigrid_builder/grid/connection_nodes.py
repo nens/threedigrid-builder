@@ -69,7 +69,8 @@ class ConnectionNodes:
             dmax=self.bottom_level,
             manhole_id=self.manhole_id,
             storage_area=self.storage_area,
-            display_name=self.display_name
+            display_name=self.display_name,
+            drain_level=self.drain_level,
         )
         return nodes
 

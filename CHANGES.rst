@@ -12,6 +12,8 @@ Changelog of threedigrid-builder
 
 - Write connection node start and end pk to lines.
 
+- Write drain level to nodes.
+
 
 0.11.0 (2021-12-22)
 -------------------

@@ -330,6 +330,7 @@ class GridAdminOut(OutputInterface):
             group, "display_name", nodes.display_name.astype("S64"), fill=b""
         )
         self.write_dataset(group, "zoom_category", nodes.zoom_category)
+        self.write_dataset(group, "drain_level", nodes.drain_level)
 
         # can be collected from SQLite, but empty for now:
         # (manhole specific:)
@@ -338,9 +339,6 @@ class GridAdminOut(OutputInterface):
         )
         self.write_dataset(
             group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
-        )
-        self.write_dataset(
-            group, "drain_level", np.full(shape, np.nan, dtype=np.float64)
         )
         self.write_dataset(
             group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
