@@ -29,7 +29,9 @@ class QuadTree:
     quad_idx: int
     transform: float
 
-    def __init__(self, subgrid_meta, num_refine_levels, min_gridsize, refinements):
+    def __init__(
+        self, subgrid_meta, num_refine_levels, min_gridsize, use_2d_flow, refinements
+    ):
 
         self.lgrmin = int(min_gridsize / subgrid_meta["pixel_size"])
         # Maximum number of active grid levels in quadtree.
@@ -82,6 +84,9 @@ class QuadTree:
             self.quad_idx,
             self.lg,
         )
+
+        if not use_2d_flow:
+            self.n_lines = (0, 0)
 
     def __repr__(self):
         return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>"  # NOQA

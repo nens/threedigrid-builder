@@ -52,8 +52,8 @@ def set_2d_computational_nodes_lines(
         area_mask=&area_mask[0, 0],
         size_a=&size_a,
         size_b=&size_b,
-        line=&line[0, 0],
-        cross_pix_coords=&cross_pix_coords[0, 0],
+        line=&line[0, 0] if line.size > 0 else NULL,
+        cross_pix_coords=&cross_pix_coords[0, 0] if cross_pix_coords.size > 0 else NULL,
         n_line_u=&n_line_u,
         n_line_v=&n_line_v
     )
