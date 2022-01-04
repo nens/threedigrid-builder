@@ -83,7 +83,7 @@ class ConnectionNodes:
             manhole_id=self.manhole_id,
             drain_level=self.drain_level,
             storage_area=self.storage_area,
-            display_name=self.display_name
+            display_name=self.display_name,
         )
         return nodes
 
