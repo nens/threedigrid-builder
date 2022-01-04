@@ -29,6 +29,18 @@ def quadtree_no_refinement(subgrid_meta):
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
         min_gridsize=1.0,
+        use_2d_flow=True,
+        refinements=None,
+    )
+
+
+@pytest.fixture
+def quadtree_no_2d_flow(subgrid_meta):
+    return QuadTree(
+        subgrid_meta=subgrid_meta,
+        num_refine_levels=3,
+        min_gridsize=1.0,
+        use_2d_flow=False,
         refinements=None,
     )
 
@@ -44,6 +56,7 @@ def quadtree_line_refinement(subgrid_meta):
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
         min_gridsize=1.0,
+        use_2d_flow=True,
         refinements=refinement,
     )
 
@@ -59,6 +72,7 @@ def quadtree_small_line_refinement(subgrid_meta):
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
         min_gridsize=1.0,
+        use_2d_flow=True,
         refinements=refinement,
     )
 
@@ -74,6 +88,7 @@ def quadtree_poly_refinement(subgrid_meta):
         subgrid_meta=subgrid_meta,
         num_refine_levels=3,
         min_gridsize=1.0,
+        use_2d_flow=True,
         refinements=refinement,
     )
 
@@ -355,3 +370,14 @@ def test_lines_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
     assert_array_equal(lines.lim, lim)
     assert_array_equal(lines.lin, lin)
     assert_array_equal(lines.cross_pix_coords, cross_pix_coords)
+
+
+def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
+    nodes, lines = quadtree_no_2d_flow.get_nodes_lines(
+        subgrid_meta["area_mask"],
+        itertools.count(start=0),
+        itertools.count(start=0),
+    )
+
+    assert len(lines) == 0
+    assert len(nodes) == 4

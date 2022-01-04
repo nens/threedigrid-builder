@@ -56,8 +56,6 @@ def _make_gridadmin(
         progress_callback(0.1, "Reading subgrid input...")
         if not dem_path:
             raise SchematisationError("DEM file expected")
-        # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
-
         try:
             with RasterioInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
@@ -77,6 +75,7 @@ def _make_gridadmin(
             subgrid_meta,
             grid_settings.kmax,
             grid_settings.grid_space,
+            grid_settings.use_2d_flow,
             refinements,
         )
         grid += Grid.from_quadtree(

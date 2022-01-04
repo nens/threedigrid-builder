@@ -12,6 +12,8 @@ Changelog of threedigrid-builder
 
 - Add nodm and nodn for 2D boundary nodes.
 
+- Handle use_2d_flow setting.
+
 
 0.13.0 (2021-12-28)
 -------------------
