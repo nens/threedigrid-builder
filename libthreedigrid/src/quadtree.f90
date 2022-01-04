@@ -95,7 +95,7 @@ module m_quadtree
 
     end subroutine set_refinement
 
-    subroutine make_quadtree(kmax, mmax, nmax, lgrmin, area_mask, lg, quad_idx,&
+    subroutine make_quadtree(kmax, mmax, nmax, lgrmin, use_2d_flow, area_mask, lg, quad_idx,&
         n0, n1, i0, i1, n_cells, n_line_u, n_line_v) bind(c, name="make_quadtree")
     !!! Entry point for creating quadtree by setting lg array and then finding number of active cells and lines.
 
@@ -107,6 +107,7 @@ module m_quadtree
         integer(kind=c_int), intent(in) :: mmax(kmax) ! X Dimension of each refinement level
         integer(kind=c_int), intent(in) :: nmax(kmax) ! Y Dimension of each refinement level
         integer(kind=c_int), intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
+        integer(kind=c_int), intent(in) :: use_2d_flow  ! Whether to add flowlines
         integer(kind=c_int16_t), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
         integer(kind=c_int), intent(inout) :: lg(i0,i1) ! Array with all refinement levels.
         integer(kind=c_int), intent(inout) :: quad_idx(i0,i1) ! Array with idx of cell at lg refinement locations
@@ -115,7 +116,7 @@ module m_quadtree
         integer(kind=c_int), intent(inout) :: n_line_v ! counter for active v lines
         integer :: k
         integer :: m, n
-        
+
         write(*,*) '** INFO: Start making quadtree.'
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
@@ -123,7 +124,7 @@ module m_quadtree
             enddo
         enddo
         call balance_quadtree(kmax, mmax, nmax, lg)
-        call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
+        call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
         write(*,*) '** INFO: Done making quadtree.'
 
     end subroutine make_quadtree
@@ -195,7 +196,7 @@ module m_quadtree
 
     end subroutine balance_quadtree
 
-    subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
+    subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, use_2d_flow, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
     !!! Counting active cells and lines based on area_mask of active pixels.
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster, pad_area_mask
         use m_cells, only : set_2d_computational_lines
@@ -204,6 +205,7 @@ module m_quadtree
         integer, intent(in) :: mmax(:)
         integer, intent(in) :: nmax(:)
         integer, intent(in) :: lgrmin
+        logical, intent(in) :: use_2d_flow
         integer, intent(inout) :: lg(:,:)
         integer(kind=int16), intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
@@ -237,7 +239,9 @@ module m_quadtree
                             n_cells = n_cells + 1
                             lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                             quad_idx(mn(1):mn(3),mn(2):mn(4)) = n_cells
-                            call set_2d_computational_lines(n_line_u, n_line_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx)
+                            if (use_2d_flow) then
+                                call set_2d_computational_lines(n_line_u, n_line_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx)
+                            endif
                         endif
                     endif
                 enddo

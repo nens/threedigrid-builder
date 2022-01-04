@@ -42,14 +42,18 @@ module m_cells
         integer :: l_u, l_v
         integer :: m, n
         integer :: mn(4)
+        logical :: use_2d_flow
 
         write(*,*) '** INFO: Start setting 2D calculation cells.'
         nod = 1
+        use_2d_flow = ((n_line_u > 0) .and. (n_line_v > 0))
         l_u = 0
         l_v = n_line_u
         line = 0
         call get_pix_corners(kmax, mmax(kmax), nmax(kmax), lgrmin, i0, i1, j0, j1)
-        area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
+        if (use_2d_flow) then
+            area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
+        endif
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
@@ -64,7 +68,9 @@ module m_cells
                         ! We inverse the y-axis for pixel_coords to comply with geotiffs in future use.
                         ! And do some index fiddling because python starts indexing at 0 and has open end indexing.
                         pixel_coords(nod, :) = (/ i0 - 1, j0 - 1, i1, j1 /)
-                        call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx, nod, line, cross_pix_coords)
+                        if (use_2d_flow) then
+                            call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx, nod, line, cross_pix_coords)
+                        endif
                         nod = nod + 1
                     else
                         continue
@@ -72,7 +78,9 @@ module m_cells
                 enddo
             enddo
         enddo
-        deallocate(area_mask_padded)
+        if (use_2d_flow) then
+            deallocate(area_mask_padded)
+        endif
         write(*,*) '** INFO: Number of 2D nodes is: ', nod - 1
         write(*,*) '** INFO: Number of 2D lines is: ', l_u + l_v
         write(*,*) '** INFO: Done setting 2D calculation cells.'

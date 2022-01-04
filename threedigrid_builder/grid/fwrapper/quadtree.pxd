@@ -22,6 +22,7 @@ cdef extern:
         int *mmax,
         int *nmax,
         int *lgrmin,
+        int *use_2d_flow,
         short *area_mask,
         int *lg,
         int *quad_idx,

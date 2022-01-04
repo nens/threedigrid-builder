@@ -160,12 +160,14 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
 
 
 @pytest.mark.parametrize(
-    "bc_coords, bounds, boundary_id, kcu, line, cross_pix_coords",
+    "bc_coords, bounds, boundary_id, nodm, nodn, kcu, line, cross_pix_coords",
     [
         (  # Boundary condition exactly at the bottom
             [[(46, 47), (106, 47)]],
             (bottom_1, bottom_6),
             0,
+            [1, 3],
+            [0, 0],
             SOUTH,
             [(9, 1), (10, 6)],
             [(0, 0, 8, 0), (8, 0, 12, 0)],
@@ -174,6 +176,8 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
             [[(46, 47), (46, 107)]],
             (left_1, left_3),
             0,
+            [0, 0],
+            [1, 3],
             WEST,
             [(9, 1), (10, 3)],
             [(0, 0, 0, 8), (0, 8, 0, 12)],
@@ -182,6 +186,8 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
             [[(66, 127), (126, 127)]],
             (top_2, top_5),
             0,
+            [2, 2],
+            [3, 5],
             NORTH,
             [(2, 9), (5, 10)],
             [(8, 16, 16, 16), (4, 16, 8, 16)],
@@ -190,6 +196,8 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
             [[(126, 67), (126, 127)]],
             (right_2, right_8),
             0,
+            [3, 5],
+            [2, 2],
             EAST,
             [(2, 9), (8, 10)],
             [(16, 8, 16, 16), (16, 4, 16, 8)],
@@ -198,6 +206,8 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
             [[(46, 47), (106, 47)], [(46, 47), (46, 107)]],
             (bottom_1, bottom_6, left_3),
             (0, 0, 1),
+            [1, 3, 0],
+            [0, 0, 3],
             [SOUTH, SOUTH, WEST],
             [(9, 1), (10, 6), (11, 3)],
             [(0, 0, 8, 0), (8, 0, 12, 0), (0, 8, 0, 12)],
@@ -206,6 +216,8 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
             [[(46, 47), (46, 107)], [(46, 47), (106, 47)]],
             (left_1, left_3, bottom_6),
             (0, 0, 1),
+            [0, 0, 3],
+            [1, 3, 0],
             [WEST, WEST, SOUTH],
             [(9, 1), (10, 3), (11, 6)],
             [(0, 0, 0, 8), (0, 8, 0, 12), (8, 0, 12, 0)],
@@ -216,6 +228,8 @@ def test_2d_boundary_condition(
     grid2d,
     bc_coords,
     bounds,
+    nodm,
+    nodn,
     kcu,
     boundary_id,
     line,
@@ -240,8 +254,8 @@ def test_2d_boundary_condition(
     assert_array_equal(nodes.boundary_type, 3)
     assert_array_equal(nodes.bounds, bounds)
     assert_array_equal(nodes.pixel_coords, -9999)
-    assert_array_equal(nodes.nodm, -9999)
-    assert_array_equal(nodes.nodn, -9999)
+    assert_array_equal(nodes.nodm, nodm)
+    assert_array_equal(nodes.nodn, nodn)
     assert_array_equal(lines.kcu, kcu)
     assert_array_equal(lines.line, line)
     assert_array_equal(lines.cross_pix_coords, cross_pix_coords)

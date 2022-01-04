@@ -30,9 +30,6 @@ __all__ = ["make_grid", "make_gridadmin"]
 logger = logging.getLogger(__name__)
 
 
-GROUNDWATER_ENABLED = False
-
-
 def _default_progress_callback(progress: float, message: str):
     logger.info("Progress: %d, Message: %s", progress * 100, message)
 
@@ -59,8 +56,6 @@ def _make_gridadmin(
         progress_callback(0.1, "Reading subgrid input...")
         if not dem_path:
             raise SchematisationError("DEM file expected")
-        # TODO use_2d_flow --> https://github.com/nens/threedigrid-builder/issues/87
-
         try:
             with RasterioInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
@@ -80,6 +75,7 @@ def _make_gridadmin(
             subgrid_meta,
             grid_settings.kmax,
             grid_settings.grid_space,
+            grid_settings.use_2d_flow,
             refinements,
         )
         grid += Grid.from_quadtree(
@@ -89,12 +85,12 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
 
-        if grid.meta.has_groundwater and GROUNDWATER_ENABLED:
+        if grid.meta.has_groundwater:
             grid.add_groundwater_nodes(grid.nodes, node_id_counter)
             grid.add_groundwater_vertical_lines(grid.nodes, line_id_counter)
 
         grid.set_obstacles(db.get_obstacles(), db.get_levees())
-        if grid.meta.has_groundwater_flow and GROUNDWATER_ENABLED:
+        if grid.meta.has_groundwater_flow:
             grid.add_groundwater_lines(grid.lines, line_id_counter)
 
         grid.set_boundary_conditions_2d(

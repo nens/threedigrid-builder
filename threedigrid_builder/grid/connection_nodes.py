@@ -53,12 +53,26 @@ class ConnectionNodes:
             - node_type: NODE_1D_STORAGE or NODE_1D_NO_STORAGE depending on storage_area
             - calculation_type: from calculation_type (which comes from manhole)
             - dmax: from bottom_level (which comes from manhole)
+            - manhole_id: id of associated manhole.
+            - drain_level: drain_level of associated manhole.
+            - storage_area: area of connection_node.
         """
         node_type = np.where(
             self.storage_area > 0,
             int(NodeType.NODE_1D_STORAGE),
             int(NodeType.NODE_1D_NO_STORAGE),
         )
+
+        # Check if manhole has drain_level below bottom_level
+        is_manhole = self.manhole_id != -9999
+        has_lower_drn_lvl = self.drain_level[is_manhole] < self.bottom_level[is_manhole]
+        if np.any(has_lower_drn_lvl):
+            ids = self.manhole_id[is_manhole][has_lower_drn_lvl]
+            logger.warning(
+                f"Manholes {sorted(ids.tolist())} have a "
+                f"bottom_level that is above drain_level."
+            )
+
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(self)),
             coordinates=pygeos.get_coordinates(self.the_geom),
@@ -68,6 +82,7 @@ class ConnectionNodes:
             calculation_type=self.calculation_type,
             dmax=self.bottom_level,
             manhole_id=self.manhole_id,
+            drain_level=self.drain_level,
             storage_area=self.storage_area,
             display_name=self.display_name,
             zoom_category=self.zoom_category,

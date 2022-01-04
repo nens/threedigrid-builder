@@ -18,8 +18,6 @@ import numpy as np
 import pygeos
 
 
-GROUNDWATER_ENABLED = False
-
 try:
     import h5py
 except ImportError:
@@ -225,7 +223,7 @@ class GridAdminOut(OutputInterface):
             ("lgutot", (LineType.LINE_2D_U, LineType.LINE_2D_OBSTACLE_U)),
             ("lgvtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
         ]:
-            if self._file.attrs["has_groundwater_flow"] and GROUNDWATER_ENABLED:
+            if self._file.attrs["has_groundwater_flow"]:
                 count = np.count_nonzero(np.isin(masked_line_kcu, kcu_values))
             else:
                 count = 0
@@ -311,7 +309,7 @@ class GridAdminOut(OutputInterface):
 
         # unclear what is the difference: seems bottom_level is for 1D, and z_coordinate
         # for 2D, but some nodes have both sets (then they are equal)
-        # missing in gridadmin: dimp (bottom level groundwater)
+        self.write_dataset(group, "dimp", nodes.dimp)
         self.write_dataset(group, "bottom_level", nodes.dmax)
         self.write_dataset(group, "z_coordinate", nodes.dmax)
 
@@ -340,7 +338,7 @@ class GridAdminOut(OutputInterface):
             group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
         )
         self.write_dataset(
-            group, "drain_level", np.full(shape, np.nan, dtype=np.float64)
+            group, "drain_level", np.full(shape, nodes.drain_level, dtype=np.float64)
         )
         self.write_dataset(
             group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
