@@ -32,6 +32,7 @@ class ConnectionNode:
     manhole_width: float
     initial_waterlevel: float
     display_name: str
+    zoom_category: int
 
 
 @array_of(ConnectionNode)
@@ -84,6 +85,7 @@ class ConnectionNodes:
             drain_level=self.drain_level,
             storage_area=self.storage_area,
             display_name=self.display_name,
+            zoom_category=self.zoom_category,
         )
         return nodes
 

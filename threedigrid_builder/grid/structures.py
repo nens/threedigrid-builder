@@ -28,7 +28,7 @@ class Culvert:  # NL: duiker
     discharge_coefficient_positive: float
     friction_type: FrictionType
     friction_value: float
-    # zoom_category
+    zoom_category: int
     display_name: str
 
 
@@ -71,7 +71,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     discharge_coefficient_positive: float
     friction_type: FrictionType
     friction_value: float
-    # zoom_category
+    zoom_category: int
     display_name: str
     # sewerage
 

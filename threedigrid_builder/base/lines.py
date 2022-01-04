@@ -42,6 +42,7 @@ class Line:
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
     is_1d_boundary: int  # internal flag
+    zoom_category: int
 
 
 @array_of(Line)

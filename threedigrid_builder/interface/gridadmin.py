@@ -327,11 +327,9 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "display_name", nodes.display_name.astype("S64"), fill=b""
         )
+        self.write_dataset(group, "zoom_category", nodes.zoom_category)
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(
-            group, "zoom_category", np.full(len(nodes), -9999, dtype="i4")
-        )
         # (manhole specific:)
         self.write_dataset(
             group, "manhole_indicator", np.full(len(nodes), -9999, dtype="i4")
@@ -449,6 +447,7 @@ class GridAdminOut(OutputInterface):
         self.write_line_geometry_dataset(
             group, "line_geometries", lines.line_geometries
         )
+        self.write_dataset(group, "zoom_category", lines.zoom_category)
 
         # can be collected from SQLite, but empty for now:
         self.write_dataset(group, "connection_node_end_pk", fill_int)
@@ -464,7 +463,6 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "material", fill_int)
         self.write_dataset(group, "sewerage", fill_int)
         self.write_dataset(group, "sewerage_type", fill_int)
-        self.write_dataset(group, "zoom_category", fill_int)
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")
@@ -492,11 +490,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "display_name", pumps.display_name.astype("S64"), fill=b""
         )
-
-        # can be collected from SQLite, but empty for now:
-        self.write_dataset(
-            group, "zoom_category", np.full(len(pumps), -9999, dtype="i4")
-        )
+        self.write_dataset(group, "zoom_category", pumps.zoom_category)
 
     def write_surfaces(self, surfaces: Surfaces, surface_maps: SurfaceMaps):
 

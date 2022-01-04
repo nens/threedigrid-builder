@@ -63,6 +63,7 @@ class LinearObject:
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
     display_name: str
+    zoom_category: int
 
 
 @array_of(LinearObject)
