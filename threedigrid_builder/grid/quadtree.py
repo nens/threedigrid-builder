@@ -80,13 +80,11 @@ class QuadTree:
             self.mmax,
             self.nmax,
             self.min_cell_pixels,
+            use_2d_flow,
             subgrid_meta["area_mask"],
             self.quad_idx,
             self.lg,
         )
-
-        if not use_2d_flow:
-            self.n_lines = (0, 0)
 
     def __repr__(self):
         return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>"  # NOQA
