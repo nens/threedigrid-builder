@@ -97,7 +97,6 @@ class GridMeta:
     threedigrid_builder_version: str = ""  # filled in __post_init__
     threedi_tables_version: Optional[str] = None  # filled in threedi-tables
 
-    # TODO what to do with use_1d_flow, use_2d_flow, manhole_storage_area
     has_0d: bool = False
     has_1d: bool = False
     has_2d: bool = False
