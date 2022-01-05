@@ -480,6 +480,7 @@ class SQLite:
                     models.Channel.connection_node_end_id,
                     models.Channel.calculation_type,
                     models.Channel.display_name,
+                    models.Channel.zoom_category,
                 )
                 .order_by(models.Channel.id)
                 .as_structarray()

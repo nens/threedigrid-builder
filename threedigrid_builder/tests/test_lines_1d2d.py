@@ -71,7 +71,9 @@ def empty_connected_points():
         ([(0.5, 0.5), (2, 1)], [(0, 7), (1, 8)], [1, 2]),  # two cells, different
     ],
 )
-def test_get_lines(node_coordinates, expected_lines, expected_ds1d, grid2d, empty_connected_points):
+def test_get_lines(
+    node_coordinates, expected_lines, expected_ds1d, grid2d, empty_connected_points
+):
     grid2d.nodes += Nodes(
         id=[7, 8][: len(node_coordinates)],
         coordinates=node_coordinates,

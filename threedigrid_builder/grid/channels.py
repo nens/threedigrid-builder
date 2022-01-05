@@ -21,6 +21,7 @@ class Channel:
     connection_node_end_id: int
     calculation_type: CalculationType
     display_name: str
+    zoom_category: int
 
 
 @array_of(Channel)

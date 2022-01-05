@@ -129,7 +129,7 @@ class WeirOrifices:
             invert_level_end_point=self.crest_level,
             discharge_coefficient_positive=self.discharge_coefficient_positive,
             discharge_coefficient_negative=self.discharge_coefficient_negative,
-            display_name=self.display_name
+            display_name=self.display_name,
         )
 
 

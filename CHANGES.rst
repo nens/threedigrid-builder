@@ -1,8 +1,40 @@
 Changelog of threedigrid-builder
 ================================
 
-0.12.0 (unreleased)
+0.15.1 (unreleased)
 -------------------
+
+- Nothing changed yet.
+
+
+0.15.0 (2022-01-05)
+-------------------
+
+- Small fix for use_2d_flow setting.
+
+- Added zoom_category to nodes, lines and pumps.
+
+
+0.14.0 (2022-01-04)
+-------------------
+
+- Add nodm and nodn for 2D boundary nodes.
+
+- Handle use_2d_flow setting.
+
+- Added display_name to nodes, lines and pumps.
+
+
+0.13.0 (2021-12-28)
+-------------------
+
+- Enable groundwater and write dimp to nodes.
+
+
+0.12.0 (2021-12-27)
+-------------------
+
+- Add drain_level of manholes to gridadmin.
 
 - Bugfix: Set culvert calculation_type to isolated when not provided.
 

@@ -200,6 +200,7 @@ class BaseLinear:
         segments = line_substring(objs.the_geom, start_s, end_s, segment_idx)
 
         display_name = np.take(self.display_name, segment_idx)
+        zoom_category = np.take(self.zoom_category, segment_idx)
 
         # set the right node indices for each segment
         first_idx, last_idx = counts_to_ranges(segment_counts)
@@ -254,7 +255,7 @@ class BaseLinear:
 
         # Conditionally add discharge coefficients, (for culverts only). If one culvert has
         # multiple segments positive coefficient goes onto the first segment and negative
-        # coefficient goes onto last segment (ohterwise we have to much energy losses.)
+        # coefficient goes onto last segment (otherwise we have to much energy losses.)
         try:
             dc_positive = np.full((len(segments)), 1.0, dtype=np.float64)
             dc_negative = np.full((len(segments)), 1.0, dtype=np.float64)
@@ -263,12 +264,6 @@ class BaseLinear:
         except AttributeError:
             dc_positive = 1.0
             dc_negative = 1.0
-
-        # conditionally add zoom category (pipe and culverts only)
-        try:
-            zoom_category = objs.zoom_category
-        except AttributeError:
-            zoom_category = np.full(len(segments), -9999, dtype=np.int32)
 
         # construct the result
         return Lines(
