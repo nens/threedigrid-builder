@@ -201,6 +201,8 @@ class BaseLinear:
 
         display_name = np.take(self.display_name, segment_idx)
         zoom_category = np.take(self.zoom_category, segment_idx)
+        connection_node_start_id = np.take(self.connection_node_start_id, segment_idx)
+        connection_node_end_id = np.take(self.connection_node_end_id, segment_idx)
 
         # set the right node indices for each segment
         first_idx, last_idx = counts_to_ranges(segment_counts)
@@ -290,6 +292,8 @@ class BaseLinear:
             discharge_coefficient_negative=dc_negative,
             display_name=display_name,
             zoom_category=zoom_category,
+            connection_node_start_id=connection_node_start_id,
+            connection_node_end_id=connection_node_end_id,
         )
 
     def compute_bottom_level(self, ids, s):

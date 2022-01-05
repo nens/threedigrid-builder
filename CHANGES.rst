@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.15.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added connection node start and end id to lines.
 
 
 0.15.0 (2022-01-05)
@@ -41,8 +41,6 @@ Changelog of threedigrid-builder
 - Added display name to culverts, weirs, pipes, pumps, channels
 
 - Added zoom category to pumps, pipes, culverts, orifices, weirs, manholes.
-
-- Write connection node start and end pk to lines.
 
 
 0.11.0 (2021-12-22)
