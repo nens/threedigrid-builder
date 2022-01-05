@@ -46,7 +46,7 @@ module m_cells
 
         write(*,*) '** INFO: Start setting 2D calculation cells.'
         nod = 1
-        use_2d_flow = ((n_line_u > 0) .and. (n_line_v > 0))
+        use_2d_flow = ((n_line_u > 0) .or. (n_line_v > 0))
         l_u = 0
         l_v = n_line_u
         line = 0
