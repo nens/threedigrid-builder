@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 0.15.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Small fix for use_2d_flow setting.
 
 
 0.14.0 (2022-01-04)
