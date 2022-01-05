@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Small fix for use_2d_flow setting.
 
+- Added zoom_category to nodes, lines and pumps.
+
 
 0.14.0 (2022-01-04)
 -------------------
@@ -13,6 +15,8 @@ Changelog of threedigrid-builder
 - Add nodm and nodn for 2D boundary nodes.
 
 - Handle use_2d_flow setting.
+
+- Added display_name to nodes, lines and pumps.
 
 
 0.13.0 (2021-12-28)
