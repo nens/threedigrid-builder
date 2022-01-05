@@ -436,3 +436,9 @@ def test_not_off_by_one(h5_out, group, dataset, expected):
 def test_write_surface(h5_out, dataset, shape, dtype):
     assert h5_out["surface"][dataset].shape == shape
     assert h5_out["surface"][dataset].dtype == np.dtype(dtype)
+
+
+def test_encoding(h5_out):
+    assert h5_out["nodes"]["display_name"][1].decode() == "foo"
+    assert h5_out["nodes"]["display_name"][2].decode() == "金蟾"
+    assert h5_out["nodes"]["display_name"][3].decode() == ""
