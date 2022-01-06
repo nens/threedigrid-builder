@@ -43,6 +43,8 @@ class Line:
     discharge_coefficient_negative: float
     is_1d_boundary: int  # internal flag
     zoom_category: int
+    connection_node_start_id: int
+    connection_node_end_id: int
 
 
 @array_of(Line)

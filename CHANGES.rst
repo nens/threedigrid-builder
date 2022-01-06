@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.15.1 (unreleased)
 -------------------
 
+- Added connection node start and end id to lines.
+
 - Handle non-ASCII characters in gridadmin HDF5 output.
 
 - Fixed node ids in groundwater lines (they now connect groundwater cells instead of 

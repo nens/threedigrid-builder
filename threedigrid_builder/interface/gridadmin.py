@@ -461,10 +461,14 @@ class GridAdminOut(OutputInterface):
             group, "line_geometries", lines.line_geometries
         )
         self.write_dataset(group, "zoom_category", lines.zoom_category)
+        self.write_dataset(
+            group, "connection_node_end_pk", lines.connection_node_start_id
+        )
+        self.write_dataset(
+            group, "connection_node_start_pk", lines.connection_node_end_id
+        )
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "connection_node_end_pk", fill_int)
-        self.write_dataset(group, "connection_node_start_pk", fill_int)
         self.write_dataset(group, "crest_level", fill_float)
         self.write_dataset(group, "crest_type", fill_int)
         self.write_dataset(group, "cross_section_height", fill_int)

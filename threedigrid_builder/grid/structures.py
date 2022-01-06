@@ -130,6 +130,8 @@ class WeirOrifices:
             discharge_coefficient_positive=self.discharge_coefficient_positive,
             discharge_coefficient_negative=self.discharge_coefficient_negative,
             display_name=self.display_name,
+            connection_node_start_id=self.connection_node_start_id,
+            connection_node_end_id=self.connection_node_end_id,
         )
 
 
