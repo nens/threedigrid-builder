@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 0.15.1 (unreleased)
 -------------------
 
+- Added cross section width, height, shape to lines.
+
 - Added crest level and crest type to to lines.
 
 - Added connection node start and end id to lines.

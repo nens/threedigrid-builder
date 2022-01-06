@@ -470,10 +470,48 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "crest_level", lines.crest_level)
         self.write_dataset(group, "crest_type", lines.crest_type)
 
+        # Cross section on pipes and culverts
+        pipe_culvert = np.logical_or(
+            lines.content_type == ContentType.TYPE_V2_PIPE,
+            lines.content_type == ContentType.TYPE_V2_CHANNEL.TYPE_V2_CULVERT
+        )
+        # Data placeholders
+        cross_section_width = np.full(len(lines), np.nan, dtype=np.float64)
+        cross_section_height = np.full(len(lines), np.nan, dtype=np.float64)
+        cross_section_shape = np.full(len(lines), np.nan, dtype=np.float64)
+
+        # Cross section definition ids, for pipe and culvert cross_id1 == cross_id2
+        cross_ids = lines.cross_id1[pipe_culvert]
+        sorter = cross_sections.id  # use (sorted) ids as index for cross section information
+
+        # Put cross section data into placeholders at pipe and culvert indexes
+        # Get cross section width, height, shape corresponding to cross section definition id
+        np.put(
+            cross_section_width,
+            lines.id[pipe_culvert],
+            cross_sections.width_1d[
+                sorter[np.searchsorted(cross_sections.content_pk, cross_ids, sorter=sorter)]
+            ]
+        )
+        np.put(
+            cross_section_height,
+            lines.id[pipe_culvert],
+            cross_sections.height_1d[
+                sorter[np.searchsorted(cross_sections.content_pk, cross_ids, sorter=sorter)]
+            ]
+        )
+        np.put(
+            cross_section_shape,
+            lines.id[pipe_culvert],
+            cross_sections.shape[
+                sorter[np.searchsorted(cross_sections.content_pk, cross_ids, sorter=sorter)]
+            ]
+        )
+        self.write_dataset(group, "cross_section_width", cross_section_width)
+        self.write_dataset(group, "cross_section_height", cross_section_height)
+        self.write_dataset(group, "cross_section_shape", cross_section_shape)
+
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "cross_section_height", fill_int)
-        self.write_dataset(group, "cross_section_shape", fill_int)
-        self.write_dataset(group, "cross_section_width", fill_float)
         self.write_dataset(group, "dist_calc_points", fill_float)
         self.write_dataset(group, "friction_type", fill_int)
         self.write_dataset(group, "friction_value", fill_float)

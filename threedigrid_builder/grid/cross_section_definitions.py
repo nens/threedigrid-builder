@@ -51,7 +51,7 @@ class CrossSectionDefinitions:
 
         for i, shape in enumerate(self.shape[idx]):
             tabulator = tabulators[shape]
-            result.shape[i], result.width_1d[i], table = tabulator(
+            result.shape[i], result.width_1d[i], result.height_1d[i], table = tabulator(
                 shape, width_idx[i], height_idx[i]
             )
             if table is not None:
@@ -77,6 +77,7 @@ class CrossSection:
     shape: CrossSectionShape
     content_pk: int
     width_1d: float
+    height_1d: float
     offset: int
     count: int
     # tables: Tuple[float, float] has different length so is specified on CrossSections
@@ -98,7 +99,8 @@ def tabulate_builtin(shape, width, height):
         height (str): ignored
 
     Returns:
-        tuple of TABULATED_TRAPEZIUM, width_1d (float), table (ndarray of shape (M, 2))
+        tuple:  shape, width_1d (float),
+                height (float) table (ndarray of shape (M, 2))
     """
     try:
         width = float(width)
@@ -106,7 +108,12 @@ def tabulate_builtin(shape, width, height):
         raise SchematisationError(
             f"Unable to parse cross section definition width (got: '{width}')."
         )
-    return shape, float(width), None
+
+    try:
+        height = float(height)
+    except (ValueError, TypeError):
+        height = None
+    return shape, width, height, None
 
 
 def tabulate_egg(shape, width, height):
@@ -118,7 +125,8 @@ def tabulate_egg(shape, width, height):
         height (str): ignored; height is set to 1.5 * width
 
     Returns:
-        tuple of shape, width_1d (float), table (ndarray of shape (M, 2))
+        tuple:  TABULATED_TRAPEZIUM, width_1d (float),
+                height_1d (float), table (ndarray of shape (M, 2))
     """
     NUM_INCREMENTS = 16
 
@@ -129,7 +137,7 @@ def tabulate_egg(shape, width, height):
         raise SchematisationError(
             f"Unable to parse cross section definition width (got: '{width}')."
         )
-    width = float(width)
+
     height = width * 1.5
     position = height / 3.0  # some parameter for the 'egg' curve
     heights = np.linspace(0, height, num=NUM_INCREMENTS, endpoint=True)
@@ -144,7 +152,7 @@ def tabulate_egg(shape, width, height):
     widths = np.sqrt(p / q) * 2
 
     table = np.array([heights, widths]).T
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width, table
+    return CrossSectionShape.TABULATED_TRAPEZIUM, width, height, table
 
 
 def tabulate_closed_rectangle(shape, width, height):
@@ -156,7 +164,8 @@ def tabulate_closed_rectangle(shape, width, height):
         height (str): the height of the rectangle
 
     Returns:
-        tuple of TABULATED_RECTANGLE, width_1d (float), table (ndarray of shape (M, 2))
+        tuple:  TABULATED_RECTANGLE, width_1d (float),
+                height (float), table (ndarray of shape (M, 2))
     """
     try:
         width = float(width)
@@ -167,7 +176,7 @@ def tabulate_closed_rectangle(shape, width, height):
             f"(got: '{width}', '{height}')."
         )
     table = np.array([[0.0, width], [height, 0.0]], order="F")
-    return CrossSectionShape.TABULATED_RECTANGLE, width, table
+    return CrossSectionShape.TABULATED_RECTANGLE, width, height, table
 
 
 def tabulate_tabulated(shape, width, height):
@@ -179,7 +188,8 @@ def tabulate_tabulated(shape, width, height):
         height (str): space-separated heights
 
     Returns:
-        tuple of shape, width_1d (float), table (ndarray of shape (M, 2))
+        tuple:  shape, width_1d (float),
+                height_1d (float), table (ndarray of shape (M, 2))
     """
     try:
         heights = [float(x) for x in height.split(" ")]
@@ -204,7 +214,7 @@ def tabulate_tabulated(shape, width, height):
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
         )
-    return shape, np.max(widths), np.array([heights, widths]).T
+    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
 
 
 tabulators = {
