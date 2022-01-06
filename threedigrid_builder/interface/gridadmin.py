@@ -105,7 +105,7 @@ def field_to_h5(group, name, dtype, val, mode="attrs"):
             val = b""
         dtype = f"S{max(len(val), 1)}"
         if not isinstance(val, bytes):
-            val = val.encode()
+            val = val.encode("utf-8", errors="ignore")
     else:
         return
     if mode == "attrs":
@@ -129,6 +129,21 @@ def dataclass_to_h5(group, datacls, mode="attrs"):
 def increase(arr):
     """Increase arr by one where arr is not -9999"""
     return np.add(arr, 1 * (arr != -9999), dtype=arr.dtype)
+
+
+def to_bytes_array(arr, length):
+    """Convert a list or array of strings to a numpy bytes array, utf-8 encoded."""
+    result = np.zeros(len(arr), dtype=f"S{length}")
+    for i, x in enumerate(arr):
+        if x is None:
+            continue
+        elif isinstance(x, str):
+            result[i] = x.encode("utf-8", errors="ignore")
+        elif isinstance(x, bytes):
+            result[i] = x
+        else:
+            raise TypeError(f"Unexpected type for bytes conversion, got '{type(x)}'")
+    return result
 
 
 class GridAdminOut(OutputInterface):
@@ -281,7 +296,7 @@ class GridAdminOut(OutputInterface):
 
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)
-        self.write_dataset(group, "code", nodes.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "code", to_bytes_array(nodes.code, 32))
         self.write_dataset(group, "node_type", nodes.node_type)
         self.write_dataset(group, "calculation_type", nodes.calculation_type)
         self.write_dataset(group, "coordinates", nodes.coordinates.T)
@@ -325,7 +340,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "pixel_coords", nodes.pixel_coords.T)
         self.write_dataset(group, "pixel_width", pixel_width)
         self.write_dataset(
-            group, "display_name", nodes.display_name.astype("S64"), fill=b""
+            group, "display_name", to_bytes_array(nodes.display_name, 64)
         )
         self.write_dataset(group, "zoom_category", nodes.zoom_category)
 
@@ -334,9 +349,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group, "manhole_indicator", np.full(len(nodes), -9999, dtype="i4")
         )
-        self.write_dataset(
-            group, "shape", np.full(len(nodes), b"-999", dtype="S4"), fill=b""
-        )
+        self.write_dataset(group, "shape", np.full(len(nodes), b"-999", dtype="S4"))
         self.write_dataset(
             group, "drain_level", np.full(shape, nodes.drain_level, dtype=np.float64)
         )
@@ -374,9 +387,9 @@ class GridAdminOut(OutputInterface):
         )
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", lines.id + 1)
-        self.write_dataset(group, "code", lines.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "code", to_bytes_array(lines.code, 32))
         self.write_dataset(
-            group, "display_name", lines.display_name.astype("S64"), fill=b""
+            group, "display_name", to_bytes_array(lines.display_name, 64)
         )
 
         lines.kcu[l2d] = LineType.LINE_2D
@@ -399,7 +412,7 @@ class GridAdminOut(OutputInterface):
             content_type_name = ContentType(lines.content_type[ind]).name
             content_type[ind] = content_type_name.lstrip("TYPE_").lower()[:10]
 
-        self.write_dataset(group, "content_type", content_type, fill=b"")
+        self.write_dataset(group, "content_type", content_type)
         self.write_dataset(group, "content_pk", lines.content_pk)
         self.write_dataset(group, "dpumax", lines.dpumax)
         self.write_dataset(
@@ -473,7 +486,7 @@ class GridAdminOut(OutputInterface):
 
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "bottom_level", pumps.bottom_level)
-        self.write_dataset(group, "code", pumps.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "code", to_bytes_array(pumps.code, 32))
         self.write_dataset(group, "content_pk", pumps.content_pk)
         self.write_dataset(group, "id", pumps.id + 1)
         self.write_dataset(group, "node1_id", increase(pumps.line[:, 0]))
@@ -492,7 +505,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "type", pumps.type_)
         self.write_dataset(group, "upper_stop_level", pumps.upper_stop_level)
         self.write_dataset(
-            group, "display_name", pumps.display_name.astype("S64"), fill=b""
+            group, "display_name", to_bytes_array(pumps.display_name, 64)
         )
         self.write_dataset(group, "zoom_category", pumps.zoom_category)
 
@@ -504,11 +517,11 @@ class GridAdminOut(OutputInterface):
 
         group = self._file.create_group("surface")
         self.write_dataset(group, "id", surfaces.id, fill=default_fill_value)
-        self.write_dataset(group, "code", surfaces.code.astype("S100"), fill=b"")
+        self.write_dataset(group, "code", to_bytes_array(surfaces.code, 100))
         self.write_dataset(
-            group, "display_name", surfaces.display_name.astype("S250"), fill=b""
+            group, "display_name", to_bytes_array(surfaces.display_name, 250)
         )
-        self.write_dataset(group, "function", surfaces.function.astype("S64"), fill=b"")
+        self.write_dataset(group, "function", to_bytes_array(surfaces.function, 64))
 
         self.write_dataset(
             group,
@@ -558,19 +571,17 @@ class GridAdminOut(OutputInterface):
         ):  # noqa
             # Impervious surfaces
             self.write_dataset(
-                group, "surface_class", surfaces.surface_class.astype("S128"), fill=b""
+                group, "surface_class", to_bytes_array(surfaces.surface_class, 128)
             )
             self.write_dataset(
                 group,
                 "surface_inclination",
-                surfaces.surface_inclination.astype("S64"),
-                fill=b"",
+                to_bytes_array(surfaces.surface_inclination, 64),
             )
             self.write_dataset(
                 group,
                 "surface_sub_class",
-                surfaces.surface_sub_class.astype("S128"),
-                fill=b"",
+                to_bytes_array(surfaces.surface_sub_class, 128),
             )
 
         # Surface params
@@ -600,7 +611,7 @@ class GridAdminOut(OutputInterface):
 
         # Datasets that match directly to a lines attribute:
         self.write_dataset(group, "id", cross_sections.id + 1)
-        self.write_dataset(group, "code", cross_sections.code.astype("S32"), fill=b"")
+        self.write_dataset(group, "code", to_bytes_array(cross_sections.code, 32))
         self.write_dataset(group, "shape", cross_sections.shape)
         self.write_dataset(group, "content_pk", cross_sections.content_pk)
         self.write_dataset(group, "width_1d", cross_sections.width_1d)
@@ -659,6 +670,8 @@ class GridAdminOut(OutputInterface):
         if fill is None:
             if np.issubdtype(values.dtype, np.floating):
                 fill = np.nan
+            elif np.issubdtype(values.dtype, bytes):
+                fill = b""
             else:
                 fill = -9999
         assert insert_dummy in (True, False)
