@@ -6,6 +6,9 @@ Changelog of threedigrid-builder
 
 - Handle non-ASCII characters in gridadmin HDF5 output.
 
+- Fixed node ids in groundwater lines (they now connect groundwater cells instead of 
+  open water cells).
+
 
 0.15.0 (2022-01-05)
 -------------------
