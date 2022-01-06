@@ -1,4 +1,5 @@
 from .array import array_of
+from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from typing import Tuple
@@ -45,6 +46,8 @@ class Line:
     zoom_category: int
     connection_node_start_id: int
     connection_node_end_id: int
+    crest_level: float
+    crest_type: CalculationType
 
 
 @array_of(Line)
