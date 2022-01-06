@@ -55,8 +55,6 @@ def get_lines(lines, node_id_offset, line_id_counter):
             (
                 LineType.LINE_2D_U,
                 LineType.LINE_2D_V,
-                LineType.LINE_2D,
-                LineType.LINE_2D_OBSTACLE,
                 LineType.LINE_2D_OBSTACLE_U,
                 LineType.LINE_2D_OBSTACLE_V,
             ),
