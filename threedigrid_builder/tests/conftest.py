@@ -50,6 +50,7 @@ def grid_all():
         coordinates=[(1, 1), (2, 2), (3, 3)],
         bounds=[(0, 0, 1, 1), (0, 0, 0, 0), (0, 0, 0, 0)],
         node_type=[NodeType.NODE_2D_OPEN_WATER] + 2 * [NodeType.NODE_1D_NO_STORAGE],
+        display_name=[b"foo", "金蟾", None],
     )
     lines = Lines(
         id=[0, 1, 2, 3, 4],
