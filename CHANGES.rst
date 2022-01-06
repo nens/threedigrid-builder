@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-0.15.1 (unreleased)
+0.16.0 (2022-01-06)
 -------------------
 
 - Added crest level and crest type to to lines.
