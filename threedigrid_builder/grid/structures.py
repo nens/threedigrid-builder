@@ -132,6 +132,8 @@ class WeirOrifices:
             display_name=self.display_name,
             connection_node_start_id=self.connection_node_start_id,
             connection_node_end_id=self.connection_node_end_id,
+            crest_level=self.crest_level,
+            crest_type=self.crest_type,
         )
 
 
