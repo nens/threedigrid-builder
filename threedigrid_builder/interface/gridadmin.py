@@ -478,7 +478,7 @@ class GridAdminOut(OutputInterface):
         # Data placeholders
         cross_section_width = np.full(len(lines), np.nan, dtype=np.float64)
         cross_section_height = np.full(len(lines), np.nan, dtype=np.float64)
-        cross_section_shape = np.full(len(lines), np.nan, dtype=np.float64)
+        cross_section_shape = np.full(len(lines), np.nan, dtype="i4")
 
         # Cross section definition ids, for pipe and culvert cross_id1 == cross_id2
         cross_ids = lines.cross_id1[pipe_culvert]

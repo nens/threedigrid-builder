@@ -214,6 +214,7 @@ def tabulate_tabulated(shape, width, height):
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
         )
+
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
 
 

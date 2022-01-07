@@ -115,7 +115,7 @@ def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
         ("content_type", (6,), "|S10"),
         ("crest_level", (6,), "float64"),
         ("crest_type", (6,), "int32"),
-        ("cross_section_height", (6,), "int32"),
+        ("cross_section_height", (6,), "float64"),
         ("cross_section_shape", (6,), "int32"),
         ("cross_section_width", (6,), "float64"),
         ("discharge_coefficient", (6,), "float64"),
