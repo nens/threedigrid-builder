@@ -510,12 +510,12 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "cross_section_width", cross_section_width)
         self.write_dataset(group, "cross_section_height", cross_section_height)
         self.write_dataset(group, "cross_section_shape", cross_section_shape)
+        self.write_dataset(group, "dist_calc_points", lines.dist_calc_points)
+        self.write_dataset(group, "material", lines.material)
 
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "dist_calc_points", fill_float)
         self.write_dataset(group, "friction_type", fill_int)
         self.write_dataset(group, "friction_value", fill_float)
-        self.write_dataset(group, "material", fill_int)
         self.write_dataset(group, "sewerage", fill_int)
         self.write_dataset(group, "sewerage_type", fill_int)
 

@@ -48,6 +48,8 @@ class Line:
     connection_node_end_id: int
     crest_level: float
     crest_type: CalculationType
+    dist_calc_points: float
+    material: int
 
 
 @array_of(Line)

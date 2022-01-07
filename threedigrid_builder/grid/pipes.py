@@ -29,7 +29,7 @@ class Pipe:
     display_name: str
     # profile_num
     # original_length
-    # material
+    material: int
 
 
 @array_of(Pipe)

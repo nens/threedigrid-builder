@@ -743,6 +743,7 @@ class SQLite:
                     models.Pipe.cross_section_definition_id,
                     models.Pipe.display_name,
                     models.Pipe.zoom_category,
+                    models.Pipe.material,
                 )
                 .order_by(models.Pipe.id)
                 .as_structarray()
