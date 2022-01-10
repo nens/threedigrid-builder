@@ -10,8 +10,8 @@ from sqlalchemy import cast
 from sqlalchemy import inspect
 from sqlalchemy import Integer
 from sqlalchemy.orm import Session
-from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.schema import ModelSchema
+from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.base import GridSettings

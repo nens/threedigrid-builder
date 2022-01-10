@@ -131,7 +131,7 @@ class BoundaryConditions2D:
                     bc_geom = pygeos.set_coordinates(bc_geom, bc_coords)
 
                     # Query again for intersecting cells
-                    node_idx = np.sort(cell_tree.query(bc_geom))               
+                    node_idx = np.sort(cell_tree.query(bc_geom))
 
             nodk = nodes.nodk[node_idx]
             sz = 2 ** (nodk - 1)
