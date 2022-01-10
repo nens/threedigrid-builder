@@ -11,6 +11,7 @@ from sqlalchemy import inspect
 from sqlalchemy import Integer
 from sqlalchemy.orm import Session
 from threedi_modelchecker.threedi_database import ThreediDatabase
+from threedi_modelchecker.schema import ModelSchema
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.base import GridSettings
@@ -48,9 +49,11 @@ import pygeos
 
 __all__ = ["SQLite"]
 
-
 # hardcoded source projection
 SOURCE_EPSG = 4326
+
+# before version 173, we get an error because "interception_file" is missing
+MIN_SQLITE_VERSION = 173
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -120,12 +123,20 @@ def _set_initialization_type(
 
 class SQLite:
     def __init__(self, path: pathlib.Path):
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
         path = str(path)
         sqlite_settings = {"db_path": path, "db_file": path}
         self.db = ThreediDatabase(
             connection_settings=sqlite_settings, db_type="spatialite"
         )
         self._epsg_code = None  # for reproject()
+
+        # check version
+        schema = ModelSchema(self.db)
+        version = schema.get_version()
+        if version < MIN_SQLITE_VERSION:
+            raise SchematisationError(f"Too old sqlite version {version}.")
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:

@@ -108,10 +108,31 @@ class BoundaryConditions2D:
         boundary_nodes = Nodes(id=[])
         boundary_lines = Lines(id=[])
         for bc_idx in range(len(self)):
-            x1, y1, x2, y2 = pygeos.bounds(self.the_geom[bc_idx])
+            bc_geom = self.the_geom[bc_idx]
+
+            x1, y1, x2, y2 = pygeos.bounds(bc_geom)
             is_horizontal = (x2 - x1) > (y2 - y1)
 
-            node_idx = np.sort(cell_tree.query(self.the_geom[bc_idx]))
+            node_idx = np.sort(cell_tree.query(bc_geom))
+            if node_idx.size == 0:
+                # Pragmatic fix; because of reprojection issues, the boundary condition
+                # can be right outside the cells.
+
+                # Start by getting the closest point inside the model area (all cells)
+                nearest_cell = cell_tree.geometries[cell_tree.nearest(bc_geom)[1][0]]
+                shortest_line = pygeos.shortest_line(nearest_cell, bc_geom)
+                x1, _, x2, _ = pygeos.bounds(nearest_cell)
+                if pygeos.length(shortest_line) < (x2 - x1):
+                    cell_coords, _ = pygeos.get_coordinates(shortest_line)
+
+                    # Adjust the x / y coordinate to the x / y coordinate of the point
+                    bc_coords = pygeos.get_coordinates(bc_geom)
+                    bc_coords[:, int(is_horizontal)] = cell_coords[int(is_horizontal)]
+                    bc_geom = pygeos.set_coordinates(bc_geom, bc_coords)
+
+                    # Query again for intersecting cells
+                    node_idx = np.sort(cell_tree.query(bc_geom))               
+
             nodk = nodes.nodk[node_idx]
             sz = 2 ** (nodk - 1)
             # nodm and nodn are 1-based indices into quad_idx. So we subtract 1 from it.
