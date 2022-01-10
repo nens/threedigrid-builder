@@ -132,11 +132,14 @@ class SQLite:
         )
         self._epsg_code = None  # for reproject()
 
-        # check version
-        schema = ModelSchema(self.db)
-        version = schema.get_version()
+        version = self.get_version()
         if version < MIN_SQLITE_VERSION:
             raise SchematisationError(f"Too old sqlite version {version}.")
+
+    def get_version(self) -> int:
+        # check version
+        schema = ModelSchema(self.db)
+        return schema.get_version()
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:

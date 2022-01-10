@@ -10,6 +10,8 @@ Changelog of threedigrid-builder
 - Raise SchematisationError instead of an internal error if the spatialite version is
   below 173.
 
+- Raise FileNotFound instead of creating an empty file if spatialite does not exist.
+
 
 0.16.0 (2022-01-06)
 -------------------
