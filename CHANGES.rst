@@ -18,6 +18,8 @@ Changelog of threedigrid-builder
 
 - Added sewerage_type (pipes) and sewerage (weirs/orifices) to lines.
 
+- Added friction_type and friction_value (pipes/culverts/weirs/orifices) to lines.
+
 - Fix: accept unknown sewerage types.
 
 
