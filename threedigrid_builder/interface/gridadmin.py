@@ -490,22 +490,28 @@ class GridAdminOut(OutputInterface):
             cross_section_width,
             lines.id[pipe_culvert],
             cross_sections.width_1d[
-                search(cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True)
-            ]
+                search(
+                    cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True
+                )
+            ],
         )
         np.put(
             cross_section_height,
             lines.id[pipe_culvert],
             cross_sections.height_1d[
-                search(cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True)
-            ]
+                search(
+                    cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True
+                )
+            ],
         )
         np.put(
             cross_section_shape,
             lines.id[pipe_culvert],
             cross_sections.shape[
-                search(cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True)
-            ]
+                search(
+                    cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True
+                )
+            ],
         )
         self.write_dataset(group, "cross_section_width", cross_section_width)
         self.write_dataset(group, "cross_section_height", cross_section_height)

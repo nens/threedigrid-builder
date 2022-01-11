@@ -12,13 +12,13 @@ Changelog of threedigrid-builder
 
 - Raise FileNotFound instead of creating an empty file if spatialite does not exist.
 
-
-0.16.0 (2022-01-06)
--------------------
-
 - Added dist_calc_points and material to lines.
 
 - Added cross section width, height, shape to lines.
+
+
+0.16.0 (2022-01-06)
+-------------------
 
 - Added crest level and crest type to to lines.
 

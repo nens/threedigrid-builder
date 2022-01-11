@@ -268,10 +268,10 @@ class BaseLinear:
         except AttributeError:
             dc_positive = 1.0
             dc_negative = 1.0
-        
+
         # Conditionally add material (pipes only)
         try:
-            material = objs.material
+            material = objs.material[segment_idx]
         except AttributeError:
             material = -9999
 
