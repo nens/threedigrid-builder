@@ -10,7 +10,6 @@ from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import Material
-from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
@@ -252,7 +251,7 @@ def test_get_pipes(db):
     assert pipes.cross_section_definition_id[9] == 7
     assert pipes.invert_level_start_point[16] == -3.91
     assert pipes.invert_level_end_point[19] == -3.62
-    assert pipes.sewerage_type[24] == SewerageType.WASTEWATER
+    assert pipes.sewerage_type[24] == 2
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
     assert pipes.display_name[33] == "71518_71517"
@@ -396,6 +395,7 @@ def test_get_weirs(db):
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
     assert weirs.zoom_category[15] == 2
+    assert weirs.sewerage[0] == 1
 
 
 def test_get_dem_average(db):

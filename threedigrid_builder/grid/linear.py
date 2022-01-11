@@ -275,6 +275,12 @@ class BaseLinear:
         except AttributeError:
             material = -9999
 
+        # Conditionally add sewerage_type (pipes only)
+        try:
+            sewerage_type = objs.sewerage_type[segment_idx]
+        except AttributeError:
+            sewerage_type = -9999
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -304,6 +310,7 @@ class BaseLinear:
             connection_node_end_id=connection_node_end_id,
             dist_calc_points=dist_calc_points,
             material=material,
+            sewerage_type=sewerage_type,
         )
 
     def compute_bottom_level(self, ids, s):

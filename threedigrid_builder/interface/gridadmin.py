@@ -378,8 +378,6 @@ class GridAdminOut(OutputInterface):
         """
         group = self._file.create_group("lines")
         shape = (len(lines),)
-        fill_int = np.full(shape, -9999, dtype="i4")
-        fill_float = np.full(shape, np.nan, dtype=float)
         is_channel = lines.content_type == ContentType.TYPE_V2_CHANNEL
 
         l2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
@@ -396,7 +394,7 @@ class GridAdminOut(OutputInterface):
         lines.kcu[l2d] = LineType.LINE_2D
         lines.kcu[l2d_obstacle] = LineType.LINE_2D_OBSTACLE
         self.write_dataset(group, "kcu", lines.kcu)
-        calculation_type = fill_int.copy()
+        calculation_type = np.full(shape, -9999, dtype="i4")
         calculation_type[is_channel] = lines.kcu[is_channel] + 100
         self.write_dataset(group, "calculation_type", calculation_type)
         self.write_dataset(group, "line", lines.line.T + 1)
@@ -518,12 +516,27 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "cross_section_shape", cross_section_shape)
         self.write_dataset(group, "dist_calc_points", lines.dist_calc_points)
         self.write_dataset(group, "material", lines.material)
-
-        # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "friction_type", fill_int)
-        self.write_dataset(group, "friction_value", fill_float)
-        self.write_dataset(group, "sewerage", fill_int)
-        self.write_dataset(group, "sewerage_type", fill_int)
+        self.write_dataset(group, "sewerage", lines.sewerage)
+        self.write_dataset(group, "sewerage_type", lines.sewerage_type)
+        has_friction_data = np.isin(
+            lines.content_pk,
+            [
+                ContentType.TYPE_V2_PIPE,
+                ContentType.TYPE_V2_CULVERT,
+                ContentType.TYPE_V2_WEIR,
+                ContentType.TYPE_V2_ORIFICE,
+            ],
+        )
+        self.write_dataset(
+            group,
+            "friction_type",
+            np.where(has_friction_data, lines.frict_type1, -9999),
+        )
+        self.write_dataset(
+            group,
+            "friction_value",
+            np.where(has_friction_data, lines.frict_value1, np.nan),
+        )
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")

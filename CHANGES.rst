@@ -16,6 +16,12 @@ Changelog of threedigrid-builder
 
 - Added cross section width, height, shape to lines.
 
+- Added sewerage_type (pipes) and sewerage (weirs/orifices) to lines.
+
+- Added friction_type and friction_value (pipes/culverts/weirs/orifices) to lines.
+
+- Fix: accept unknown sewerage types.
+
 
 0.16.0 (2022-01-06)
 -------------------

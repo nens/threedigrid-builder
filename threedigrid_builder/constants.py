@@ -94,18 +94,6 @@ class CrossSectionShape(IntEnum):
 
 
 @unique
-class SewerageType(IntEnum):
-    COMBINED = 0
-    STORMWATER = 1
-    WASTEWATER = 2
-    TRANSPORT = 3
-    OVERFLOW = 4
-    SINKER = 5
-    STORAGE = 6
-    STORAGE_SETTLING_TANK = 7
-
-
-@unique
 class InitializationType(IntEnum):
     MAX = 0  # file present
     MIN = 1  # file present
