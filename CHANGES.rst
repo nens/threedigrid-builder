@@ -4,7 +4,13 @@ Changelog of threedigrid-builder
 0.16.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Snap 2D boundary conditions to the closest edge if they are completely outside of the
+  model domain.
+
+- Raise SchematisationError instead of an internal error if the spatialite version is
+  below 173.
+
+- Raise FileNotFound instead of creating an empty file if spatialite does not exist.
 
 
 0.16.0 (2022-01-06)

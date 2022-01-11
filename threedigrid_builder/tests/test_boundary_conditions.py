@@ -222,6 +222,46 @@ WEST = LineType.LINE_2D_BOUNDARY_WEST
             [(9, 1), (10, 3), (11, 6)],
             [(0, 0, 0, 8), (0, 8, 0, 12), (8, 0, 12, 0)],
         ),
+        (  # Boundary condition just outside of the model, bottom
+            [[(46, 40), (106, 41)]],
+            (bottom_1, bottom_6),
+            0,
+            [1, 3],
+            [0, 0],
+            SOUTH,
+            [(9, 1), (10, 6)],
+            [(0, 0, 8, 0), (8, 0, 12, 0)],
+        ),
+        (  # Boundary condition just outside of the model, left
+            [[(40, 47), (41, 107)]],
+            (left_1, left_3),
+            0,
+            [0, 0],
+            [1, 3],
+            WEST,
+            [(9, 1), (10, 3)],
+            [(0, 0, 0, 8), (0, 8, 0, 12)],
+        ),
+        (  # Boundary condition just outside of the model, top
+            [[(66, 130), (126, 132)]],
+            (top_2, top_5),
+            0,
+            [2, 2],
+            [3, 5],
+            NORTH,
+            [(2, 9), (5, 10)],
+            [(8, 16, 16, 16), (4, 16, 8, 16)],
+        ),
+        (  # Boundary condition just outside of the model, right
+            [[(127, 67), (126, 127)]],
+            (right_2, right_8),
+            0,
+            [3, 5],
+            [2, 2],
+            EAST,
+            [(2, 9), (8, 10)],
+            [(16, 8, 16, 16), (16, 4, 16, 8)],
+        ),
     ],
 )
 def test_2d_boundary_condition(
@@ -264,7 +304,7 @@ def test_2d_boundary_condition(
 @pytest.mark.parametrize(
     "bc_coords, expected_message",
     [
-        ([[(46, 30), (106, 30)]], r".*does not touch any edge cell."),
+        ([[(46, 0), (106, 0)]], r".*does not touch any edge cell."),
         (
             [[(46, 77), (106, 77)]],
             r".*different edge coordinates \(y=\[47.0, 67.0\]\).",

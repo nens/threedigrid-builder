@@ -11,6 +11,7 @@ from threedigrid_builder.constants import FrictionType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import Material
 from threedigrid_builder.constants import SewerageType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import BoundaryConditions1D
 from threedigrid_builder.grid import BoundaryConditions2D
 from threedigrid_builder.grid import Channels
@@ -27,19 +28,48 @@ from unittest import mock
 
 import numpy as np
 import pygeos
+import pytest
 
 
-def test_init():
-    path = "/some/path"
+def test_init(tmp_path):
+    path = tmp_path / "some.sqlite"
+    path.touch()
 
-    with mock.patch("threedigrid_builder.interface.db.ThreediDatabase") as db:
+    with mock.patch(
+        "threedigrid_builder.interface.db.ThreediDatabase"
+    ) as db, mock.patch.object(SQLite, "get_version") as get_version:
+        get_version.return_value = 206
         sqlite = SQLite(path)
 
     db.assert_called_with(
-        connection_settings={"db_path": path, "db_file": path}, db_type="spatialite"
+        connection_settings={"db_path": str(path), "db_file": str(path)},
+        db_type="spatialite",
     )
 
     assert sqlite.db is db.return_value
+
+
+def test_init_no_file(tmp_path):
+    path = tmp_path / "some.sqlite"
+
+    with pytest.raises(FileNotFoundError):
+        SQLite(path)
+
+
+def test_init_bad_version(tmp_path):
+    path = tmp_path / "some.sqlite"
+    path.touch()
+
+    with mock.patch(
+        "threedigrid_builder.interface.db.ThreediDatabase"
+    ), mock.patch.object(SQLite, "get_version") as get_version:
+        with pytest.raises(SchematisationError):
+            get_version.return_value = 171
+            SQLite(path)
+
+
+def test_get_version(db):
+    assert db.get_version() == 174
 
 
 def test_get_boundary_conditions_1d(db):
