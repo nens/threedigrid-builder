@@ -99,8 +99,7 @@ def tabulate_builtin(shape, width, height):
         height (str): ignored
 
     Returns:
-        tuple:  shape, width_1d (float),
-                height (float) table (ndarray of shape (M, 2))
+        tuple:  shape, width_1d (float), None, None
     """
     try:
         width = float(width)
@@ -109,11 +108,7 @@ def tabulate_builtin(shape, width, height):
             f"Unable to parse cross section definition width (got: '{width}')."
         )
 
-    try:
-        height = float(height)
-    except (ValueError, TypeError):
-        height = None
-    return shape, width, height, None
+    return shape, width, None, None
 
 
 def tabulate_egg(shape, width, height):
