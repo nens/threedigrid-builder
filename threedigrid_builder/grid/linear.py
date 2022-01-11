@@ -199,10 +199,12 @@ class BaseLinear:
         )
         segments = line_substring(objs.the_geom, start_s, end_s, segment_idx)
 
+        # Copy properties to segments
         display_name = np.take(self.display_name, segment_idx)
         zoom_category = np.take(self.zoom_category, segment_idx)
         connection_node_start_id = np.take(self.connection_node_start_id, segment_idx)
         connection_node_end_id = np.take(self.connection_node_end_id, segment_idx)
+        dist_calc_points = np.take(self.dist_calc_points, segment_idx)
 
         # set the right node indices for each segment
         first_idx, last_idx = counts_to_ranges(segment_counts)
@@ -266,6 +268,12 @@ class BaseLinear:
         except AttributeError:
             dc_positive = 1.0
             dc_negative = 1.0
+        
+        # Conditionally add material (pipes only)
+        try:
+            material = objs.material
+        except AttributeError:
+            material = -9999
 
         # construct the result
         return Lines(
@@ -294,6 +302,8 @@ class BaseLinear:
             zoom_category=zoom_category,
             connection_node_start_id=connection_node_start_id,
             connection_node_end_id=connection_node_end_id,
+            dist_calc_points=dist_calc_points,
+            material=material,
         )
 
     def compute_bottom_level(self, ids, s):

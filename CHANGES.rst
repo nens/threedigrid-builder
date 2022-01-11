@@ -16,6 +16,8 @@ Changelog of threedigrid-builder
 0.16.0 (2022-01-06)
 -------------------
 
+- Added dist_calc_points and material to lines.
+
 - Added cross section width, height, shape to lines.
 
 - Added crest level and crest type to to lines.
