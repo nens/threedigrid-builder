@@ -294,6 +294,7 @@ class GridAdminOut(OutputInterface):
         is_2d = np.isin(
             nodes.node_type, [NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_GROUNDWATER]
         )
+        is_manhole = nodes.manhole_id != -9999
 
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)
@@ -320,13 +321,12 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group,
             "is_manhole",
-            np.where(nodes.manhole_id != -9999, 1, -9999).astype("i4"),
+            np.where(is_manhole, 1, -9999).astype("i4"),
         )
-
-        # unclear what is the difference: seems bottom_level is for 1D, and z_coordinate
-        # for 2D, but some nodes have both sets (then they are equal)
         self.write_dataset(group, "dimp", nodes.dimp)
-        self.write_dataset(group, "bottom_level", nodes.dmax)
+        self.write_dataset(
+            group, "bottom_level", np.where(is_manhole, nodes.dmax, np.nan)
+        )
         self.write_dataset(group, "z_coordinate", nodes.dmax)
 
         # 2D stuff that is derived from 'bounds'
@@ -344,22 +344,13 @@ class GridAdminOut(OutputInterface):
             group, "display_name", to_bytes_array(nodes.display_name, 64)
         )
         self.write_dataset(group, "zoom_category", nodes.zoom_category)
+        self.write_dataset(group, "manhole_indicator", nodes.manhole_indicator)
+        self.write_dataset(group, "shape", to_bytes_array(nodes.shape, 4))
+        self.write_dataset(group, "drain_level", nodes.drain_level)
+        self.write_dataset(group, "surface_level", nodes.surface_level)
+        self.write_dataset(group, "width", nodes.width)
 
-        # can be collected from SQLite, but empty for now:
-        # (manhole specific:)
-        self.write_dataset(
-            group, "manhole_indicator", np.full(len(nodes), -9999, dtype="i4")
-        )
-        self.write_dataset(group, "shape", np.full(len(nodes), b"-999", dtype="S4"))
-        self.write_dataset(
-            group, "drain_level", np.full(shape, nodes.drain_level, dtype=np.float64)
-        )
-        self.write_dataset(
-            group, "surface_level", np.full(shape, np.nan, dtype=np.float64)
-        )
-        self.write_dataset(group, "width", np.full(shape, np.nan, dtype=np.float64))
-
-        # unknown
+        # filled in threedi-tables:
         self.write_dataset(group, "sumax", np.full(shape, np.nan, dtype=np.float64))
 
     def write_lines(self, lines, cross_sections):

@@ -12,6 +12,10 @@ Changelog of threedigrid-builder
 
 - Raise FileNotFound instead of creating an empty file if spatialite does not exist.
 
+- Added manhole fields (manhole_indicator, shape, width, surface_level) to nodes.
+
+- Removed data from nodes.bottom_level for non-manhole nodes.
+
 - Added dist_calc_points and material to lines.
 
 - Added cross section width, height, shape to lines.

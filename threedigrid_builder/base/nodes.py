@@ -37,6 +37,11 @@ class Node:
     drain_level: float  # Drain level entered for manholes
     initial_waterlevel: float
     zoom_category: int
+    # extra info, for manhole only:
+    manhole_indicator: int
+    surface_level: float
+    shape: str  # enum with classes "00", "01", "02"
+    width: float
 
 
 @array_of(Node)
