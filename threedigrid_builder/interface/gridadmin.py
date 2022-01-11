@@ -4,6 +4,7 @@ from threedigrid_builder.base import is_int_enum
 from threedigrid_builder.base import is_tuple_type
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import OutputInterface
+from threedigrid_builder.base import search
 from threedigrid_builder.base import unpack_optional_type
 from threedigrid_builder.base.surfaces import SurfaceMaps
 from threedigrid_builder.base.surfaces import Surfaces
@@ -470,10 +471,47 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "crest_level", lines.crest_level)
         self.write_dataset(group, "crest_type", lines.crest_type)
 
+        # Cross section on pipes and culverts
+        pipe_culvert = np.logical_or(
+            lines.content_type == ContentType.TYPE_V2_PIPE,
+            lines.content_type == ContentType.TYPE_V2_CULVERT,
+        )
+        # Data placeholders
+        cross_section_width = np.full(len(lines), np.nan, dtype=np.float64)
+        cross_section_height = np.full(len(lines), np.nan, dtype=np.float64)
+        cross_section_shape = np.full(len(lines), -9999, dtype="i4")
+
+        # Cross section definition ids, for pipe and culvert cross_id1 == cross_id2
+        cross_ids = lines.cross_id1[pipe_culvert]
+
+        # Put cross section data into placeholders at pipe and culvert indexes
+        # Get cross section width, height, shape corresponding to cross section definition id
+        np.put(
+            cross_section_width,
+            lines.id[pipe_culvert],
+            cross_sections.width_1d[
+                search(cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True)
+            ]
+        )
+        np.put(
+            cross_section_height,
+            lines.id[pipe_culvert],
+            cross_sections.height_1d[
+                search(cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True)
+            ]
+        )
+        np.put(
+            cross_section_shape,
+            lines.id[pipe_culvert],
+            cross_sections.shape[
+                search(cross_sections.content_pk, cross_ids, mask=None, assume_ordered=True)
+            ]
+        )
+        self.write_dataset(group, "cross_section_width", cross_section_width)
+        self.write_dataset(group, "cross_section_height", cross_section_height)
+        self.write_dataset(group, "cross_section_shape", cross_section_shape)
+
         # can be collected from SQLite, but empty for now:
-        self.write_dataset(group, "cross_section_height", fill_int)
-        self.write_dataset(group, "cross_section_shape", fill_int)
-        self.write_dataset(group, "cross_section_width", fill_float)
         self.write_dataset(group, "dist_calc_points", fill_float)
         self.write_dataset(group, "friction_type", fill_int)
         self.write_dataset(group, "friction_value", fill_float)

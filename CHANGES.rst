@@ -16,6 +16,8 @@ Changelog of threedigrid-builder
 0.16.0 (2022-01-06)
 -------------------
 
+- Added cross section width, height, shape to lines.
+
 - Added crest level and crest type to to lines.
 
 - Added connection node start and end id to lines.
