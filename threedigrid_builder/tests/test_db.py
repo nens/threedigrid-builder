@@ -157,8 +157,8 @@ def test_get_connection_nodes(db):
     assert connection_nodes.bottom_level[9] == -3.51
     assert connection_nodes.drain_level[1] == -0.82
     assert connection_nodes.surface_level[35] == -0.54
-    assert connection_nodes.manhole_shape[40] == "00"
-    assert connection_nodes.manhole_width[32] == 0.8
+    assert connection_nodes.shape[40] == "00"
+    assert connection_nodes.width[32] == 0.8
     assert connection_nodes.display_name[33] == "71512"
 
 

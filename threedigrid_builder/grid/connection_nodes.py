@@ -28,8 +28,8 @@ class ConnectionNode:
     bottom_level: float
     drain_level: float
     surface_level: float
-    manhole_shape: str  # enum with classes "00", "01", "02"
-    manhole_width: float
+    shape: str  # enum with classes "00", "01", "02"
+    width: float
     initial_waterlevel: float
     display_name: str
     zoom_category: int

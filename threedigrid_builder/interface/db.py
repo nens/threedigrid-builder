@@ -523,8 +523,8 @@ class SQLite:
                     models.Manhole.drain_level,
                     models.Manhole.manhole_indicator,
                     models.Manhole.surface_level,
-                    models.Manhole.shape.label("manhole_shape"),
-                    models.Manhole.width.label("manhole_width"),
+                    models.Manhole.shape,
+                    models.Manhole.width,
                     models.Manhole.display_name,
                     models.Manhole.zoom_category,
                 )
