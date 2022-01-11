@@ -50,6 +50,8 @@ class Line:
     crest_type: CalculationType
     dist_calc_points: float
     material: int
+    sewerage: int
+    sewerage_type: int
 
 
 @array_of(Line)

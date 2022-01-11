@@ -728,6 +728,7 @@ class SQLite:
                     models.Orifice.friction_value,
                     models.Orifice.display_name,
                     models.Orifice.zoom_category,
+                    models.Orifice.sewerage,
                 )
                 .order_by(models.Orifice.id)
                 .as_structarray()
@@ -813,6 +814,7 @@ class SQLite:
                     models.Weir.friction_value,
                     models.Weir.display_name,
                     models.Weir.zoom_category,
+                    models.Weir.sewerage,
                 )
                 .order_by(models.Weir.id)
                 .as_structarray()

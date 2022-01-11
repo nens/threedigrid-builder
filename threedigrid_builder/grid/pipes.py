@@ -2,7 +2,6 @@ from threedigrid_builder.base import array_of
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.constants import SewerageType
 from threedigrid_builder.grid import linear
 
 import pygeos
@@ -21,7 +20,7 @@ class Pipe:
     cross_section_definition_id: int
     invert_level_start_point: float
     invert_level_end_point: float
-    sewerage_type: SewerageType
+    sewerage_type: int
     friction_type: FrictionType
     friction_value: float
     the_geom: pygeos.Geometry

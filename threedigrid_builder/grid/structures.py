@@ -73,7 +73,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     friction_value: float
     zoom_category: int
     display_name: str
-    # sewerage
+    sewerage: int
 
 
 @array_of(WeirOrifice)
@@ -134,6 +134,7 @@ class WeirOrifices:
             connection_node_end_id=self.connection_node_end_id,
             crest_level=self.crest_level,
             crest_type=self.crest_type,
+            sewerage=self.sewerage,
         )
 
 
