@@ -1,8 +1,8 @@
 Changelog of threedigrid-builder
 ================================
 
-0.16.1 (unreleased)
--------------------
+1.0.0 (2022-01-12)
+------------------
 
 - Snap 2D boundary conditions to the closest edge if they are completely outside of the
   model domain.
