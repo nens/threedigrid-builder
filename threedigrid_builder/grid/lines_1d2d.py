@@ -233,9 +233,9 @@ class ConnectedPoints:
             cp_node_idx, return_index=True, return_counts=True
         )
         if np.any(counts > 2):
-            bad_ids = np.unique(self.calculation_point_id[cp1_node_idx[counts > 2]])
+            bad_ids = np.unique(self.calculation_point_id[cp1_idx[counts > 2]])
             raise SchematisationError(
-                f"Calculation points {bad_ids.tolist()} have too many connected points."
+                f"Calculation points {bad_ids.tolist()} has/have too many connected points."
             )
         # Get the second occurences of connected points by inverting the _1 array
         cp2_idx = np.delete(np.arange(len(cp_node_idx)), cp1_idx)
