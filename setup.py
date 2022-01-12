@@ -86,13 +86,12 @@ def get_version():
 
 
 install_requires = [
-    "numpy>=1.13",
+    "numpy>=1.15",
     "threedi-modelchecker>=0.12",
-    "pygeos>=0.10",
+    "pygeos>=0.11.1",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
     "sqlalchemy",
-    "dataclasses ; python_version<'3.7'",
 ]
 
 test_requires = ["pytest"]
@@ -126,7 +125,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Topic :: Scientific/Engineering",
         "Topic :: Software Development",
         "Operating System :: Unix",
