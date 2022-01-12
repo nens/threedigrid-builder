@@ -32,50 +32,52 @@ import threedigrid_builder
 
 __all__ = ["Grid", "GridMeta", "QuadtreeStats"]
 
-NODE_ORDER = {
-    NodeType.NODE_2D_OPEN_WATER: 1,
-    NodeType.NODE_2D_GROUNDWATER: 2,
-    NodeType.NODE_1D_NO_STORAGE: 3,
-    NodeType.NODE_1D_STORAGE: 3,
-    NodeType.NODE_2D_BOUNDARIES: 4,
-    NodeType.NODE_2D_GROUNDWATER_BOUNDARIES: 5,
-    NodeType.NODE_1D_BOUNDARIES: 6,
-}
-# failsafe for future adding of types:
-assert len(NodeType) == len(NODE_ORDER)
+NODE_ORDER = [
+    [NodeType.NODE_2D_OPEN_WATER],
+    [NodeType.NODE_2D_GROUNDWATER],
+    [NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE],
+    [NodeType.NODE_2D_BOUNDARIES],
+    [NodeType.NODE_2D_GROUNDWATER_BOUNDARIES],
+    [NodeType.NODE_1D_BOUNDARIES],
+]
 
-LINE_ORDER = {
-    LineType.LINE_2D_U: 1,
-    LineType.LINE_2D_OBSTACLE_U: 1,
-    LineType.LINE_2D_V: 2,
-    LineType.LINE_2D_OBSTACLE_V: 2,
-    LineType.LINE_2D: 2,
-    LineType.LINE_2D_OBSTACLE: 2,
-    LineType.LINE_2D_VERTICAL: 3,
-    LineType.LINE_2D_GROUNDWATER: 4,
-    LineType.LINE_1D_EMBEDDED: 5,
-    LineType.LINE_1D_ISOLATED: 5,
-    LineType.LINE_1D_CONNECTED: 5,
-    LineType.LINE_1D_LONG_CRESTED: 5,
-    LineType.LINE_1D_SHORT_CRESTED: 5,
-    LineType.LINE_1D_DOUBLE_CONNECTED: 5,
-    LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED: 6,
-    LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER: 6,
-    LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED: 6,
-    LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER: 6,
-    LineType.LINE_1D2D_POSSIBLE_BREACH: 6,
-    LineType.LINE_1D2D_ACTIVE_BREACH: 6,
-    LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER: 7,
-    LineType.LINE_1D2D_GROUNDWATER_SEWER: 7,
-    LineType.LINE_2D_BOUNDARY_WEST: 8,
-    LineType.LINE_2D_BOUNDARY_EAST: 8,
-    LineType.LINE_2D_BOUNDARY_SOUTH: 8,
-    LineType.LINE_2D_BOUNDARY_NORTH: 8,
-    # LineType.LINE_2D_GROUNDWATER_BOUNDARY: 9, (to be implemented)
-}
+LINE_ORDER = [
+    [
+        LineType.LINE_2D_U,
+        LineType.LINE_2D_OBSTACLE_U,
+        LineType.LINE_2D_V,
+        LineType.LINE_2D_OBSTACLE_V,
+        LineType.LINE_2D,
+        LineType.LINE_2D_OBSTACLE,
+    ],
+    [LineType.LINE_2D_VERTICAL],
+    [LineType.LINE_2D_GROUNDWATER],
+    [
+        LineType.LINE_1D_EMBEDDED,
+        LineType.LINE_1D_ISOLATED,
+        LineType.LINE_1D_CONNECTED,
+        LineType.LINE_1D_LONG_CRESTED,
+        LineType.LINE_1D_SHORT_CRESTED,
+        LineType.LINE_1D_DOUBLE_CONNECTED,
+    ],
+    [
+        LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+        LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+        LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+        LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+        LineType.LINE_1D2D_POSSIBLE_BREACH,
+        LineType.LINE_1D2D_ACTIVE_BREACH,
+    ],
+    [LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER, LineType.LINE_1D2D_GROUNDWATER_SEWER],
+    [
+        LineType.LINE_2D_BOUNDARY_WEST,
+        LineType.LINE_2D_BOUNDARY_EAST,
+        LineType.LINE_2D_BOUNDARY_SOUTH,
+        LineType.LINE_2D_BOUNDARY_NORTH,
+    ],
+    # [LineType.LINE_2D_GROUNDWATER_BOUNDARY], (to be implemented)
+]
 LINE_ORDER_BOUNDARY_1D = 10
-# failsafe for future adding of types:
-assert len(LineType) == len(LINE_ORDER)
 
 
 @dataclass
@@ -679,10 +681,21 @@ class Grid:
 
         See NODE_ORDER and LINE_ORDER for the order.
         """
-        node_sorter = np.argsort(replace(self.nodes.node_type, NODE_ORDER))
-        line_sort_groups = replace(self.lines.kcu, LINE_ORDER)
-        line_sort_groups[self.lines.is_1d_boundary == 1] = LINE_ORDER_BOUNDARY_1D
-        line_sorter = np.argsort(line_sort_groups)
+        node_sorter = np.concatenate(
+            [np.where(np.isin(self.nodes.node_type, group))[0] for group in NODE_ORDER]
+        )
+        is_1d_boundary = self.lines.is_1d_boundary == 1
+        line_sorter = np.concatenate(
+            [
+                np.where(np.isin(self.lines.kcu, group) & ~is_1d_boundary)[0]
+                for group in LINE_ORDER
+            ]
+            + [np.where(is_1d_boundary)[0]]
+        )
+        if len(node_sorter) != len(self.nodes):
+            raise RuntimeError("Length mismatch while sorting nodes.")
+        if len(line_sorter) != len(self.lines):
+            raise RuntimeError("Length mismatch while sorting lines.")
 
         # now sort the nodes and lines and reset their ids
         old_node_ids = self.nodes.id.copy()

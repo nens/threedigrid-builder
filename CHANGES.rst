@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fixed the ordering of nodes and lines within node/line types.
 
 
 1.0.0 (2022-01-12)
