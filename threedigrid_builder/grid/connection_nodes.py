@@ -162,10 +162,10 @@ def set_calculation_types(nodes, lines):
     )[0]
 
     for _type in (
+        LineType.LINE_1D_EMBEDDED,
         LineType.LINE_1D_ISOLATED,
         LineType.LINE_1D_DOUBLE_CONNECTED,
         LineType.LINE_1D_CONNECTED,
-        LineType.LINE_1D_EMBEDDED,
     ):
         # Do the nodes have a line with this _type?
         has_this_type = np.isin(

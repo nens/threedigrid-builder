@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Change in calculation_type type order of connection nodes. Embedded comes first.
 
 
 1.0.0 (2022-01-12)
