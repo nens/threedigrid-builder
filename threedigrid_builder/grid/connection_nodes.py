@@ -142,7 +142,7 @@ def set_calculation_types(nodes, lines):
       - connection_node.manhole.calculation_type (set in ConnectionNode.get_nodes)
       - if not present, the calculation_type of adjacent channels, pipes, and culverts.
         are taken. if these are different, the precedence is:
-          ISOLATED > DOUBLE_CONNECTED > CONNECTED > EMBEDDED
+          EMBEDDED > ISOLATED > DOUBLE_CONNECTED > CONNECTED
       - if not present, then the calculation type becomes ISOLATED
 
     Args:
