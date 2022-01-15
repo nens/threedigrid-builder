@@ -219,14 +219,16 @@ def test_set_initial_waterlevels(compute_initial_waterlevels, grid):
 def test_sort():
     grid = Grid(
         Nodes(
-            id=[0, 1, 4, 5],
+            id=[0, 1, 2, 3, 4, 5],
             node_type=[
                 NodeType.NODE_1D_BOUNDARIES,
+                NodeType.NODE_2D_OPEN_WATER,
+                NodeType.NODE_2D_OPEN_WATER,
                 NodeType.NODE_2D_OPEN_WATER,
                 NodeType.NODE_1D_STORAGE,
                 NodeType.NODE_1D_NO_STORAGE,
             ],
-            dmax=[0, 1, 4, 5],
+            dmax=[0, 1, 2, 3, 4, 5],
         ),
         Lines(
             id=[0, 1, 6],
@@ -245,12 +247,12 @@ def test_sort():
     )
     grid.sort()
 
-    assert_array_equal(grid.nodes.id, [0, 1, 2, 3])
-    assert_array_equal(grid.nodes.dmax, [1, 4, 5, 0])
+    assert_array_equal(grid.nodes.id, [0, 1, 2, 3, 4, 5])
+    assert_array_equal(grid.nodes.dmax, [1, 2, 3, 4, 5, 0])
     assert_array_equal(grid.lines.id, [0, 1, 2])
     assert_array_equal(grid.lines.dpumax, [1, 6, 0])
-    assert_array_equal(grid.lines.line, [(1, 2), (2, 0), (3, 1)])
-    assert_array_equal(grid.pumps.line, [(1, 2)])
+    assert_array_equal(grid.lines.line, [(3, 4), (4, 0), (5, 3)])
+    assert_array_equal(grid.pumps.line, [(3, 4)])
     assert_array_equal(grid.nodes_embedded.embedded_in, [0])
     assert_array_equal(grid.breaches.levl, [1])
 
