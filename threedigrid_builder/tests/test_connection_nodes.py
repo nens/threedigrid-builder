@@ -76,7 +76,7 @@ def test_get_nodes(connection_nodes):
         ),
         (
             [LineType.LINE_1D_CONNECTED, LineType.LINE_1D_EMBEDDED],
-            CalculationType.CONNECTED,
+            CalculationType.EMBEDDED,
         ),
     ],
 )
