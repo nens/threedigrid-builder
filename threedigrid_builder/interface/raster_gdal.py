@@ -6,7 +6,7 @@ import numpy as np
 
 try:
     from osgeo import gdal
-
+    from osgeo import osr
     gdal.UseExceptions()
 except ImportError:
     gdal = None
@@ -43,7 +43,8 @@ class GDALInterface(RasterInterface):
         self._dataset = gdal.Open(self.path.as_posix(), gdal.GA_ReadOnly)
         c, a, b, f, d, e = self._dataset.GetGeoTransform()
         self.set_transform((a, b, c, d, e, f))
-        self.set_epsg_code(get_epsg_code(self._dataset.GetSpatialRef()))
+        sr = osr.SpatialReference(self._dataset.GetProjection())
+        self.set_epsg_code(get_epsg_code(sr))
         return self
 
     def __exit__(self, *args, **kwargs):
