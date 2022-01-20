@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Write "grid_coordinate_attributes" also for pure 1D models.
 
+- Make requesting spatial reference of GDAL dataset compatible with GDAL 2.x.
+
 
 1.0.2 (2022-01-17)
 ------------------
