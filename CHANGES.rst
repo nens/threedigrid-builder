@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.0.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Write "grid_coordinate_attributes" also for pure 1D models.
 
 
 1.0.2 (2022-01-17)

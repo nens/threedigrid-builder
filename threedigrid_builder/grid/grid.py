@@ -12,7 +12,6 @@ from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import replace
 from threedigrid_builder.base import SurfaceMaps
 from threedigrid_builder.base import Surfaces
 from threedigrid_builder.base.settings import GridSettings
