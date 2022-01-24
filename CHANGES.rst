@@ -8,6 +8,11 @@ Changelog of threedigrid-builder
 
 - Make requesting spatial reference of GDAL dataset compatible with GDAL 2.x.
 
+- Fix: do not ignore (Impervious)Surface records without geometries. These surfaces
+  will get their location from their connection node.
+
+- Do not ignore invalid geometries (surfaces, grid refinement areas, dem average areas)
+
 
 1.0.2 (2022-01-17)
 ------------------
