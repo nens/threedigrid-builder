@@ -7,6 +7,7 @@ import numpy as np
 try:
     from osgeo import gdal
     from osgeo import osr
+
     gdal.UseExceptions()
 except ImportError:
     gdal = None
