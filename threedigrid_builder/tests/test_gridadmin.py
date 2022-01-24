@@ -1,3 +1,4 @@
+from copy import copy
 from numpy.testing import assert_equal
 from threedigrid_builder.interface import GridAdminOut
 
@@ -14,6 +15,19 @@ def h5_out(tmpdir_factory, grid_all):
 
     with GridAdminOut(path) as out:
         out.write(grid_all)
+
+    with h5py.File(path, "r") as f:
+        yield f
+
+
+@pytest.fixture(scope="session")
+def h5_out_1d(tmpdir_factory, grid_all):
+    path = tmpdir_factory.mktemp("h5") / "gridadmin_1d.h5"
+
+    grid_1d = copy(grid_all)
+    grid_1d.quadtree_stats = None
+    with GridAdminOut(path) as out:
+        out.write(grid_1d)
 
     with h5py.File(path, "r") as f:
         yield f
@@ -183,6 +197,24 @@ def test_line_cross_mapping(h5_out):
 def test_write_quadtree(h5_out, dataset, shape, dtype):
     assert h5_out["grid_coordinate_attributes"][dataset].shape == shape
     assert h5_out["grid_coordinate_attributes"][dataset].dtype == np.dtype(dtype)
+
+
+@pytest.mark.parametrize(
+    "dataset,shape,dtype",
+    [
+        ("lgrmin", (), "int32"),
+        ("kmax", (), "int32"),
+        ("mmax", (1,), "int32"),
+        ("nmax", (1,), "int32"),
+        ("dx", (1,), "float64"),
+        ("dxp", (), "float64"),
+        ("x0p", (), "float64"),
+        ("y0p", (), "float64"),
+    ],
+)
+def test_write_quadtree_pure_1d(h5_out_1d, dataset, shape, dtype):
+    assert h5_out_1d["grid_coordinate_attributes"][dataset].shape == shape
+    assert h5_out_1d["grid_coordinate_attributes"][dataset].dtype == np.dtype(dtype)
 
 
 @pytest.mark.parametrize(

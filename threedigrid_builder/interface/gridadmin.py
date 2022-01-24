@@ -13,6 +13,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
+from threedigrid_builder.grid import QuadtreeStats
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 import numpy as np
@@ -167,8 +168,7 @@ class GridAdminOut(OutputInterface):
     def write(self, grid: Grid):
         self.write_meta(grid.meta)
         self.write_grid_counts(grid.nodes, grid.lines)
-        if grid.quadtree_stats is not None:
-            self.write_quadtree(grid.quadtree_stats)
+        self.write_quadtree(grid.quadtree_stats)
         self.write_nodes(grid.nodes)
         self.write_nodes_embedded(grid.nodes_embedded)
         self.write_lines(grid.lines, grid.cross_sections)
@@ -262,6 +262,18 @@ class GridAdminOut(OutputInterface):
         Raises:
             ValueError if it exists already.
         """
+        if quadtree_statistics is None:
+            # Write a dummy for pure 1D models (Issue 217)
+            quadtree_statistics = QuadtreeStats(
+                lgrmin=0,
+                kmax=1,
+                mmax=[1],
+                nmax=[1],
+                dx=[-10000000.0],
+                dxp=-1000000.0,
+                x0p=0.0,
+                y0p=0.0,
+            )
 
         group = self._file.create_group("grid_coordinate_attributes")
         dataclass_to_h5(group, quadtree_statistics, mode="datasets")
