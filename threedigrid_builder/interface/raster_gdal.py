@@ -52,14 +52,14 @@ class GDALInterface(RasterInterface):
         del self._dataset
 
     def read(self):
-        width, height, bbox, data = self._create_area_arr_from_dem()
+        width, height, bbox, mask = self._create_area_arr_from_dem()
 
         return {
             "pixel_size": self.pixel_size,
             "width": width,
             "height": height,
             "bbox": bbox,
-            "area_mask": np.flipud(data).T.astype(
+            "area_mask": np.flipud(mask).T.astype(
                 dtype=np.int16, copy=False, order="F"
             ),
         }
@@ -75,6 +75,24 @@ class GDALInterface(RasterInterface):
         if ymax < ymin:
             ymin, ymax = ymax, ymin
 
-        data = self._dataset.GetRasterBand(1).GetMaskBand().ReadAsArray()
-        data[data > 0] = 1
-        return width, height, (xmin, ymin, xmax, ymax), data
+        band = self._dataset.GetRasterBand(1)
+        size_j, size_i = band.GetBlockSize()
+        nodata = band.GetNoDataValue()
+        mask = np.zeros((height, width), dtype=np.int16)
+        n_blocks_j = ((width - 1) // size_j) + 1
+        n_blocks_i = ((height - 1) // size_i) + 1
+
+        for i in range(n_blocks_i):
+            for j in range(n_blocks_j):
+                i1 = i * size_i
+                j1 = j * size_j
+                i2 = min(i1 + size_i, height)
+                j2 = min(j1 + size_j, width)
+                data = band.ReadAsArray(
+                    xoff=j1, yoff=i1, win_xsize=j2 - j1, win_ysize=i2 - i1
+                )
+                _mask = np.isfinite(data)
+                if nodata is not None and np.isfinite(nodata):
+                    _mask &= data != nodata
+                mask[i1:i2, j1:j2] = _mask
+        return width, height, (xmin, ymin, xmax, ymax), mask

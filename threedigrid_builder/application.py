@@ -57,10 +57,10 @@ def _make_gridadmin(
         if not dem_path:
             raise SchematisationError("DEM file expected")
         try:
-            with RasterioInterface(dem_path) as raster:
+            with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
         except ImportError:
-            with GDALInterface(dem_path) as raster:
+            with RasterioInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
 
         # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)

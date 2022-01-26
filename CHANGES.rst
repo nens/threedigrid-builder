@@ -4,7 +4,9 @@ Changelog of threedigrid-builder
 1.1.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Interpret non-finite raster values (NaN, Inf, -Inf) as nodata.
+
+- Use GDAL (instead of rasterio) for reading rasters, if present.
 
 
 1.1.0 (2022-01-24)
