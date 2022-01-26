@@ -51,26 +51,32 @@ class RasterioInterface(RasterInterface):
     def read(self):
         if self.model_area_path is not None:
             area_geometry = self._load_geometry(self.model_area_path)
-            width, height, bbox, data = self._create_area_arr_from_geometry(
+            width, height, bbox, mask = self._create_area_arr_from_geometry(
                 area_geometry
             )
         else:
-            width, height, bbox, data = self._create_area_arr_from_dem()
+            width, height, bbox, mask = self._create_area_arr_from_dem()
 
         return {
             "pixel_size": self.pixel_size,
             "width": width,
             "height": height,
             "bbox": bbox,
-            "area_mask": np.flipud(data).T.astype(
+            "area_mask": np.flipud(mask).T.astype(
                 dtype=np.int16, copy=False, order="F"
             ),
         }
 
     def _create_area_arr_from_dem(self):
-        data = self._raster.read_masks(1)
-        data[data > 0] = 1
-        return self._raster.width, self._raster.height, self._raster.bounds, data
+        nodata = self._raster.nodatavals[0]
+        mask = np.zeros((self._raster.height, self._raster.width), dtype=np.int16)
+        for _, window in self._raster.block_windows(1):
+            data = self._raster.read(1, window=window)
+            _mask = np.isfinite(data)
+            if nodata is not None and np.isfinite(nodata):
+                _mask &= data != nodata
+            mask[window.toslices()] = _mask
+        return self._raster.width, self._raster.height, self._raster.bounds, mask
 
     @staticmethod
     def _load_geometry(model_area_json):
