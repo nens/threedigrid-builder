@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.1.1 (unreleased)
+1.2.0 (2022-01-26)
 ------------------
 
 - Interpret non-finite raster values (NaN, Inf, -Inf) as nodata.
