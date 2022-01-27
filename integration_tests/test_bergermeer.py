@@ -153,7 +153,7 @@ def test_integration(tmp_path):
         assert np.all(np.isnan(attrs.pop("zero_dim_extent")))
 
         assert attrs == {
-            "epsg_code": 28992,
+            "epsg_code": "28992",
             "has_1d": True,
             "has_2d": True,
             "has_breaches": True,
