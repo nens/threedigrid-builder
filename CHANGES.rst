@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.2.1 (unreleased)
+1.2.1 (2022-01-27)
 ------------------
 
 - Store epsg_code as string in GridMeta.
