@@ -262,10 +262,11 @@ class Grid:
 
     def set_crs(self, crs):
         """Overwrite the epsg_code and crs_wkt attributes of grid.meta"""
-        self.meta.crs_wkt = crs.wkt
-        # We currently need the epsg_code for post-processing; use a low tolerance to
+        # the version that NetCDF-CF convention refers to the spec
+        self.meta.crs_wkt = crs.to_wkt(version="WKT2_2015")
+        # We currently need the epsg_code for post-processing; use a low confidence to
         # make that happen. It will be better always to use the wkt.
-        epsg_code = crs.to_epsg(tolerance=20)
+        epsg_code = crs.to_epsg(min_confidence=20)
         if epsg_code is not None:
             self.meta.epsg_code = str(epsg_code)
 
