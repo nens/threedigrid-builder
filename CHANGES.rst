@@ -4,6 +4,9 @@ Changelog of threedigrid-builder
 1.2.2 (unreleased)
 ------------------
 
+- Append / prepend coordinates to channel/culvert linestrings if they do not intersect
+  the connection nodes they are attached to.
+
 - Only give node_type 4 and kcu 52/54 to manholes with a not-NULL storage area.
 
 
