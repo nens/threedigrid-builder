@@ -50,7 +50,7 @@ import pygeos
 __all__ = ["SQLite"]
 
 # hardcoded source projection
-SOURCE_EPSG = 4326
+SOURCE_CRS = CRS.from_epsg(4326)
 
 # before version 173, we get an error because "interception_file" is missing
 MIN_SQLITE_VERSION = 173
@@ -130,7 +130,7 @@ class SQLite:
         self.db = ThreediDatabase(
             connection_settings=sqlite_settings, db_type="spatialite"
         )
-        self._epsg_code = None  # for reproject()
+        self._crs = None  # for reproject()
 
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
@@ -242,21 +242,20 @@ class SQLite:
             {**groundwater, **interflow, **infiltration, **global_}
         )
         return {
-            "epsg_code": global_["epsg_code"],
             "model_name": global_["name"],
             "grid_settings": grid_settings,
             "tables_settings": tables_settings,
         }
 
     @property
-    def epsg_code(self) -> int:
-        if self._epsg_code is None:
-            self._epsg_code = self.get_settings()["epsg_code"]
-        return self._epsg_code
+    def crs(self) -> CRS:
+        if self._crs is None:
+            self._crs = CRS(f'EPSG:{self.get_settings()["epsg_code"]}')
+        return self._crs
 
-    @epsg_code.setter
-    def epsg_code(self, value: int):
-        self._epsg_code = value
+    @crs.setter
+    def crs(self, value: CRS):
+        self._crs = value
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
@@ -267,8 +266,7 @@ class SQLite:
         Args:
           geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
         """
-        target_epsg = self.epsg_code
-        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
+        func = _get_reproject_func(self.crs)
         return pygeos.apply(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
@@ -817,10 +815,8 @@ class SQLite:
 # Constructing a Transformer takes quite long, so we use caching here. The
 # function is deterministic so this doesn't have any side effects.
 @lru_cache(maxsize=8)
-def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
-    transformer = Transformer.from_crs(
-        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
-    )
+def _get_reproject_func(target_crs_wkt: str) -> Callable:
+    transformer = Transformer.from_crs(SOURCE_CRS, CRS(target_crs_wkt), always_xy=True)
 
     def func(coords):
         if coords.shape[0] == 0:

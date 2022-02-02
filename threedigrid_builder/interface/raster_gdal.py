@@ -1,12 +1,10 @@
 from threedigrid_builder.base import RasterInterface
-from threedigrid_builder.exceptions import SchematisationError
 
 import numpy as np
 
 
 try:
     from osgeo import gdal
-    from osgeo import osr
 
     gdal.UseExceptions()
 except ImportError:
@@ -15,21 +13,6 @@ except ImportError:
 __all__ = ["GDALInterface"]
 
 GT_TOLERANCE = 7
-
-
-def get_epsg_code(sr):
-    """
-    Return epsg code from a osr.SpatialReference object
-    """
-    if sr.IsGeographic():
-        raise SchematisationError(
-            f"The supplied DEM file has geographic projection '{sr.GetName()}'"
-        )
-    if sr.GetAuthorityName("PROJCS") != "EPSG":
-        raise SchematisationError(
-            f"The supplied DEM file has a none-EPSG projection '{sr.GetName()}'"
-        )
-    return int(sr.GetAuthorityCode("PROJCS"))
 
 
 class GDALInterface(RasterInterface):
@@ -44,8 +27,8 @@ class GDALInterface(RasterInterface):
         self._dataset = gdal.Open(self.path.as_posix(), gdal.GA_ReadOnly)
         c, a, b, f, d, e = self._dataset.GetGeoTransform()
         self.set_transform((a, b, c, d, e, f))
-        sr = osr.SpatialReference(self._dataset.GetProjection())
-        self.set_epsg_code(get_epsg_code(sr))
+        crs_wkt = self._dataset.GetProjection()
+        self.set_crs(crs_wkt)
         return self
 
     def __exit__(self, *args, **kwargs):

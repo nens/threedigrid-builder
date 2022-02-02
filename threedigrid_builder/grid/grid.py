@@ -88,7 +88,8 @@ class GridMeta:
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
-    epsg_code: str = "28992"  # SQLite EPSG is ignored if DEM file is present
+    epsg_code: Optional[str] = "28992"  # SQLite EPSG is ignored if DEM file is present
+    crs_wkt: Optional[str] = None
     model_slug: Optional[str] = None  # from repository.slug
     revision_hash: Optional[str] = None  # from repository.revision.hash
     revision_nr: Optional[int] = None  # from repository.revision.number
@@ -258,6 +259,15 @@ class Grid:
         meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
+
+    def set_crs(self, crs):
+        """Overwrite the epsg_code and crs_wkt attributes of grid.meta"""
+        self.meta.crs_wkt = crs.wkt
+        # We currently need the epsg_code for post-processing; use a low tolerance to
+        # make that happen. It will be better always to use the wkt.
+        epsg_code = crs.to_epsg(tolerance=20)
+        if epsg_code is not None:
+            self.meta.epsg_code = str(epsg_code)
 
     @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):

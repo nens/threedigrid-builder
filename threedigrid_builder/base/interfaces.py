@@ -1,6 +1,7 @@
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
+from pyproj import CRS
 from threedigrid_builder.exceptions import SchematisationError
 from typing import Optional
 
@@ -66,8 +67,8 @@ class RasterInterface(ABC):
 
         self.transform = (a, b, c, d, e, f)
 
-    def set_epsg_code(self, epsg_code: int):
-        self.epsg_code = epsg_code
+    def set_crs(self, crs_wkt: str):
+        self.crs = CRS.from_wkt(crs_wkt)
 
     @property
     def pixel_size(self):

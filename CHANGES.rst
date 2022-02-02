@@ -4,7 +4,10 @@ Changelog of threedigrid-builder
 1.2.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Use the CRS from the raster to reproject, instead of the EPSG inferred from it. This
+  yields slight differences in some projections.
+
+- Drop rasterio as optional raster interface.
 
 
 1.2.1 (2022-01-27)

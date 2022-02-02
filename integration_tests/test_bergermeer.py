@@ -154,6 +154,7 @@ def test_integration(tmp_path):
 
         assert attrs == {
             "epsg_code": "28992",
+            "crs_wkt": "foo",
             "has_1d": True,
             "has_2d": True,
             "has_breaches": True,

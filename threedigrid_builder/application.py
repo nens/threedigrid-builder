@@ -16,7 +16,6 @@ from threedigrid_builder.interface import DictOut
 from threedigrid_builder.interface import GDALInterface
 from threedigrid_builder.interface import GeopackageOut
 from threedigrid_builder.interface import GridAdminOut
-from threedigrid_builder.interface import RasterioInterface
 from threedigrid_builder.interface import SQLite
 from typing import Callable
 from typing import Optional
@@ -56,18 +55,12 @@ def _make_gridadmin(
         progress_callback(0.1, "Reading subgrid input...")
         if not dem_path:
             raise SchematisationError("DEM file expected")
-        try:
-            with GDALInterface(dem_path) as raster:
-                subgrid_meta = raster.read()
-        except ImportError:
-            with RasterioInterface(dem_path) as raster:
-                subgrid_meta = raster.read()
+        with GDALInterface(dem_path) as raster:
+            subgrid_meta = raster.read()
 
-        # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)
-        grid.meta.epsg_code = str(raster.epsg_code)
-
-        # Use raster epsg_code instead of the one from global_settings
-        db.epsg_code = raster.epsg_code
+        # Patch CRS with that of the DEM (so: user-supplied EPSG is ignored)
+        grid.set_crs(raster.crs)
+        db.crs = raster.crs
 
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")

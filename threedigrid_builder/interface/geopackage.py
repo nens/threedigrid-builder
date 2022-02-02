@@ -37,5 +37,7 @@ class GeopackageOut(OutputInterface):
         for name, layer in layers.items():
             if layer is None or len(layer.get("geometry", [])) == 0:
                 continue
-            df = geopandas.GeoDataFrame(layer, crs=grid.meta.epsg_code)
+            df = geopandas.GeoDataFrame(
+                layer, crs=grid.meta.crs_wkt or grid.meta.epsg_code
+            )
             df.to_file(self.path, layer=name, driver="GPKG")

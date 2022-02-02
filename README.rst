@@ -48,18 +48,21 @@ First install sqlite and spatialite libraries, e.g. on Ubuntu::
 
   $ sudo apt-get install sqlite3 libsqlite3-mod-spatialite
 
-For raster input, there are two options: GDAL and rasterio. If you do not have GDAL
-(and its Python bindings) present, be sure to include the `[rasters]` extra dependency
-while installing threedigrid-builder. If you have GDAL present, this can be omitted.
+For raster input, GDAL is required to be present. We omitted these from the dependencies
+because installation of GDAL depends on your platform an on your personal perference.
+One option is to install gdal using apt-get, and then pygdal with a matching version:
+
+  $ sudo apt-get libgdal-dev
+  $ pip install pygdal=={your gdal version}.*
 
 Install the threedigrid-builder::
 
-  $ pip install threedigrid-builder[rasters]
+  $ pip install threedigrid-builder
 
 For output into a file for the 3Di calculationcore, enable gridadmin output::
 
-  $ pip install threedigrid-builder[rasters,gridadmin]
+  $ pip install threedigrid-builder[gridadmin]
 
 For output into Geopackage for display in e.g. QGis, enable gpkg output::
 
-  $ pip install threedigrid-builder[rasters,gpkg]
+  $ pip install threedigrid-builder[gpkg]

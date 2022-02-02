@@ -260,6 +260,7 @@ def test_write_meta(h5_out, dataset, shape, dtype):
     "attr,shape,dtype",
     [
         ("epsg_code", (), "S"),  # changed to int
+        ("crs_wkt", (), "S"),  # changed to int
         ("has_1d", (), "bool"),  # changed to bool
         ("has_2d", (), "bool"),  # changed to bool
         ("has_0d", (), "bool"),
