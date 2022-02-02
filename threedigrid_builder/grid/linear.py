@@ -49,7 +49,9 @@ def sanitize_linestrings(linestrings, points_1, points_2):
     # for the remaining geometries; add point if necessary
     add_first = has_geom[dist_start_start > COORD_EQUAL_ATOL]
     if len(add_first) > 0:
-        linestrings[add_first] = prepend_point(linestrings[add_first], points_1[add_first])
+        linestrings[add_first] = prepend_point(
+            linestrings[add_first], points_1[add_first]
+        )
     add_end = has_geom[dist_end_end > COORD_EQUAL_ATOL]
     if len(add_end) > 0:
         linestrings[add_end] = append_point(linestrings[add_end], points_2[add_end])
