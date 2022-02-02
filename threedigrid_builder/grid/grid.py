@@ -83,6 +83,7 @@ LINE_ORDER = [
     # [LineType.LINE_2D_GROUNDWATER_BOUNDARY], (to be implemented)
 ]
 LINE_ORDER_BOUNDARY_1D = 10
+WKT_VERSION = "WKT2_2015"  # For setting crs_wkt for pure 1D models
 
 
 @dataclass
@@ -794,3 +795,7 @@ class Grid:
         self.meta.has_breaches = self.breaches is not None and len(self.breaches) > 0
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True
+        if not self.meta.crs_wkt:
+            self.meta.crs_wkt = CRS.from_epsg(int(self.meta.epsg_code)).to_wkt(
+                WKT_VERSION
+            )

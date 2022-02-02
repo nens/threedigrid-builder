@@ -825,8 +825,8 @@ class SQLite:
 # Constructing a Transformer takes quite long, so we use caching here. The
 # function is deterministic so this doesn't have any side effects.
 @lru_cache(maxsize=8)
-def _get_reproject_func(target_crs_wkt: str) -> Callable:
-    transformer = Transformer.from_crs(SOURCE_CRS, CRS(target_crs_wkt), always_xy=True)
+def _get_reproject_func(target_crs: CRS) -> Callable:
+    transformer = Transformer.from_crs(SOURCE_CRS, target_crs, always_xy=True)
 
     def func(coords):
         if coords.shape[0] == 0:

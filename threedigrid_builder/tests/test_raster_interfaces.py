@@ -1,4 +1,3 @@
-from pyproj.crs import CRS
 from threedigrid_builder.interface import GDALInterface
 
 import numpy as np
