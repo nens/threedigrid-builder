@@ -4,7 +4,8 @@ Changelog of threedigrid-builder
 1.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Append / prepend coordinates to channel/culvert linestrings if they do not intersect
+  the connection nodes they are attached to.
 
 
 1.2.0 (2022-01-26)
