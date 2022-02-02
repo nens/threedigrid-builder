@@ -1,4 +1,5 @@
 from pygeos.testing import assert_geometries_equal
+from pyproj import CRS
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Pumps
@@ -258,9 +259,23 @@ def test_get_pipes(db):
     assert pipes.zoom_category[15] == 3
 
 
+def test_get_epsg_code(db):
+    result = db.get_epsg_code()
+    assert result == 28992
+
+
+def test_crs(db):
+    assert db.crs == CRS.from_epsg(28992)
+
+
+def test_custom_crs(db, crs_wkt_28992):
+    db.crs = CRS.from_epsg(3857)
+    db.crs = crs_wkt_28992
+    assert db.crs == CRS.from_epsg(28992)
+
+
 def test_get_settings(db):
     result = db.get_settings()
-    assert result["epsg_code"] == 28992
     assert result["model_name"] == "simple_infil_no_grndwtr"
 
     g = result["grid_settings"]

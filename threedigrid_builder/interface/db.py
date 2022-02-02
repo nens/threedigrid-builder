@@ -157,6 +157,16 @@ class SQLite:
         finally:
             session.close()
 
+    def get_epsg_code(self) -> int:
+        """Return the epsg code"""
+        with self.get_session() as session:
+            (epsg_code,) = (
+                session.query(models.GlobalSetting.epsg_code)
+                .order_by(models.GlobalSetting.id)
+                .first()
+            )
+        return epsg_code
+
     def get_settings(self) -> dict:
         """Return the settings relevant for makegrid and maketables.
 
@@ -250,12 +260,12 @@ class SQLite:
     @property
     def crs(self) -> CRS:
         if self._crs is None:
-            self._crs = CRS(f'EPSG:{self.get_settings()["epsg_code"]}')
+            self._crs = CRS.from_epsg(self.get_epsg_code())
         return self._crs
 
     @crs.setter
-    def crs(self, value: CRS):
-        self._crs = value
+    def crs(self, value: str):
+        self._crs = CRS(value)
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.

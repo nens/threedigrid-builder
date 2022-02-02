@@ -7,6 +7,8 @@ from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
+from osgeo import osr
+from pyproj import CRS
 from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
@@ -19,6 +21,7 @@ from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
 from typing import Optional
 from typing import Tuple
@@ -27,6 +30,9 @@ from typing import Union
 import numpy as np
 import pygeos
 import threedigrid_builder
+
+
+osr.UseExceptions()
 
 
 __all__ = ["Grid", "GridMeta", "QuadtreeStats"]
@@ -260,15 +266,26 @@ class Grid:
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
 
-    def set_crs(self, crs):
+    def set_crs(self, crs_wkt):
         """Overwrite the epsg_code and crs_wkt attributes of grid.meta"""
-        # the version that NetCDF-CF convention refers to the spec
-        self.meta.crs_wkt = crs.to_wkt(version="WKT2_2015")
+        self.meta.crs_wkt = crs_wkt
+        crs = CRS.from_wkt(crs_wkt)
+        if crs.is_geographic:
+            raise SchematisationError(
+                f"The supplied DEM file has geographic projection '{crs.name}'"
+            )
         # We currently need the epsg_code for post-processing; use a low confidence to
         # make that happen. It will be better always to use the wkt.
-        epsg_code = crs.to_epsg(min_confidence=20)
-        if epsg_code is not None:
-            self.meta.epsg_code = str(epsg_code)
+        epsg_code = CRS(crs_wkt).to_epsg(min_confidence=20)
+        if epsg_code is None:
+            # Fallback to GDAL, extract the EPSG code from the WKT
+            sr = osr.SpatialReference(crs_wkt)
+            if sr.GetAuthorityName("PROJCS") != "EPSG":
+                raise SchematisationError(
+                    f"The supplied DEM file has a non-EPSG projection '{sr.GetName()}'"
+                )
+            epsg_code = sr.GetAuthorityCode("PROJCS")
+        self.meta.epsg_code = str(epsg_code)
 
     @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
