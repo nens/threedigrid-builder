@@ -58,20 +58,10 @@ class ConnectionNodes:
             - storage_area: area of connection_node.
         """
         node_type = np.where(
-            self.storage_area > 0,
+            self.storage_area >= 0,
             int(NodeType.NODE_1D_STORAGE),
             int(NodeType.NODE_1D_NO_STORAGE),
         )
-
-        # Check if manhole has drain_level below bottom_level
-        is_manhole = self.manhole_id != -9999
-        has_lower_drn_lvl = self.drain_level[is_manhole] < self.bottom_level[is_manhole]
-        if np.any(has_lower_drn_lvl):
-            ids = self.manhole_id[is_manhole][has_lower_drn_lvl]
-            logger.warning(
-                f"Manholes {sorted(ids.tolist())} have a "
-                f"bottom_level that is above drain_level."
-            )
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(self)),
@@ -101,16 +91,25 @@ class ConnectionNodes:
 
         Returns:
             tuple of:
-            - is_closed (array of bool): based on self.manhole_id and self.storage_area
+            - is_closed (array of bool): based on self.storage_area
             - dpumax (array of float): based on self.drain_level or locations.bank_level
         """
         # get the corresponding connection_node ids and indexes
         connection_node_id = nodes.content_pk[node_idx]
         connection_node_idx = self.id_to_index(connection_node_id)
-        is_closed = (
-            (self.manhole_id[connection_node_idx] != -9999)
-            & (self.storage_area[connection_node_idx] > 0)
+        is_closed = self.storage_area[connection_node_idx] >= 0
+        is_closed_idx = connection_node_idx[is_closed]
+
+        # Check if manhole has drain_level below bottom_level
+        has_lower_drn_lvl = (
+            self.drain_level[is_closed_idx] < self.bottom_level[is_closed_idx]
         )
+        if np.any(has_lower_drn_lvl):
+            ids = self.manhole_id[is_closed_idx[has_lower_drn_lvl]]
+            logger.warning(
+                f"Manholes {sorted(ids.tolist())} have a "
+                f"bottom_level that is above drain_level."
+            )
 
         # for open water nodes, compute drain level from channel bank levels
         open_water = node_idx[~is_closed]
@@ -134,7 +133,7 @@ class ConnectionNodes:
         dpumax = dpumax[connection_node_idx]
 
         # for manholes: put in the drain level
-        dpumax[is_closed] = self.drain_level[connection_node_idx[is_closed]]
+        dpumax[is_closed] = self.drain_level[is_closed_idx]
         return is_closed, dpumax
 
 

@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.2.1 (unreleased)
 ------------------
 
-- Only give kcu 52/54 (1D2D closed) to manholes with a nonzero storage area.
+- Only give node_type 4 and kcu 52/54 to manholes with a not-NULL storage area.
 
 
 1.2.0 (2022-01-26)
