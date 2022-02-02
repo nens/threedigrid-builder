@@ -4,12 +4,15 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
-from threedigrid_builder.grid.fwrapper import set_refinement
 
 import itertools
+import logging
 import math
 import numpy as np
 import pygeos
+
+
+logger = logging.getLogger(__name__)
 
 
 __all__ = ["QuadTree"]
@@ -63,12 +66,8 @@ class QuadTree:
 
         # Array with dimensions of smallest active grid level and contains
         # map of active grid level for each quadtree cell.
-        self.lg = np.full(
-            (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order="F"
-        )
+        self.lg = self._apply_refinements(refinements)
 
-        if refinements is not None:
-            self._apply_refinements(np.array(subgrid_meta["bbox"]), refinements)
         # Array with dimensions of smallest active grid level and contains
         # idx of active grid level for each quadtree cell.
         self.quad_idx = np.empty(
@@ -94,7 +93,7 @@ class QuadTree:
         """Returns minimum number of pixels in smallles computational_cell."""
         return self.lgrmin
 
-    def _apply_refinements(self, subgrid_bbox, refinements):
+    def _apply_refinements(self, refinements):
         """Set active grid levels for based on refinement dict and
         filling lg variable for refinement locations.
 
@@ -102,22 +101,43 @@ class QuadTree:
           dict of refinemnets containing at least
           - geometry
           - refinement_level
-          - id
 
         """
-        for i in range(len(refinements.id)):
-            geom = np.asfortranarray(pygeos.get_coordinates(refinements.the_geom[i]))
-            set_refinement(
-                id=refinements.id[i],
-                geom=geom,
-                level=refinements.refinement_level[i],
-                type=pygeos.get_type_id(refinements.the_geom[i]),
-                bbox=subgrid_bbox,
-                mmax=self.mmax,
-                nmax=self.nmax,
-                dx=self.dx,
-                lg=self.lg,
+
+        if refinements is None:
+            return np.full(
+                (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order="F"
             )
+
+        lg = np.full((self.mmax[0] * self.nmax[0]), self.kmax, dtype=np.int32, order="F")
+        lg_x = self.origin[0] + np.arange(0, self.mmax[0]) * self.dx[0]
+        lg_y = self.origin[1] + np.arange(0, self.nmax[0]) * self.dx[0] 
+        
+        
+        x, y = np.meshgrid(lg_x, lg_y)
+        lg_geoms = pygeos.box(x, y, x + self.dx[0], y + self.dx[0])
+        lg_tree = pygeos.STRtree(lg_geoms.flatten())
+
+        ref_idx, lg_idx = lg_tree.query_bulk(
+            refinements.the_geom[:], predicate="intersects"
+        )
+
+        missing = np.setdiff1d(refinements.id, refinements.id[ref_idx])
+        if len(missing) > 0:
+            logger.warning(
+                f"Some grid refinement geometries were outside model domain: "
+                f"{missing.tolist()}."
+            )
+ 
+        # No fitting grid refinements found, so Grid will have no refinements.
+        if len(ref_idx) == 0:
+            return np.full(
+                (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order="F"
+            )
+
+        lg[lg_idx] = refinements.refinement_level[ref_idx]
+        
+        return lg.reshape(self.mmax[0], self.nmax[0], order="F")
 
     def get_nodes_lines(self, area_mask, node_id_counter, line_id_counter):
         """Compute 2D openwater Nodes based on computed Quadtree.
