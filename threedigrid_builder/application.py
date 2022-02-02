@@ -64,7 +64,7 @@ def _make_gridadmin(
                 subgrid_meta = raster.read()
 
         # Patch epsg code with that of the DEM (so: user-supplied EPSG is ignored)
-        grid.meta.epsg_code = raster.epsg_code
+        grid.meta.epsg_code = str(raster.epsg_code)
 
         # Use raster epsg_code instead of the one from global_settings
         db.epsg_code = raster.epsg_code

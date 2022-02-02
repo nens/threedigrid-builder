@@ -88,7 +88,7 @@ class GridMeta:
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
-    epsg_code: int = 28992  # SQLite EPSG is ignored if DEM file is present
+    epsg_code: str = "28992"  # SQLite EPSG is ignored if DEM file is present
     model_slug: Optional[str] = None  # from repository.slug
     revision_hash: Optional[str] = None  # from repository.revision.hash
     revision_nr: Optional[int] = None  # from repository.revision.number
@@ -126,6 +126,8 @@ class GridMeta:
     def __post_init__(self):
         if not self.threedigrid_builder_version:
             self.threedigrid_builder_version = threedigrid_builder.__version__
+        if type(self.epsg_code) == int:
+            self.epsg_code = str(self.epsg_code)
 
 
 @dataclass

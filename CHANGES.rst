@@ -1,11 +1,19 @@
 Changelog of threedigrid-builder
 ================================
 
-1.2.1 (unreleased)
+1.2.2 (unreleased)
 ------------------
 
 - Append / prepend coordinates to channel/culvert linestrings if they do not intersect
   the connection nodes they are attached to.
+
+- Only give node_type 4 and kcu 52/54 to manholes with a not-NULL storage area.
+
+
+1.2.1 (2022-01-27)
+------------------
+
+- Store epsg_code as string in GridMeta.
 
 
 1.2.0 (2022-01-26)
