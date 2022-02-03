@@ -73,6 +73,18 @@ def refinement_outside_domain():
 
 
 @pytest.fixture
+def quadtree_mixed_refinements():
+    refinement = GridRefinements(
+        id=np.array([1, 2]),
+        refinement_level=np.array([1, 2]),
+        the_geom=np.array([
+            pygeos.linestrings(np.array([[13.4, 10.4], [13.8, 10.4]])),
+            pygeos.box(12.4, 11.4, 13.9, 13.4)]),
+    )
+    return refinement
+
+
+@pytest.fixture
 def quadtree_small_line_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
@@ -381,6 +393,31 @@ def test_lines_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
     assert_array_equal(lines.lim, lim)
     assert_array_equal(lines.lin, lin)
     assert_array_equal(lines.cross_pix_coords, cross_pix_coords)
+
+
+def test_mixed_refinements(quadtree_mixed_refinements, subgrid_meta):
+    quadtree = QuadTree(
+        subgrid_meta=subgrid_meta,
+        num_refine_levels=3,
+        min_gridsize=1.0,
+        use_2d_flow=True,
+        refinements=quadtree_mixed_refinements
+    )
+
+    expected_lg = np.array(
+        [
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [2, 2, 2, 2, 2, 2, 2, 2, -99, -99, -99, -99],
+            [2, 2, 2, 2, 2, 2, 2, 2, -99, -99, -99, -99],
+            [2, 2, 1, 1, 2, 2, 2, 2, -99, -99, -99, -99],
+            [2, 2, 1, 1, 2, 2, 2, 2, -99, -99, -99, -99],
+        ],
+        dtype=np.int32,
+    )
+    assert_array_equal(quadtree.lg, expected_lg[::-1].T)
 
 
 def test_refinement_outside(refinement_outside_domain, subgrid_meta, caplog):
