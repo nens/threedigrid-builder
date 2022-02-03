@@ -118,24 +118,18 @@ class QuadTree:
         lg_geoms = pygeos.box(x, y, x + self.dx[0], y + self.dx[0])
         lg_tree = pygeos.STRtree(lg_geoms.flatten())
 
-        ref_idx, lg_idx = lg_tree.query_bulk(
-            refinements.the_geom[:], predicate="intersects"
-        )
-
-        missing = np.setdiff1d(refinements.id, refinements.id[ref_idx])
-        if len(missing) > 0:
-            logger.warning(
-                f"Some grid refinement geometries were outside model domain: "
-                f"{missing.tolist()}."
-            )
- 
-        # No fitting grid refinements found, so Grid will have no refinements.
-        if len(ref_idx) == 0:
-            return np.full(
-                (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order="F"
+        for i in range(len(refinements.id)):
+            lg_idx = lg_tree.query(
+                refinements.the_geom[i], predicate="intersects"
             )
 
-        lg[lg_idx] = refinements.refinement_level[ref_idx]
+            if len(lg_idx) > 0:
+                lg[lg_idx] = np.fmin(lg[lg_idx], refinements.refinement_level[i])    
+            else:
+                logger.warning(
+                    f"Some grid refinement geometries were outside model domain: "
+                    f"{refinements.id[i]}."
+                )
         
         return lg.reshape(self.mmax[0], self.nmax[0], order="F")
 

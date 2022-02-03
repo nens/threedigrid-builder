@@ -408,7 +408,7 @@ def test_refinement_outside(refinement_outside_domain, subgrid_meta, caplog):
     assert_array_equal(quadtree.lg, expected_lg[::-1].T)
 
     assert (
-        caplog.record_tuples[0][2] == "Some grid refinement geometries were outside model domain: [1]."
+        caplog.record_tuples[0][2] == "Some grid refinement geometries were outside model domain: 1."
     )
     
 
