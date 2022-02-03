@@ -94,14 +94,15 @@ class QuadTree:
         return self.lgrmin
 
     def _apply_refinements(self, refinements):
-        """Set active grid levels for based on refinement dict and
-        filling lg variable for refinement locations.
+        """Set active grid levels for based on refinements and
+        setting lg variable for refinement locations.
 
         Args:
-          dict of refinemnets containing at least
-          - geometry
-          - refinement_level
+          refinements (GridRefinements): all gridrefinements polygon and linestrings
+            with refinement levels.
 
+        Returns:
+            lg (ndarray): Array with spatial refinement locations.
         """
 
         if refinements is None:
@@ -130,7 +131,7 @@ class QuadTree:
                     f"Some grid refinement geometries were outside model domain: "
                     f"{refinements.id[i]}."
                 )
-        
+
         return lg.reshape(self.mmax[0], self.nmax[0], order="F")
 
     def get_nodes_lines(self, area_mask, node_id_counter, line_id_counter):
