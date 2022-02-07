@@ -43,8 +43,6 @@ jobs:
             delvewheel repair -w {dest_dir}
             --add-path ${{ github.workspace }}\libthreedigrid\bin
             --no-mangle "libwinpthread-1.dll" {wheel}
-          CIBW_TEST_EXTRAS: test,gridadmin
-          CIBW_TEST_COMMAND: pytest --pyargs threedigrid_builder.tests
 
       - uses: actions/upload-artifact@v2
         with:
