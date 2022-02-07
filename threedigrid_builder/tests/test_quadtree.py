@@ -3,6 +3,7 @@ from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import QuadTree
 
 import itertools
+import logging
 import numpy as np
 import pygeos
 import pytest
@@ -62,6 +63,28 @@ def quadtree_line_refinement(subgrid_meta):
 
 
 @pytest.fixture
+def refinement_outside_domain():
+    refinement = GridRefinements(
+        id=np.array([1]),
+        refinement_level=np.array([1]),
+        the_geom=pygeos.linestrings([[[100.0, 40.0], [100.0, 50.]]]),
+    )
+    return refinement
+
+
+@pytest.fixture
+def quadtree_mixed_refinements():
+    refinement = GridRefinements(
+        id=np.array([1, 2]),
+        refinement_level=np.array([1, 2]),
+        the_geom=np.array([
+            pygeos.linestrings(np.array([[13.4, 10.4], [13.8, 10.4]])),
+            pygeos.box(12.4, 11.4, 13.9, 13.4)]),
+    )
+    return refinement
+
+
+@pytest.fixture
 def quadtree_small_line_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
@@ -82,7 +105,7 @@ def quadtree_poly_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
         refinement_level=np.array([2]),
-        the_geom=np.array([pygeos.box(12.5, 11.5, 14.0, 13.5)]),
+        the_geom=np.array([pygeos.box(12.4, 11.4, 13.9, 13.4)]),
     )
     return QuadTree(
         subgrid_meta=subgrid_meta,
@@ -371,6 +394,60 @@ def test_lines_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
     assert_array_equal(lines.lin, lin)
     assert_array_equal(lines.cross_pix_coords, cross_pix_coords)
 
+
+def test_mixed_refinements(quadtree_mixed_refinements, subgrid_meta):
+    quadtree = QuadTree(
+        subgrid_meta=subgrid_meta,
+        num_refine_levels=3,
+        min_gridsize=1.0,
+        use_2d_flow=True,
+        refinements=quadtree_mixed_refinements
+    )
+
+    expected_lg = np.array(
+        [
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [2, 2, 2, 2, 2, 2, 2, 2, -99, -99, -99, -99],
+            [2, 2, 2, 2, 2, 2, 2, 2, -99, -99, -99, -99],
+            [2, 2, 1, 1, 2, 2, 2, 2, -99, -99, -99, -99],
+            [2, 2, 1, 1, 2, 2, 2, 2, -99, -99, -99, -99],
+        ],
+        dtype=np.int32,
+    )
+    assert_array_equal(quadtree.lg, expected_lg[::-1].T)
+
+
+def test_refinement_outside(refinement_outside_domain, subgrid_meta, caplog):
+    quadtree = QuadTree(
+        subgrid_meta=subgrid_meta,
+        num_refine_levels=3,
+        min_gridsize=1.0,
+        use_2d_flow=True,
+        refinements=refinement_outside_domain,
+    )
+
+    expected_lg = np.array(
+        [
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+        ],
+        dtype=np.int32,
+    )
+    assert_array_equal(quadtree.lg, expected_lg[::-1].T)
+
+    assert (
+        caplog.record_tuples[0][2] == "Some grid refinement geometries were outside model domain: 1."
+    )
+    
 
 def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
     nodes, lines = quadtree_no_2d_flow.get_nodes_lines(
