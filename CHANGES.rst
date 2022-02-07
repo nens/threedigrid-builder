@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.2.2 (unreleased)
+1.3.0 (2022-02-07)
 ------------------
 
 - Write the WKT of the CRS (in addition to the epsg code) into the gridadmin.
