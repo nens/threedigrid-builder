@@ -13,6 +13,8 @@ Changelog of threedigrid-builder
 
 - Only give node_type 4 and kcu 52/54 to manholes with a not-NULL storage area.
 
+- Use pygoes to calculate grid refinements.
+
 
 1.2.1 (2022-01-27)
 ------------------
