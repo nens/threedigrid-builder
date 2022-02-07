@@ -1,3 +1,4 @@
+from pyproj import CRS
 from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Levees
@@ -171,4 +172,27 @@ def grid_all():
         breaches,
         meta,
         quadtree_stats,
+    )
+
+
+@pytest.fixture
+def crs_wkt_28992():
+    """A current CRS matching EPSG:28992"""
+    return CRS(CRS.from_epsg(28992).to_wkt())
+
+
+@pytest.fixture
+def crs_wkt_28992_legacy():
+    """A non-current CRS matching the test DEM file"""
+    return CRS.from_wkt(
+        'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",'
+        'SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],'
+        "TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],"
+        'AUTHORITY["EPSG","6289"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+        'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4289"]],'
+        'PROJECTION["Oblique_Stereographic"],PARAMETER["latitude_of_origin",52.1561605555556],'
+        'PARAMETER["central_meridian",5.38763888888889],PARAMETER["scale_factor",0.9999079],'
+        'PARAMETER["false_easting",155000],PARAMETER["false_northing",463000],'
+        'UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],'
+        'AUTHORITY["EPSG","28992"]]'
     )

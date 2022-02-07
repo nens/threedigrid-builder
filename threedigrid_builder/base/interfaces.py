@@ -1,8 +1,10 @@
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
+from pyproj import CRS
 from threedigrid_builder.exceptions import SchematisationError
 from typing import Optional
+from typing import Union
 
 
 __all__ = ["OutputInterface", "RasterInterface"]
@@ -45,6 +47,7 @@ class RasterInterface(ABC):
         self.path = path
         self.model_area_path = model_area_path
         self.transform = None
+        self.crs = None
         super().__init__()
 
     def set_transform(self, transform):
@@ -66,8 +69,8 @@ class RasterInterface(ABC):
 
         self.transform = (a, b, c, d, e, f)
 
-    def set_epsg_code(self, epsg_code: int):
-        self.epsg_code = epsg_code
+    def set_crs(self, crs: Union[CRS, int, str]):
+        self.crs = CRS(crs)
 
     @property
     def pixel_size(self):

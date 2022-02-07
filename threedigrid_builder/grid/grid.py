@@ -7,6 +7,9 @@ from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from dataclasses import dataclass
 from dataclasses import fields
+from osgeo import osr
+from pyproj import CRS
+from pyproj.exceptions import CRSError
 from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
@@ -19,6 +22,8 @@ from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import WKT_VERSION
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
 from typing import Optional
 from typing import Tuple
@@ -27,6 +32,9 @@ from typing import Union
 import numpy as np
 import pygeos
 import threedigrid_builder
+
+
+osr.UseExceptions()
 
 
 __all__ = ["Grid", "GridMeta", "QuadtreeStats"]
@@ -88,7 +96,8 @@ class GridMeta:
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
-    epsg_code: str = "28992"  # SQLite EPSG is ignored if DEM file is present
+    epsg_code: Optional[int] = 28992  # SQLite EPSG is ignored if DEM file is present
+    crs_wkt: Optional[str] = None
     model_slug: Optional[str] = None  # from repository.slug
     revision_hash: Optional[str] = None  # from repository.revision.hash
     revision_nr: Optional[int] = None  # from repository.revision.number
@@ -126,8 +135,11 @@ class GridMeta:
     def __post_init__(self):
         if not self.threedigrid_builder_version:
             self.threedigrid_builder_version = threedigrid_builder.__version__
-        if type(self.epsg_code) == int:
-            self.epsg_code = str(self.epsg_code)
+        if not self.crs_wkt and (self.epsg_code is not None):
+            try:
+                self.crs_wkt = CRS.from_epsg(self.epsg_code).to_wkt(WKT_VERSION)
+            except CRSError:
+                raise SchematisationError(f"Invalid EPSG code: {self.epsg_code}")
 
 
 @dataclass
@@ -258,6 +270,26 @@ class Grid:
         meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
+
+    def set_crs(self, crs: CRS):
+        """Overwrite the epsg_code and crs_wkt attributes of grid.meta"""
+        if crs.is_geographic:
+            raise SchematisationError(
+                f"A calculation grid cannot have geographic projection (supplied: '{crs.name}')"
+            )
+        self.meta.crs_wkt = crs.to_wkt(WKT_VERSION)
+        # We currently need the epsg_code for post-processing; use a low confidence to
+        # make that happen. It will be better always to use the wkt.
+        epsg_code = crs.to_epsg(min_confidence=20)
+        if epsg_code is None:
+            # Fallback to GDAL, extract the EPSG code from the WKT
+            sr = osr.SpatialReference(self.meta.crs_wkt)
+            if sr.GetAuthorityName("PROJCS") != "EPSG":
+                raise SchematisationError(
+                    f"The supplied DEM file has a non-EPSG projection '{sr.GetName()}'"
+                )
+            epsg_code = int(sr.GetAuthorityCode("PROJCS"))
+        self.meta.epsg_code = epsg_code
 
     @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):

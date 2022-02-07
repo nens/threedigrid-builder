@@ -4,6 +4,10 @@ Changelog of threedigrid-builder
 1.2.2 (unreleased)
 ------------------
 
+- Write the WKT of the CRS (in addition to the epsg code) into the gridadmin.
+
+- Drop rasterio as optional raster interface.
+
 - Append / prepend coordinates to channel/culvert linestrings if they do not intersect
   the connection nodes they are attached to.
 

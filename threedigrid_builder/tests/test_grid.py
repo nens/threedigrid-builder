@@ -9,6 +9,7 @@ from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import WKT_VERSION
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
@@ -37,7 +38,7 @@ def grid():
 @pytest.fixture
 def meta():
     return GridMeta(
-        epsg_code=12432634,
+        epsg_code=28992,
         model_name="test-name",
         grid_settings=GridSettings(
             use_2d=True,
@@ -100,7 +101,7 @@ def grid1d(meta):
 def test_from_meta(meta, setting, expected_true):
     setattr(meta.tables_settings, setting, InitializationType.GLOBAL)
     grid = Grid.from_meta(
-        epsg_code=1234,
+        epsg_code=28992,
         model_name="test",
         grid_settings=meta.grid_settings,
         tables_settings=meta.tables_settings,
@@ -113,6 +114,23 @@ def test_from_meta(meta, setting, expected_true):
         "has_interflow",
     ):
         assert getattr(grid.meta, attr) is (attr == expected_true)
+
+
+def test_set_crs_pyproj(grid2d, crs_wkt_28992):
+    grid2d.meta.epsg_code = None
+    grid2d.meta.crs_wkt = None
+
+    grid2d.set_crs(crs_wkt_28992)
+    assert grid2d.meta.epsg_code == 28992
+    assert grid2d.meta.crs_wkt == crs_wkt_28992.to_wkt(WKT_VERSION)
+
+
+def test_set_crs_gdal(grid2d, crs_wkt_28992_legacy):
+    grid2d.meta.epsg_code = None
+    grid2d.meta.crs_wkt = None
+    grid2d.set_crs(crs_wkt_28992_legacy)
+    assert grid2d.meta.epsg_code == 28992
+    assert grid2d.meta.crs_wkt == crs_wkt_28992_legacy.to_wkt(WKT_VERSION)
 
 
 def test_from_quadtree():
