@@ -10,9 +10,9 @@ def test_does_not_exist(tmp_path):
             pass
 
 
-def test_crs_wkt(dem_path, crs_wkt_28992_legacy):
+def test_crs(dem_path, crs_wkt_28992_legacy):
     with GDALInterface(dem_path) as dem:
-        assert dem.crs_wkt == crs_wkt_28992_legacy
+        assert dem.crs == crs_wkt_28992_legacy
 
 
 def test_pixel_size(dem_path):

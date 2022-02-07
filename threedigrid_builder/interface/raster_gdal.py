@@ -27,8 +27,7 @@ class GDALInterface(RasterInterface):
         self._dataset = gdal.Open(self.path.as_posix(), gdal.GA_ReadOnly)
         c, a, b, f, d, e = self._dataset.GetGeoTransform()
         self.set_transform((a, b, c, d, e, f))
-        crs_wkt = self._dataset.GetProjection()
-        self.set_crs_wkt(crs_wkt)
+        self.set_crs(self._dataset.GetProjection())
         return self
 
     def __exit__(self, *args, **kwargs):

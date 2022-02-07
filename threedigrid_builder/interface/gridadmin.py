@@ -187,6 +187,8 @@ class GridAdminOut(OutputInterface):
         Args:
             meta (GridMeta)
         """
+        # backwards compat: epsg code is saved as string
+        meta.epsg_code = str(meta.espg_code)
         dataclass_to_h5(self._file, meta, "attrs")
 
         grid_settings = self._file.create_group("grid_settings")

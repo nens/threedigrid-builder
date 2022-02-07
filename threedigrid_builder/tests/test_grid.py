@@ -8,7 +8,7 @@ from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import NodeType, WKT_VERSION
 from threedigrid_builder.grid import ConnectionNodes
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import GridMeta
@@ -17,6 +17,7 @@ from unittest import mock
 
 import numpy as np
 import pygeos
+from pyproj import CRS
 import pytest
 
 
@@ -118,17 +119,18 @@ def test_from_meta(meta, setting, expected_true):
 def test_set_crs_pyproj(grid2d, crs_wkt_28992):
     grid2d.meta.epsg_code = None
     grid2d.meta.crs_wkt = None
+
     grid2d.set_crs(crs_wkt_28992)
-    assert grid2d.meta.epsg_code == "28992"
-    assert grid2d.meta.crs_wkt == crs_wkt_28992
+    assert grid2d.meta.epsg_code == 28992
+    assert grid2d.meta.crs_wkt == CRS(crs_wkt_28992).to_wkt(WKT_VERSION)
 
 
 def test_set_crs_gdal(grid2d, crs_wkt_28992_legacy):
     grid2d.meta.epsg_code = None
     grid2d.meta.crs_wkt = None
     grid2d.set_crs(crs_wkt_28992_legacy)
-    assert grid2d.meta.epsg_code == "28992"
-    assert grid2d.meta.crs_wkt == crs_wkt_28992_legacy
+    assert grid2d.meta.epsg_code == 28992
+    assert grid2d.meta.crs_wkt == CRS(crs_wkt_28992_legacy).to_wkt(WKT_VERSION)
 
 
 def test_from_quadtree():

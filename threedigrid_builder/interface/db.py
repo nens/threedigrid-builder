@@ -40,7 +40,7 @@ from threedigrid_builder.grid import Surfaces
 from threedigrid_builder.grid import Weirs
 from typing import Callable
 from typing import ContextManager
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import pathlib
@@ -252,6 +252,7 @@ class SQLite:
             {**groundwater, **interflow, **infiltration, **global_}
         )
         return {
+            "epsg_code": global_["epsg_code"],
             "model_name": global_["name"],
             "grid_settings": grid_settings,
             "tables_settings": tables_settings,
@@ -264,7 +265,7 @@ class SQLite:
         return self._crs
 
     @crs.setter
-    def crs(self, value: str):
+    def crs(self, value: Union[CRS, str]):
         self._crs = CRS(value)
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:

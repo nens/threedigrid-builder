@@ -20,7 +20,7 @@ from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
 from typing import Optional
@@ -83,7 +83,6 @@ LINE_ORDER = [
     # [LineType.LINE_2D_GROUNDWATER_BOUNDARY], (to be implemented)
 ]
 LINE_ORDER_BOUNDARY_1D = 10
-WKT_VERSION = "WKT2_2015"  # For setting crs_wkt for pure 1D models
 
 
 @dataclass
@@ -95,7 +94,7 @@ class GridMeta:
     grid_settings: GridSettings
     tables_settings: TablesSettings
 
-    epsg_code: Optional[str] = "28992"  # SQLite EPSG is ignored if DEM file is present
+    epsg_code: Optional[int] = 28992  # SQLite EPSG is ignored if DEM file is present
     crs_wkt: Optional[str] = None
     model_slug: Optional[str] = None  # from repository.slug
     revision_hash: Optional[str] = None  # from repository.revision.hash
@@ -134,8 +133,8 @@ class GridMeta:
     def __post_init__(self):
         if not self.threedigrid_builder_version:
             self.threedigrid_builder_version = threedigrid_builder.__version__
-        if type(self.epsg_code) == int:
-            self.epsg_code = str(self.epsg_code)
+        if not self.crs_wkt and (self.epsg_code is not None):
+            self.crs_wkt = CRS.from_epsg(self.epsg_code)
 
 
 @dataclass
@@ -267,26 +266,25 @@ class Grid:
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
 
-    def set_crs(self, crs_wkt):
+    def set_crs(self, crs: CRS):
         """Overwrite the epsg_code and crs_wkt attributes of grid.meta"""
-        self.meta.crs_wkt = crs_wkt
-        crs = CRS.from_wkt(crs_wkt)
         if crs.is_geographic:
             raise SchematisationError(
-                f"The supplied DEM file has geographic projection '{crs.name}'"
+                f"A calculation grid cannot have geographic projection (supplied: '{crs.name}')"
             )
+        self.meta.crs_wkt = crs.to_wkt(WKT_VERSION)
         # We currently need the epsg_code for post-processing; use a low confidence to
         # make that happen. It will be better always to use the wkt.
-        epsg_code = CRS(crs_wkt).to_epsg(min_confidence=20)
+        epsg_code = crs.to_epsg(min_confidence=20)
         if epsg_code is None:
             # Fallback to GDAL, extract the EPSG code from the WKT
-            sr = osr.SpatialReference(crs_wkt)
+            sr = osr.SpatialReference(self.meta.crs_wkt)
             if sr.GetAuthorityName("PROJCS") != "EPSG":
                 raise SchematisationError(
                     f"The supplied DEM file has a non-EPSG projection '{sr.GetName()}'"
                 )
-            epsg_code = sr.GetAuthorityCode("PROJCS")
-        self.meta.epsg_code = str(epsg_code)
+            epsg_code = int(sr.GetAuthorityCode("PROJCS"))
+        self.meta.epsg_code = epsg_code
 
     @classmethod
     def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):

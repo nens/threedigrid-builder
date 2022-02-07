@@ -177,14 +177,14 @@ def grid_all():
 
 @pytest.fixture
 def crs_wkt_28992():
-    """A non-current CRS matching the test DEM file"""
-    return CRS.from_epsg(28992).to_wkt()
+    """A current CRS matching EPSG:28992"""
+    return CRS(CRS.from_epsg(28992).to_wkt())
 
 
 @pytest.fixture
 def crs_wkt_28992_legacy():
     """A non-current CRS matching the test DEM file"""
-    return (
+    return CRS.from_wkt(
         'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",'
         'SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],'
         "TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],"

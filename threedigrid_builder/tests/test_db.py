@@ -269,8 +269,14 @@ def test_crs(db):
 
 
 def test_custom_crs(db, crs_wkt_28992):
-    db.crs = CRS.from_epsg(3857)
+    db._crs = CRS.from_epsg(3857)  # resets the value
     db.crs = crs_wkt_28992
+    assert db.crs == CRS.from_epsg(28992)
+
+
+def test_custom_crs_legacy(db, crs_wkt_28992_legacy):
+    db._crs = CRS.from_epsg(3857)  # resets the value
+    db.crs = crs_wkt_28992_legacy
     assert db.crs == CRS.from_epsg(28992)
 
 
