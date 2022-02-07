@@ -2,6 +2,7 @@ from enum import Enum
 from enum import IntEnum
 from enum import unique
 
+
 # The WKT spec to use in the output crs_wkt field:
 WKT_VERSION = "WKT2_2015"
 

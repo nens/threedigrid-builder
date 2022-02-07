@@ -76,6 +76,10 @@ def field_to_h5(group, name, dtype, val, mode="attrs"):
     None values are converted automatically to -9999 (int an IntEnum), NaN (float)
     and "" (str). bool values cannot be None. Unknown datatypes are skipped silently.
     """
+    # backwards compat: epsg code is saved as string
+    if name == "epsg_code":
+        dtype = str
+        val = str(val)
     # convert Optional[<type>] to <type>
     dtype = unpack_optional_type(dtype)
     # handle Tuple
@@ -187,8 +191,6 @@ class GridAdminOut(OutputInterface):
         Args:
             meta (GridMeta)
         """
-        # backwards compat: epsg code is saved as string
-        meta.epsg_code = str(meta.espg_code)
         dataclass_to_h5(self._file, meta, "attrs")
 
         grid_settings = self._file.create_group("grid_settings")

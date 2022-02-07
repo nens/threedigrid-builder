@@ -37,7 +37,7 @@ def test_nodes_embedded(dict_out):
 
 
 def test_meta(dict_out):
-    assert dict_out["meta"]["epsg_code"] == "28992"
+    assert dict_out["meta"]["epsg_code"] == 28992
 
 
 @pytest.mark.parametrize(

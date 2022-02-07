@@ -4,8 +4,7 @@ Changelog of threedigrid-builder
 1.2.2 (unreleased)
 ------------------
 
-- Use the CRS from the raster to reproject, instead of the EPSG inferred from it. This
-  yields slight differences in some projections.
+- Write the WKT of the CRS (in addition to the epsg code) into the gridadmin.
 
 - Drop rasterio as optional raster interface.
 

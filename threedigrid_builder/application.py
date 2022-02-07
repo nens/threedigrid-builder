@@ -59,8 +59,8 @@ def _make_gridadmin(
             subgrid_meta = raster.read()
 
         # Patch CRS with that of the DEM (so: user-supplied EPSG is ignored)
-        grid.set_crs(raster.crs_wkt)
-        db.crs = raster.crs_wkt
+        grid.set_crs(raster.crs)
+        db.epsg_code = grid.meta.epsg_code
 
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")

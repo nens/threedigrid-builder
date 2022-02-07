@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from dataclasses import fields
 from osgeo import osr
 from pyproj import CRS
+from pyproj.exceptions import CRSError
 from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import Levees
 from threedigrid_builder.base import Lines
@@ -20,7 +21,8 @@ from threedigrid_builder.base.settings import GridSettings
 from threedigrid_builder.base.settings import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType, WKT_VERSION
+from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
 from typing import Optional
@@ -134,7 +136,10 @@ class GridMeta:
         if not self.threedigrid_builder_version:
             self.threedigrid_builder_version = threedigrid_builder.__version__
         if not self.crs_wkt and (self.epsg_code is not None):
-            self.crs_wkt = CRS.from_epsg(self.epsg_code)
+            try:
+                self.crs_wkt = CRS.from_epsg(self.epsg_code).to_wkt(WKT_VERSION)
+            except CRSError:
+                raise SchematisationError(f"Invalid EPSG code: {self.epsg_code}")
 
 
 @dataclass

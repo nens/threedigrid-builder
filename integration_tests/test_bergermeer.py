@@ -151,6 +151,8 @@ def test_integration(tmp_path):
         )
 
         assert np.all(np.isnan(attrs.pop("zero_dim_extent")))
+        crs_wkt = attrs.pop("crs_wkt")
+        assert "28992" in crs_wkt
 
         assert attrs == {
             "epsg_code": "28992",

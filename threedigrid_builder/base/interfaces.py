@@ -1,9 +1,10 @@
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
-from threedigrid_builder.exceptions import SchematisationError
-from typing import Optional, Union
 from pyproj import CRS
+from threedigrid_builder.exceptions import SchematisationError
+from typing import Optional
+from typing import Union
 
 
 __all__ = ["OutputInterface", "RasterInterface"]
@@ -68,7 +69,7 @@ class RasterInterface(ABC):
 
         self.transform = (a, b, c, d, e, f)
 
-    def set_crs(self, crs: Union[CRS, int ,str]):
+    def set_crs(self, crs: Union[CRS, int, str]):
         self.crs = CRS(crs)
 
     @property
