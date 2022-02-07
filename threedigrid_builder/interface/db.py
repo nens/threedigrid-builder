@@ -40,7 +40,7 @@ from threedigrid_builder.grid import Surfaces
 from threedigrid_builder.grid import Weirs
 from typing import Callable
 from typing import ContextManager
-from typing import Tuple, Union
+from typing import Tuple
 
 import numpy as np
 import pathlib
@@ -50,7 +50,7 @@ import pygeos
 __all__ = ["SQLite"]
 
 # hardcoded source projection
-SOURCE_CRS = CRS.from_epsg(4326)
+SOURCE_EPSG = 4326
 
 # before version 173, we get an error because "interception_file" is missing
 MIN_SQLITE_VERSION = 173
@@ -130,7 +130,7 @@ class SQLite:
         self.db = ThreediDatabase(
             connection_settings=sqlite_settings, db_type="spatialite"
         )
-        self._crs = None  # for reproject()
+        self._epsg_code = None  # for reproject()
 
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
@@ -156,16 +156,6 @@ class SQLite:
             yield session
         finally:
             session.close()
-
-    def get_epsg_code(self) -> int:
-        """Return the epsg code"""
-        with self.get_session() as session:
-            (epsg_code,) = (
-                session.query(models.GlobalSetting.epsg_code)
-                .order_by(models.GlobalSetting.id)
-                .first()
-            )
-        return epsg_code
 
     def get_settings(self) -> dict:
         """Return the settings relevant for makegrid and maketables.
@@ -259,14 +249,14 @@ class SQLite:
         }
 
     @property
-    def crs(self) -> CRS:
-        if self._crs is None:
-            self._crs = CRS.from_epsg(self.get_epsg_code())
-        return self._crs
+    def epsg_code(self) -> int:
+        if self._epsg_code is None:
+            self._epsg_code = self.get_settings()["epsg_code"]
+        return self._epsg_code
 
-    @crs.setter
-    def crs(self, value: Union[CRS, str]):
-        self._crs = CRS(value)
+    @epsg_code.setter
+    def epsg_code(self, value: int):
+        self._epsg_code = value
 
     def reproject(self, geometries: np.ndarray) -> np.ndarray:
         """Reproject geometries from 4326 to the EPSG in the settings.
@@ -277,7 +267,8 @@ class SQLite:
         Args:
           geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
         """
-        func = _get_reproject_func(self.crs)
+        target_epsg = self.epsg_code
+        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
         return pygeos.apply(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
@@ -826,8 +817,10 @@ class SQLite:
 # Constructing a Transformer takes quite long, so we use caching here. The
 # function is deterministic so this doesn't have any side effects.
 @lru_cache(maxsize=8)
-def _get_reproject_func(target_crs: CRS) -> Callable:
-    transformer = Transformer.from_crs(SOURCE_CRS, target_crs, always_xy=True)
+def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
+    transformer = Transformer.from_crs(
+        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
+    )
 
     def func(coords):
         if coords.shape[0] == 0:
