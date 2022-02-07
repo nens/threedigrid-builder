@@ -47,7 +47,7 @@ class RasterInterface(ABC):
         self.path = path
         self.model_area_path = model_area_path
         self.transform = None
-        self.crs_wkt = None
+        self.crs = None
         super().__init__()
 
     def set_transform(self, transform):

@@ -798,7 +798,3 @@ class Grid:
         self.meta.has_breaches = self.breaches is not None and len(self.breaches) > 0
         if len(self.nodes_embedded) > 0:
             self.meta.has_embedded = True
-        if not self.meta.crs_wkt:
-            self.meta.crs_wkt = CRS.from_epsg(int(self.meta.epsg_code)).to_wkt(
-                WKT_VERSION
-            )
