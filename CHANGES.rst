@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.3.1 (unreleased)
+1.3.1 (2022-02-07)
 ------------------
 
 - Disable tests for CI Build Wheel, because GDAL is not included on build machine.
