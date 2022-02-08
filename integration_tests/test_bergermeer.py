@@ -58,8 +58,8 @@ def test_integration(tmp_path):
             NodeType.NODE_1D_BOUNDARIES: 4,
         }
         assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
-        manholes_idx = np.where(f["nodes"]["is_manhole"][:] == 1)[0]
-        assert np.all(f["nodes"]["zoom_category"][manholes_idx] != -9999)
+        is_manhole = f["nodes"]["is_manhole"][:] == 1
+        assert np.all(f["nodes"]["zoom_category"][is_manhole] != -9999)
         assert np.count_nonzero(f["nodes"]["content_pk"][:] > 0) == 1360
         assert (
             np.count_nonzero(np.isfinite(f["nodes"]["initial_waterlevel"][:])) == 2531
