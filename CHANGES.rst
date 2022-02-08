@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.3.2 (unreleased)
+1.3.2 (2022-02-08)
 ------------------
 
 - Fixed extracting EPSG code from outdated CRS WKT definitions.
