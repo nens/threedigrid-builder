@@ -20,7 +20,7 @@ jobs:
             os: ubuntu-18.04
             numpy: numpy==1.15.*
             display_name: "2018"
-            pins: "h5py==2.9.* sqlalchemy==1.2.15"
+            pins: "h5py==2.9.* sqlalchemy==1.2.15 alembic==1.4.*"
             extras: "[test,gridadmin]"
           # 2019
           - python: 3.8
