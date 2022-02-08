@@ -282,8 +282,8 @@ class Grid:
         # make that happen. It will be better always to use the wkt.
         epsg_code = crs.to_epsg(min_confidence=20)
         if epsg_code is None:
-            # Fallback to GDAL, extract the EPSG code from the WKT
-            sr = osr.SpatialReference(self.meta.crs_wkt)
+            # Fallback to GDAL, extract the EPSG code from the (original) WKT
+            sr = osr.SpatialReference(crs.srs)
             if sr.GetAuthorityName("PROJCS") != "EPSG":
                 raise SchematisationError(
                     f"The supplied DEM file has a non-EPSG projection '{sr.GetName()}'"

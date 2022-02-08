@@ -10,37 +10,42 @@ on:
 jobs:
   TestLinux:
     name: Python ${{ matrix.python }} ${{ matrix.display_name }}
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           # 2018
           - python: 3.7
+            os: ubuntu-18.04
             numpy: numpy==1.15.*
             display_name: "2018"
-            pins: "h5py==2.9.* sqlalchemy==1.2.15"
+            pins: "h5py==2.9.* sqlalchemy==1.2.15 alembic==1.4.*"
             extras: "[test,gridadmin]"
           # 2019
           - python: 3.8
+            os: ubuntu-18.04
             numpy: numpy==1.17.*
             display_name: "2019"
             pins: "h5py==2.10.* sqlalchemy==1.3.12"
             extras: "[test,gridadmin]"
           # 2020
           - python: 3.9
+            os: ubuntu-20.04
             numpy: numpy==1.19.*
             display_name: "2020"
             pins: "h5py==3.1.* sqlalchemy==1.3.22"
             extras: "[test,gridadmin]"
           # 2021 (Summer)
           - python: 3.9
+            os: ubuntu-20.04
             numpy: numpy==1.21.*
             display_name: "2021 Q3"
             pins: "h5py==3.3.* sqlalchemy==1.4.20"
             extras: "[test,gridadmin]"
           # current
           - python: '3.10'
+            os: ubuntu-latest
             numpy: numpy
             display_name: "latest"
             extras: "[test,gridadmin]"
@@ -75,7 +80,7 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools wheel
           pip install cython ${{ matrix.numpy }}
-          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.deps }} pygdal==3.0.4.*
+          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} pygdal==$(gdal-config --version).*
           pip list
 
       - name: Run unittests
