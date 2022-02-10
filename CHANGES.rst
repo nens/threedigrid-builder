@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.3.3 (unreleased)
+1.3.3 (2022-02-10)
 ------------------
 
 - Use the bank_level for 1D2D lines to connection nodes without manhole but with
