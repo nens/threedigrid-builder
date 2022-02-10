@@ -33,7 +33,7 @@ def connection_nodes():
         manhole_id=np.array([42, 11, -9999, -9999, -9999]),
         calculation_type=np.array([1, 2, 5, 2, 2]),
         bottom_level=np.array([2.1, np.nan, np.nan, np.nan, 2.1]),
-        drain_level=[1.2, np.nan, np.nan, np.nan, 3.4],
+        drain_level=[1.2, np.nan, np.nan, np.nan, np.nan],
     )
 
 
@@ -235,22 +235,23 @@ def test_1d2d_properties(connection_nodes, caplog):
     # - channel 33 (CN 3 -> 9, N 1 -> 4), start&end are 1.0
     # - channel 34 (CN 3 -> 9, N 1 -> 4), 1 bank_level is nan so start&end are nan
     channels = Channels(
-        id=[32, 33, 34],
-        connection_node_start_id=[1, 3, 3],
-        connection_node_end_id=[3, 9, 9],
+        id=[32, 33, 34, 35],
+        connection_node_start_id=[1, 3, 3, 3],
+        connection_node_end_id=[3, 9, 9, 10],
         the_geom=pygeos.linestrings(
             [
                 [(0, 0), (10, 0)],
                 [(10, 20), (10, 30)],
                 [(10, 20), (10, 30)],
+                [(10, 20), (0, 0)],
             ]
         ),
     )
     locations = CrossSectionLocations(
-        id=range(5),
-        channel_id=[32, 32, 33, 34, 34],
-        the_geom=pygeos.points([(0, 0), (10, 0), (10, 25), (10, 22), (10, 28)]),
-        bank_level=[4.0, 0.0, 1.0, -10.0, np.nan],
+        id=range(6),
+        channel_id=[32, 32, 33, 34, 34, 35],
+        the_geom=pygeos.points([(0, 0), (10, 0), (10, 25), (10, 22), (10, 28), (0, 0)]),
+        bank_level=[4.0, 0.0, 1.0, -10.0, np.nan, 3.4],
     )
 
     is_closed, dpumax = connection_nodes.get_1d2d_properties(
@@ -258,7 +259,7 @@ def test_1d2d_properties(connection_nodes, caplog):
     )
 
     assert_array_equal(is_closed, [True, False, False, False, True])
-    assert_array_equal(dpumax, [1.2, 0.0, np.nan, 1.0, 3.4])
+    assert_array_equal(dpumax, [1.2, np.nan, np.nan, 1.0, 3.4])
 
     assert (
         caplog.record_tuples[0][2]
