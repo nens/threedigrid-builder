@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.3.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Include cross section information for weirs and orifices.
 
 
 1.3.3 (2022-02-10)
