@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.3.4 (unreleased)
 ------------------
 
-- Better error message when v2_connected_points are outside 2D grid domain.
+- Better error message when v2_connected_points are outside 2D grid domain. 
 
 
 1.3.3 (2022-02-10)
