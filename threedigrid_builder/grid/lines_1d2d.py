@@ -363,12 +363,13 @@ class ConnectedPoints:
         if n_lines != line_node_idx.shape[0]:
             # The code in this if clause is only for pretty error formatting.
             out_of_bounds = np.delete(line_node_idx, idx[0])
+            msg = f""
             if line_has_cp.any():
                 out_of_bounds_cp = np.delete(line_cp_idx, idx[0])
                 idx_cp = np.where(line_cp_idx == out_of_bounds_cp)
                 line_node_cp = line_node_idx[idx_cp]
                 object_pk_list_cp = _get_pk_content_type(nodes, line_node_cp)
-                msg = (
+                msg += (
                     f"The following object(s) have a connected point that is "
                     f"outside of a 2D calculation cells: "
                     f"{', '.join(object_pk_list_cp)}."
