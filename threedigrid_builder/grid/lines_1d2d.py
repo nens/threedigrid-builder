@@ -363,27 +363,23 @@ class ConnectedPoints:
         if n_lines != line_node_idx.shape[0]:
             # The code in this if clause is only for pretty error formatting.
             out_of_bounds = np.delete(line_node_idx, idx[0])
+            out_of_bounds_cp = np.delete(line_cp_idx, idx[0])
+            object_pk_list = _get_pk_content_type(
+                nodes, out_of_bounds[out_of_bounds_cp == -9999]
+            )
             msg = f""
-            if line_has_cp.any():
-                out_of_bounds_cp = np.delete(line_cp_idx, idx[0])
-                idx_cp = np.where(line_cp_idx == out_of_bounds_cp)
-                line_node_cp = line_node_idx[idx_cp]
-                object_pk_list_cp = _get_pk_content_type(nodes, line_node_cp)
-                msg += (
-                    f"The following object(s) have a connected point that is "
-                    f"outside of a 2D calculation cells: "
-                    f"{', '.join(object_pk_list_cp)}."
-                )
-                out_of_bounds = np.delete(
-                    out_of_bounds, np.where(out_of_bounds == line_node_idx[idx_cp])
-                )
-
-            if len(out_of_bounds) > 0:
-                object_pk_list_obj = _get_pk_content_type(nodes, out_of_bounds)
+            if len(object_pk_list) > 0:
                 msg += (
                     f"The following object(s) have a connected calculation type but are "
                     f"(partially) outside of the 2D calculation cells: "
-                    f"{', '.join(object_pk_list_obj)}."
+                    f"{', '.join(object_pk_list)}. "
+                )
+            if line_has_cp.any():
+                mask = out_of_bounds_cp != -9999
+                cp_ids_list = self.id[out_of_bounds_cp[mask]].tolist()
+                msg += (
+                    f"The following connected point(s) are outside of a 2D calculation "
+                    f"cells: {str(cp_ids_list)}."
                 )
             raise SchematisationError(msg)
 
@@ -510,14 +506,14 @@ class ConnectedPoints:
 
 
 def _get_pk_content_type(nodes, out_of_bounds):
-    """Determine the object pk and object type of calculation points for prettey
+    """Determine the object pk and object type of calculation points for pretty
     printing.
     Args:
         nodes (Nodes):
         out_of_bounds (ndarray): Array with node idx of nodes that are out of bounds.
 
         Returns:
-          List of content types (their pretty name) and pk's of objects with nodes
+          List of content types (their pretty name) and pks of objects with nodes
           out of bounds.
     """
     if len(out_of_bounds) == 0:
@@ -527,8 +523,6 @@ def _get_pk_content_type(nodes, out_of_bounds):
     pretty_names = ("connection nodes", "channels", "pipes", "culverts")
     return [
         f"{pretty_name} {sorted(set(pks[types == content_type]))}"
-        for content_type, pretty_name in zip(
-            HAS_1D2D_CONTENT_TYPES, pretty_names
-        )
+        for content_type, pretty_name in zip(HAS_1D2D_CONTENT_TYPES, pretty_names)
         if np.any(types == content_type)
     ]

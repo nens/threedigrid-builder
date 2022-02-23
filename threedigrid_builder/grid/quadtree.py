@@ -110,22 +110,21 @@ class QuadTree:
                 (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order="F"
             )
 
-        lg = np.full((self.mmax[0] * self.nmax[0]), self.kmax, dtype=np.int32, order="F")
+        lg = np.full(
+            (self.mmax[0] * self.nmax[0]), self.kmax, dtype=np.int32, order="F"
+        )
         lg_x = self.origin[0] + np.arange(0, self.mmax[0]) * self.dx[0]
-        lg_y = self.origin[1] + np.arange(0, self.nmax[0]) * self.dx[0] 
-        
-        
+        lg_y = self.origin[1] + np.arange(0, self.nmax[0]) * self.dx[0]
+
         x, y = np.meshgrid(lg_x, lg_y)
         lg_geoms = pygeos.box(x, y, x + self.dx[0], y + self.dx[0])
         lg_tree = pygeos.STRtree(lg_geoms.flatten())
 
         for i in range(len(refinements.id)):
-            lg_idx = lg_tree.query(
-                refinements.the_geom[i], predicate="intersects"
-            )
+            lg_idx = lg_tree.query(refinements.the_geom[i], predicate="intersects")
 
             if len(lg_idx) > 0:
-                lg[lg_idx] = np.fmin(lg[lg_idx], refinements.refinement_level[i])    
+                lg[lg_idx] = np.fmin(lg[lg_idx], refinements.refinement_level[i])
             else:
                 logger.warning(
                     f"Some grid refinement geometries were outside model domain: "
