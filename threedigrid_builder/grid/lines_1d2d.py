@@ -379,7 +379,7 @@ class ConnectedPoints:
                 cp_ids_list = self.id[out_of_bounds_cp[mask]].tolist()
                 msg += (
                     f"The following connected point(s) are outside of a 2D calculation "
-                    f"cells: {str(cp_ids_list)}."
+                    f"cell: {str(cp_ids_list)}."
                 )
             raise SchematisationError(msg)
 
