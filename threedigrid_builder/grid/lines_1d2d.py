@@ -367,7 +367,7 @@ class ConnectedPoints:
             object_pk_list = _get_pk_content_type(
                 nodes, out_of_bounds[out_of_bounds_cp == -9999]
             )
-            msg = f""
+            msg = ""
             if len(object_pk_list) > 0:
                 msg += (
                     f"The following object(s) have a connected calculation type but are "
