@@ -374,7 +374,7 @@ class ConnectedPoints:
                     f"(partially) outside of the 2D calculation cells: "
                     f"{', '.join(object_pk_list)}. "
                 )
-            if line_has_cp.any():
+            if (out_of_bounds_cp != -9999).any():
                 mask = out_of_bounds_cp != -9999
                 cp_ids_list = self.id[out_of_bounds_cp[mask]].tolist()
                 msg += (
