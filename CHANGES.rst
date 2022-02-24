@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Better error message when v2_connected_points are outside 2D grid domain. 
 
+- 2D grid cannot contain uneven number of pixels in one grid cell.
+
 
 1.3.3 (2022-02-10)
 ------------------

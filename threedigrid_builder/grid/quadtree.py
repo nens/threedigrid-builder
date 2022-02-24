@@ -4,6 +4,7 @@ from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
+from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import logging
@@ -35,8 +36,17 @@ class QuadTree:
     def __init__(
         self, subgrid_meta, num_refine_levels, min_gridsize, use_2d_flow, refinements
     ):
-
-        self.lgrmin = int(min_gridsize / subgrid_meta["pixel_size"])
+        
+        pixel_size = subgrid_meta["pixel_size"]
+        min_num_pix = min_gridsize / pixel_size
+        if min_num_pix % 2 == 0:
+            self.lgrmin = int(min_num_pix)
+        else:
+            raise SchematisationError(
+                f"Smallest 2D grid cell does not contain an even number of pixels. "
+                f"Minimum grid size: {min_gridsize}m. Pixel size: {pixel_size}m."
+            )
+        
         # Maximum number of active grid levels in quadtree.
         self.kmax = num_refine_levels
         # Array with cell widths at every active grid level [0:kmax]
