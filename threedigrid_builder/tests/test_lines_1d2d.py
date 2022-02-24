@@ -117,7 +117,9 @@ def test_get_lines_no_cell(node_coordinates, grid2d, empty_connected_points):
         calculation_type=CalculationType.CONNECTED,
     )
 
-    with pytest.raises(SchematisationError, match=".*outside of the 2D.*"):
+    with pytest.raises(
+        SchematisationError,match=".*have a connected calculation type but are.*"
+    ):
         empty_connected_points.get_lines(
             grid2d.cell_tree, grid2d.nodes, *((mock.Mock(),) * 6)
         )
@@ -196,6 +198,47 @@ def test_get_lines_multiple(grid2d, empty_connected_points):
     assert_array_equal(
         actual_lines.dpumax, [1.0, 2.0, 2.0, 5.0, 5.0, 3.0, 6.0, 7.0, 7.0, 8.0]
     )
+
+
+def test_get_lines_conn_point_no_2d_cell(grid2d):
+    grid2d.nodes += Nodes(
+        id=[2, 3, 5, 7, 9, 11, 13],
+        coordinates=[(0.5, 0.5)] * 7,  # all the same, geo-stuff is tested elsewhere
+        content_type=[CN, CN, CH, CN, PI, PI, CV],
+        calculation_type=[C1, C2, C2, C1, C1, C2, C1],
+    )
+    connected_points = ConnectedPoints(
+        id=[1],
+        the_geom=pygeos.points([(4., 5.)]),
+        exchange_level=[np.nan],
+        # don't set the content_pk etc., instead, we patch .get_node_index()
+    )
+
+    connection_nodes = mock.Mock()
+    connection_nodes.get_1d2d_properties.return_value = True, [1, 2, 2, 3]
+    channels = mock.Mock()
+    channels.get_1d2d_properties.return_value = (False, [5, 5])
+    pipes = mock.Mock()
+    pipes.get_1d2d_properties.return_value = (True, [6, 7, 7])
+    locations = mock.Mock()
+    culverts = mock.Mock()
+    culverts.get_1d2d_properties.return_value = (True, [8])
+
+    with mock.patch.object(connected_points, "get_node_index") as get_node_index:
+        get_node_index.return_value = np.array([5]) + 2
+        with pytest.raises(
+            SchematisationError, match="The following connected point.*"
+        ):
+            connected_points.get_lines(
+                grid2d.cell_tree,
+                grid2d.nodes,
+                connection_nodes,
+                channels,
+                pipes,
+                locations,
+                culverts,
+                line_id_counter=itertools.count(),
+            )
 
 
 def test_get_lines_multiple_with_conn_points(grid2d):

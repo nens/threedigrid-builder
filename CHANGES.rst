@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Include cross section information for weirs and orifices.
 
+- Better error message when v2_connected_points are outside 2D grid domain. 
+
 
 1.3.3 (2022-02-10)
 ------------------

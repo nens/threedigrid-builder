@@ -67,7 +67,7 @@ def refinement_outside_domain():
     refinement = GridRefinements(
         id=np.array([1]),
         refinement_level=np.array([1]),
-        the_geom=pygeos.linestrings([[[100.0, 40.0], [100.0, 50.]]]),
+        the_geom=pygeos.linestrings([[[100.0, 40.0], [100.0, 50.0]]]),
     )
     return refinement
 
@@ -77,9 +77,12 @@ def quadtree_mixed_refinements():
     refinement = GridRefinements(
         id=np.array([1, 2]),
         refinement_level=np.array([1, 2]),
-        the_geom=np.array([
-            pygeos.linestrings(np.array([[13.4, 10.4], [13.8, 10.4]])),
-            pygeos.box(12.4, 11.4, 13.9, 13.4)]),
+        the_geom=np.array(
+            [
+                pygeos.linestrings(np.array([[13.4, 10.4], [13.8, 10.4]])),
+                pygeos.box(12.4, 11.4, 13.9, 13.4),
+            ]
+        ),
     )
     return refinement
 
@@ -401,7 +404,7 @@ def test_mixed_refinements(quadtree_mixed_refinements, subgrid_meta):
         num_refine_levels=3,
         min_gridsize=1.0,
         use_2d_flow=True,
-        refinements=quadtree_mixed_refinements
+        refinements=quadtree_mixed_refinements,
     )
 
     expected_lg = np.array(
@@ -445,9 +448,10 @@ def test_refinement_outside(refinement_outside_domain, subgrid_meta, caplog):
     assert_array_equal(quadtree.lg, expected_lg[::-1].T)
 
     assert (
-        caplog.record_tuples[0][2] == "Some grid refinement geometries were outside model domain: 1."
+        caplog.record_tuples[0][2]
+        == "Some grid refinement geometries were outside model domain: 1."
     )
-    
+
 
 def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
     nodes, lines = quadtree_no_2d_flow.get_nodes_lines(
