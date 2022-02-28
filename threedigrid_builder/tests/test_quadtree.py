@@ -1,6 +1,7 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import logging
@@ -139,6 +140,17 @@ def test_quadtree_no_refinement(quadtree_no_refinement):
         dtype=np.int32,
     )
     assert_array_equal(quadtree_no_refinement.lg, expected_lg[::-1].T)
+
+
+def test_quadtree_no_even_pixels(subgrid_meta):
+    with pytest.raises(SchematisationError, match=r".*not contain an even number.*"):
+        QuadTree(
+            subgrid_meta=subgrid_meta,
+            num_refine_levels=1,
+            min_gridsize=1.5,
+            use_2d_flow=True,
+            refinements=None,
+        )
 
 
 def test_quadtree_line_refinement(quadtree_line_refinement):
