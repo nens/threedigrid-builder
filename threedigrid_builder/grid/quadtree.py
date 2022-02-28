@@ -44,7 +44,7 @@ class QuadTree:
         else:
             raise SchematisationError(
                 f"Smallest 2D grid cell does not contain an even number of pixels. "
-                f"Minimum grid size: {min_gridsize}m. Pixel size: {pixel_size}m."
+                f"Smallest 2D grid cell size: {min_gridsize}m. Pixel size: {pixel_size}m."
             )
         
         # Maximum number of active grid levels in quadtree.
