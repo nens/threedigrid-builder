@@ -755,8 +755,11 @@ class Grid:
         self.lines.sort_by_nodes(bc_node_ids)
 
         # create mapping with the line new ids on the position of the old line ids
-        new_line_ids = np.empty(old_line_ids[-1] + 1, dtype=self.lines.id.dtype)
-        new_line_ids[old_line_ids[line_sorter]] = self.lines.id
+        if len(old_line_ids) > 0:
+            new_line_ids = np.empty(old_line_ids[-1] + 1, dtype=self.lines.id.dtype)
+            new_line_ids[old_line_ids[line_sorter]] = self.lines.id
+        else:  # Edge case: no lines present
+            new_line_ids = old_line_ids
 
         # apply the mappings to other datasets that contain references to nodes or lines
         if self.pumps is not None:

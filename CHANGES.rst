@@ -10,6 +10,8 @@ Changelog of threedigrid-builder
 
 - 2D grid cannot contain uneven number of pixels in one grid cell.
 
+- Bugfix in grid.sort() for models with no flowlines.
+
 
 1.3.3 (2022-02-10)
 ------------------
