@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 1.3.4 (unreleased)
 ------------------
 
+- Bugfix: `half verhard` instead of `half_verhard` (without underscore).
+
 - Include cross section information for weirs and orifices.
 
 - Better error message when v2_connected_points are outside 2D grid domain. 

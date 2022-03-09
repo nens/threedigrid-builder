@@ -149,7 +149,7 @@ SURFACE_TYPE_PROPERTIES = {
 SURFACE_CLASS_MAP = dict(
     [
         ("pand", "dak"),
-        ("half_verhard", "onv"),
+        ("half verhard", "onv"),
         ("onverhard", "onv"),
         ("open verharding", "ovh"),
         ("gesloten verharding", "gvh"),
