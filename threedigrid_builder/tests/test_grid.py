@@ -234,8 +234,9 @@ def test_set_initial_waterlevels(compute_initial_waterlevels, grid):
     )
 
 
-def test_sort():
-    grid = Grid(
+@pytest.fixture
+def grid_for_sorting():
+    return Grid(
         Nodes(
             id=[0, 1, 2, 3, 4, 5],
             node_type=[
@@ -263,6 +264,9 @@ def test_sort():
         nodes_embedded=Nodes(id=[0], embedded_in=[1]),
         breaches=Breaches(id=[0], levl=[6]),
     )
+
+def test_sort(grid_for_sorting):
+    grid = grid_for_sorting
     grid.sort()
 
     assert_array_equal(grid.nodes.id, [0, 1, 2, 3, 4, 5])
@@ -273,6 +277,14 @@ def test_sort():
     assert_array_equal(grid.pumps.line, [(3, 4)])
     assert_array_equal(grid.nodes_embedded.embedded_in, [0])
     assert_array_equal(grid.breaches.levl, [1])
+
+
+def test_sort_no_lines(grid_for_sorting):
+    grid_for_sorting.lines = grid_for_sorting.lines[:0]
+    grid_for_sorting.pumps = grid_for_sorting.pumps[:0]
+    grid_for_sorting.breaches = grid_for_sorting.breaches[:0]
+
+    grid_for_sorting.sort()
 
 
 def test_sort_boundary_conditions():
