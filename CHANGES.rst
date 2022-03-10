@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.3.4 (unreleased)
+1.3.4 (2022-03-10)
 ------------------
 
 - Bugfix: `half verhard` instead of `half_verhard` (without underscore).
