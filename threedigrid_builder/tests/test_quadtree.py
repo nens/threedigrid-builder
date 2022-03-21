@@ -459,11 +459,6 @@ def test_refinement_outside(refinement_outside_domain, subgrid_meta, caplog):
     )
     assert_array_equal(quadtree.lg, expected_lg[::-1].T)
 
-    assert (
-        caplog.record_tuples[0][2]
-        == "Some grid refinement geometries were outside model domain: 1."
-    )
-
 
 def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
     nodes, lines = quadtree_no_2d_flow.get_nodes_lines(
