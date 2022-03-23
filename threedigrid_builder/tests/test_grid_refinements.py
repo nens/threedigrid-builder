@@ -1,10 +1,6 @@
 from numpy.testing import assert_array_equal
 from threedigrid_builder.grid import GridRefinements
-from threedigrid_builder.grid import QuadTree
-from threedigrid_builder.exceptions import SchematisationError
 
-import itertools
-import logging
 import numpy as np
 import pygeos
 import pytest
@@ -123,6 +119,36 @@ def test_quadtree_small_line_refinement(refinements):
         [3, 3, 3, 3, 3, 3],
         [3, 3, 3, 3, 3, 3],
         [3, 1, 3, 3, 3, 3],
+        [3, 3, 3, 3, 3, 3],
+    ])[::-1]  # NB: Y-swap because display is y axis-down
+    assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_rasterize_multiple_refinements(reverse):
+    refinements = GridRefinements(
+        id=[5, 8],
+        refinement_level=[1, 2],
+        the_geom=[
+            pygeos.box(13.0, 11.0, 14.0, 13.0),
+            pygeos.box(12.5, 10.5, 13.5, 12.5),
+        ]
+    )
+    if reverse:
+        refinements.refinement_level = refinements.refinement_level[::-1]
+        refinements.the_geom = refinements.the_geom[::-1]
+    actual = refinements.rasterize(
+        origin=(10., 12.), height=8, width=6, cell_size=0.5, no_data_value=3
+    )
+    # Note: lowest refinement_level precedes
+    expected = np.array([
+        [3, 3, 3, 3, 3, 3],
+        [3, 3, 1, 1, 1, 3],
+        [3, 2, 1, 1, 1, 3],
+        [3, 2, 1, 1, 1, 3],
+        [3, 2, 1, 1, 1, 3],
+        [3, 2, 1, 1, 1, 3],
+        [3, 2, 2, 2, 3, 3],
         [3, 3, 3, 3, 3, 3],
     ])[::-1]  # NB: Y-swap because display is y axis-down
     assert_array_equal(actual, expected)

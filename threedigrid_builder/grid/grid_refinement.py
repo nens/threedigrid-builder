@@ -22,7 +22,9 @@ class GridRefinements:
         When multiple refinements intersect the same cell, the lowest refinement level
         is taken.
         """
-        return rasterize(self.the_geom, self.refinement_level, **kwargs)
+        # sort by refinement_level (lowest values last, so that they are on top)
+        sorter = np.argsort(self.refinement_level)[::-1]
+        return rasterize(self.the_geom[sorter], self.refinement_level[sorter], **kwargs)
 
 
 def rasterize(geoms, values, origin, height, width, cell_size, no_data_value):
