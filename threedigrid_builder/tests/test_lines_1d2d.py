@@ -118,7 +118,7 @@ def test_get_lines_no_cell(node_coordinates, grid2d, empty_connected_points):
     )
 
     with pytest.raises(
-        SchematisationError,match=".*have a connected calculation type but are.*"
+        SchematisationError, match=".*have a connected calculation type but are.*"
     ):
         empty_connected_points.get_lines(
             grid2d.cell_tree, grid2d.nodes, *((mock.Mock(),) * 6)
@@ -209,7 +209,7 @@ def test_get_lines_conn_point_no_2d_cell(grid2d):
     )
     connected_points = ConnectedPoints(
         id=[1],
-        the_geom=pygeos.points([(4., 5.)]),
+        the_geom=pygeos.points([(4.0, 5.0)]),
         exchange_level=[np.nan],
         # don't set the content_pk etc., instead, we patch .get_node_index()
     )

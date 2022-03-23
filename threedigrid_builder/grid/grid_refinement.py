@@ -1,9 +1,10 @@
+from osgeo import gdal
+from osgeo import gdal_array
+from osgeo import ogr
 from threedigrid_builder.base import array_of
 
-import pygeos
 import numpy as np
-
-from osgeo import ogr, gdal, gdal_array, osr
+import pygeos
 
 
 class GridRefinement:
@@ -81,7 +82,9 @@ def rasterize(geoms, values, origin, height, width, cell_size, no_data_value):
 
     dataset_kwargs = {
         "no_data_value": no_data_value,
-        "geo_transform": [float(x) for x in (origin[1], cell_size, 0, origin[0], 0, cell_size)],
+        "geo_transform": [
+            float(x) for x in (origin[1], cell_size, 0, origin[0], 0, cell_size)
+        ],
     }
 
     # ATTRIBUTE=BURN_ATTR burns the BURN_ATTR value of each feature

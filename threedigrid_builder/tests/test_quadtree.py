@@ -1,10 +1,9 @@
 from numpy.testing import assert_array_equal
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import QuadTree
-from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
-import logging
 import numpy as np
 import pygeos
 import pytest

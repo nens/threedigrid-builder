@@ -2,15 +2,14 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
-from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import logging
 import math
 import numpy as np
-import pygeos
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ class QuadTree:
     def __init__(
         self, subgrid_meta, num_refine_levels, min_gridsize, use_2d_flow, refinements
     ):
-        
+
         pixel_size = subgrid_meta["pixel_size"]
         min_num_pix = min_gridsize / pixel_size
         if min_num_pix % 2 == 0:
@@ -46,7 +45,7 @@ class QuadTree:
                 f"Smallest 2D grid cell does not contain an even number of pixels. "
                 f"Smallest 2D grid cell size: {min_gridsize}m. Pixel size: {pixel_size}m."
             )
-        
+
         # Maximum number of active grid levels in quadtree.
         self.kmax = num_refine_levels
         # Array with cell widths at every active grid level [0:kmax]
