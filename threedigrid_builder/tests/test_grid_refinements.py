@@ -49,7 +49,7 @@ def test_rasterize_line_refinement(refinements):
         [[15.0, 17.5], [17.5, 17.5], [17.5, 14.0]]
     )
     actual = refinements.rasterize(
-        origin=(10.0, 12.0), height=8, width=6, cell_size=1.0, no_data_value=3
+        origin=(12.0, 10.0), height=8, width=6, cell_size=1.0, no_data_value=3
     )
     # Notes:
     # - geom starts at x=15.0, and does not touch cell (0, 2) which covers x=[14.0, 15.0)
@@ -76,7 +76,7 @@ def test_rasterize_line_refinement2(refinements):
         [[15.0, 14.5], [12.5, 14.5], [12.5, 16.0]]
     )
     actual = refinements.rasterize(
-        origin=(10.0, 12.0), height=8, width=6, cell_size=1.0, no_data_value=3
+        origin=(12.0, 10.0), height=8, width=6, cell_size=1.0, no_data_value=3
     )
     # Notes:
     # - geom starts at x=15.0, and does touch cell (3, 3) which covers x=[15.0, 16.0)
@@ -101,7 +101,7 @@ def test_rasterize_line_refinement2(refinements):
 def test_rasterize_poly_refinement(refinements):
     refinements.the_geom[0] = pygeos.box(13.0, 11.0, 14.0, 13.0)
     actual = refinements.rasterize(
-        origin=(10.0, 12.0), height=8, width=6, cell_size=0.5, no_data_value=3
+        origin=(12.0, 10.0), height=8, width=6, cell_size=0.5, no_data_value=3
     )
     # Notes:
     # - geom covers x=[13.0, 14.0], so it excludes column 1 [12.5, 13.0)
@@ -128,7 +128,7 @@ def test_rasterize_poly_refinement(refinements):
 def test_quadtree_small_line_refinement(refinements):
     refinements.the_geom[0] = pygeos.linestrings([[13.1, 11.9], [13.9, 11.9]])
     actual = refinements.rasterize(
-        origin=(10.0, 12.0), height=8, width=6, cell_size=1.0, no_data_value=3
+        origin=(12.0, 10.0), height=8, width=6, cell_size=1.0, no_data_value=3
     )
     expected = np.array(
         [
@@ -161,7 +161,7 @@ def test_rasterize_multiple_refinements(reverse):
         refinements.refinement_level = refinements.refinement_level[::-1]
         refinements.the_geom = refinements.the_geom[::-1]
     actual = refinements.rasterize(
-        origin=(10.0, 12.0), height=8, width=6, cell_size=0.5, no_data_value=3
+        origin=(12.0, 10.0), height=8, width=6, cell_size=0.5, no_data_value=3
     )
     # Note: lowest refinement_level precedes
     expected = np.array(

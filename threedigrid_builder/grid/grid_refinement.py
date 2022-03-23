@@ -28,16 +28,16 @@ class GridRefinements:
         return rasterize(self.the_geom[sorter], self.refinement_level[sorter], **kwargs)
 
 
-def rasterize(geoms, values, origin, height, width, cell_size, no_data_value):
+def rasterize(geoms, values, origin, width, height, cell_size, no_data_value):
     """Rasterize a set of geometries to a raster with values at cells where the
     geometries intersect.
 
     Args:
         arr (array of pygeos.Geometry)
         values (array of int)
-        origin (tuple of 2 floats): y, x order
-        height (int)
+        origin (tuple of 2 floats): x, y order
         width (int)
+        height (int)
         cell_size (float)
         no_data_value (int)
 
@@ -83,7 +83,7 @@ def rasterize(geoms, values, origin, height, width, cell_size, no_data_value):
     dataset_kwargs = {
         "no_data_value": no_data_value,
         "geo_transform": [
-            float(x) for x in (origin[1], cell_size, 0, origin[0], 0, cell_size)
+            float(x) for x in (origin[0], cell_size, 0, origin[1], 0, cell_size)
         ],
     }
 
