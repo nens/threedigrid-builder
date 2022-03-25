@@ -477,12 +477,14 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "crest_type", lines.crest_type)
 
         # Cross section on pipes, culverts, weirs, and orifices
-        pipe_culvert = np.logical_or.reduce((
-            lines.content_type == ContentType.TYPE_V2_PIPE,
-            lines.content_type == ContentType.TYPE_V2_CULVERT,
-            lines.content_type == ContentType.TYPE_V2_WEIR,
-            lines.content_type == ContentType.TYPE_V2_ORIFICE,
-        ))
+        pipe_culvert = np.logical_or.reduce(
+            (
+                lines.content_type == ContentType.TYPE_V2_PIPE,
+                lines.content_type == ContentType.TYPE_V2_CULVERT,
+                lines.content_type == ContentType.TYPE_V2_WEIR,
+                lines.content_type == ContentType.TYPE_V2_ORIFICE,
+            )
+        )
         # Data placeholders
         cross_section_width = np.full(len(lines), np.nan, dtype=np.float64)
         cross_section_height = np.full(len(lines), np.nan, dtype=np.float64)

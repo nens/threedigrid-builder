@@ -1,10 +1,9 @@
 from numpy.testing import assert_array_equal
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import QuadTree
-from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
-import logging
 import numpy as np
 import pygeos
 import pytest
@@ -64,47 +63,6 @@ def quadtree_line_refinement(subgrid_meta):
 
 
 @pytest.fixture
-def refinement_outside_domain():
-    refinement = GridRefinements(
-        id=np.array([1]),
-        refinement_level=np.array([1]),
-        the_geom=pygeos.linestrings([[[100.0, 40.0], [100.0, 50.0]]]),
-    )
-    return refinement
-
-
-@pytest.fixture
-def quadtree_mixed_refinements():
-    refinement = GridRefinements(
-        id=np.array([1, 2]),
-        refinement_level=np.array([1, 2]),
-        the_geom=np.array(
-            [
-                pygeos.linestrings(np.array([[13.4, 10.4], [13.8, 10.4]])),
-                pygeos.box(12.4, 11.4, 13.9, 13.4),
-            ]
-        ),
-    )
-    return refinement
-
-
-@pytest.fixture
-def quadtree_small_line_refinement(subgrid_meta):
-    refinement = GridRefinements(
-        id=np.array([1]),
-        refinement_level=np.array([1]),
-        the_geom=pygeos.linestrings([[[10.1, 17.9], [10.9, 17.9]]]),
-    )
-    return QuadTree(
-        subgrid_meta=subgrid_meta,
-        num_refine_levels=3,
-        min_gridsize=1.0,
-        use_2d_flow=True,
-        refinements=refinement,
-    )
-
-
-@pytest.fixture
 def quadtree_poly_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
@@ -151,77 +109,6 @@ def test_quadtree_no_even_pixels(subgrid_meta):
             use_2d_flow=True,
             refinements=None,
         )
-
-
-def test_quadtree_line_refinement(quadtree_line_refinement):
-
-    assert quadtree_line_refinement.kmax == 3
-    assert np.size(quadtree_line_refinement.mmax) == 3
-    assert quadtree_line_refinement.mmax[2] == 3
-    assert quadtree_line_refinement.nmax[2] == 2
-    assert quadtree_line_refinement.dx[0] == 1.0
-
-    expected_lg = np.array(
-        [
-            [2, 2, 2, 2, 1, 1, 1, 1, -99, -99, -99, -99],
-            [2, 2, 2, 2, 1, 1, 1, 1, -99, -99, -99, -99],
-            [2, 2, 2, 2, 2, 2, 1, 1, -99, -99, -99, -99],
-            [2, 2, 2, 2, 2, 2, 1, 1, -99, -99, -99, -99],
-            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
-            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
-            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
-            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
-        ],
-        dtype=np.int32,
-    )
-    assert_array_equal(quadtree_line_refinement.lg, expected_lg[::-1].T)
-
-
-def test_quadtree_poly_refinement(quadtree_poly_refinement):
-
-    assert quadtree_poly_refinement.kmax == 3
-    assert np.size(quadtree_poly_refinement.mmax) == 3
-    assert quadtree_poly_refinement.mmax[2] == 3
-    assert quadtree_poly_refinement.nmax[2] == 2
-    assert quadtree_poly_refinement.dx[0] == 1.0
-    expected_lg = np.array(
-        [
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-        ],
-        dtype=np.int32,
-    )
-    assert_array_equal(quadtree_poly_refinement.lg, expected_lg[::-1].T)
-
-
-def test_quadtree_small_line_refinement(quadtree_small_line_refinement):
-
-    assert quadtree_small_line_refinement.kmax == 3
-    assert np.size(quadtree_small_line_refinement.mmax) == 3
-    assert quadtree_small_line_refinement.mmax[2] == 3
-    assert quadtree_small_line_refinement.nmax[2] == 2
-    assert quadtree_small_line_refinement.dx[0] == 1.0
-
-    expected_lg = np.array(
-        [
-            [1, 1, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [1, 1, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-        ],
-        dtype=np.int32,
-    )
-    assert_array_equal(quadtree_small_line_refinement.lg, expected_lg[::-1].T)
 
 
 def test_nodes_from_quadtree_line(quadtree_line_refinement, subgrid_meta):
@@ -408,61 +295,6 @@ def test_lines_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
     assert_array_equal(lines.lim, lim)
     assert_array_equal(lines.lin, lin)
     assert_array_equal(lines.cross_pix_coords, cross_pix_coords)
-
-
-def test_mixed_refinements(quadtree_mixed_refinements, subgrid_meta):
-    quadtree = QuadTree(
-        subgrid_meta=subgrid_meta,
-        num_refine_levels=3,
-        min_gridsize=1.0,
-        use_2d_flow=True,
-        refinements=quadtree_mixed_refinements,
-    )
-
-    expected_lg = np.array(
-        [
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [2, 2, 2, 2, 2, 2, 2, 2, -99, -99, -99, -99],
-            [2, 2, 2, 2, 2, 2, 2, 2, -99, -99, -99, -99],
-            [2, 2, 1, 1, 2, 2, 2, 2, -99, -99, -99, -99],
-            [2, 2, 1, 1, 2, 2, 2, 2, -99, -99, -99, -99],
-        ],
-        dtype=np.int32,
-    )
-    assert_array_equal(quadtree.lg, expected_lg[::-1].T)
-
-
-def test_refinement_outside(refinement_outside_domain, subgrid_meta, caplog):
-    quadtree = QuadTree(
-        subgrid_meta=subgrid_meta,
-        num_refine_levels=3,
-        min_gridsize=1.0,
-        use_2d_flow=True,
-        refinements=refinement_outside_domain,
-    )
-
-    expected_lg = np.array(
-        [
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-        ],
-        dtype=np.int32,
-    )
-    assert_array_equal(quadtree.lg, expected_lg[::-1].T)
-
-    assert (
-        caplog.record_tuples[0][2]
-        == "Some grid refinement geometries were outside model domain: 1."
-    )
 
 
 def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):

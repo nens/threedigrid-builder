@@ -2,15 +2,14 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid.fwrapper import create_quadtree
 from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
-from threedigrid_builder.exceptions import SchematisationError
 
 import itertools
 import logging
 import math
 import numpy as np
-import pygeos
 
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ class QuadTree:
     def __init__(
         self, subgrid_meta, num_refine_levels, min_gridsize, use_2d_flow, refinements
     ):
-        
+
         pixel_size = subgrid_meta["pixel_size"]
         min_num_pix = min_gridsize / pixel_size
         if min_num_pix % 2 == 0:
@@ -46,7 +45,7 @@ class QuadTree:
                 f"Smallest 2D grid cell does not contain an even number of pixels. "
                 f"Smallest 2D grid cell size: {min_gridsize}m. Pixel size: {pixel_size}m."
             )
-        
+
         # Maximum number of active grid levels in quadtree.
         self.kmax = num_refine_levels
         # Array with cell widths at every active grid level [0:kmax]
@@ -120,28 +119,14 @@ class QuadTree:
                 (self.mmax[0], self.nmax[0]), self.kmax, dtype=np.int32, order="F"
             )
 
-        lg = np.full(
-            (self.mmax[0] * self.nmax[0]), self.kmax, dtype=np.int32, order="F"
+        lg = refinements.rasterize(
+            origin=self.origin,
+            height=self.nmax[0],
+            width=self.mmax[0],
+            cell_size=self.dx[0],
+            no_data_value=self.kmax,
         )
-        lg_x = self.origin[0] + np.arange(0, self.mmax[0]) * self.dx[0]
-        lg_y = self.origin[1] + np.arange(0, self.nmax[0]) * self.dx[0]
-
-        x, y = np.meshgrid(lg_x, lg_y)
-        lg_geoms = pygeos.box(x, y, x + self.dx[0], y + self.dx[0])
-        lg_tree = pygeos.STRtree(lg_geoms.flatten())
-
-        for i in range(len(refinements.id)):
-            lg_idx = lg_tree.query(refinements.the_geom[i], predicate="intersects")
-
-            if len(lg_idx) > 0:
-                lg[lg_idx] = np.fmin(lg[lg_idx], refinements.refinement_level[i])
-            else:
-                logger.warning(
-                    f"Some grid refinement geometries were outside model domain: "
-                    f"{refinements.id[i]}."
-                )
-
-        return lg.reshape(self.mmax[0], self.nmax[0], order="F")
+        return np.asfortranarray(lg.T)
 
     def get_nodes_lines(self, area_mask, node_id_counter, line_id_counter):
         """Compute 2D openwater Nodes based on computed Quadtree.

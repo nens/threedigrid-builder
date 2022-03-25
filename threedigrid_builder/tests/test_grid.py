@@ -265,6 +265,7 @@ def grid_for_sorting():
         breaches=Breaches(id=[0], levl=[6]),
     )
 
+
 def test_sort(grid_for_sorting):
     grid = grid_for_sorting
     grid.sort()

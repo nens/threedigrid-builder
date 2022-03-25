@@ -508,7 +508,7 @@ class ConnectedPoints:
 def _get_pk_content_type(nodes, out_of_bounds):
     """Determine the object pk and object type of calculation points for pretty
     printing.
-    
+
     Args:
       nodes (Nodes):
       out_of_bounds (ndarray): Array with node idx of nodes that are out of bounds.
