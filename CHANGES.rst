@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.3.5 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Refactored refinement level processing to reduce memory usage.
 
 
 1.3.4 (2022-03-10)
