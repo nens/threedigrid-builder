@@ -69,8 +69,8 @@ class RasterInterface(ABC):
 
         self.transform = (a, b, c, d, e, f)
 
-    def set_crs(self, crs: Union[CRS, int, str]):
-        self.crs = CRS(crs)
+    def set_crs(self, wkt: str):
+        self.crs = CRS.from_wkt(wkt)
 
     @property
     def pixel_size(self):
