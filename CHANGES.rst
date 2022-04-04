@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.3.6 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Write the literal WKT of the DEM projection into the gridadmin.
 
 
 1.3.5 (2022-03-28)
