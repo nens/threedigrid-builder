@@ -4,7 +4,6 @@ from pathlib import Path
 from pyproj import CRS
 from threedigrid_builder.exceptions import SchematisationError
 from typing import Optional
-from typing import Union
 
 
 __all__ = ["OutputInterface", "RasterInterface"]

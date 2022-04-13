@@ -34,12 +34,17 @@ class Windshieldings:
             return
 
         line_ch_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
-        has_windshielding = line_ch_idx[np.isin(lines.content_pk[line_ch_idx], self.channel_id)]
+        has_windshielding = line_ch_idx[
+            np.isin(lines.content_pk[line_ch_idx], self.channel_id)
+        ]
 
         chn_idx = search(
-            self.channel_id, lines.content_pk[has_windshielding], check_exists=False, assume_ordered=False
+            self.channel_id,
+            lines.content_pk[has_windshielding],
+            check_exists=False,
+            assume_ordered=False,
         )
- 
+
         lines.windshieldings[has_windshielding, 0] = self.north[chn_idx]
         lines.windshieldings[has_windshielding, 1] = self.northeast[chn_idx]
         lines.windshieldings[has_windshielding, 2] = self.east[chn_idx]

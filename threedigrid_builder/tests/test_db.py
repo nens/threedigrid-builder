@@ -22,7 +22,6 @@ from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
-from threedigrid_builder.grid.windshielding import Windshieldings
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
