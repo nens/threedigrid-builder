@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.3.7 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add windshielding to Lines.
 
 
 1.3.6 (2022-04-04)

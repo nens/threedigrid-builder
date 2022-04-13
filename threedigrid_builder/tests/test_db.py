@@ -414,3 +414,9 @@ def test_get_impervious_surfaces(db):
     impervious_surfaces = db.get_impervious_surfaces()
     # No impervious_surfaces in test dataset
     assert len(impervious_surfaces) == 0
+
+
+def test_get_windshieldings(db):
+    windshieldings = db.get_windshieldings()
+    # No windshielding in test dataset
+    assert len(windshieldings) == 0

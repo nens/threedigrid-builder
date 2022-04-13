@@ -362,6 +362,9 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
       check_exists (bool, optional): Check whether the values in v exist in a,
         default True.
 
+    Returns:
+      1D array with the same shape as `v`
+
     Raises:
       If check_exists is True or if the (masked) ``a`` is empty, this function raises a
       KeyError with added ``values`` and ``indices`` attributes corresponding to the

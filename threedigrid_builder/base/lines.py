@@ -52,6 +52,7 @@ class Line:
     material: int
     sewerage: int
     sewerage_type: int
+    windshieldings: Tuple[float, float, float, float, float, float, float, float]
 
 
 @array_of(Line)

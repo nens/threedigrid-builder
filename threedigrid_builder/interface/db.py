@@ -38,6 +38,7 @@ from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Surfaces
 from threedigrid_builder.grid import Weirs
+from threedigrid_builder.grid import Windshieldings
 from typing import Callable
 from typing import ContextManager
 from typing import Tuple
@@ -812,6 +813,27 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
         return Weirs(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_windshieldings(self) -> Windshieldings:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.Windshielding.id,
+                    models.Windshielding.channel_id,
+                    models.Windshielding.north,
+                    models.Windshielding.northeast,
+                    models.Windshielding.east,
+                    models.Windshielding.southeast,
+                    models.Windshielding.south,
+                    models.Windshielding.southwest,
+                    models.Windshielding.west,
+                    models.Windshielding.northwest,
+                )
+                .order_by(models.Windshielding.id)
+                .as_structarray()
+            )
+
+        return Windshieldings(**{name: arr[name] for name in arr.dtype.names})
 
 
 # Constructing a Transformer takes quite long, so we use caching here. The
