@@ -38,6 +38,7 @@ from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Surfaces
 from threedigrid_builder.grid import Weirs
+from threedigrid_builder.grid import Windshieldings
 from typing import Callable
 from typing import ContextManager
 from typing import Tuple
@@ -45,8 +46,6 @@ from typing import Tuple
 import numpy as np
 import pathlib
 import pygeos
-
-from threedigrid_builder.grid.windshielding import Windshieldings
 
 
 __all__ = ["SQLite"]
