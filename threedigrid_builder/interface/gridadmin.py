@@ -548,6 +548,7 @@ class GridAdminOut(OutputInterface):
             "friction_value",
             np.where(has_friction_data, lines.frict_value1, np.nan),
         )
+        self.write_dataset(group, "windshieldings", lines.windshieldings)
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")

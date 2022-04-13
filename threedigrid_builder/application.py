@@ -11,6 +11,7 @@ from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Grid
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid import windshielding
 from threedigrid_builder.grid.zero_d import ImperviousSurfaces
 from threedigrid_builder.interface import DictOut
 from threedigrid_builder.interface import GDALInterface
@@ -117,6 +118,8 @@ def _make_gridadmin(
 
         locations = db.get_cross_section_locations()
         locations.apply_to_lines(channel_grid.lines, channels)
+        windshielding = db.get_windshielding()
+        windshielding.apply_to_lines(channel_grid.lines, channels)
         grid += channel_grid
 
         pipes = db.get_pipes()
