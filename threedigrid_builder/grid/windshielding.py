@@ -32,7 +32,7 @@ class Windshieldings:
                 channels (Channels)
         """
 
-        if len(channels.id) == 0:
+        if len(channels.id) == 0 or len(self.id) == 0:
             return
 
         if not np.in1d(channels.id, self.channel_id).all():
