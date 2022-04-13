@@ -1,13 +1,9 @@
-from numpy.testing import assert_almost_equal
 from numpy.testing import assert_equal
 from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import Channels
 from threedigrid_builder.grid import Windshieldings
 
 import numpy as np
-import pygeos
 import pytest
 
 
@@ -81,15 +77,14 @@ def windshieldings():
 
 
 def test_set_windshielding(channel_lines, windshieldings):
-    channels = Channels(id=[51, 52, 53, 54])
-    windshieldings.apply_to_lines(channel_lines, channels)
+    windshieldings.apply_to_lines(channel_lines)
     expected_windshieldings = np.array(
         [
             [0.1, 1.1, 0.0, 1.0, 0.3, 1.3, 0.4, 1.4],
+            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
             [0.2, 1.2, 0.1, 1.1, 0.4, 1.4, 0.3, 1.3],
-            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
-            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
-            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
+            [0.2, 1.2, 0.1, 1.1, 0.4, 1.4, 0.3, 1.3],
+            [0.2, 1.2, 0.1, 1.1, 0.4, 1.4, 0.3, 1.3],
             [0.4, 1.4, 0.9, 1.9, 0.8, 1.8, 0.1, 1.1],
             [0.4, 1.4, 0.9, 1.9, 0.8, 1.8, 0.1, 1.1],
         ],
@@ -98,32 +93,24 @@ def test_set_windshielding(channel_lines, windshieldings):
     assert_equal(channel_lines.windshieldings, expected_windshieldings)
 
 
-def test_set_windshielding_no_channel(channel_lines, windshieldings):
-    no_channels = Channels(id=[])
-    windshieldings.apply_to_lines(channel_lines, no_channels)
+def test_set_windshielding_no_windshieldings(channel_lines, windshieldings):
+    Windshieldings(id=[]).apply_to_lines(channel_lines)
     expected_windshieldings = np.full((7, 8), np.nan, dtype=np.float64)
     assert_equal(channel_lines.windshieldings, expected_windshieldings)
 
 
 def test_set_windshielding_different_lines(mixed_lines, windshieldings):
-    one_channel = Channels(id=[53])
-    windshieldings.apply_to_lines(mixed_lines, one_channel)
+    windshieldings.apply_to_lines(mixed_lines)
     expected_windshieldings = np.array(
         [
             [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
             [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
-            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
-            [0.5, 1.5, 0.3, 1.3, 0.1, 1.1, 0.2, 1.2],
+            [0.2, 1.2, 0.1, 1.1, 0.4, 1.4, 0.3, 1.3],
+            [0.2, 1.2, 0.1, 1.1, 0.4, 1.4, 0.3, 1.3],
+            [0.2, 1.2, 0.1, 1.1, 0.4, 1.4, 0.3, 1.3],
             [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
             [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
         ],
         dtype=np.float64,
     )
     assert_equal(mixed_lines.windshieldings, expected_windshieldings)
-
-
-def test_set_windshielding_wrong_channels(different_lines, windshieldings):
-    channels = Channels(id=[1, 2, 3])
-    with pytest.raises(ValueError, match="Windshielding given for non existing.*"):
-        windshieldings.apply_to_lines(different_lines, channels)

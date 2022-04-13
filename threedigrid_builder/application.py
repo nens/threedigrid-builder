@@ -119,7 +119,7 @@ def _make_gridadmin(
         locations = db.get_cross_section_locations()
         locations.apply_to_lines(channel_grid.lines, channels)
         windshieldings = db.get_windshieldings()
-        windshieldings.apply_to_lines(channel_grid.lines, channels)
+        windshieldings.apply_to_lines(channel_grid.lines)
         grid += channel_grid
 
         pipes = db.get_pipes()

@@ -23,33 +23,28 @@ class Windshielding:
 
 @array_of(Windshielding)
 class Windshieldings:
-    def apply_to_lines(self, lines, channels):
+    def apply_to_lines(self, lines):
         """Set windshielding factors on lines. Only channels can have windshielding,
         as only channels can have wind applied to them
 
             Args:
                 lines (Lines)
-                channels (Channels)
         """
-
-        if len(channels.id) == 0 or len(self.id) == 0:
+        if len(self) == 0:
             return
 
-        if not np.in1d(channels.id, self.channel_id).all():
-            missing = set(self.channel_id) - set(channels.id)
-            raise ValueError(f"Windshielding given for non existing channels {missing}")
+        line_ch_idx = np.where(lines.content_type == ContentType.TYPE_V2_CHANNEL)[0]
+        has_windshielding = line_ch_idx[np.isin(lines.content_pk[line_ch_idx], self.channel_id)]
 
-        mask = lines.content_type == ContentType.TYPE_V2_CHANNEL
-        sorter = np.argsort(self.channel_id)
-        chn_idx = np.digitize(
-            lines.content_pk[mask], self.channel_id[sorter], right=True
+        chn_idx = search(
+            self.channel_id, lines.content_pk[has_windshielding], check_exists=False, assume_ordered=False
         )
-
-        lines.windshieldings[:, 0][mask] = self.north[chn_idx]
-        lines.windshieldings[:, 1][mask] = self.northeast[chn_idx]
-        lines.windshieldings[:, 2][mask] = self.east[chn_idx]
-        lines.windshieldings[:, 3][mask] = self.southeast[chn_idx]
-        lines.windshieldings[:, 4][mask] = self.south[chn_idx]
-        lines.windshieldings[:, 5][mask] = self.southwest[chn_idx]
-        lines.windshieldings[:, 6][mask] = self.west[chn_idx]
-        lines.windshieldings[:, 7][mask] = self.northwest[chn_idx]
+ 
+        lines.windshieldings[has_windshielding, 0] = self.north[chn_idx]
+        lines.windshieldings[has_windshielding, 1] = self.northeast[chn_idx]
+        lines.windshieldings[has_windshielding, 2] = self.east[chn_idx]
+        lines.windshieldings[has_windshielding, 3] = self.southeast[chn_idx]
+        lines.windshieldings[has_windshielding, 4] = self.south[chn_idx]
+        lines.windshieldings[has_windshielding, 5] = self.southwest[chn_idx]
+        lines.windshieldings[has_windshielding, 6] = self.west[chn_idx]
+        lines.windshieldings[has_windshielding, 7] = self.northwest[chn_idx]
