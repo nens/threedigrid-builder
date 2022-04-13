@@ -75,6 +75,25 @@ def windshieldings():
         northwest=west + 1,
     )
 
+@pytest.fixture
+def windshieldings_channel_selection():
+    north = np.array([0.1], dtype=np.float64)
+    east = np.array([0.0], dtype=np.float64)
+    south = np.array([0.3], dtype=np.float64)
+    west = np.array([0.4], dtype=np.float64)
+    return Windshieldings(
+        id=[1],
+        channel_id=[51],
+        north=north,
+        northeast=north + 1,
+        east=east,
+        southeast=east + 1,
+        south=south,
+        southwest=south + 1,
+        west=west,
+        northwest=west + 1,
+    )
+
 
 def test_set_windshielding(channel_lines, windshieldings):
     windshieldings.apply_to_lines(channel_lines)
@@ -114,3 +133,20 @@ def test_set_windshielding_different_lines(mixed_lines, windshieldings):
         dtype=np.float64,
     )
     assert_equal(mixed_lines.windshieldings, expected_windshieldings)
+
+
+def test_set_windshielding_channel_selection(channel_lines, windshieldings_channel_selection):
+    windshieldings_channel_selection.apply_to_lines(channel_lines)
+    expected_windshieldings = np.array(
+        [
+            [0.1, 1.1, 0.0, 1.0, 0.3, 1.3, 0.4, 1.4],
+            [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+            [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+        ],
+        dtype=np.float64,
+    )
+    assert_equal(channel_lines.windshieldings, expected_windshieldings)
