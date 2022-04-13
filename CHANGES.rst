@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Add windshielding to Lines.
 
+- Removed testbank action on local runner.
+
 
 1.3.6 (2022-04-04)
 ------------------
