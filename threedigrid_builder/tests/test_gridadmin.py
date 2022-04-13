@@ -160,6 +160,7 @@ def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
         ("cross1", (6,), "int32"),  # added
         ("cross2", (6,), "int32"),  # added
         ("cross_weight", (6,), "float64"),  # added
+        ("windshieldings", (8, 6), "float64"),
     ],
 )
 def test_write_lines(h5_out, dataset, shape, dtype):

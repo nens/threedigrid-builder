@@ -22,6 +22,7 @@ from threedigrid_builder.grid import Culverts
 from threedigrid_builder.grid import Orifices
 from threedigrid_builder.grid import Pipes
 from threedigrid_builder.grid import Weirs
+from threedigrid_builder.grid.windshielding import Windshieldings
 from threedigrid_builder.interface import SQLite
 from unittest import mock
 
@@ -414,3 +415,9 @@ def test_get_impervious_surfaces(db):
     impervious_surfaces = db.get_impervious_surfaces()
     # No impervious_surfaces in test dataset
     assert len(impervious_surfaces) == 0
+
+
+def test_get_windshieldings(db):
+    windshieldings = db.get_windshieldings()
+    # No windshielding in test dataset
+    assert len(windshieldings) == 0
