@@ -1,92 +1,91 @@
-cmake_minimum_required (VERSION 3.5)
+### setup project ###
+cmake_minimum_required(VERSION 3.9)
 
-PROJECT (3Di)
-
-###############################################################
-##CMAKE OUTPUT PATHS                                         ##
-###############################################################
-SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
-
-
+project(grid)
 enable_language(Fortran)
-get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
-
-###############################################################
-##PLATFORM SPECIFICS                                         ##
-###############################################################
-if (WIN32)
-  #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-  #message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
-  add_definitions(-DWIN32)
-elseif (UNIX)
-  #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-  #message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
-  add_definitions(-DUNIX)
-elseif (MSVC)
-  add_definitions(-DWIN32)
+# Safety net
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+  message(
+    FATAL_ERROR
+      "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there.\n"
+  )
 endif()
-###############################################################
-##PLATFORM SPECIFICS                                         ##
-###############################################################
-include(FortranCInterface)
-FortranCInterface_HEADER(FCMangle.h
-                         MACRO_NAMESPACE "FC_"
-                         SYMBOL_NAMESPACE "FC_"
-                         SYMBOLS mysub mymod:my_sub)
 
-###############################################################
-##BUILD TYPE                                                 ##
-###############################################################
-if (NOT CMAKE_BUILD_TYPE)
-  set (CMAKE_BUILD_TYPE RELEASE CACHE STRING
-      "Choose the type of build, options are: None Debug Release."
-      FORCE)
-endif (NOT CMAKE_BUILD_TYPE)
-message (STATUS "BUILD TYPE IS: " ${CMAKE_BUILD_TYPE})
+# Ensure scikit-build modules
+if (NOT SKBUILD)
+  find_package(PythonInterp 3.7 REQUIRED)
+  # Kanged --> https://github.com/Kitware/torch_liberator/blob/master/CMakeLists.txt
+  # If skbuild is not the driver; include its utilities in CMAKE_MODULE_PATH
+  execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}"
+    -c "import os, skbuild; print(os.path.dirname(skbuild.__file__))"
+    OUTPUT_VARIABLE SKBLD_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  list(APPEND CMAKE_MODULE_PATH "${SKBLD_DIR}/resources/cmake")
+  message(STATUS "Looking in ${SKBLD_DIR}/resources/cmake for CMake modules")
+endif()
 
-# default installation
-get_filename_component (default_prefix "./libthreedigrid" ABSOLUTE)
-set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
-      "Choose the installation directory"
-      FORCE)
-SET(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/include)
+# scikit-build style includes
+find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
 
-###############################################################
-##BUILD TYPE                                                 ##
-###############################################################
+# Grab the variables from a local Python installation
+# NumPy headers
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}"
+  -c "import numpy; print(numpy.get_include())"
+  OUTPUT_VARIABLE NumPy_INCLUDE_DIRS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+# F2PY headers
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}"
+  -c "import numpy.f2py; print(numpy.f2py.get_include())"
+  OUTPUT_VARIABLE F2PY_INCLUDE_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
+# Prepping the module
+set(f2py_module_name "_grid")
+file(GLOB fortran_src_files "${CMAKE_SOURCE_DIR}/libthreedigrid/*.f90")
+set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
+add_custom_target(${f2py_module_name} ALL
+  DEPENDS "${fortran_src_files}"
+  )
 
+add_custom_command(
+  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${f2py_module_name}module.c" "${CMAKE_CURRENT_BINARY_DIR}/${f2py_module_name}-f2pywrappers2.f90"
+  COMMAND ${PYTHON_EXECUTABLE}  -m "numpy.f2py"
+                   "${fortran_src_file}"
+                   -h "${CMAKE_SOURCE_DIR}/libthreedigrid/grid.pyf"
+                   -m ${f2py_module_name}
+                   --lower # Important
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  DEPENDS ${fortran_src_files} # Fortran source
+)
 
-###############################################################
-##COMPILER OPTIONS                                           ##
-###############################################################
-IF (Fortran_COMPILER_NAME MATCHES "gfortran*")
-  # gfortran
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
-ELSEIF (Fortran_COMPILER_NAME MATCHES "ifort*")
-  # ifort (UNFINISHED)
-  # TODO
-ELSE (Fortran_COMPILER_NAME MATCHES "gfortran*")
-  message (STATUS "Fortran compiler: " ${Fortran_COMPILER_NAME})
-  message (STATUS "No optimized Fortran compiler flags are known, we just try something...")
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -g -Og")
-ENDIF (Fortran_COMPILER_NAME MATCHES "gfortran*")
+add_library(${generated_module_file} MODULE
+            "${f2py_module_name}module.c"
+            "${F2PY_INCLUDE_DIR}/fortranobject.c"
+            "${f2py_module_name}-f2pywrappers2.f90"
+            "${fortran_src_files}")
 
-IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
-  message (STATUS "COMPILER FLAGS ARE: " ${CMAKE_Fortran_FLAGS_RELEASE})
-ENDIF()
-IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
-  message (STATUS "COMPILER FLAGS ARE: " ${CMAKE_Fortran_FLAGS_DEBUG})
-ENDIF()
-###############################################################
-##COMPILER OPTIONS                                           ##
-###############################################################
+target_include_directories(${generated_module_file} PUBLIC
+                           ${F2PY_INCLUDE_DIR}
+                           ${NumPy_INCLUDE_DIRS}
+                           ${PYTHON_INCLUDE_DIRS})
+set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
+set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
 
+# Linker fixes
+if (UNIX)
+  if (APPLE)
+    set_target_properties(${generated_module_file} PROPERTIES
+    LINK_FLAGS  '-Wl,-dylib,-undefined,dynamic_lookup')
+  else()
+    set_target_properties(${generated_module_file} PROPERTIES
+  LINK_FLAGS  '-Wl,--allow-shlib-undefined')
+  endif()
+endif()
 
-###############################################################
-##CMAKE PATHS                                                ##
-###############################################################
-add_subdirectory(${CMAKE_SOURCE_DIR}/libthreedigrid) # here we use core_makegrid/CMakeLists.txt
+install(TARGETS ${generated_module_file} DESTINATION _grid)
