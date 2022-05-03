@@ -33,6 +33,11 @@ if "clean" in sys.argv:
     if os.path.isdir(p / "_skbuild"):
         shutil.rmtree(p / "_skbuild")
 
+if sys.platform == "win32":
+    cmake_args = ["CMAKE_GENERATOR:INTERNAL=MINGW Makefiles"]
+else:
+    cmake_args = []
+
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
 
@@ -73,6 +78,7 @@ setup(
             "threedigrid_builder.*",
         ),
     ),
+    cmake_args=cmake_args,
     install_requires=install_requires,
     extras_require={
         "test": test_requires,

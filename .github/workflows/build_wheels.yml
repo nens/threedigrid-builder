@@ -36,6 +36,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
             delvewheel repair -w {dest_dir}
             --no-mangle "libwinpthread-1.dll" {wheel}
+          CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2
         with:
