@@ -78,6 +78,7 @@ add_custom_command(
   COMMAND ${PYTHON_EXECUTABLE} 
       -m "numpy.f2py"
       -m ${f2py_module_name}
+      --include-paths ${NumPy_INCLUDE_DIRS}
       --lower
       ${fortran_src_file}
       #only: make_quadtree set_2d_computational_nodes_lines
@@ -98,7 +99,7 @@ target_include_directories(${generated_module_file} PUBLIC
                            )
 set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
 set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
-#target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
+target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
 
 
 if (UNIX)
