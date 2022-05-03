@@ -5,19 +5,16 @@ import pathlib
 import sys
 import shutil
 import os
-import numpy
 
 try:
     from skbuild import setup
 except ImportError:
     if not any(x in sys.argv for x in {"sdist", "--version", "egg_info"}):
-        sys.exit("ERROR: Numpy is required to build threedi-tables from source.")
-    # stuff like "python setup.py --version" should be allowed without Numpy:
+        sys.exit("ERROR: skbuild is required to build threedigrid-builder from source.")
     from setuptools import Extension
     from setuptools import setup
 
 ext_modules = []
-build_type = "Release"
 
 if "clean" in sys.argv:
     # delete any previously compiled files
@@ -35,15 +32,6 @@ if "clean" in sys.argv:
     print("removing build folder")
     if os.path.isdir(p / "_skbuild"):
         shutil.rmtree(p / "_skbuild")
-
-if "debug" in sys.argv:
-    # Set debug compiler flags of fortran lib when required.
-    sys.argv.remove("debug")
-    build_type = "Debug"
-    macro = [("F2PY_REPORT_ON_ARRAY_COPY", "2")]
-else:
-    # Otherwise set normal compiler flags.
-    macro = []
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
 
