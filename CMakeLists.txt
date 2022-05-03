@@ -53,6 +53,9 @@ execute_process(
 )
 set(F2PY_INCLUDE_DIR "${F2PY_PATH}/src")
 
+message(STATUS "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!==============================${NumPy_INCLUDE_DIRS}")
+message(STATUS "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!==============================${F2PY_INCLUDE_DIR}")
+
 # Prepping the module
 set(f2py_module_name "_fgrid")
 set(fortran_src_dir "${CMAKE_SOURCE_DIR}/libthreedigrid")
