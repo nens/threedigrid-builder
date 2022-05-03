@@ -74,7 +74,7 @@ jobs:
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --disable-pip-version-check --upgrade pip setuptools wheel scikit-build 
+          pip install --disable-pip-version-check --upgrade pip setuptools Ninja wheel scikit-build 
           pip install ${{ matrix.numpy }}
           pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} pygdal==$(gdal-config --version).*
           pip list
