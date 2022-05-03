@@ -1,8 +1,14 @@
 ### setup project ###
 cmake_minimum_required(VERSION 3.9)
 
-project(grid)
+project(fgrid)
 enable_language(Fortran)
+
+
+# Compiler flags
+set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -fopenmp -Wconversion -Wmaybe-uninitialized")
+
 # Safety net
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(
@@ -13,7 +19,7 @@ endif()
 
 # Ensure scikit-build modules
 if (NOT SKBUILD)
-  find_package(PythonInterp 3.7 REQUIRED)
+  find_package(PythonInterp 3.8 REQUIRED)
   # Kanged --> https://github.com/Kitware/torch_liberator/blob/master/CMakeLists.txt
   # If skbuild is not the driver; include its utilities in CMAKE_MODULE_PATH
   execute_process(
@@ -46,38 +52,54 @@ execute_process(
 )
 
 # Prepping the module
-set(f2py_module_name "_grid")
-file(GLOB fortran_src_files "${CMAKE_SOURCE_DIR}/libthreedigrid/*.f90")
+set(f2py_module_name "_fgrid")
+set(fortran_src_dir "${CMAKE_SOURCE_DIR}/libthreedigrid")
+set(fortran_src_file "${fortran_src_dir}/parameters.f90"
+                      "${fortran_src_dir}/array_utils.f90"
+                      "${fortran_src_dir}/geo_utils.f90"
+                      "${fortran_src_dir}/cells.f90"
+                      "${fortran_src_dir}/quadtree.f90"
+                      "${fortran_src_dir}/_fgrid.pyf"
+                    )
 set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
+set(f2py_module_c "${f2py_module_name}module.c")
+set(f2py_wrapper "${f2py_module_name}-f2pywrappers2.f90")
+
+set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
+
 add_custom_target(${f2py_module_name} ALL
-  DEPENDS "${fortran_src_files}"
+  DEPENDS "${fortran_src_file}"
   )
 
 add_custom_command(
-  OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${f2py_module_name}module.c" "${CMAKE_CURRENT_BINARY_DIR}/${f2py_module_name}-f2pywrappers2.f90"
-  COMMAND ${PYTHON_EXECUTABLE}  -m "numpy.f2py"
-                   "${fortran_src_file}"
-                   -h "${CMAKE_SOURCE_DIR}/libthreedigrid/grid.pyf"
-                   -m ${f2py_module_name}
-                   --lower # Important
+  OUTPUT "${f2py_module_name}module.c" "${f2py_module_name}-f2pywrappers2.f90"
+  COMMAND ${PYTHON_EXECUTABLE} 
+      -m "numpy.f2py"
+      -m ${f2py_module_name}
+      --lower
+      ${fortran_src_file}
+      #only: make_quadtree set_2d_computational_nodes_lines
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  DEPENDS ${fortran_src_files} # Fortran source
-)
+  DEPENDS ${fortran_src_file}
+  )
 
 add_library(${generated_module_file} MODULE
             "${f2py_module_name}module.c"
             "${F2PY_INCLUDE_DIR}/fortranobject.c"
             "${f2py_module_name}-f2pywrappers2.f90"
-            "${fortran_src_files}")
+             ${fortran_src_file})
 
 target_include_directories(${generated_module_file} PUBLIC
-                           ${F2PY_INCLUDE_DIR}
-                           ${NumPy_INCLUDE_DIRS}
-                           ${PYTHON_INCLUDE_DIRS})
+                            ${NumPy_INCLUDE_DIRS}
+                            ${PYTHON_INCLUDE_DIR}                            
+                            ${F2PY_INCLUDE_DIR}
+                           )
 set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
 set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
+target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION" 
+)
 
-# Linker fixes
+
 if (UNIX)
   if (APPLE)
     set_target_properties(${generated_module_file} PROPERTIES
@@ -88,4 +110,8 @@ if (UNIX)
   endif()
 endif()
 
-install(TARGETS ${generated_module_file} DESTINATION _grid)
+if (SKBUILD)
+  install(TARGETS ${generated_module_file} DESTINATION threedigrid_builder/grid/fgrid/)
+else()
+  install(TARGETS ${generated_module_file} DESTINATION "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid/")
+endif()

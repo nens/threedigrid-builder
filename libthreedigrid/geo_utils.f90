@@ -83,12 +83,12 @@ module m_grid_utils
         
         use iso_fortran_env, only: int16
 
-        integer(kind=int16), intent(in) :: raster(:,:)
+        integer*2, intent(in) :: raster(:,:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
         integer, intent(in) :: j0
         integer, intent(in) :: j1
-        integer(kind=int16), allocatable :: padded_raster(:, :)
+        integer*2, allocatable :: padded_raster(:, :)
         integer :: i_size, j_size, size_raster_i, size_raster_j
         integer :: i0r, i1r
         integer :: j0r, j1r

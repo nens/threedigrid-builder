@@ -1,8 +1,7 @@
 include LICENSE
-recursive-include threedigrid_builder *.pyx *.pxd
 recursive-include * *.rst
-recursive-exclude .venv *
 
-recursive-exclude libthreedigrid/src *
+recursive-exclude .venv *
+recursive-exclude libthreedigrid/ *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

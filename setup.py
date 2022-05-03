@@ -5,6 +5,7 @@ import pathlib
 import sys
 import shutil
 import os
+import numpy
 
 try:
     from skbuild import setup
@@ -16,7 +17,7 @@ except ImportError:
     from setuptools import setup
 
 ext_modules = []
-build_type = "release"
+build_type = "Release"
 
 if "clean" in sys.argv:
     # delete any previously compiled files
@@ -26,7 +27,7 @@ if "clean" in sys.argv:
         "libthreedigrid/*.c",
         "libthreedigrid/*.f",
         "libthreedigrid/*.mod",
-        "threedigrid_builder/grid/*.so",
+        "threedigrid_builder/grid/fgrid/*.so",
     ]:
         for filename in p.glob(pattern):
             print("removing '{}'".format(filename))
@@ -38,12 +39,10 @@ if "clean" in sys.argv:
 if "debug" in sys.argv:
     # Set debug compiler flags of fortran lib when required.
     sys.argv.remove("debug")
-    build_type = "debug"
-    comp_flags = ["-O0", "-g"]
+    build_type = "Debug"
     macro = [("F2PY_REPORT_ON_ARRAY_COPY", "2")]
 else:
     # Otherwise set normal compiler flags.
-    comp_flags = ["-O3"]
     macro = []
 
 long_description = "\n\n".join([open("README.rst").read(), open("CHANGES.rst").read()])
@@ -84,7 +83,6 @@ setup(
         include=(
             "threedigrid_builder",
             "threedigrid_builder.*",
-            "_grid",
         ),
     ),
     install_requires=install_requires,
@@ -95,7 +93,6 @@ setup(
     },
     python_requires=">=3.7",
     include_package_data=True,
-    cmake_args=[f"-DCMAKE_BUILD_TYPE:STRING={build_type}"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",

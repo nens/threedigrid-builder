@@ -3,8 +3,8 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
-from ._fgrid import m_quadtree
-from ._fgrid import m_cells
+from .fgrid import m_quadtree
+from .fgrid import m_cells
 
 import itertools
 import logging
