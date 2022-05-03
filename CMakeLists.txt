@@ -34,6 +34,7 @@ endif()
 
 # scikit-build style includes
 find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
+find_package(F2PY REQUIRED)
 
 # Grab the variables from a local Python installation
 # NumPy headers
