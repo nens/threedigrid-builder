@@ -51,7 +51,7 @@ execute_process(
   OUTPUT_VARIABLE F2PY_INCLUDE_DIR
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(F2PY_INCLUDE_DIR "${F2PY_INCLUDE_DIR}/src/")
+set(F2PY_INCLUDE_DIR "${F2PY_INCLUDE_DIR}/src")
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
