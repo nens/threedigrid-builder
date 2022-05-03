@@ -82,8 +82,9 @@ class QuadTree:
         self.quad_idx = np.empty(
             (self.mmax[0], self.nmax[0]), dtype=np.int32, order="F"
         )
-        self.n_cells = np.array(0, dtype=np.int32)
-        self.n_lines = np.zeros((2,), dtype=np.int32)
+        self.n_cells = np.array(0, dtype=np.int32, order="F")
+        self.n_lines_u = np.array(0, dtype=np.int32, order="F")
+        self.n_lines_v = np.array(0, dtype=np.int32, order="F")
 
         m_quadtree.make_quadtree(
             self.kmax,
@@ -95,8 +96,8 @@ class QuadTree:
             self.lg,
             self.quad_idx,
             self.n_cells,
-            self.n_lines[0],
-            self.n_lines[1]
+            self.n_lines_u,
+            self.n_lines_v,
         )
 
     def __repr__(self):
@@ -157,11 +158,11 @@ class QuadTree:
         )
 
         # Create all line array for filling in external Fortran routine
-        total_lines = self.n_lines[0] + self.n_lines[1]
+        total_lines = self.n_lines_u + self.n_lines_v
 
         # Line type is always openwater at first init
         kcu = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
-        kcu[self.n_lines[0] : self.n_lines[0] + self.n_lines[1]] = LineType.LINE_2D_V
+        kcu[self.n_lines_u : total_lines] = LineType.LINE_2D_V
 
         # Node connection array
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
@@ -185,8 +186,8 @@ class QuadTree:
             area_mask,
             line,
             cross_pix_coords,
-            self.n_lines[0],
-            self.n_lines[1],
+            self.n_lines_u,
+            self.n_lines_v,
         )
 
 

@@ -103,7 +103,7 @@ target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_A
 if (UNIX)
   if (APPLE)
     set_target_properties(${generated_module_file} PROPERTIES
-    LINK_FLAGS  '-Wl,-dylib,-undefined,dynamic_lookup')
+    LINK_FLAGS  '-Wl,-rpath,-dylib,-undefined,dynamic_lookup')
   else()
     set_target_properties(${generated_module_file} PROPERTIES
   LINK_FLAGS  '-Wl,--allow-shlib-undefined')
