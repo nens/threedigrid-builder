@@ -48,10 +48,10 @@ execute_process(
 execute_process(
   COMMAND "${PYTHON_EXECUTABLE}"
   -c "import numpy.f2py; print(numpy.f2py.__path__[0])"
-  OUTPUT_VARIABLE F2PY_INCLUDE_DIR
+  OUTPUT_VARIABLE F2PY_PATH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(F2PY_INCLUDE_DIR "${F2PY_INCLUDE_DIR}/src")
+set(F2PY_INCLUDE_DIR "${F2PY_PATH}/src")
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
@@ -78,7 +78,6 @@ add_custom_command(
   COMMAND ${PYTHON_EXECUTABLE} 
       -m "numpy.f2py"
       -m ${f2py_module_name}
-      --include-paths ${NumPy_INCLUDE_DIRS}
       --lower
       ${fortran_src_file}
       #only: make_quadtree set_2d_computational_nodes_lines
