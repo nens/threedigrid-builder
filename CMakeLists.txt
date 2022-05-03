@@ -98,8 +98,7 @@ target_include_directories(${generated_module_file} PUBLIC
                            )
 set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
 set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
-target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION" 
-)
+target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
 
 
 if (UNIX)
