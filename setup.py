@@ -34,7 +34,7 @@ if "clean" in sys.argv:
         shutil.rmtree(p / "_skbuild")
 
 if sys.platform == "win32":
-    cmake_args = ["CMAKE_GENERATOR:INTERNAL=MINGW Makefiles"]
+    cmake_args = ["-DCMAKE_GENERATOR:INTERNAL=MINGW Makefiles"]
 else:
     cmake_args = []
 
