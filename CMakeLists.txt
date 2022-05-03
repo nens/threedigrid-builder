@@ -72,6 +72,8 @@ set(f2py_wrapper "${f2py_module_name}-f2pywrappers2.f90")
 
 set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
 
+include_directories(${NumPy_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIR} ${F2PY_INCLUDE_DIR})
+
 add_custom_target(${f2py_module_name} ALL
   DEPENDS "${fortran_src_file}"
   )
