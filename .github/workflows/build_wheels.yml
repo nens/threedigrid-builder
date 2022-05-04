@@ -27,7 +27,7 @@ jobs:
           CIBW_SKIP: "pp* *musllinux*" # skips pypy and musllinux
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_WINDOWS: >-
-            PATH="C:\msys64;C:\msys64\bin;$PATH"
+            PATH="C:\msys64;C:\msys64\mingw64\bin\;$PATH"
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-9
           CIBW_BEFORE_ALL: |

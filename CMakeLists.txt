@@ -36,6 +36,7 @@ endif()
 find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
 find_package(F2PY REQUIRED)
 
+
 # Grab the variables from a local Python installation
 # NumPy headers
 execute_process(
@@ -44,17 +45,19 @@ execute_process(
   OUTPUT_VARIABLE NumPy_INCLUDE_DIRS
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
+
 # F2PY headers
 execute_process(
   COMMAND "${PYTHON_EXECUTABLE}"
-  -c "import numpy.f2py; print(numpy.f2py.__path__[0])"
-  OUTPUT_VARIABLE F2PY_PATH
+  -c "import os, numpy.f2py; print(os.path.join(os.path.dirname(numpy.f2py.__file__), 'src'))"
+  OUTPUT_VARIABLE F2PY_INCLUDE_DIR
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-set(F2PY_INCLUDE_DIR "${F2PY_PATH}/src")
 
-message(STATUS "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!==============================${NumPy_INCLUDE_DIRS}")
-message(STATUS "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!==============================${F2PY_INCLUDE_DIR}")
+# Make them cmake_paths for windows compatibility.
+cmake_path(SET PYTHON_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
+cmake_path(SET NumPy_INCLUDE_DIRS ${NumPy_INCLUDE_DIRS})
+cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
