@@ -34,7 +34,7 @@ if "clean" in sys.argv:
         shutil.rmtree(p / "_skbuild")
 
 if sys.platform == "win32":
-    cmake_args = []
+    cmake_args = ["-DCMAKE_Fortran_COMPILER_FORCED:BOOL=True"]
 else:
     cmake_args = []
 
