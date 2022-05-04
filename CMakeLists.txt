@@ -51,12 +51,14 @@ if (NOT SKBUILD)
 endif()
 
 # scikit-build style includes
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
-if(Python_FOUND)
-    message(STATUS "Python Found: ${Python_EXECUTABLE}")
-    message(STATUS "Python Found: ${PYTHON_INCLUDE_DIR}")
-    message(STATUS "Python Found: ${Python_LIBRARIES}")
-    message(STATUS "Python Found: ${Python_LIBRARY_DIRS}")
+if (WIN32)
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+  if(Python_FOUND)
+      message(STATUS "Python Found: ${Python_EXECUTABLE}")
+      message(STATUS "Python Found: ${PYTHON_INCLUDE_DIR}")
+      message(STATUS "Python Found: ${Python_LIBRARIES}")
+      message(STATUS "Python Found: ${Python_LIBRARY_DIRS}")
+  endif()
 endif()
 find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
 find_package(F2PY REQUIRED)
@@ -136,7 +138,6 @@ target_include_directories(${generated_module_file} PUBLIC
                             ${F2PY_INCLUDE_DIR}
                            )
 
-target_link_libraries(${generated_module_file} ${Python_LIBRARIES})
 set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
 set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
 target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
@@ -150,6 +151,7 @@ if (UNIX)
       LINK_FLAGS  '-Wl,--allow-shlib-undefined')
   endif()
 else(WIN32)
+  target_link_libraries(${generated_module_file} ${Python_LIBRARIES})
 endif()
 
 if (SKBUILD)
