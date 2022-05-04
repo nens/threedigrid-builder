@@ -34,7 +34,7 @@ if "clean" in sys.argv:
         shutil.rmtree(p / "_skbuild")
 
 if sys.platform == "win32":
-    cmake_args = []
+    cmake_args = ["-G NMake Makefiles"]
 else:
     cmake_args = []
 
