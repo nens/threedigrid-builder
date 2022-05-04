@@ -4,10 +4,28 @@ cmake_minimum_required(VERSION 3.9)
 project(fgrid)
 enable_language(Fortran)
 
-
-# Compiler flags
-set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -fopenmp -Wconversion -Wmaybe-uninitialized")
+###############################################################
+##PLATFORM SPECIFICS                                         ##
+###############################################################
+if (WIN32)
+  #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
+  #message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
+  add_definitions(-DWIN32)
+elseif (UNIX)
+  #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
+  #message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
+  add_definitions(-DUNIX)
+elseif (MSVC)
+  add_definitions(-DWIN32)
+endif()
+###############################################################
+##PLATFORM SPECIFICS                                         ##
+###############################################################
+include(FortranCInterface)
+FortranCInterface_HEADER(FCMangle.h
+                         MACRO_NAMESPACE "FC_"
+                         SYMBOL_NAMESPACE "FC_"
+                         SYMBOLS mysub mymod:my_sub)
 
 # Safety net
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
@@ -33,14 +51,14 @@ if (NOT SKBUILD)
 endif()
 
 # scikit-build style includes
-find_package(Python REQUIRED)
-find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
 if(Python_FOUND)
     message(STATUS "Python Found: ${Python_EXECUTABLE}")
     message(STATUS "Python Found: ${PYTHON_INCLUDE_DIR}")
-    message(STATUS "Python Found: ${PYTHON_LIBRARIES}")
-    message(STATUS "Python Found: ${PYTHON_LIBRARY_DIRS}")
+    message(STATUS "Python Found: ${Python_LIBRARIES}")
+    message(STATUS "Python Found: ${Python_LIBRARY_DIRS}")
 endif()
+find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
 find_package(F2PY REQUIRED)
 
 
@@ -65,6 +83,12 @@ execute_process(
 cmake_path(SET PYTHON_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
 cmake_path(SET NumPy_INCLUDE_DIRS ${NumPy_INCLUDE_DIRS})
 cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
+
+
+# Compiler flags
+set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3 -shared")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -fopenmp -Wconversion -Wmaybe-uninitialized")
+
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
@@ -107,14 +131,15 @@ add_library(${generated_module_file} MODULE
              ${fortran_src_file})
 
 target_include_directories(${generated_module_file} PUBLIC
+                            ${PYTHON_INCLUDE_DIR}
                             ${NumPy_INCLUDE_DIRS}
-                            ${PYTHON_INCLUDE_DIR}                            
                             ${F2PY_INCLUDE_DIR}
                            )
+
+target_link_libraries(${generated_module_file} ${Python_LIBRARIES})
 set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
 set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
 target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
-
 
 if (UNIX)
   if (APPLE)
@@ -122,11 +147,9 @@ if (UNIX)
     LINK_FLAGS  '-Wl,-rpath,-dylib,-undefined,dynamic_lookup')
   else()
     set_target_properties(${generated_module_file} PROPERTIES
-  LINK_FLAGS  '-Wl,--allow-shlib-undefined')
+      LINK_FLAGS  '-Wl,--allow-shlib-undefined')
   endif()
-else()
-    set_target_properties(${generated_module_file} PROPERTIES
-  LINK_FLAGS  '-Wl,--allow-shlib-undefined')
+else(WIN32)
 endif()
 
 if (SKBUILD)
