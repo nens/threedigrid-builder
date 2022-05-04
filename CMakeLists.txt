@@ -33,7 +33,14 @@ if (NOT SKBUILD)
 endif()
 
 # scikit-build style includes
+find_package(Python REQUIRED)
 find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
+if(Python_FOUND)
+    message(STATUS "Python Found: ${Python_EXECUTABLE}")
+    message(STATUS "Python Found: ${PYTHON_INCLUDE_DIR}")
+    message(STATUS "Python Found: ${PYTHON_LIBRARIES}")
+    message(STATUS "Python Found: ${PYTHON_LIBRARY_DIRS}")
+endif()
 find_package(F2PY REQUIRED)
 
 
@@ -117,6 +124,9 @@ if (UNIX)
     set_target_properties(${generated_module_file} PROPERTIES
   LINK_FLAGS  '-Wl,--allow-shlib-undefined')
   endif()
+else()
+    set_target_properties(${generated_module_file} PROPERTIES
+  LINK_FLAGS  '-Wl,--allow-shlib-undefined')
 endif()
 
 if (SKBUILD)
