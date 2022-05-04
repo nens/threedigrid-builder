@@ -88,10 +88,8 @@ cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
 
 
 # Compiler flags
-set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3 -shared")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -fopenmp -Wconversion -Wmaybe-uninitialized")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
+set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -Wconversion -Wmaybe-uninitialized")
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
