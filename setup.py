@@ -34,7 +34,7 @@ if "clean" in sys.argv:
         shutil.rmtree(p / "_skbuild")
 
 if sys.platform == "win32":
-    cmake_args = ["-G MSYS Makefiles"]
+    cmake_args = ["-G 'Visual Studio 16 2019'", "-A x64"]
 else:
     cmake_args = []
 
