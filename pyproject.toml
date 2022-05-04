@@ -13,5 +13,5 @@ requires = [
     "numpy==1.21.3; python_version=='3.10'",
     # do not pin numpy on future versions of python to avoid incompatible numpy and python versions
     "numpy; python_version>='3.11'",
-    #"ninja; platform_system!='Windows'"
+    "ninja; platform_system!='Windows'"
 ]
