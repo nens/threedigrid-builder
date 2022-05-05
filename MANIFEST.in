@@ -1,4 +1,5 @@
 include LICENSE
+include CMakeLists.txt
 recursive-include * *.rst
 recursive-include libthreedigrid *
 
