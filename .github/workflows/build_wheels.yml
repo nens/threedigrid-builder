@@ -29,14 +29,12 @@ jobs:
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-9
-          CIBW_BEFORE_ALL: |
-            pip install cmake &&
-            cat WHEEL_LICENSE_POSIX >> LICENSE
+          CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
             delvewheel repair -w {dest_dir}
-            --no-mangle "libwinpthread-1.dll" {wheel}
+            --no-mangle "libwinpthread-1.dll" "" {wheel}
           CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2

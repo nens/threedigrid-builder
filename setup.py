@@ -71,7 +71,7 @@ setup(
     url="https://docs.3di.lizard.net/",
     author="Martijn Siemerink",
     author_email="martijn.siemerink@nelen-schuurmans.nl",
-    license="Proprietary",
+    license="GNU General Public License v3.0",
     packages=find_packages(
         include=(
             "threedigrid_builder",
