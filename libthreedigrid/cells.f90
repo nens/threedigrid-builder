@@ -1,41 +1,36 @@
 module m_cells
 
-    use iso_c_binding
     use iso_fortran_env, only: int16
 
     contains
 
     subroutine set_2d_computational_nodes_lines(origin, lgrmin, kmax, mmax, nmax, dx,&
-        lg, size_i, size_j, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords, size_n,&
-        area_mask, size_a, size_b, line, cross_pix_coords, n_line_u, n_line_v) bind(c, name="f_set_2d_computational_nodes_lines")
+        lg, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords,&
+        area_mask, line, cross_pix_coords, n_line_u, n_line_v)
         !!! Entry point for setting nodes and lines and there necessary attributes.
+        use iso_fortran_env, only: int16
         use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners, pad_area_mask
 
-        integer(kind=c_int), intent(in) :: size_a
-        integer(kind=c_int), intent(in) :: size_b
-        integer(kind=c_int), intent(in) :: size_i
-        integer(kind=c_int), intent(in) :: size_j
-        integer(kind=c_int), intent(in) :: size_n
-        real(kind=c_double), intent(in) :: origin(2) ! Origin of Quadtree grid
-        integer(kind=c_int), intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
-        integer(kind=c_int), intent(in) :: kmax ! Maximum refinement levels
-        integer(kind=c_int), intent(in) :: mmax(kmax) ! X Dimension of each refinement level
-        integer(kind=c_int), intent(in) :: nmax(kmax) ! Y Dimension of each refinement level
-        real(kind=c_double), intent(in) :: dx(kmax) ! Cell size of each refinement level
-        integer(kind=c_int), intent(inout) :: nodk(size_n) ! Array with refinement level of comp node
-        integer(kind=c_int), intent(inout) :: nodm(size_n) ! Array with x or m coordinate on its refinement level grid
-        integer(kind=c_int), intent(inout) :: nodn(size_n) ! Array with y or n coordinate on its refinement level grid
-        integer(kind=c_int), intent(inout) :: lg(size_i,size_j) ! Array with all refinement levels.
-        integer(kind=c_int), intent(inout) :: quad_idx(size_i,size_j) ! Array with idx of cell at lg refinement locations
-        real(kind=c_double), intent(inout) :: bounds(size_n, 4) ! Bbox of comp cell
-        real(kind=c_double), intent(inout) :: coords(size_n, 2) ! Cell center coordinates
-        integer(kind=c_int), intent(inout) :: pixel_coords(size_n, 4) ! pixel bbox of comp cell
-        integer(kind=c_int16_t), intent(inout) :: area_mask(size_a,size_b) ! Array with active pixels of model.
-        integer(kind=c_int), intent(in) :: n_line_u ! Number of active u-dir lines.
-        integer(kind=c_int), intent(in) :: n_line_v  ! Number of active v-dir lines.
-        integer(kind=c_int), intent(inout) :: line(n_line_u+n_line_v, 2) ! Array with connecting nodes of line.
-        integer(kind=c_int), intent(inout) :: cross_pix_coords(n_line_u+n_line_v, 4) ! Array pixel indices of line interface
-        integer(kind=int16), allocatable :: area_mask_padded(:, :)
+        double precision, intent(in) :: origin(2) ! Origin of Quadtree grid
+        integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
+        integer, intent(in) :: kmax ! Maximum refinement levels
+        integer, intent(in) :: mmax(:) ! X Dimension of each refinement level
+        integer, intent(in) :: nmax(:) ! Y Dimension of each refinement level
+        double precision, intent(in) :: dx(:) ! Cell size of each refinement level
+        integer, intent(inout) :: nodk(:) ! Array with refinement level of comp node
+        integer, intent(inout) :: nodm(:) ! Array with x or m coordinate on its refinement level grid
+        integer, intent(inout) :: nodn(:) ! Array with y or n coordinate on its refinement level grid
+        integer, intent(inout) :: lg(:, :) ! Array with all refinement levels.
+        integer, intent(inout) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
+        double precision, intent(inout) :: bounds(:, :) ! Bbox of comp cell
+        double precision, intent(inout) :: coords(:, :) ! Cell center coordinates
+        integer, intent(inout) :: pixel_coords(:, :) ! pixel bbox of comp cell
+        integer*2, intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
+        integer, intent(inout) :: line(:, :) ! Array with connecting nodes of line.
+        integer, intent(inout) :: cross_pix_coords(:, :) ! Array pixel indices of line interface
+        integer, intent(in) :: n_line_u ! Number of active u-dir lines.
+        integer, intent(in) :: n_line_v  ! Number of active v-dir lines.
+        integer*2, allocatable :: area_mask_padded(:, :)
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -69,7 +64,9 @@ module m_cells
                         ! And do some index fiddling because python starts indexing at 0 and has open end indexing.
                         pixel_coords(nod, :) = (/ i0 - 1, j0 - 1, i1, j1 /)
                         if (use_2d_flow) then
-                            call set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx, nod, line, cross_pix_coords)
+                            call set_2d_computational_lines(&
+                                l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx, nod, line, cross_pix_coords&
+                            )
                         endif
                         nod = nod + 1
                     else
@@ -89,6 +86,7 @@ module m_cells
 
     subroutine set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line, cross_pix_coords)
 
+        use iso_fortran_env, only: int16
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster
 
         integer, intent(inout) :: l_u
@@ -99,7 +97,7 @@ module m_cells
         integer, intent(in) :: mn(4)
         integer, intent(in) :: lg(:,:)
         integer, intent(in) :: lgrmin
-        integer(kind=int16), intent(in) :: area_mask(:,:)
+        integer*2, intent(in) :: area_mask(:,:)
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)

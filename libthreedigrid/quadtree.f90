@@ -1,7 +1,6 @@
 module m_quadtree
 
     use parameters, only : NODATA
-    use iso_c_binding
     use iso_fortran_env, only : int16
 
     implicit none
@@ -9,24 +8,22 @@ module m_quadtree
     contains
 
     subroutine make_quadtree(kmax, mmax, nmax, lgrmin, use_2d_flow, area_mask, lg, quad_idx,&
-        n0, n1, i0, i1, n_cells, n_line_u, n_line_v) bind(c, name="make_quadtree")
+        n_cells, n_line_u, n_line_v) bind(c, name="make_quadtree")
     !!! Entry point for creating quadtree by setting lg array and then finding number of active cells and lines.
+        use parameters, only : NODATA
+        use iso_fortran_env, only : int16
 
-        integer(kind=c_int), intent(in) :: n0
-        integer(kind=c_int), intent(in) :: n1
-        integer(kind=c_int), intent(in) :: i0
-        integer(kind=c_int), intent(in) :: i1
-        integer(kind=c_int), intent(in) :: kmax ! Maximum refinement levels
-        integer(kind=c_int), intent(in) :: mmax(kmax) ! X Dimension of each refinement level
-        integer(kind=c_int), intent(in) :: nmax(kmax) ! Y Dimension of each refinement level
-        integer(kind=c_int), intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
-        integer(kind=c_int), intent(in) :: use_2d_flow  ! Whether to add flowlines
-        integer(kind=c_int16_t), intent(in) :: area_mask(n0,n1) ! Array with active pixels of model.
-        integer(kind=c_int), intent(inout) :: lg(i0,i1) ! Array with all refinement levels.
-        integer(kind=c_int), intent(inout) :: quad_idx(i0,i1) ! Array with idx of cell at lg refinement locations
-        integer(kind=c_int), intent(inout) :: n_cells ! counter for active cells
-        integer(kind=c_int), intent(inout) :: n_line_u ! counter for active u lines
-        integer(kind=c_int), intent(inout) :: n_line_v ! counter for active v lines
+        integer, intent(in) :: kmax ! Maximum refinement levels
+        integer, intent(in) :: mmax(:) ! X Dimension of each refinement level
+        integer, intent(in) :: nmax(:) ! Y Dimension of each refinement level
+        integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
+        integer, intent(in) :: use_2d_flow  ! Whether to add flowlines
+        integer*2, intent(in) :: area_mask(:, :) ! Array with active pixels of model.
+        integer, intent(inout) :: lg(:, :) ! Array with all refinement levels.
+        integer, intent(inout) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
+        integer, intent(inout) :: n_cells ! counter for active cells
+        integer, intent(inout) :: n_line_u ! counter for active u lines
+        integer, intent(inout) :: n_line_v ! counter for active v lines
         integer :: k
         integer :: m, n
 
@@ -37,7 +34,9 @@ module m_quadtree
             enddo
         enddo
         call balance_quadtree(kmax, mmax, nmax, lg)
-        call find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
+        call find_active_2d_comp_cells(&
+            kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
+        )
         write(*,*) '** INFO: Done making quadtree.'
 
     end subroutine make_quadtree
@@ -45,6 +44,8 @@ module m_quadtree
     recursive subroutine divide(k, m, n, lg) !ip, jp, 
     !!! Recursive subroutine to set correct refinement levels on lg refinement array.
         use m_grid_utils, only : get_lg_corners
+        use parameters, only : NODATA
+        use iso_fortran_env, only : int16
 
         integer, intent(in) :: k
         integer, intent(in) :: m
@@ -109,10 +110,14 @@ module m_quadtree
 
     end subroutine balance_quadtree
 
-    subroutine find_active_2d_comp_cells(kmax, mmax, nmax, lgrmin, use_2d_flow, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v)
+    subroutine find_active_2d_comp_cells(&
+        kmax, mmax, nmax, lgrmin, use_2d_flow, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
+    )
     !!! Counting active cells and lines based on area_mask of active pixels.
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster, pad_area_mask
         use m_cells, only : set_2d_computational_lines
+        use parameters, only : NODATA
+        use iso_fortran_env, only : int16
 
         integer, intent(in) :: kmax
         integer, intent(in) :: mmax(:)
@@ -120,11 +125,11 @@ module m_quadtree
         integer, intent(in) :: lgrmin
         logical, intent(in) :: use_2d_flow
         integer, intent(inout) :: lg(:,:)
-        integer(kind=int16), intent(in) :: area_mask(:,:)
+        integer*2, intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
         integer, intent(inout) :: n_line_u
         integer, intent(inout) :: n_line_v
-        integer(kind=int16), allocatable:: area_mask_padded(:, :)
+        integer*2, allocatable:: area_mask_padded(:, :)
         integer :: k
         integer :: m,n
         integer :: mn(4)
@@ -153,7 +158,9 @@ module m_quadtree
                             lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS
                             quad_idx(mn(1):mn(3),mn(2):mn(4)) = n_cells
                             if (use_2d_flow) then
-                                call set_2d_computational_lines(n_line_u, n_line_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx)
+                                call set_2d_computational_lines(&
+                                    n_line_u, n_line_v, k, m, n, mn, lg, lgrmin, area_mask_padded, quad_idx&
+                                )
                             endif
                         endif
                     endif

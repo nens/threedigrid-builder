@@ -1,11 +1,6 @@
 
 --- Following are licenses for binary wheel distribution ---
 
-Name: Threedigrid builder library.
-Files: libthreedigrid*.dll
-License: Proprietary
-  libthreedigrid cannot be copied and/or
-  distributed without the express permission of Nelen & Schuurmans.
 
 Name: Fortran libraries from the GNU Compiler Collection (GCC)
 Files: libgcc*.dll

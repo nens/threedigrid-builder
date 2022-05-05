@@ -3,8 +3,8 @@ from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import LineType
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid.fwrapper import create_quadtree
-from threedigrid_builder.grid.fwrapper import set_2d_computational_nodes_lines
+from .fgrid import m_quadtree
+from .fgrid import m_cells
 
 import itertools
 import logging
@@ -82,16 +82,22 @@ class QuadTree:
         self.quad_idx = np.empty(
             (self.mmax[0], self.nmax[0]), dtype=np.int32, order="F"
         )
+        self.n_cells = np.array(0, dtype=np.int32, order="F")
+        self.n_lines_u = np.array(0, dtype=np.int32, order="F")
+        self.n_lines_v = np.array(0, dtype=np.int32, order="F")
 
-        self.n_cells, self.n_lines = create_quadtree(
+        m_quadtree.make_quadtree(
             self.kmax,
             self.mmax,
             self.nmax,
             self.min_cell_pixels,
             use_2d_flow,
             subgrid_meta["area_mask"],
-            self.quad_idx,
             self.lg,
+            self.quad_idx,
+            self.n_cells,
+            self.n_lines_u,
+            self.n_lines_v,
         )
 
     def __repr__(self):
@@ -152,37 +158,38 @@ class QuadTree:
         )
 
         # Create all line array for filling in external Fortran routine
-        total_lines = self.n_lines[0] + self.n_lines[1]
+        total_lines = self.n_lines_u + self.n_lines_v
 
         # Line type is always openwater at first init
         kcu = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
-        kcu[self.n_lines[0] : self.n_lines[0] + self.n_lines[1]] = LineType.LINE_2D_V
+        kcu[self.n_lines_u : total_lines] = LineType.LINE_2D_V
 
         # Node connection array
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
         cross_pix_coords = np.full((total_lines, 4), -9999, dtype=np.int32, order="F")
 
-        set_2d_computational_nodes_lines(
-            np.array([self.origin[0], self.origin[1]]),
+        m_cells.set_2d_computational_nodes_lines(
+            np.array([self.origin[0], self.origin[1]], dtype=np.float64),
             self.min_cell_pixels,
             self.kmax,
             self.mmax,
             self.nmax,
             self.dx,
             self.lg,
-            self.quad_idx,
-            area_mask,
             nodk,
             nodm,
             nodn,
+            self.quad_idx,
             bounds,
             coords,
             pixel_coords,
+            area_mask,
             line,
             cross_pix_coords,
-            self.n_lines[0],
-            self.n_lines[1],
+            self.n_lines_u,
+            self.n_lines_v,
         )
+
 
         idx = line[np.arange(total_lines), np.argmin(nodk[line[:, :]], axis=1)]
         lik = nodk[idx]

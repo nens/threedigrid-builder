@@ -80,13 +80,15 @@ module m_grid_utils
     end subroutine crop_pix_coords_to_raster
 
     function pad_area_mask(raster, i0, i1, j0, j1) result(padded_raster)
+        
+        use iso_fortran_env, only: int16
 
-        integer(kind=int16), intent(in) :: raster(:,:)
+        integer*2, intent(in) :: raster(:,:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
         integer, intent(in) :: j0
         integer, intent(in) :: j1
-        integer(kind=int16), allocatable :: padded_raster(:, :)
+        integer*2, allocatable :: padded_raster(:, :)
         integer :: i_size, j_size, size_raster_i, size_raster_j
         integer :: i0r, i1r
         integer :: j0r, j1r
@@ -175,7 +177,9 @@ module m_grid_utils
                 intersection = -9999.0d0
 
                 edge_geom = (/ geom2(j,1), geom2(j,2), geom2(j+1, 1) , geom2(j+1, 2) /)    
-                call get_line_intersection(edge_geom, (/geom1(i, 1), geom1(i, 2), geom1(i+1, 1), geom1(i+1, 2) /), cross, intersection)
+                call get_line_intersection(&
+                    edge_geom, (/geom1(i, 1), geom1(i, 2), geom1(i+1, 1), geom1(i+1, 2) /), cross, intersection&
+                )
                 if (cross.eqv..TRUE.) then
                     !write(*,*) 'intersection x, y: ', intersection
                     return

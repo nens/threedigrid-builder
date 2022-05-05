@@ -1,16 +1,8 @@
-cmake_minimum_required (VERSION 3.5)
+### setup project ###
+cmake_minimum_required(VERSION 3.9)
 
-PROJECT (3Di)
-
-###############################################################
-##CMAKE OUTPUT PATHS                                         ##
-###############################################################
-SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
-
-
+project(fgrid)
 enable_language(Fortran)
-get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
-message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
 
 ###############################################################
 ##PLATFORM SPECIFICS                                         ##
@@ -35,58 +27,135 @@ FortranCInterface_HEADER(FCMangle.h
                          SYMBOL_NAMESPACE "FC_"
                          SYMBOLS mysub mymod:my_sub)
 
-###############################################################
-##BUILD TYPE                                                 ##
-###############################################################
-if (NOT CMAKE_BUILD_TYPE)
-  set (CMAKE_BUILD_TYPE RELEASE CACHE STRING
-      "Choose the type of build, options are: None Debug Release."
-      FORCE)
-endif (NOT CMAKE_BUILD_TYPE)
-message (STATUS "BUILD TYPE IS: " ${CMAKE_BUILD_TYPE})
+# Safety net
+if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
+  message(
+    FATAL_ERROR
+      "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there.\n"
+  )
+endif()
 
-# default installation
-get_filename_component (default_prefix "./libthreedigrid" ABSOLUTE)
-set (CMAKE_INSTALL_PREFIX ${default_prefix} CACHE STRING
-      "Choose the installation directory"
-      FORCE)
-SET(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/include)
+# Ensure scikit-build modules
+if (NOT SKBUILD)
+  find_package(PythonInterp 3.8 REQUIRED)
+  # Kanged --> https://github.com/Kitware/torch_liberator/blob/master/CMakeLists.txt
+  # If skbuild is not the driver; include its utilities in CMAKE_MODULE_PATH
+  execute_process(
+    COMMAND "${PYTHON_EXECUTABLE}"
+    -c "import os, skbuild; print(os.path.dirname(skbuild.__file__))"
+    OUTPUT_VARIABLE SKBLD_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  list(APPEND CMAKE_MODULE_PATH "${SKBLD_DIR}/resources/cmake")
+  message(STATUS "Looking in ${SKBLD_DIR}/resources/cmake for CMake modules")
+endif()
 
-###############################################################
-##BUILD TYPE                                                 ##
-###############################################################
-
-
-
-###############################################################
-##COMPILER OPTIONS                                           ##
-###############################################################
-IF (Fortran_COMPILER_NAME MATCHES "gfortran*")
-  # gfortran
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash --param max-unroll-times=4 -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -Og -Wconversion -Wmaybe-uninitialized")
-ELSEIF (Fortran_COMPILER_NAME MATCHES "ifort*")
-  # ifort (UNFINISHED)
-  # TODO
-ELSE (Fortran_COMPILER_NAME MATCHES "gfortran*")
-  message (STATUS "Fortran compiler: " ${Fortran_COMPILER_NAME})
-  message (STATUS "No optimized Fortran compiler flags are known, we just try something...")
-  set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -O3")
-  set (CMAKE_Fortran_FLAGS_DEBUG   "${CMAKE_Fortran_FLAGS} -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -fall-intrinsics -fbackslash -funroll-loops --param max-unroll-times=4 -g -Og")
-ENDIF (Fortran_COMPILER_NAME MATCHES "gfortran*")
-
-IF(CMAKE_BUILD_TYPE MATCHES RELEASE)
-  message (STATUS "COMPILER FLAGS ARE: " ${CMAKE_Fortran_FLAGS_RELEASE})
-ENDIF()
-IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
-  message (STATUS "COMPILER FLAGS ARE: " ${CMAKE_Fortran_FLAGS_DEBUG})
-ENDIF()
-###############################################################
-##COMPILER OPTIONS                                           ##
-###############################################################
+# scikit-build style includes
+if (WIN32)
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+  if(Python_FOUND)
+      message(STATUS "Python Found: ${Python_EXECUTABLE}")
+      message(STATUS "Python Found: ${PYTHON_INCLUDE_DIR}")
+      message(STATUS "Python Found: ${Python_LIBRARIES}")
+      message(STATUS "Python Found: ${Python_LIBRARY_DIRS}")
+  endif()
+endif()
+find_package(PythonExtensions REQUIRED) # for ${PYTHON_EXTENSION_MODULE_SUFFIX}
+find_package(F2PY REQUIRED)
 
 
-###############################################################
-##CMAKE PATHS                                                ##
-###############################################################
-add_subdirectory(${CMAKE_SOURCE_DIR}/libthreedigrid) # here we use core_makegrid/CMakeLists.txt
+# Grab the variables from a local Python installation
+# NumPy headers
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}"
+  -c "import numpy; print(numpy.get_include())"
+  OUTPUT_VARIABLE NumPy_INCLUDE_DIRS
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# F2PY headers
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}"
+  -c "import os, numpy.f2py; print(os.path.join(os.path.dirname(numpy.f2py.__file__), 'src'))"
+  OUTPUT_VARIABLE F2PY_INCLUDE_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Make them cmake_paths for windows compatibility.
+cmake_path(SET PYTHON_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
+cmake_path(SET NumPy_INCLUDE_DIRS ${NumPy_INCLUDE_DIRS})
+cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
+
+
+# Compiler flags
+set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -Wconversion -Wmaybe-uninitialized")
+
+# Prepping the module
+set(f2py_module_name "_fgrid")
+set(fortran_src_dir "${CMAKE_SOURCE_DIR}/libthreedigrid")
+set(fortran_src_file "${fortran_src_dir}/parameters.f90"
+                      "${fortran_src_dir}/array_utils.f90"
+                      "${fortran_src_dir}/geo_utils.f90"
+                      "${fortran_src_dir}/cells.f90"
+                      "${fortran_src_dir}/quadtree.f90"
+                      "${fortran_src_dir}/_fgrid.pyf"
+                    )
+set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
+set(f2py_module_c "${f2py_module_name}module.c")
+set(f2py_wrapper "${f2py_module_name}-f2pywrappers2.f90")
+
+set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
+
+include_directories(${NumPy_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIR} ${F2PY_INCLUDE_DIR})
+
+add_custom_target(${f2py_module_name} ALL
+  DEPENDS "${fortran_src_file}"
+  )
+
+add_custom_command(
+  OUTPUT "${f2py_module_name}module.c" "${f2py_module_name}-f2pywrappers2.f90"
+  COMMAND ${PYTHON_EXECUTABLE} 
+      -m "numpy.f2py"
+      -m ${f2py_module_name}
+      --lower
+      ${fortran_src_file}
+      #only: make_quadtree set_2d_computational_nodes_lines
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  DEPENDS ${fortran_src_file}
+  )
+
+add_library(${generated_module_file} MODULE
+            "${f2py_module_name}module.c"
+            "${F2PY_INCLUDE_DIR}/fortranobject.c"
+            "${f2py_module_name}-f2pywrappers2.f90"
+             ${fortran_src_file})
+
+target_include_directories(${generated_module_file} PUBLIC
+                            ${PYTHON_INCLUDE_DIR}
+                            ${NumPy_INCLUDE_DIRS}
+                            ${F2PY_INCLUDE_DIR}
+                           )
+
+set_target_properties(${generated_module_file} PROPERTIES SUFFIX "")
+set_target_properties(${generated_module_file} PROPERTIES PREFIX "")
+target_compile_definitions(${generated_module_file} PRIVATE "NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION")
+
+if (UNIX)
+  if (APPLE)
+    set_target_properties(${generated_module_file} PROPERTIES
+    LINK_FLAGS  '-Wl,-rpath,-dylib,-undefined,dynamic_lookup')
+  else()
+    set_target_properties(${generated_module_file} PROPERTIES
+      LINK_FLAGS  '-Wl,--allow-shlib-undefined')
+  endif()
+else(WIN32)
+  set_target_properties(${generated_module_file} PROPERTIES LINK_FLAGS -s)
+  target_link_libraries(${generated_module_file} ${Python_LIBRARIES})
+endif()
+
+if (SKBUILD)
+  install(TARGETS ${generated_module_file} DESTINATION threedigrid_builder/grid/fgrid/)
+else()
+  install(TARGETS ${generated_module_file} DESTINATION "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid/")
+endif()
