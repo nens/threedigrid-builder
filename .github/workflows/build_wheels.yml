@@ -34,7 +34,7 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
             delvewheel repair -w {dest_dir}
-            --no-mangle "libwinpthread-1.dll" "" {wheel}
+            --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2
