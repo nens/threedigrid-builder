@@ -75,6 +75,7 @@ def windshieldings():
         northwest=west + 1,
     )
 
+
 @pytest.fixture
 def windshieldings_channel_selection():
     north = np.array([0.1], dtype=np.float64)
@@ -135,7 +136,9 @@ def test_set_windshielding_different_lines(mixed_lines, windshieldings):
     assert_equal(mixed_lines.windshieldings, expected_windshieldings)
 
 
-def test_set_windshielding_channel_selection(channel_lines, windshieldings_channel_selection):
+def test_set_windshielding_channel_selection(
+    channel_lines, windshieldings_channel_selection
+):
     windshieldings_channel_selection.apply_to_lines(channel_lines)
     expected_windshieldings = np.array(
         [

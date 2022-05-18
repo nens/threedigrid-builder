@@ -1,3 +1,4 @@
+import pytest
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.application import make_grid
@@ -21,10 +22,13 @@ def count_unique(arr):
     return dict(zip(*np.unique(arr, return_counts=True)))
 
 
-def test_integration(tmp_path):
+@pytest.mark.parametrize(
+    "filename", ["v2_bergermeer.sqlite", "v2_bergermeer_spatialite4.sqlite"]
+)
+def test_integration(tmp_path, filename):
     progress_callback = Mock()
     make_grid(
-        unittests_data_path / "v2_bergermeer.sqlite",
+        unittests_data_path / filename,
         unittests_data_path / "dem_test_5m.tif",
         tmp_path / "gridadmin.h5",
         meta={
