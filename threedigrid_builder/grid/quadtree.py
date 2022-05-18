@@ -190,7 +190,6 @@ class QuadTree:
             self.n_lines_v,
         )
 
-
         idx = line[np.arange(total_lines), np.argmin(nodk[line[:, :]], axis=1)]
         lik = nodk[idx]
         lim = nodm[idx]
