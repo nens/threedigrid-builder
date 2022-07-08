@@ -40,8 +40,7 @@ Alternatively, the generated grid can be output in-memory:
 Installation
 ------------
 
-This package is distributed as binary only, because its (Fortran) source code
-is proprietary. The currently supported platforms are Windows, Linux, and OSX, all
+This package is distributed as source and binary wheels on PyPI. The currently supported platforms are Windows, Linux, and OSX, all
 64 bit versions only.
 
 First install sqlite and spatialite libraries, e.g. on Ubuntu::
