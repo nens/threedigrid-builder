@@ -81,13 +81,10 @@ jobs:
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --disable-pip-version-check --upgrade pip setuptools
-          pip install ${{ matrix.numpy }} ${{ matrix.pins }} pygdal==$(gdal-config --version).*
+          pip install --disable-pip-version-check --upgrade pip setuptools==63.* wheel scikit-build 
+          pip install ${{ matrix.numpy }}
+          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} pygdal==$(gdal-config --version).*
           pip list
-
-      - name: Install threedigrid-builder
-        shell: bash
-        run: pip install -e .${{ matrix.extras }}
 
       - name: Run unittests
         shell: bash
