@@ -63,7 +63,7 @@ class TablesSettings:
     interception_global: Optional[float] = None
     interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__
-    table_step_size_volume_2d: float = None  # actual default  is set in __post_init__
+    maximum_table_step_size: float = None  # actual default  is set in __post_init__
 
     # TODO --> https://github.com/nens/threedigrid-builder/issues/86
     manhole_storage_area: Optional[float] = None
@@ -107,16 +107,21 @@ class TablesSettings:
         # defaults
         if self.table_step_size_1d is None:
             self.table_step_size_1d = self.table_step_size
-        if self.table_step_size_volume_2d is None:
-            self.table_step_size_volume_2d = self.table_step_size
+        if self.maximum_table_step_size is None:
+            self.maximum_table_step_size = 100 * self.table_step_size
 
         # validations
         for field in (
             "table_step_size",
             "table_step_size_1d",
-            "table_step_size_volume_2d",
+            "maximum_table_step_size",
         ):
             greater_zero_check(self, field)
+
+        if self.maximum_table_step_size < self.table_step_size:
+            raise SchematisationError(
+                f"'maximum_table_step_size' must not be less than 'table_step_size'."
+            )
 
         # check enums
         for (name, elem_type) in self.__annotations__.items():

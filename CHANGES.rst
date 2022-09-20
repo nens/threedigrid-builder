@@ -8,6 +8,10 @@ Changelog of threedigrid-builder
 
 - Removed testbank action on local runner.
 
+- Base table settings on modelchecker 0.28 (schema version 208). This
+  includes the new 'maximum_table_step_size' and removes 
+  'table_step_size_volume_2d'.
+
 
 1.3.6 (2022-04-04)
 ------------------
