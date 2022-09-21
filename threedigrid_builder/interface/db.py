@@ -53,8 +53,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-# before version 173, we get an error because "interception_file" is missing
-MIN_SQLITE_VERSION = 173
+MIN_SQLITE_VERSION = 208
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}

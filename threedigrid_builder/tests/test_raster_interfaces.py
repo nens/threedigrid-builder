@@ -3,6 +3,7 @@ from threedigrid_builder.interface import GDALInterface
 import numpy as np
 import pytest
 
+from osgeo import gdal
 
 def test_does_not_exist(tmp_path):
     with pytest.raises(Exception):
@@ -10,6 +11,7 @@ def test_does_not_exist(tmp_path):
             pass
 
 
+@pytest.mark.skipif(gdal.VersionInfo().startswith("304"), reason="this test is known two fail with GDAL 3.4")
 def test_crs(dem_path, crs_wkt_28992_legacy):
     with GDALInterface(dem_path) as dem:
         assert dem.crs == crs_wkt_28992_legacy
