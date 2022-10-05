@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import CrossSectionDefinitions
+from threedigrid_builder.grid.cross_section_definitions import MIN_WIDTH
 from threedigrid_builder.grid.cross_section_definitions import tabulate_builtin
 from threedigrid_builder.grid.cross_section_definitions import (
     tabulate_closed_rectangle,
@@ -83,6 +84,11 @@ def test_tabulate_builtin():
     assert actual == ("my-shape", 1.52, None, None)
 
 
+def test_tabulate_builtin_width_correction():
+    actual = tabulate_builtin("my-shape", "0.0", "1.33")
+    assert actual == ("my-shape", MIN_WIDTH, None, None)
+
+
 def test_tabulate_closed_rectangle():
     shape, width_1d, height_1d, table = tabulate_closed_rectangle(
         "my-shape", "1.52", "5.2"
@@ -92,6 +98,11 @@ def test_tabulate_closed_rectangle():
     assert width_1d == 1.52
     assert height_1d == 5.2
     assert_almost_equal(table, np.array([[0.0, 1.52], [5.2, 0.0]]))
+
+
+def test_tabulate_closed_rectangle_width_correction():
+    _, _, _, table = tabulate_closed_rectangle("my-shape", "0.0", "1.33")
+    assert_almost_equal(table, np.array([[0.0, MIN_WIDTH], [1.33, 0.0]]))
 
 
 def test_tabulate_egg():
@@ -125,13 +136,26 @@ def test_tabulate_egg():
     assert_almost_equal(table, expected_table, decimal=3)
 
 
-def test_tabulate_tabulated():
-    shape, width_1d, height_1d, table = tabulate_tabulated("my-shape", "1 2 3", "0 1 2")
+def test_tabulate_tabulated_trapezium():
+    shape, width_1d, height_1d, table = tabulate_tabulated(
+        CrossSectionShape.TABULATED_TRAPEZIUM, "1 2 3", "0 1 2"
+    )
 
-    assert shape == "my-shape"
+    assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
     assert width_1d == 3.0  # the max
     assert height_1d == 2.0
     assert_almost_equal(table, np.array([[0, 1], [1, 2], [2, 3]], dtype=float))
+
+
+def test_tabulate_tabulated_rectangle_width_correction():
+    shape, width_1d, height_1d, table = tabulate_tabulated(
+        CrossSectionShape.TABULATED_RECTANGLE, "1 2 3", "0 1 2"
+    )
+
+    assert shape == CrossSectionShape.TABULATED_RECTANGLE
+    assert width_1d == 3.0  # the max
+    assert height_1d == 2.0
+    assert_almost_equal(table, np.array([[MIN_WIDTH, 1], [1, 2], [2, 3]], dtype=float))
 
 
 @pytest.mark.parametrize(

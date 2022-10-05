@@ -8,6 +8,9 @@ import numpy as np
 __all__ = ["CrossSectionDefinitions", "CrossSections"]
 
 
+MIN_WIDTH = 1e-8
+
+
 class CrossSectionDefinition:
     id: int
     code: str
@@ -108,6 +111,8 @@ def tabulate_builtin(shape, width, height):
             f"Unable to parse cross section definition width (got: '{width}')."
         )
 
+    width = max(width, MIN_WIDTH)
+
     return shape, width, None, None
 
 
@@ -133,6 +138,8 @@ def tabulate_egg(shape, width, height):
             f"Unable to parse cross section definition width (got: '{width}')."
         )
 
+    width = max(width, MIN_WIDTH)
+
     height = width * 1.5
     position = height / 3.0  # some parameter for the 'egg' curve
     heights = np.linspace(0, height, num=NUM_INCREMENTS, endpoint=True)
@@ -142,8 +149,8 @@ def tabulate_egg(shape, width, height):
     w = width / 2
     a = position / 2
     x = h - heights
-    p = (h ** 2 - (x ** 2)) * w ** 2
-    q = h ** 2 + 2 * a * x + a ** 2
+    p = (h**2 - (x**2)) * w**2
+    q = h**2 + 2 * a * x + a**2
     widths = np.sqrt(p / q) * 2
 
     table = np.array([heights, widths]).T
@@ -170,6 +177,9 @@ def tabulate_closed_rectangle(shape, width, height):
             f"Unable to parse cross section definition width and/or height "
             f"(got: '{width}', '{height}')."
         )
+
+    width = max(width, MIN_WIDTH)
+
     table = np.array([[0.0, width], [height, 0.0]], order="F")
     return CrossSectionShape.TABULATED_RECTANGLE, width, height, table
 
@@ -209,6 +219,8 @@ def tabulate_tabulated(shape, width, height):
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
         )
+    if shape == CrossSectionShape.TABULATED_RECTANGLE:
+        widths[0] = max(widths[0], MIN_WIDTH)
 
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
 

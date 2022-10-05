@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Auto-correct cross-section widths so that they are >= 1E-8.
 
 
 1.4.0 (2022-09-21)
