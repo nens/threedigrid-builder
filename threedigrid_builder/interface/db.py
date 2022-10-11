@@ -122,7 +122,7 @@ def _set_initialization_type(
 
 
 class SQLite:
-    def __init__(self, path: pathlib.Path):
+    def __init__(self, path: pathlib.Path, force_upgrade=False):
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         path = str(path)
@@ -134,12 +134,19 @@ class SQLite:
 
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
-            raise SchematisationError(f"Too old sqlite version {version}.")
+            if force_upgrade:
+                self.upgrade()
+            else:
+                raise SchematisationError(f"Too old sqlite version {version}.")
 
     def get_version(self) -> int:
         # check version
         schema = ModelSchema(self.db)
         return schema.get_version()
+
+    def upgrade(self):
+        schema = ModelSchema(self.db)
+        schema.upgrade()
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
