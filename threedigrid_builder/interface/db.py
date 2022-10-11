@@ -122,7 +122,7 @@ def _set_initialization_type(
 
 
 class SQLite:
-    def __init__(self, path: pathlib.Path, force_migrate=False):
+    def __init__(self, path: pathlib.Path, force_upgrade=False):
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         path = str(path)
@@ -134,8 +134,8 @@ class SQLite:
 
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
-            if force_migrate:
-                self.migrate()
+            if force_upgrade:
+                self.upgrade()
             else:
                 raise SchematisationError(f"Too old sqlite version {version}.")
 
@@ -144,9 +144,9 @@ class SQLite:
         schema = ModelSchema(self.db)
         return schema.get_version()
 
-    def migrate(self):
+    def upgrade(self):
         schema = ModelSchema(self.db)
-        schema.migrate()
+        schema.upgrade()
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:

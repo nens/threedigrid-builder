@@ -38,11 +38,11 @@ def _make_gridadmin(
     dem_path=None,
     meta=None,
     progress_callback=None,
-    force_migrate=False,
+    force_upgrade=False,
 ):
     """Compute interpolated channel nodes"""
     progress_callback(0.0, "Reading input schematisation...")
-    db = SQLite(sqlite_path, force_migrate=force_migrate)
+    db = SQLite(sqlite_path, force_upgrade=force_upgrade)
 
     node_id_counter = itertools.count()
     line_id_counter = itertools.count()
@@ -208,7 +208,7 @@ def make_gridadmin(
     out_path: Optional[Path] = None,
     meta: dict = None,
     progress_callback: Optional[Callable[[float, str], None]] = None,
-    force_migrate=False,
+    force_upgrade=False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -258,7 +258,7 @@ def make_gridadmin(
         dem_path,
         meta=meta,
         progress_callback=progress_callback,
-        force_migrate=force_migrate
+        force_upgrade=force_upgrade
     )
 
     progress_callback(0.99, "Writing gridadmin...")
