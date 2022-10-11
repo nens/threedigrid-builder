@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add support for SQLITE schema migration.
 
 
 1.4.0 (2022-09-21)
