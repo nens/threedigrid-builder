@@ -2,6 +2,7 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid.quadtree import reduce_refinement_levels
 
 import itertools
 import numpy as np
@@ -306,3 +307,25 @@ def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
 
     assert len(lines) == 0
     assert len(nodes) == 4
+
+
+@pytest.mark.parametrize("kmax,refinement_level,new_kmax,new_refinement_level", [
+    (3, None, 1, None),
+    (3, 1, 3, 1),
+    (3, 2, 2, 1),
+    (3, 3, 1, 1),
+])
+def test_reduce_refinement_levels(kmax,refinement_level,new_kmax,new_refinement_level):
+    if refinement_level is None:
+        refinements = GridRefinements(id=[])
+    else:
+        refinements = GridRefinements(
+            id=[1],
+            refinement_level=[refinement_level],
+            the_geom=pygeos.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
+        )
+    actual = reduce_refinement_levels(refinements, kmax)
+
+    assert actual == new_kmax
+    if refinement_level is not None:
+        assert (refinements.refinement_level == new_refinement_level).all()

@@ -18,6 +18,28 @@ logger = logging.getLogger(__name__)
 __all__ = ["QuadTree"]
 
 
+def reduce_refinement_levels(refinements, num_refine_levels):
+    """Determine the lowest refinement level that is actually in use.
+
+    Args:
+      refinements (GridRefinements): all gridrefinements polygon and linestrings
+        with refinement levels. refinement_level may be changed inplace.
+      num_refine_levels (int): the number of refinement levels supplied in the settings
+
+    Returns:
+      num_refine_levels (int), possibly lower than the input one
+    """
+    if refinements is not None and len(refinements) > 0:
+        min_level = refinements.refinement_level.min()
+    else:
+        min_level = num_refine_levels
+
+    min_level -= 1
+    if refinements is not None:
+        refinements.refinement_level -= min_level
+    return num_refine_levels - min_level
+
+
 class QuadTree:
     """Defines active cell levels for computational grid."""
 
@@ -45,6 +67,10 @@ class QuadTree:
                 f"Smallest 2D grid cell does not contain an even number of pixels. "
                 f"Smallest 2D grid cell size: {min_gridsize}m. Pixel size: {pixel_size}m."
             )
+
+        # Maximum number of active grid levels in quadtree.
+        self.kmax = reduce_refinement_levels(refinements, num_refine_levels)
+        self.lgrmin *= 2**(num_refine_levels - self.kmax)
 
         # Maximum number of active grid levels in quadtree.
         self.kmax = num_refine_levels
