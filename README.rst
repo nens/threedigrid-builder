@@ -65,3 +65,7 @@ For output into a file for the 3Di calculationcore, enable gridadmin output::
 For output into Geopackage for display in e.g. QGis, enable gpkg output::
 
   $ pip install threedigrid-builder[gpkg]
+
+The command line interface requires Typer::
+
+  $ pip install threedigrid-builder[cli]

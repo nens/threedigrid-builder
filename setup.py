@@ -83,6 +83,7 @@ setup(
         "test": test_requires,
         "gridadmin": ["h5py>=2.7"],
         "gpkg": ["geopandas"],
+        "cli": ["typer"],
     },
     python_requires=">=3.7",
     include_package_data=True,
@@ -99,4 +100,7 @@ setup(
         "License :: Other/Proprietary License",
     ],
     zip_safe=False,
+    entry_points = {
+        'console_scripts': ['threedigrid-builder=threedigrid_builder.cli:run'],
+    }
 )

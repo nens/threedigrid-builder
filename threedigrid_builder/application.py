@@ -38,11 +38,11 @@ def _make_gridadmin(
     dem_path=None,
     meta=None,
     progress_callback=None,
-    force_upgrade=False,
+    upgrade=False,
 ):
     """Compute interpolated channel nodes"""
     progress_callback(0.0, "Reading input schematisation...")
-    db = SQLite(sqlite_path, force_upgrade=force_upgrade)
+    db = SQLite(sqlite_path, upgrade=upgrade)
 
     node_id_counter = itertools.count()
     line_id_counter = itertools.count()
@@ -208,7 +208,7 @@ def make_gridadmin(
     out_path: Optional[Path] = None,
     meta: dict = None,
     progress_callback: Optional[Callable[[float, str], None]] = None,
-    force_upgrade=False,
+    upgrade: bool=False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -224,6 +224,7 @@ def make_gridadmin(
             revision_hash (str), revision_nr (int), threedi_version (str)
         progress_callback: an optional function that updates the progress. The function
             should take an float in the range 0-1 and a message string.
+        upgrade: whether to upgrade the sqlite (inplace) before processing
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -258,7 +259,7 @@ def make_gridadmin(
         dem_path,
         meta=meta,
         progress_callback=progress_callback,
-        force_upgrade=force_upgrade
+        upgrade=upgrade
     )
 
     progress_callback(0.99, "Writing gridadmin...")

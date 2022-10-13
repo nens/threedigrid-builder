@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Add support for SQLITE schema migration.
 
+- Added command-line interface (optionally installable via [cli]).
+
 
 1.4.0 (2022-09-21)
 ------------------
