@@ -2,7 +2,7 @@ from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import CrossSectionDefinitions
+from threedigrid_builder.grid import CrossSectionDefinitions, CrossSections
 from threedigrid_builder.grid.cross_section_definitions import tabulate_builtin
 from threedigrid_builder.grid.cross_section_definitions import (
     tabulate_closed_rectangle,
@@ -76,6 +76,12 @@ def test_convert_nonexisting_id(cross_section_definitions):
         match=r"One or more objects refer to non-existing cross section definitions \[2, 4\].",
     ):
         cross_section_definitions.convert([1, 2, 3, 4])
+
+
+def test_convert_empty(cross_section_definitions):
+    result = cross_section_definitions.convert([])
+    assert isinstance(result, CrossSections)
+    assert len(result) == 0
 
 
 def test_tabulate_builtin():
