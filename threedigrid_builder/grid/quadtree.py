@@ -30,7 +30,7 @@ def reduce_refinement_levels(refinements, num_refine_levels):
       num_refine_levels (int), possibly lower than the input one
     """
     if refinements is not None and len(refinements) > 0:
-        min_level = refinements.refinement_level.min()
+        min_level = refinements.refinement_level.min().item()
     else:
         min_level = num_refine_levels
 
@@ -70,10 +70,8 @@ class QuadTree:
 
         # Maximum number of active grid levels in quadtree.
         self.kmax = reduce_refinement_levels(refinements, num_refine_levels)
-        self.lgrmin *= 2**(num_refine_levels - self.kmax)
+        self.lgrmin *= 2 ** (num_refine_levels - self.kmax)
 
-        # Maximum number of active grid levels in quadtree.
-        self.kmax = num_refine_levels
         # Array with cell widths at every active grid level [0:kmax]
         self.mmax = np.empty((self.kmax,), dtype=np.int32, order="F")
         # Array with row dimensions of every active grid level [0:kmax].
