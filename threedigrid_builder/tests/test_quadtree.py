@@ -346,7 +346,6 @@ def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
 @pytest.mark.parametrize(
     "kmax,refinement_level,new_kmax,new_refinement_level",
     [
-        (3, None, 1, None),
         (3, 1, 3, 1),
         (3, 2, 2, 1),
         (3, 3, 1, 1),
@@ -355,16 +354,17 @@ def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
 def test_reduce_refinement_levels(
     kmax, refinement_level, new_kmax, new_refinement_level
 ):
-    if refinement_level is None:
-        refinements = GridRefinements(id=[])
-    else:
-        refinements = GridRefinements(
-            id=[1],
-            refinement_level=[refinement_level],
-            the_geom=pygeos.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
-        )
+    refinements = GridRefinements(
+        id=[1],
+        refinement_level=[refinement_level],
+        the_geom=pygeos.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
+    )
     actual = reduce_refinement_levels(refinements, kmax)
 
     assert actual == new_kmax
-    if refinement_level is not None:
-        assert (refinements.refinement_level == new_refinement_level).all()
+    assert (refinements.refinement_level == new_refinement_level).all()
+
+
+@pytest.mark.parametrize("refinements", [None, GridRefinements(id=[])])
+def test_reduce_refinement_levels_no_refinements(refinements):
+    assert reduce_refinement_levels(refinements, 3) == 1
