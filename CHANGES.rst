@@ -8,6 +8,8 @@ Changelog of threedigrid-builder
 
 - Added command-line interface (optionally installable via [cli]).
 
+- Made quadtree building more efficient if refinement levels are not used.
+
 
 1.4.0 (2022-09-21)
 ------------------
