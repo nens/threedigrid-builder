@@ -10,6 +10,8 @@ Changelog of threedigrid-builder
 
 - Made quadtree building more efficient if refinement levels are not used.
 
+- Fix error for models without CrossSectionDefinitions.
+
 
 1.4.0 (2022-09-21)
 ------------------

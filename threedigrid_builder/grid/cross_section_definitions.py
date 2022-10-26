@@ -42,6 +42,9 @@ class CrossSectionDefinitions:
             code=self.code[idx],
             count=0,
         )
+        if len(result) == 0:
+            return result
+
         offset = 0
         tables = []
 
