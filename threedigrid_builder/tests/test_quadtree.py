@@ -2,6 +2,7 @@ from numpy.testing import assert_array_equal
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import GridRefinements
 from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid.quadtree import reduce_refinement_levels
 
 import itertools
 import numpy as np
@@ -79,21 +80,15 @@ def quadtree_poly_refinement(subgrid_meta):
 
 
 def test_quadtree_no_refinement(quadtree_no_refinement):
-    assert quadtree_no_refinement.kmax == 3
-    assert np.size(quadtree_no_refinement.mmax) == 3
-    assert quadtree_no_refinement.mmax[2] == 3
-    assert quadtree_no_refinement.nmax[2] == 2
-    assert quadtree_no_refinement.dx[0] == 1.0
+    assert quadtree_no_refinement.kmax == 1
+    assert np.size(quadtree_no_refinement.mmax) == 1
+    assert quadtree_no_refinement.mmax[0] == 3
+    assert quadtree_no_refinement.nmax[0] == 2
+    assert quadtree_no_refinement.dx[0] == 4.0
     expected_lg = np.array(
         [
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
-            [3, 3, 3, 3, 3, 3, 3, 3, -99, -99, -99, -99],
+            [1, 1, -99],
+            [1, 1, -99],
         ],
         dtype=np.int32,
     )
@@ -109,6 +104,46 @@ def test_quadtree_no_even_pixels(subgrid_meta):
             use_2d_flow=True,
             refinements=None,
         )
+
+
+def test_quadtree_line_refinement(quadtree_line_refinement):
+    assert quadtree_line_refinement.kmax == 3
+    assert np.size(quadtree_line_refinement.mmax) == 3
+    assert quadtree_line_refinement.mmax[2] == 3
+    assert quadtree_line_refinement.nmax[2] == 2
+    assert quadtree_line_refinement.dx[0] == 1.0
+    expected_lg = np.array(
+        [
+            [2, 2, 2, 2, 1, 1, 1, 1, -99, -99, -99, -99],
+            [2, 2, 2, 2, 1, 1, 1, 1, -99, -99, -99, -99],
+            [2, 2, 2, 2, 2, 2, 1, 1, -99, -99, -99, -99],
+            [2, 2, 2, 2, 2, 2, 1, 1, -99, -99, -99, -99],
+            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
+            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
+            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
+            [3, 3, 3, 3, 2, 2, 2, 2, -99, -99, -99, -99],
+        ],
+        dtype=np.int32,
+    )
+    assert_array_equal(quadtree_line_refinement.lg, expected_lg[::-1].T)
+
+
+def test_quadtree_poly_refinement(quadtree_poly_refinement):
+    assert quadtree_poly_refinement.kmax == 2
+    assert np.size(quadtree_poly_refinement.mmax) == 2
+    assert quadtree_poly_refinement.mmax[1] == 3
+    assert quadtree_poly_refinement.nmax[1] == 2
+    assert quadtree_poly_refinement.dx[0] == 2.0
+    expected_lg = np.array(
+        [
+            [2, 2, 2, 2, -99, -99],
+            [2, 2, 2, 2, -99, -99],
+            [1, 1, 2, 2, -99, -99],
+            [1, 1, 2, 2, -99, -99],
+        ],
+        dtype=np.int32,
+    )
+    assert_array_equal(quadtree_poly_refinement.lg, expected_lg[::-1].T)
 
 
 def test_nodes_from_quadtree_line(quadtree_line_refinement, subgrid_meta):
@@ -274,7 +309,7 @@ def test_lines_from_quadtree_poly(quadtree_poly_refinement, subgrid_meta):
         [3, 4],
         [5, 6],
     ]
-    lik = [3, 2, 2, 2, 2, 2, 2, 3, 2, 2]
+    lik = [2, 1, 1, 1, 1, 1, 1, 2, 1, 1]
     lim = [1, 2, 2, 1, 1, 1, 2, 2, 1, 2]
     lin = [2, 1, 2, 1, 2, 2, 2, 1, 1, 1]
 
@@ -306,3 +341,30 @@ def test_no_2d_flow(quadtree_no_2d_flow, subgrid_meta):
 
     assert len(lines) == 0
     assert len(nodes) == 4
+
+
+@pytest.mark.parametrize(
+    "kmax,refinement_level,new_kmax,new_refinement_level",
+    [
+        (3, 1, 3, 1),
+        (3, 2, 2, 1),
+        (3, 3, 1, 1),
+    ],
+)
+def test_reduce_refinement_levels(
+    kmax, refinement_level, new_kmax, new_refinement_level
+):
+    refinements = GridRefinements(
+        id=[1],
+        refinement_level=[refinement_level],
+        the_geom=pygeos.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
+    )
+    actual = reduce_refinement_levels(refinements, kmax)
+
+    assert actual == new_kmax
+    assert (refinements.refinement_level == new_refinement_level).all()
+
+
+@pytest.mark.parametrize("refinements", [None, GridRefinements(id=[])])
+def test_reduce_refinement_levels_no_refinements(refinements):
+    assert reduce_refinement_levels(refinements, 3) == 1
