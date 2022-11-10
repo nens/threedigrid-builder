@@ -315,6 +315,7 @@ def test_get_settings(db):
     assert s.infiltration_rate is None
     assert s.infiltration_rate_type is None
     assert s.infiltration_surface_option == 0
+    assert s.max_infiltration_capacity is None
     assert s.max_infiltration_capacity_type is None
 
 

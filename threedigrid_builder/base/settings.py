@@ -101,6 +101,7 @@ class TablesSettings:
     infiltration_surface_option: InfiltrationSurfaceOption = (
         InfiltrationSurfaceOption.RAIN
     )
+    max_infiltration_capacity: Optional[float] = None
     max_infiltration_capacity_type: Optional[InitializationType] = None
 
     def __post_init__(self):

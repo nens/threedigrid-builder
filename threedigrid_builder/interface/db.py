@@ -195,6 +195,8 @@ class SQLite:
                     .filter_by(id=global_.simple_infiltration_settings_id)
                     .one()
                 )
+                # older sqlites have no max_infiltration_capacity field
+                infiltration.setdefault("max_infiltration_capacity", None)
             else:
                 infiltration = {}
             global_ = _object_as_dict(global_)
@@ -223,17 +225,7 @@ class SQLite:
             )
         if infiltration:
             _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
-            # max_infiltration_capacity_file has no corresponding global value!
-            infiltration["max_infiltration_capacity_file"] = infiltration.get(
-                "max_infiltration_capacity_file"
-            )
-            if (
-                infiltration["max_infiltration_capacity_file"] is not None
-                and infiltration["max_infiltration_capacity_file"] != ""
-            ):
-                infiltration["max_infiltration_capacity_type"] = NO_AGG
-            else:
-                infiltration["max_infiltration_capacity_type"] = None
+            _set_initialization_type(infiltration, "max_infiltration_capacity", default=NO_AGG)
 
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)
