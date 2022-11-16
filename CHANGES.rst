@@ -6,6 +6,9 @@ Changelog of threedigrid-builder
 
 - Use the global 'max_infiltration_capacity', if present.
 
+- Work around incompatibility of the system GDAL with the Fiona binary wheel
+  distribution.
+
 
 1.5.0 (2022-10-26)
 ------------------

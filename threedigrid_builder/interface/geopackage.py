@@ -1,5 +1,6 @@
 try:
     import geopandas
+    import fiona  # NOQA, see Github issue 265
 except ImportError:
     geopandas = None
 from .dict_out import DictOut
