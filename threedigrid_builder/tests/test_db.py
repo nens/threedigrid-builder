@@ -1,6 +1,6 @@
 from pygeos.testing import assert_geometries_equal
 from threedigrid_builder.base import GridSettings
-from threedigrid_builder.base import Levees
+from threedigrid_builder.grid import Levees
 from threedigrid_builder.base import Pumps
 from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import BoundaryType

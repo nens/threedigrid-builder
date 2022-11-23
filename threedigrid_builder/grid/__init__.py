@@ -21,3 +21,4 @@ from .lines_1d2d import *  # NOQA
 from .dem_average_area import *  # NOQA
 from .windshielding import *  # NOQA
 from .zero_d import *  # NOQA
+from .levees import *  # NOQA

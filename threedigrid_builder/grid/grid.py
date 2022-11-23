@@ -10,8 +10,8 @@ from dataclasses import fields
 from osgeo import osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
-from threedigrid_builder.base import Breaches
-from threedigrid_builder.base import Levees
+from .levees import Breaches
+from .levees import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.base import Pumps

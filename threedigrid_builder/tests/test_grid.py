@@ -1,5 +1,5 @@
 from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Breaches
+from threedigrid_builder.grid import Breaches
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes

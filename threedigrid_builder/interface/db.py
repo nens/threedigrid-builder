@@ -15,9 +15,9 @@ from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 from threedigrid_builder.base import GridSettings
-from threedigrid_builder.base import Levees
+from threedigrid_builder.grid import Levees, PotentialBreaches
 from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import TablesSettings, PotentialBreaches
+from threedigrid_builder.base import TablesSettings
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import LineType

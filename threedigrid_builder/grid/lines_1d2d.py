@@ -1,5 +1,5 @@
 from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Breaches
+from .levees import Breaches
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import search
 from threedigrid_builder.constants import CalculationType

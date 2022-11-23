@@ -1,6 +1,6 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_equal
-from threedigrid_builder.base import Levees
+from threedigrid_builder.grid import Levees
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import LineType
