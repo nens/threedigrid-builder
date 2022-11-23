@@ -32,7 +32,7 @@ def db():
     sqlite_path = data_path / "v2_bergermeer.sqlite"
     if not os.path.isfile(sqlite_path):
         pytest.skip("sample sqlite is not available", allow_module_level=True)
-    return SQLite(sqlite_path)
+    return SQLite(sqlite_path, upgrade=True)
 
 
 @pytest.fixture

@@ -421,3 +421,9 @@ def test_get_windshieldings(db):
     windshieldings = db.get_windshieldings()
     # No windshielding in test dataset
     assert len(windshieldings) == 0
+
+
+def test_get_potential_breaches(db):
+    potential_breaches = db.get_potential_breaches()
+    # No potential breaches in test dataset
+    assert len(potential_breaches) == 0

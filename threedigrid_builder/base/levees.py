@@ -5,10 +5,11 @@ from typing import Tuple
 import pygeos
 
 
-__all__ = ["Levees", "Breaches"]
+__all__ = ["Levees", "Breaches", "PotentialBreaches"]
 
 
 class Breach:
+    # Deprecated
     id: int
     levl: int  # the line id
     content_pk: int  # refers to v2_connected_pnt
@@ -20,6 +21,21 @@ class Breach:
 
 @array_of(Breach)
 class Breaches:
+    pass
+
+
+class PotentialBreach:
+    id: int
+    the_geom: pygeos.Geometry
+    code: str
+    display_name: str
+    levee_material: Material
+    maximum_breach_depth: float
+    channel_id: int
+    line_id: int
+
+@array_of(PotentialBreach)
+class PotentialBreaches:
     pass
 
 
