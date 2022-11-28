@@ -108,40 +108,6 @@ def two_linear_objects():
 
 
 @pytest.mark.parametrize(
-    "start,end,expected_coords",
-    [
-        (0.0, 12.0, [(0.0, 0.0), (6.0, 0.0), (6.0, 6.0)]),
-        (1.45, 12.0, [(1.45, 0.0), (6.0, 0.0), (6.0, 6.0)]),
-        (6.0, 12.0, [(6.0, 0.0), (6.0, 6.0)]),
-        (6.7, 12.0, [(6.0, 0.7), (6.0, 6.0)]),
-        (0.0, 11.5, [(0.0, 0.0), (6.0, 0.0), (6.0, 5.5)]),
-        (0.0, 6.0, [(0.0, 0.0), (6.0, 0.0)]),
-        (0.0, 3.5, [(0.0, 0.0), (3.5, 0.0)]),
-        (1.0, 9.0, [(1.0, 0.0), (6.0, 0.0), (6.0, 3.0)]),
-        (6.0 + 1e-7, 12.0, [(6.0 + 1e-7, 0.0), (6.0, 6.0)]),
-        (6.0 + 1e-8, 12.0, [(6.0, 0.0), (6.0, 6.0)]),
-        (6.0, 12.0 + 1e-15, [(6.0, 0.0), (6.0, 6.0)]),
-    ],
-)
-def test_line_substring_one(start, end, expected_coords):
-    line = pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]])
-    segments = linear.line_substring(line, start, end)
-
-    assert_almost_equal(expected_coords, pygeos.get_coordinates(segments), decimal=7)
-
-
-def test_line_substring_two(two_lines):
-    segments = linear.line_substring(two_lines, [3.0, 4.0], [9.0, 10.0])
-
-    coords, index = pygeos.get_coordinates(segments, return_index=True)
-
-    assert_almost_equal(
-        coords, [(3.0, 10.0), (9.0, 10.0), (4.0, 0), (6.0, 0.0), (6.0, 4.0)]
-    )
-    assert_almost_equal(index, [0, 0, 1, 1, 1])
-
-
-@pytest.mark.parametrize(
     "dist,expected",
     [
         (3.0, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments

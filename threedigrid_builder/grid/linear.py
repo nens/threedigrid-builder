@@ -1,5 +1,9 @@
 from threedigrid_builder.base import Lines, LineStrings, PointsOnLine
-from threedigrid_builder.base.linestrings import counts_to_column_index, counts_to_ranges, counts_to_row_index
+from threedigrid_builder.base.linestrings import (
+    counts_to_column_index,
+    counts_to_ranges,
+    counts_to_row_index,
+)
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import NodeType
@@ -132,10 +136,12 @@ class BaseLinear:
         dists[self.calculation_type == CalculationType.EMBEDDED] = np.inf
 
         # interpolate the node geometries
-        points = LineStrings(id=self.id, the_geom=self.the_geom).segmentize(dists)
+        points = LineStrings(id=self.id, the_geom=self.the_geom).interpolate_points(
+            dists
+        )
 
         # construct the nodes with available attributes
-        nodes = Nodes(
+        return Nodes(
             id=itertools.islice(node_id_counter, len(points)),
             coordinates=pygeos.get_coordinates(points.as_geometries(self.the_geom)),
             content_type=self.content_type,
@@ -144,7 +150,6 @@ class BaseLinear:
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
         )
-        return nodes
 
     def get_embedded(
         self, cell_tree, embedded_cutoff_threshold, embedded_node_id_counter
@@ -214,13 +219,13 @@ class BaseLinear:
 
         # count the number of segments per object
         node_line_idx = objs.id_to_index(nodes.content_pk)
-        segment_counts = np.bincount(node_line_idx, minlength=len(objs)) + 1
-
-        # cut the channel geometries into segment geometries
-        start_s, end_s, segment_idx = segment_start_end(
-            objs.the_geom, segment_counts, nodes.s1d
+        
+        linestrings = LineStrings(id=objs.id, the_geom=objs.the_geom)
+        node_points = PointsOnLine.from_s1d(
+            linestrings, nodes.s1d, node_line_idx, content_pk=nodes.content_pk
         )
-        segments = line_substring(objs.the_geom, start_s, end_s, segment_idx)
+        segments = linestrings.segmentize(node_points)
+        segment_idx = segments.linestring_idx
 
         # Copy properties to segments
         display_name = np.take(self.display_name, segment_idx)
@@ -230,7 +235,7 @@ class BaseLinear:
         dist_calc_points = np.take(self.dist_calc_points, segment_idx)
 
         # set the right node indices for each segment
-        first_idx, last_idx = counts_to_ranges(segment_counts)
+        first_idx, last_idx = counts_to_ranges(np.bincount(segments.linestring_idx))
         last_idx -= 1  # convert slice end into last index
         line = np.full((len(segments), 2), -9999, dtype=np.int32)
 
@@ -266,8 +271,8 @@ class BaseLinear:
 
         # conditionally add the invert levels (for pipes and culverts only)
         try:
-            invert_start = self.compute_bottom_level(content_pk, start_s)
-            invert_end = self.compute_bottom_level(content_pk, end_s)
+            invert_start = self.compute_bottom_level(content_pk, segments.s1d_start)
+            invert_end = self.compute_bottom_level(content_pk, segments.s1d_end)
             dpumax = np.maximum(invert_start, invert_end)
         except AttributeError:
             invert_end = invert_start = dpumax = np.nan
@@ -307,13 +312,13 @@ class BaseLinear:
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
-            line_geometries=segments,
+            line_geometries=segments.as_geometries(self.the_geom),
             line=line,
             content_type=objs.content_type,
             content_pk=content_pk,
-            s1d=(start_s + end_s) / 2,
-            ds1d_half=(end_s - start_s) / 2,
-            ds1d=end_s - start_s,
+            s1d=segments.s1d,
+            ds1d_half=segments.ds1d_half,
+            ds1d=segments.ds1d,
             kcu=objs.calculation_type[segment_idx],
             cross_id1=cross_id,
             cross_id2=cross_id,
@@ -401,122 +406,6 @@ class BaseLinear:
         result[np.isnan(result)] = left[np.isnan(result)]
         result[np.isnan(result)] = right[np.isnan(result)]
         return result
-
-
-def line_substring(linestrings, start, end, index=None):
-    """Divide linestrings into segments given [start, end] measured along the line.
-
-    Note that there is no bound check done on start and end. Expect bogus results or
-    errors if start is negative or if end is larger than the linestring length.
-
-    Args:
-        linestrings (ndarray of pygeos.Geometry): Linestrings to segmentize
-        start (ndarray of float): The start of the segment, measured along the line.
-        end (ndarray of float): The end of the segment, measured along the line.
-        index (ndarray of int, optional): An optional linestring index per start/end.
-           If not given, then all input arrays should be equal sized.
-
-    Returns:
-        segments: the segments (sublinestrings of the input linestrings)
-    """
-    (n_lines,) = linestrings.shape
-    if index is None:
-        n_segments = n_lines
-        index = np.arange(n_lines)
-    else:
-        (n_segments,) = index.shape
-
-    if n_segments == 0:
-        return np.empty((0,), dtype=object)
-
-    coords, coord_line_idx = pygeos.get_coordinates(linestrings, return_index=True)
-    line_n_coords = pygeos.get_num_coordinates(linestrings)
-
-    ## compute the length of each vertex-vertex distance
-    coord_ds = np.sqrt(np.sum((coords - np.roll(coords, 1, axis=0)) ** 2, axis=1))
-    coord_s = np.cumsum(coord_ds)
-    # compute corresponding length of each given start and end
-    line_first_coord_idx, line_end_coord_idx = counts_to_ranges(line_n_coords)
-    start_s = start + coord_s[line_first_coord_idx][index]
-    end_s = end + coord_s[line_first_coord_idx][index]
-
-    ## interpolate the start & end points along the linestrings
-    start_insert_at = np.searchsorted(coord_s, start_s - COORD_EQUAL_ATOL)
-    end_insert_at = np.searchsorted(coord_s, end_s - COORD_EQUAL_ATOL)
-    # find points that would be located exactly at an existing coordinate
-    start_eq_coord = np.abs(coord_s[start_insert_at] - start_s) < COORD_EQUAL_ATOL
-    end_eq_coord = np.abs(coord_s[end_insert_at] - end_s) < COORD_EQUAL_ATOL
-    # insert the existing coords and interpolate the others
-    start_coords = np.empty((n_segments, 2))
-    end_coords = np.empty((n_segments, 2))
-    start_coords[start_eq_coord] = coords[start_insert_at[start_eq_coord]]
-    end_coords[end_eq_coord] = coords[end_insert_at[end_eq_coord]]
-    for i in range(2):
-        start_coords[~start_eq_coord, i] = np.interp(
-            start_s[~start_eq_coord], coord_s, coords[:, i]
-        )
-        end_coords[~end_eq_coord, i] = np.interp(
-            end_s[~end_eq_coord], coord_s, coords[:, i]
-        )
-
-    ## fill an array of coordinates for the segmetns
-    # the number of coordinates per segment are:
-    # + 2 (line start and end)
-    # + coordinates in between (end_insert_at - start_insert_at)
-    # + correction where start_eq_coord (then there is 1 less "in between")
-    # + no correction where end_eq_coord
-    segment_n_coords = 2 + end_insert_at - start_insert_at - start_eq_coord
-    segment_first_coord_idx, segment_end_coord_idx = counts_to_ranges(segment_n_coords)
-
-    # fill in the start & end coords
-    segment_coords = np.empty((segment_n_coords.sum(), 2))
-    segment_coords[segment_first_coord_idx] = start_coords
-    segment_coords[segment_end_coord_idx - 1] = end_coords
-
-    # fill the remaining segment coordinates with original coordinates
-    i = counts_to_row_index(segment_n_coords - 2)  # e.g. [0, 0, 0, 1, 1, 3]
-    j = counts_to_column_index(segment_n_coords - 2)  # e.g. [0, 1, 2, 0, 1, 0]
-    segment_coords_to_fill = segment_first_coord_idx[i] + j + 1
-    coords_to_fill_with = start_insert_at[i] + start_eq_coord[i] + j
-    segment_coords[segment_coords_to_fill] = coords[coords_to_fill_with]
-
-    # construct the segments
-    segments = pygeos.linestrings(
-        segment_coords,
-        indices=counts_to_row_index(segment_n_coords),
-    )
-
-    return segments
-
-
-def segment_start_end(linestrings, segment_counts, dist_to_start):
-    """Utility function to use the output of segmentize as input of line_substrings.
-
-    Args:
-        linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
-        segment_counts (ndarray of int): the number of segments per linestring
-        dist_to_start (ndarray of float): the location of added nodes, measured along
-          the linestring. The length of this array is such that:
-          ``len(linestrings) + len(dist_to_start) = segment_counts.sum()``
-
-    Returns:
-        tuple of:
-        - segment_start (ndarray of float): The segment start, measured along the line.
-        - segment_end (ndarray of float): The segment end, measured along the line.
-        - segment_index (ndarray of int): Indices mapping segments to input linestrings.
-    """
-    start_idx, last_idx = counts_to_ranges(segment_counts)
-    last_idx -= 1
-
-    start_s = np.full(segment_counts.sum(), np.nan)
-    end_s = np.full(segment_counts.sum(), np.nan)
-    # every first start_s is 0.0, the rest are added nodes with an s1d
-    start_s[start_idx] = 0.0
-    start_s[np.isnan(start_s)] = dist_to_start
-    # every last end_s equals to the length, the rest are added nodes with an s1d
-    end_s[last_idx] = pygeos.length(linestrings)
-    end_s[np.isnan(end_s)] = dist_to_start
-    return start_s, end_s, counts_to_row_index(segment_counts)
 
 
 def _add_point(linestrings, points, at=0):
