@@ -1,4 +1,5 @@
-from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Lines, LineStrings, PointsOnLine
+from threedigrid_builder.base.linestrings import counts_to_column_index, counts_to_ranges, counts_to_row_index
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import NodeType
@@ -110,11 +111,6 @@ class BaseLinear:
             - s1d: distance (along the linestring) to the start of the linestring
             The nodes are ordered by content_pk and then by position on the linestring.
         """
-        # Do not add nodes for embedded objects
-        not_embedded = self.calculation_type != CalculationType.EMBEDDED
-        if np.all(not_embedded):
-            not_embedded = slice(None)  # faster than bool mask
-
         if pygeos.is_missing(self.the_geom).any():
             raise ValueError(
                 f"{self.__class__.__name__} encountered without a geometry."
@@ -129,22 +125,24 @@ class BaseLinear:
             global_dist_calc_points = np.inf  # means: no interpolation
 
         # insert default dist_calc_points where necessary
-        dists = self.dist_calc_points[not_embedded].copy()
+        dists = self.dist_calc_points.copy()
         dists[np.isnan(dists)] = global_dist_calc_points
         dists[dists <= 0] = global_dist_calc_points
+        # Do not add nodes for embedded objects:
+        dists[self.calculation_type == CalculationType.EMBEDDED] = np.inf
 
         # interpolate the node geometries
-        points, index, dist_to_start = segmentize(self.the_geom[not_embedded], dists)
+        points = LineStrings(id=self.id, the_geom=self.the_geom).segmentize(dists)
 
         # construct the nodes with available attributes
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(points)),
-            coordinates=pygeos.get_coordinates(points),
+            coordinates=pygeos.get_coordinates(points.as_geometries(self.the_geom)),
             content_type=self.content_type,
-            content_pk=self.id[not_embedded][index],
+            content_pk=self.id[points.linestring_idx],
             node_type=NodeType.NODE_1D_NO_STORAGE,
-            calculation_type=self.calculation_type[not_embedded][index],
-            s1d=dist_to_start,
+            calculation_type=self.calculation_type[points.linestring_idx],
+            s1d=points.s1d,
         )
         return nodes
 
@@ -403,109 +401,6 @@ class BaseLinear:
         result[np.isnan(result)] = left[np.isnan(result)]
         result[np.isnan(result)] = right[np.isnan(result)]
         return result
-
-
-def counts_to_ranges(counts):
-    """Convert an array of list-of-lists counts to ranges.
-
-    ``counts`` define lengths of lists that are concatenated into a 1D array.
-    The output ranges index into that array. For example, ``arr[start[i]:stop[i]]`` will
-    give all values belonging to list `i`.
-
-    Args:
-        counts (ndarray of int): list lengths
-
-    Returns:
-        tuple of start (ndarray of int), stop (ndarray of int)
-
-    Example:
-    >>> counts_to_ranges([3, 2, 0, 1, 0])
-    (array([0, 3, 5, 5, 6]), array([3, 5, 5, 6, 6]))
-    """
-    if len(counts) == 0:
-        return np.empty((0,), dtype=int), np.empty((0,), dtype=int)
-    stop = np.cumsum(counts)
-    start = np.roll(stop, 1)
-    start[0] = 0
-    return start, stop
-
-
-def counts_to_row_index(counts):
-    """Convert an array of list-of-lists counts into row indices into a 2D array.
-
-    ``counts`` define lengths of lists that are concatenated into a 1D array. The output
-    of this function assigns a row index to every element in the 1D array. The row index
-    is counting over the outer list.
-
-    Args:
-        counts (ndarray of int): list lengths
-
-    Returns:
-        row index (ndarray of int)
-
-    Example:
-    >>> counts_to_row_index([3, 2, 0, 1, 0])
-    array([0, 0, 0, 1, 1, 3])
-    """
-    (n,) = counts.shape
-    return np.repeat(np.arange(n), counts)
-
-
-def counts_to_column_index(counts):
-    """Convert an array of list-of-lists counts into row indices into a 2D array.
-
-    ``counts`` define lengths of lists that are concatenated into a 1D array. The output
-    of this function assigns a column index to every element in the 1D array. The column
-    index is counting over elements in a single list.
-
-    Args:
-        counts (ndarray of int): list lengths
-
-    Returns:
-        column index (ndarray of int)
-
-    Example:
-    >>> counts_to_indices([3, 2, 0, 1, 0])
-    array([0, 1, 2, 0, 1, 0])
-    """
-    if len(counts) == 0:
-        return np.empty((0,), dtype=int)
-    start, stop = counts_to_ranges(counts)
-    return np.arange(stop[-1]) - np.repeat(start, counts)
-
-
-def segmentize(linestrings, desired_segment_size):
-    """Return points that divide linestrings into segments of equal length.
-
-    Args:
-        linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
-        desired_segment_size (ndarray of float): the desired size of the segments; the
-           actual size will depend on the linestring length and is computed by rounding
-           ``line length / size`` to the nearest integer.
-           Inf inputs will lead to no segmentation for that line (n_segments=1)
-
-    Returns:
-        nodes: the points where segments connect.
-          this excludes the start and end of the input linestrings.
-        line_idx: indices mapping nodes to input linestrings
-        dist_to_start: the location of the node measured along the linestring
-    """
-    # compute number of nodes to add per channel
-    length = pygeos.length(linestrings)
-    n_segments = np.maximum(np.round(length / desired_segment_size).astype(int), 1)
-    segment_size = length / n_segments
-    n_nodes = n_segments - 1
-
-    # get the distance to the start of each channel
-    i = counts_to_row_index(n_nodes)  # e.g. [0, 0, 0, 1, 1, 3]
-    j = counts_to_column_index(n_nodes)  # e.g. [0, 1, 2, 0, 1, 0]
-    dist_to_start = (j + 1) * segment_size[i]
-
-    nodes = pygeos.line_interpolate_point(
-        linestrings[i],
-        dist_to_start,  # note: this only copies geometry pointers
-    )
-    return nodes, i, dist_to_start
 
 
 def line_substring(linestrings, start, end, index=None):

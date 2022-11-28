@@ -123,10 +123,10 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
 
     linestrings = LineStrings(id=channels.id, the_geom=channels.the_geom)
     cs_points = PointsOnLine.from_geometries(
-        linestrings, geoms=cs.the_geom, linestring_ids=cs.channel_id, content_pk=cs.id
+        linestrings, cs.the_geom, channels.id_to_index(cs.channel_id), content_pk=cs.id
     )
     queried_points = PointsOnLine.from_s1d(
-        linestrings, s1d=points, linestring_ids=channel_id
+        linestrings, points, channels.id_to_index(channel_id)
     )
 
     # Find what CS location comes after and before each midpoint
