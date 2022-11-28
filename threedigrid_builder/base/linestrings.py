@@ -67,26 +67,25 @@ class PointsOnLine:
         does not have a neighboar after it, the two returned indices will be that
         of the neighboar before.
         """
-        # Find what CS location comes after and before each midpoint
-        cs_idx_2 = np.searchsorted(other.s1d_cum, self.s1d_cum)
-        cs_idx_1 = cs_idx_2 - 1
-        out_of_bounds_1 = cs_idx_1 < 0
-        out_of_bounds_2 = cs_idx_2 >= len(other)
-        cs_idx_1[out_of_bounds_1] = 0
-        cs_idx_2[out_of_bounds_2] = len(other) - 1
+        idx_2 = np.searchsorted(other.s1d_cum, self.s1d_cum)
+        idx_1 = idx_2 - 1
+        out_of_bounds_1 = idx_1 < 0
+        out_of_bounds_2 = idx_2 >= len(other)
+        idx_1[out_of_bounds_1] = 0
+        idx_2[out_of_bounds_2] = len(other) - 1
 
-        # Fix situations where cs_idx_1 is incorrect
-        extrap_mask = (other.linestring_idx[cs_idx_1] != self.linestring_idx) | out_of_bounds_1
-        cs_idx_1[extrap_mask] = cs_idx_2[extrap_mask]
-        cs_idx_2[extrap_mask] = np.clip(cs_idx_2[extrap_mask] + 1, None, len(other) - 1)
-        equalize = extrap_mask & (other.linestring_idx[cs_idx_2] != self.linestring_idx)
-        cs_idx_2[equalize] -= 1
+        # Fix situations where idx_1 is incorrect
+        extrap_mask = (other.linestring_idx[idx_1] != self.linestring_idx) | out_of_bounds_1
+        idx_1[extrap_mask] = idx_2[extrap_mask]
+        idx_2[extrap_mask] = np.clip(idx_2[extrap_mask] + 1, None, len(other) - 1)
+        equalize = extrap_mask & (other.linestring_idx[idx_2] != self.linestring_idx)
+        idx_2[equalize] -= 1
 
-        # Fix situations where cs_idx_2 is incorrect
-        extrap_mask = (other.linestring_idx[cs_idx_2] != self.linestring_idx) | out_of_bounds_2
-        cs_idx_2[extrap_mask] = cs_idx_1[extrap_mask]
-        cs_idx_1[extrap_mask] = np.clip(cs_idx_2[extrap_mask] - 1, 0, None)
-        equalize = extrap_mask & (other.linestring_idx[cs_idx_1] != self.linestring_idx)
-        cs_idx_1[equalize] += 1
+        # Fix situations where idx_2 is incorrect
+        extrap_mask = (other.linestring_idx[idx_2] != self.linestring_idx) | out_of_bounds_2
+        idx_2[extrap_mask] = idx_1[extrap_mask]
+        idx_1[extrap_mask] = np.clip(idx_2[extrap_mask] - 1, 0, None)
+        equalize = extrap_mask & (other.linestring_idx[idx_1] != self.linestring_idx)
+        idx_1[equalize] += 1
 
-        return cs_idx_1, cs_idx_2
+        return idx_1, idx_2

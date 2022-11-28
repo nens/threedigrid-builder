@@ -122,30 +122,32 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
         )
 
     linestrings = LineStrings(id=channels.id, the_geom=channels.the_geom)
-    cs_nodes = PointsOnLine.from_geometries(linestrings,
-        geoms=cs.the_geom, linestring_ids=cs.channel_id, content_pk=cs.id
+    cs_points = PointsOnLine.from_geometries(
+        linestrings, geoms=cs.the_geom, linestring_ids=cs.channel_id, content_pk=cs.id
     )
-    nodes = PointsOnLine.from_s1d(linestrings, s1d=points, linestring_ids=channel_id)
+    queried_points = PointsOnLine.from_s1d(
+        linestrings, s1d=points, linestring_ids=channel_id
+    )
 
     # Find what CS location comes after and before each midpoint
-    cs_idx_1, cs_idx_2 = nodes.neighbors(cs_nodes)
+    cs_idx_1, cs_idx_2 = queried_points.neighbors(cs_points)
 
     # Map index to id and create the array that matches the input channel_id and ds
-    cross_loc1 = cs_nodes.content_pk[cs_idx_1]
-    cross_loc2 = cs_nodes.content_pk[cs_idx_2]
+    cross_loc1 = cs_points.content_pk[cs_idx_1]
+    cross_loc2 = cs_points.content_pk[cs_idx_2]
 
     # Compute the weights. For each line, we have 3 times s:
-    # 1. the s of the CrossSectionLocation before it (s_1)
-    # 2. the s of the CrossSectionLocation after it (s_2)
-    # 3. the s of the midpoint (velocity point) (points)
+    # 1. the s of the CrossSectionLocation before it (cs_idx_1)
+    # 2. the s of the CrossSectionLocation after it (cs_idx_2)
+    # 3. the s of the midpoint (velocity point) (queried_points)
     #
     # The weight is calculated such that a value at midpoint can be interpolated
     # as:   weight * v_1 + (1 - weight) * v_2
-    s_1 = cs_nodes.s1d_cum[cs_idx_1]
-    s_2 = cs_nodes.s1d_cum[cs_idx_2]
+    s_1 = cs_points.s1d_cum[cs_idx_1]
+    s_2 = cs_points.s1d_cum[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
-        cross_weight = (s_2 - nodes.s1d_cum) / (s_2 - s_1)
+        cross_weight = (s_2 - queried_points.s1d_cum) / (s_2 - s_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
 
     if not extrapolate:
