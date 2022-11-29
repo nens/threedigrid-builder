@@ -8,14 +8,7 @@ from pyproj import CRS
 from pyproj.exceptions import CRSError
 
 import threedigrid_builder
-from threedigrid_builder.base import (
-    Lines,
-    Nodes,
-    PointsOnLine,
-    Pumps,
-    SurfaceMaps,
-    Surfaces,
-)
+from threedigrid_builder.base import Lines, Nodes, Pumps, SurfaceMaps, Surfaces
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
@@ -357,7 +350,7 @@ class Grid:
         cls,
         connection_nodes,
         objects,
-        breaches,
+        fixed_nodes,
         cell_tree,
         global_dist_calc_points,
         embedded_cutoff_threshold,
@@ -371,7 +364,7 @@ class Grid:
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             objects (Channels, Pipes, Culverts)
-            breaches (PotentialBreaches)
+            fixed_nodes (PointsOnLine): to optionally fix interpolated node positions
             cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             embedded_cutoff_threshold (float): The min length of an embedded line.
@@ -409,19 +402,8 @@ class Grid:
             - lines.discharge_coefficient_positive & _positive: culverts only
         """
         objects.set_geometries(connection_nodes)
-        if breaches is not None:
-            fixtures = PointsOnLine.from_geometries(
-                objects.linestrings,
-                points=breaches.side_1d,
-                linestring_idx=objects.id_to_index(
-                    breaches.channel_id, check_exists=True
-                ),
-                content_pk=breaches.id,
-            )
-        else:
-            fixtures = None
         nodes = objects.interpolate_nodes(
-            node_id_counter, global_dist_calc_points, fixtures
+            node_id_counter, global_dist_calc_points, fixed_nodes
         )
         lines = objects.get_lines(
             connection_nodes,

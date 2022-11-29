@@ -127,9 +127,9 @@ def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_o
             itertools.count(start=2), global_dist_calc_points
         )
 
-    (fixtures,), _ = segmentize.call_args
-    assert isinstance(fixtures, PointsOnLine)
-    assert len(fixtures) == 0
+    (fixed_nodes,), _ = segmentize.call_args
+    assert isinstance(fixed_nodes, PointsOnLine)
+    assert len(fixed_nodes) == 0
 
     (dists,), _ = segmentize().interpolate_points.call_args
     assert_almost_equal(dists, expected_dists)
@@ -162,7 +162,7 @@ def test_interpolate_nodes_skips_embedded(two_linear_objects):
 
 
 def test_interpolate_nodes_with_fixture(two_linear_objects):
-    fixtures = PointsOnLine(
+    fixed_nodes = PointsOnLine(
         two_linear_objects.linestrings,
         id=[0, 1],
         s1d=[30.0, 50.0],
@@ -178,11 +178,13 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
         segmentize().linestring_idx = np.array([0, 1, 1, 1])
         segmentize().interpolate_points.return_value = dummy_points
         nodes = two_linear_objects.interpolate_nodes(
-            itertools.count(start=2), global_dist_calc_points=74.0, fixtures=fixtures
+            itertools.count(start=2),
+            global_dist_calc_points=74.0,
+            fixed_nodes=fixed_nodes,
         )
 
     (arg,), _ = segmentize.call_args
-    assert arg is fixtures
+    assert arg is fixed_nodes
 
     (dists,), _ = segmentize().interpolate_points.call_args
     assert_almost_equal(dists, [5.0, 74.0, 74.0, 74.0])

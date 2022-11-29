@@ -1,5 +1,6 @@
 import os
 import pathlib
+import shutil
 
 import numpy as np
 import pygeos
@@ -30,13 +31,15 @@ data_path = pathlib.Path(__file__).resolve().parents[0] / "data"
 
 
 @pytest.fixture(scope="session")
-def db():
+def db(tmp_path_factory):
     """Yields a threedigrid_builder.interface.db.SQLite object with access
     to the test v2_bergermeer.sqlite."""
+    fn = tmp_path_factory.mktemp("data") / "v2_bergermeer.sqlite"
     sqlite_path = data_path / "v2_bergermeer.sqlite"
-    if not os.path.isfile(sqlite_path):
+    shutil.copyfile(sqlite_path, fn)
+    if not os.path.isfile(fn):
         pytest.skip("sample sqlite is not available", allow_module_level=True)
-    return SQLite(sqlite_path, upgrade=True)
+    return SQLite(fn, upgrade=True)
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@ import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
-from threedigrid_builder.base import Lines
+from threedigrid_builder.base import Lines, LineStrings, PointsOnLine
 from threedigrid_builder.constants import ContentType, Material
 from threedigrid_builder.grid import (
     Breaches,
@@ -85,3 +85,16 @@ def test_potential_breach_sides():
     )
     assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_1d), [[0, 0]])
     assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_2d), [[0, 1]])
+
+
+def test_potential_breach_merge():
+    before = PointsOnLine(
+        linestrings=LineStrings(pygeos.linestrings([[[0, 0], [10, 0]]])),
+        id=[0, 1, 2, 3, 4, 5],
+        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0],
+        linestring_idx=[0, 0, 0, 0, 0, 0],
+    )
+    after = PotentialBreaches.merge(before, tolerance=2.0)
+
+    assert_almost_equal(after.s1d, [0.0, 2.0, 5.5, 10.0])
+    assert_almost_equal(after.linestring_idx, [0, 0, 0, 0])

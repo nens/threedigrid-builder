@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from typing import Callable, Optional
 
+from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
@@ -49,7 +50,7 @@ def _make_gridadmin(
 
     settings = db.get_settings()
     grid = Grid.from_meta(**settings, **(meta or {}))
-    grid_settings = settings["grid_settings"]
+    grid_settings: GridSettings = settings["grid_settings"]
 
     if grid_settings.use_2d:
         progress_callback(0.1, "Reading subgrid input...")
@@ -103,10 +104,16 @@ def _make_gridadmin(
         grid += cn_grid
 
         channels = db.get_channels()
+        potential_breaches = db.get_potential_breaches()
+        breach_points = potential_breaches.project_on_channels(channels)
+        breach_points = potential_breaches.merge(
+            breach_points, tolerance=grid_settings.breach_merge_tolerance
+        )
+
         channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=channels,
-            breaches=db.get_potential_breaches(),
+            fixed_nodes=potential_breaches.project_on_channels(channels),
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -126,7 +133,7 @@ def _make_gridadmin(
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=pipes,
-            breaches=None,
+            fixed_nodes=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -140,7 +147,7 @@ def _make_gridadmin(
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=culverts,
-            breaches=None,
+            fixed_nodes=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,

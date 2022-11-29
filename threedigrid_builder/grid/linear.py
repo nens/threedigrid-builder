@@ -51,7 +51,7 @@ class BaseLinear:
         self,
         node_id_counter,
         global_dist_calc_points,
-        fixtures: Optional[PointsOnLine] = None,
+        fixed_nodes: Optional[PointsOnLine] = None,
     ):
         """Compute nodes on each linear object with constant intervals
 
@@ -64,7 +64,7 @@ class BaseLinear:
         Args:
             node_id_counter (iterable): an iterable yielding integers
             global_dist_calc_points (float): Default node interdistance.
-            fixtures: optional fixed points that will become a node
+            fixed_nodes: optional fixed points that will become a node
 
         Returns:
             tuple of nodes (Nodes)
@@ -90,8 +90,8 @@ class BaseLinear:
         ):
             global_dist_calc_points = np.inf  # means: no interpolation
 
-        if fixtures is None:
-            fixtures = PointsOnLine.empty(self.linestrings)
+        if fixed_nodes is None:
+            fixed_nodes = PointsOnLine.empty(self.linestrings)
 
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()
@@ -101,11 +101,11 @@ class BaseLinear:
         dists[self.calculation_type == CalculationType.EMBEDDED] = np.inf
 
         # interpolate the node geometries
-        sublinestrings = self.linestrings.segmentize(fixtures)
+        sublinestrings = self.linestrings.segmentize(fixed_nodes)
         points = sublinestrings.interpolate_points(dists[sublinestrings.linestring_idx])
 
-        # fixtures also become nodes
-        points = points.merge_with(fixtures)
+        # fixed_nodes also become nodes
+        points = points.merge_with(fixed_nodes)
 
         # construct the nodes with available attributes
         return Nodes(
