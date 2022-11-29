@@ -143,11 +143,11 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
     #
     # The weight is calculated such that a value at midpoint can be interpolated
     # as:   weight * v_1 + (1 - weight) * v_2
-    s_1 = cs_points.s1d_cum[cs_idx_1]
-    s_2 = cs_points.s1d_cum[cs_idx_2]
+    s_1 = cs_points.s1d[cs_idx_1]
+    s_2 = cs_points.s1d[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
-        cross_weight = (s_2 - queried_points.s1d_cum) / (s_2 - s_1)
+        cross_weight = (s_2 - queried_points.s1d) / (s_2 - s_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
 
     if not extrapolate:

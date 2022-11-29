@@ -2,6 +2,7 @@ import numpy as np
 import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
+from pygeos.testing import assert_geometries_equal
 
 from threedigrid_builder.base import LinesOnLine, LineStrings, PointsOnLine
 
@@ -67,7 +68,7 @@ def test_segmentize_one(
     linestrings, s1d, expected_idx, expected_idx_s1d_start, expected_s1d_end
 ):
     points_on_line = PointsOnLine(
-        id=range(len(s1d)), s1d=s1d, linestring_idx=[0] * len(s1d)
+        linestrings, id=range(len(s1d)), s1d=s1d, linestring_idx=[0] * len(s1d)
     )
     lines = linestrings.segmentize(points_on_line)
 
@@ -79,7 +80,7 @@ def test_segmentize_one(
 
 def test_segmentize_multiple(two_linestrings):
     points_on_line = PointsOnLine(
-        id=[1, 2, 3], s1d=[5.0, 2.0, 8.0], linestring_idx=[0, 1, 1]
+        two_linestrings, id=[1, 2, 3], s1d=[5.0, 2.0, 8.0], linestring_idx=[0, 1, 1]
     )
     lines = two_linestrings.segmentize(points_on_line)
 
@@ -87,6 +88,40 @@ def test_segmentize_multiple(two_linestrings):
     assert_array_equal(lines.linestring_idx, [0, 0, 1, 1, 1])
     assert_array_equal(lines.s1d_start, [0.0, 5.0, 0.0, 2.0, 8.0])
     assert_array_equal(lines.s1d_end, [5.0, 10.0, 2.0, 8.0, 12.0])
+
+
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (None, None),
+        ([(0, 21), (3, 42)], [(0, 21), (3, 42)]),
+        ([(0, 21), (1, 2), (3, 42)], [(0, 21), (1, 2), (3, 42)]),
+        ([(0, 21), (3, 42)][::-1], [(0, 21), (3, 42)]),
+        ([(0, 21), (1, 2), (3, 42)][::-1], [(0, 21), (1, 2), (3, 42)]),
+        ([(1, 21), (3, 41)], [(0, 21), (1, 21), (3, 41), (3, 42)]),
+        ([(3, 41), (1, 21)], [(0, 21), (1, 21), (3, 41), (3, 42)]),
+    ],
+)
+def test_sanitize(geom, expected):
+    linestrings = LineStrings(np.array([pygeos.linestrings(geom) if geom else None]))
+    linestrings.sanitize(
+        points_1=pygeos.points([(0, 21)]), points_2=pygeos.points([(3, 42)])
+    )
+
+    expected = [None] if expected is None else [pygeos.linestrings(expected)]
+    assert_geometries_equal(linestrings.the_geom, expected)
+
+
+def test_point_on_line_the_geom_multiple(two_linestrings):
+    points_on_line = PointsOnLine(
+        two_linestrings, id=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
+    )
+    actual = points_on_line.the_geom
+
+    coords, index = pygeos.get_coordinates(actual, return_index=True)
+
+    assert_almost_equal(coords, [(3.0, 10.0), (4.0, 0)])
+    assert_almost_equal(index, [0, 1])
 
 
 @pytest.mark.parametrize(
@@ -105,20 +140,24 @@ def test_segmentize_multiple(two_linestrings):
         (6.0, 12.0 + 1e-15, [(6.0, 0.0), (6.0, 6.0)]),
     ],
 )
-def test_line_on_line_as_geometries(linestrings, start, end, expected_coords):
+def test_line_on_line_the_geom(linestrings, start, end, expected_coords):
     lines_on_line = LinesOnLine(
-        id=[1], s1d_start=[start], s1d_end=[end], linestring_idx=[0]
+        linestrings, id=[1], s1d_start=[start], s1d_end=[end], linestring_idx=[0]
     )
-    geometries = lines_on_line.as_geometries(linestrings.the_geom)
+    geometries = lines_on_line.the_geom
     assert geometries.shape == (1,)
     assert_almost_equal(expected_coords, pygeos.get_coordinates(geometries), decimal=7)
 
 
-def test_line_on_line_as_geometries_multiple(two_linestrings):
+def test_line_on_line_the_geom_multiple(two_linestrings):
     lines_on_line = LinesOnLine(
-        id=[1, 2], s1d_start=[3.0, 4.0], s1d_end=[9.0, 10.0], linestring_idx=[0, 1]
+        two_linestrings,
+        id=[1, 2],
+        s1d_start=[3.0, 4.0],
+        s1d_end=[9.0, 10.0],
+        linestring_idx=[0, 1],
     )
-    segments = lines_on_line.as_geometries(two_linestrings.the_geom)
+    segments = lines_on_line.the_geom
 
     coords, index = pygeos.get_coordinates(segments, return_index=True)
 

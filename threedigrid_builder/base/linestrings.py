@@ -9,18 +9,12 @@ __all__ = ["LineStrings", "PointsOnLine", "LinesOnLine"]
 COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
 
 
-class LineString:
-    id: int
-    the_geom: pygeos.Geometry  # LineString
-
-
 class PointOnLine:
     """A point determined by its position 'along' a linestring"""
 
     id: int  # just a unique number, mostly unused
-    content_pk: int  # externally determined id (e.g. cs location id)
+    content_pk: int  # externally determined id
     s1d: float  # the position along the linestring
-    s1d_cum: float
     linestring_idx: int
 
 
@@ -28,6 +22,7 @@ class LineOnLine:
     """A line determined by its position 'along' a linestring"""
 
     id: int  # just a unique number, mostly unused
+    content_pk: int  # externally determined id
     s1d_start: float  # the position along the linestring
     s1d_end: float  # the position along the linestring
     linestring_idx: int
@@ -36,6 +31,8 @@ class LineOnLine:
 class LineStrings:
     def __init__(self, geometries):
         assert isinstance(geometries, np.ndarray)
+        geom_types = pygeos.get_type_id(geometries)
+        assert np.all((geom_types == -1) | (geom_types == 1))
         self.the_geom = geometries
 
     def __len__(self):
@@ -46,7 +43,7 @@ class LineStrings:
         return pygeos.length(self.the_geom)
 
     @property
-    def cum_length(self):
+    def length_cumulative(self):
         result = np.zeros(len(self) + 1, dtype=float)
         np.cumsum(self.length + 1e-6, out=result[1:])
         return result
@@ -81,6 +78,8 @@ class LineStrings:
 
     def segmentize(self, points: "PointsOnLine") -> "LineOnLine":
         """Return lines that result from splitting self at 'points'"""
+        assert points.linestrings is self
+
         segment_counts = np.bincount(points.linestring_idx, minlength=len(self)) + 1
 
         # cut the channel geometries into segment geometries
@@ -88,13 +87,14 @@ class LineStrings:
             self.the_geom, segment_counts, points.s1d
         )
         return LinesOnLine(
+            self,
             id=range(len(segment_idx)),
             s1d_start=start_s,
             s1d_end=end_s,
             linestring_idx=segment_idx,
         )
 
-    def sanitize(self, points_1, points_2):
+    def sanitize(self, points_1, points_2) -> None:
         """Make sure that the self go from points_1 to points_2.
 
         The linestring is reversed if the distance from the linestring start to point_1
@@ -149,6 +149,10 @@ class LineStrings:
 
 
 class PointsOnLine(Array[PointOnLine]):
+    def __init__(self, linestrings: "LineStrings", **kwargs):
+        super().__init__(**kwargs)
+        self.linestrings = linestrings
+
     @classmethod
     def from_geometries(
         cls, linestrings: LineStrings, points, linestring_idx, **kwargs
@@ -161,20 +165,27 @@ class PointsOnLine(Array[PointOnLine]):
         if np.any(~np.isfinite(s1d)):
             raise ValueError("NaN values encountered in s1d")
         result = cls(
+            linestrings,
             id=np.arange(len(linestring_idx)),
             s1d=s1d,
-            s1d_cum=s1d + linestrings.cum_length[linestring_idx],
             linestring_idx=linestring_idx,
             **kwargs,
         )
-        result.reorder_by("s1d_cum")
+        result.reorder(np.argsort(result.s1d_cum))
         return result
 
-    def as_geometries(self, line_geoms):
-        return pygeos.line_interpolate_point(line_geoms[self.linestring_idx], self.s1d)
+    @property
+    def s1d_cum(self):
+        return self.s1d + self.linestrings.length_cumulative[self.linestring_idx]
 
-    def neighbors(self, other: "PointOnLine"):
-        """Return the (indices of) the points that are before and after self.
+    @property
+    def the_geom(self):
+        return pygeos.line_interpolate_point(
+            self.linestrings.the_geom[self.linestring_idx], self.s1d
+        )
+
+    def neighbors(self, other: "PointsOnLine"):
+        """Return the (indices of) the points in other that are before and after self.
 
         'other' must contain at least 1 point per linestring.
 
@@ -183,6 +194,8 @@ class PointsOnLine(Array[PointOnLine]):
         does not have a neighboar after it, the two returned indices will be that
         of the neighboar before.
         """
+        assert other.linestrings is self.linestrings
+
         idx_2 = np.searchsorted(other.s1d_cum, self.s1d_cum)
         idx_1 = idx_2 - 1
         out_of_bounds_1 = idx_1 < 0
@@ -212,6 +225,10 @@ class PointsOnLine(Array[PointOnLine]):
 
 
 class LinesOnLine(Array[LineOnLine]):
+    def __init__(self, linestrings: "LineStrings", **kwargs):
+        super().__init__(**kwargs)
+        self.linestrings = linestrings
+
     @property
     def s1d(self):
         return (self.s1d_start + self.s1d_end) / 2
@@ -221,12 +238,9 @@ class LinesOnLine(Array[LineOnLine]):
         return self.s1d_end - self.s1d_start
 
     @property
-    def ds1d_half(self):
-        return self.ds1d / 2
-
-    def as_geometries(self, line_geoms):
+    def the_geom(self):
         return line_substring(
-            line_geoms, self.s1d_start, self.s1d_end, self.linestring_idx
+            self.linestrings.the_geom, self.s1d_start, self.s1d_end, self.linestring_idx
         )
 
 

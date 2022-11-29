@@ -15,7 +15,9 @@ class BaseLinear:
 
     @property
     def linestrings(self):
-        return LineStrings(self.the_geom)
+        if not hasattr(self, "_linestrings"):
+            self._linestrings = LineStrings(self.the_geom)
+        return self._linestrings
 
     def set_geometries(self, connection_nodes):
         """Set the_geom from connection nodes where necessary.
@@ -94,7 +96,7 @@ class BaseLinear:
         # construct the nodes with available attributes
         return Nodes(
             id=itertools.islice(node_id_counter, len(points)),
-            coordinates=pygeos.get_coordinates(points.as_geometries(self.the_geom)),
+            coordinates=pygeos.get_coordinates(points.the_geom),
             content_type=self.content_type,
             content_pk=self.id[points.linestring_idx],
             node_type=NodeType.NODE_1D_NO_STORAGE,
@@ -164,7 +166,7 @@ class BaseLinear:
             The lines are ordered by content_pk and then by position on the linestring.
         """
         if embedded_mode:
-            mask = self[self.calculation_type == CalculationType.EMBEDDED]
+            objs = self[self.calculation_type == CalculationType.EMBEDDED]
         else:
             objs = self[self.calculation_type != CalculationType.EMBEDDED]
 
@@ -263,12 +265,12 @@ class BaseLinear:
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
-            line_geometries=segments.as_geometries(objs.the_geom),
+            line_geometries=segments.the_geom,
             line=line,
             content_type=objs.content_type,
             content_pk=content_pk,
             s1d=segments.s1d,
-            ds1d_half=segments.ds1d_half,
+            ds1d_half=segments.ds1d / 2,
             ds1d=segments.ds1d,
             kcu=objs.calculation_type[segment_idx],
             cross_id1=cross_id,
