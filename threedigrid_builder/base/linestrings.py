@@ -184,41 +184,45 @@ class PointsOnLine(Array[PointOnLine]):
             self.linestrings.the_geom[self.linestring_idx], self.s1d
         )
 
-    def neighbors(self, other: "PointsOnLine"):
-        """Return the (indices of) the points in other that are before and after self.
+    def neighbours(self, other: "PointsOnLine"):
+        """Compute neighbours in self of 'other'
+
+        Returns two arrays that index into self: the neighbours 'before' and the
+        neighbours 'after'.
 
         'other' must contain at least 1 point per linestring.
 
         If a point does not have a neigbour before it, the two returned indices
-        will be equal (both pointing to the neighbour after it). Vice versa, if it
-        does not have a neighboar after it, the two returned indices will be that
-        of the neighboar before.
-        """
-        assert other.linestrings is self.linestrings
+        will be the two points after it. Vice versa, if it does not have a neighbour after
+        it, the two returned indices will be that of the neighboar before.
 
-        idx_2 = np.searchsorted(other.s1d_cum, self.s1d_cum)
+        If there there is only 1 point on a linestring, the neighbours will be equal.
+        """
+        assert self.linestrings is other.linestrings
+
+        idx_2 = np.searchsorted(self.s1d_cum, other.s1d_cum)
         idx_1 = idx_2 - 1
         out_of_bounds_1 = idx_1 < 0
-        out_of_bounds_2 = idx_2 >= len(other)
+        out_of_bounds_2 = idx_2 >= len(self)
         idx_1[out_of_bounds_1] = 0
-        idx_2[out_of_bounds_2] = len(other) - 1
+        idx_2[out_of_bounds_2] = len(self) - 1
 
         # Fix situations where idx_1 is incorrect
         extrap_mask = (
-            other.linestring_idx[idx_1] != self.linestring_idx
+            self.linestring_idx[idx_1] != other.linestring_idx
         ) | out_of_bounds_1
         idx_1[extrap_mask] = idx_2[extrap_mask]
-        idx_2[extrap_mask] = np.clip(idx_2[extrap_mask] + 1, None, len(other) - 1)
-        equalize = extrap_mask & (other.linestring_idx[idx_2] != self.linestring_idx)
+        idx_2[extrap_mask] = np.clip(idx_2[extrap_mask] + 1, None, len(self) - 1)
+        equalize = extrap_mask & (self.linestring_idx[idx_2] != other.linestring_idx)
         idx_2[equalize] -= 1
 
         # Fix situations where idx_2 is incorrect
         extrap_mask = (
-            other.linestring_idx[idx_2] != self.linestring_idx
+            self.linestring_idx[idx_2] != other.linestring_idx
         ) | out_of_bounds_2
         idx_2[extrap_mask] = idx_1[extrap_mask]
         idx_1[extrap_mask] = np.clip(idx_2[extrap_mask] - 1, 0, None)
-        equalize = extrap_mask & (other.linestring_idx[idx_1] != self.linestring_idx)
+        equalize = extrap_mask & (self.linestring_idx[idx_1] != other.linestring_idx)
         idx_1[equalize] += 1
 
         return idx_1, idx_2

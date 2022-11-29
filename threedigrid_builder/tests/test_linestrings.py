@@ -165,3 +165,54 @@ def test_line_on_line_the_geom_multiple(two_linestrings):
         coords, [(3.0, 10.0), (9.0, 10.0), (4.0, 0), (6.0, 0.0), (6.0, 4.0)]
     )
     assert_almost_equal(index, [0, 0, 1, 1, 1])
+
+
+@pytest.mark.parametrize(
+    "s1d_1, s1d_2, expected_1, expected_2",
+    [
+        ([6.0], [6.0], [0], [0]),
+        ([6.0], [3.0], [0], [0]),
+        ([6.0], [9.0], [0], [0]),
+        ([3.0, 9.0], [0.0], [0], [1]),
+        ([3.0, 9.0], [3.0], [0], [1]),
+        ([3.0, 9.0], [6.0], [0], [1]),
+        ([3.0, 9.0], [9.0], [0], [1]),
+        ([3.0, 9.0], [12.0], [0], [1]),
+        ([3.0, 6.0, 9.0], [0.0], [0], [1]),
+        ([3.0, 6.0, 9.0], [3.0], [0], [1]),
+        ([3.0, 6.0, 9.0], [4.0], [0], [1]),
+        ([3.0, 6.0, 9.0], [6.0], [0], [1]),
+        ([3.0, 6.0, 9.0], [7.0], [1], [2]),
+        ([3.0, 6.0, 9.0], [9.0], [1], [2]),
+        ([3.0, 6.0, 9.0], [12.0], [1], [2]),
+        ([0.0, 6.0, 12.0], [0.0], [0], [1]),
+        ([0.0, 6.0, 12.0], [12.0], [1], [2]),
+    ],
+)
+def test_neighbours_one(linestrings, s1d_1, s1d_2, expected_1, expected_2):
+    points_1 = PointsOnLine.from_s1d(linestrings, s1d_1, [0] * len(s1d_1))
+    points_2 = PointsOnLine.from_s1d(linestrings, s1d_2, [0] * len(s1d_2))
+
+    actual_1, actual_2 = points_1.neighbours(points_2)
+
+    assert_array_equal(actual_1, expected_1)
+    assert_array_equal(actual_2, expected_2)
+
+
+@pytest.mark.parametrize(
+    "s1d_1, s1d_2, expected_1, expected_2",
+    [
+        ([0.0, 10.0, 0.0, 12.0], [5.0, 6.0], [0, 2], [1, 3]),
+        ([0.0, 10.0, 0.0, 12.0], [10.0, 0.0], [0, 2], [1, 3]),
+        ([0.0, 10.0, 6.0, 12.0], [10.0, 0.0], [0, 2], [1, 3]),
+        ([0.0, 5.0, 0.0, 12.0], [10.0, 0.0], [0, 2], [1, 3]),
+    ],
+)
+def test_neighbours_multiple(two_linestrings, s1d_1, s1d_2, expected_1, expected_2):
+    points_1 = PointsOnLine.from_s1d(two_linestrings, s1d_1, [0, 0, 1, 1])
+    points_2 = PointsOnLine.from_s1d(two_linestrings, s1d_2, [0, 1])
+
+    actual_1, actual_2 = points_1.neighbours(points_2)
+
+    assert_array_equal(actual_1, expected_1)
+    assert_array_equal(actual_2, expected_2)

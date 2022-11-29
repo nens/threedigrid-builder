@@ -130,7 +130,7 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
     )
 
     # Find what CS location comes after and before each midpoint
-    cs_idx_1, cs_idx_2 = queried_points.neighbors(cs_points)
+    cs_idx_1, cs_idx_2 = cs_points.neighbours(queried_points)
 
     # Map index to id and create the array that matches the input channel_id and ds
     cross_loc1 = cs_points.content_pk[cs_idx_1]
