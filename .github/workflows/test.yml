@@ -51,7 +51,7 @@ jobs:
             pins: "h5py==3.7.* sqlalchemy==1.4.40 pygeos==0.13 pyproj==3.4.*"
             extras: "[test,gridadmin]"
           # current
-          - python: '3.11'
+          - python: '3.10'
             os: ubuntu-latest
             numpy: numpy
             display_name: "latest"
@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools==63.* wheel scikit-build 
-          pip install ${{ matrix.numpy }} cython
+          pip install ${{ matrix.numpy }}
           pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} pygdal==$(gdal-config --version).*
           pip list
 
