@@ -82,7 +82,7 @@ jobs:
         shell: bash
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools==63.* wheel scikit-build 
-          pip install ${{ matrix.numpy }}
+          pip install ${{ matrix.numpy }} cython
           pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} pygdal==$(gdal-config --version).*
           pip list
 
