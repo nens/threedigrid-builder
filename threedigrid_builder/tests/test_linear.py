@@ -1,7 +1,7 @@
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
 from pygeos.testing import assert_geometries_equal
-from threedigrid_builder.base import DataClassArray
+from threedigrid_builder.base import Array
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -68,7 +68,7 @@ class LinearObject:
     sewerage_type: int
 
 
-class LinearObjects(DataClassArray[LinearObject], linear.BaseLinear):
+class LinearObjects(Array[LinearObject], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CONNECTION_NODES  # just pick one for the test
 
 

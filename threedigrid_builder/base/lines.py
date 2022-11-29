@@ -1,4 +1,4 @@
-from .array import DataClassArray
+from .array import Array
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import LineType
@@ -55,7 +55,7 @@ class Line:
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
 
 
-class Lines(DataClassArray[Line]):
+class Lines(Array[Line]):
     """Line between two calculation nodes (a.k.a. velocity point)."""
 
     def set_discharge_coefficients(self):

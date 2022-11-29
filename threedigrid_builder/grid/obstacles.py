@@ -1,4 +1,4 @@
-from threedigrid_builder.base import DataClassArray
+from threedigrid_builder.base import Array
 from threedigrid_builder.constants import LineType
 
 import numpy as np
@@ -11,7 +11,7 @@ class Obstacle:
     the_geom: pygeos.Geometry
 
 
-class Obstacles(DataClassArray[Obstacle]):
+class Obstacles(Array[Obstacle]):
     pass
 
 

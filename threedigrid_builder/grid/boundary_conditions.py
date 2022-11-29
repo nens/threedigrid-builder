@@ -1,4 +1,4 @@
-from threedigrid_builder.base import DataClassArray
+from threedigrid_builder.base import Array
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import BoundaryType
@@ -22,7 +22,7 @@ class BoundaryCondition1D:
     connection_node_id: int
 
 
-class BoundaryConditions1D(DataClassArray[BoundaryCondition1D]):
+class BoundaryConditions1D(Array[BoundaryCondition1D]):
     def apply(self, grid):
         """Apply 1D boundary conditions to a Grid
 
@@ -95,7 +95,7 @@ class BoundaryCondition2D:
     the_geom: pygeos.Geometry
 
 
-class BoundaryConditions2D(DataClassArray[BoundaryCondition2D]):
+class BoundaryConditions2D(Array[BoundaryCondition2D]):
     def get_nodes_and_lines(
         self, nodes, cell_tree, quadtree, node_id_counter, line_id_counter
     ):

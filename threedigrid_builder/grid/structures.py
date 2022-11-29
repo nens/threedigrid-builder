@@ -1,4 +1,4 @@
-from threedigrid_builder.base import DataClassArray
+from threedigrid_builder.base import Array
 from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -32,7 +32,7 @@ class Culvert:  # NL: duiker
     display_name: str
 
 
-class Culverts(DataClassArray[Culvert], linear.BaseLinear):
+class Culverts(Array[Culvert], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CULVERT
 
     def get_1d2d_properties(self, nodes, node_idx, connection_nodes):
@@ -75,7 +75,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     sewerage: int
 
 
-class WeirOrifices(DataClassArray[WeirOrifice]):
+class WeirOrifices(Array[WeirOrifice]):
     content_type = None  # subclasses need to define this
 
     def get_lines(self, connection_nodes, line_id_counter, connection_node_offset=0):

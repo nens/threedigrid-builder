@@ -1,4 +1,4 @@
-from .array import DataClassArray
+from .array import Array
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class SurfaceMap:
     cci: int  # node id
 
 
-class Surfaces(DataClassArray[Surface]):
+class Surfaces(Array[Surface]):
     """Zero-d surfaces."""
 
     def get_extent(self):
@@ -61,7 +61,7 @@ class Surfaces(DataClassArray[Surface]):
         return extent
 
 
-class SurfaceMaps(DataClassArray[SurfaceMap]):
+class SurfaceMaps(Array[SurfaceMap]):
     """Zero-d surfaces maps."""
 
     pass

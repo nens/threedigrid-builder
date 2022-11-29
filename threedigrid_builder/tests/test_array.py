@@ -1,6 +1,6 @@
 from enum import IntEnum
 from numpy.testing import assert_equal
-from threedigrid_builder.base import DataClassArray
+from threedigrid_builder.base import Array
 from threedigrid_builder.base import replace
 from threedigrid_builder.base import search
 from typing import Tuple
@@ -26,7 +26,7 @@ class Record:
     xyz: Tuple[float, float, float]
 
 
-class Records(DataClassArray[Record]):
+class Records(Array[Record]):
     """Records docstring."""
 
     def __init__(self, **kwargs):

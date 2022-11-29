@@ -1,4 +1,4 @@
-from .array import DataClassArray
+from .array import Array
 from threedigrid_builder.constants import BoundaryType
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -44,7 +44,7 @@ class Node:
     width: float
 
 
-class Nodes(DataClassArray[Node]):
+class Nodes(Array[Node]):
     """Calculation node."""
 
     @property

@@ -5,6 +5,7 @@ import typing
 
 
 from typing import _GenericAlias, Generic, TypeVar
+from numpy.typing import NDArray, ArrayLike
 
 __all__ = [
     "is_tuple_type",
@@ -12,7 +13,7 @@ __all__ = [
     "unpack_optional_type",
     "replace",
     "search",
-    "DataClassArray",
+    "Array",
 ]
 
 
@@ -110,8 +111,38 @@ def _to_ndarray(value, elem_type, expected_length):
     return arr
 
 
-class ArrayDataClass:
+T = TypeVar("T")
+
+class Array(Generic[T]):
     """A dataclass with fields ("columns") that are numpy arrays of equal size."""
+
+    def __init_subclass__(cls) -> None:
+        base = cls.__orig_bases__[0]  # type: ignore
+        (data_class,) = base.__args__
+        cls.validate_data_class(data_class)
+        super().__init_subclass__()
+        cls.data_class = data_class
+
+    @staticmethod
+    def validate_data_class(data_class):
+        fields = typing.get_type_hints(data_class)
+
+        # id must be present
+        if "id" not in fields:
+            raise TypeError("The id field is required")
+        if fields["id"] is not int:
+            raise TypeError("The id field should be of integer type")
+
+        # check the subtypes of Tuples
+        for name, elem_type in fields.items():
+            if is_tuple_type(elem_type):
+                sub_types = elem_type.__args__
+                n_columns = len(sub_types)
+                if n_columns == 0:
+                    raise TypeError("Tuple cannot contain 0 elements")
+                elem_type = sub_types[0]
+                if not all(x is elem_type for x in sub_types):
+                    raise TypeError("Tuple cannot contain mixed dtypes")
 
     def __init__(self, **kwargs):
         """Initialize the array dataclass from values.
@@ -163,7 +194,7 @@ class ArrayDataClass:
     def __len__(self):
         return len(self.id)
 
-    def __add__(self, other):
+    def __add__(self, other: T) -> T:
         """Concatenate two array dataclasses of equal type."""
         if self.__class__ is not other.__class__:
             raise TypeError(
@@ -176,7 +207,7 @@ class ArrayDataClass:
         }
         return self.__class__(**new_fields)
 
-    def id_to_index(self, id, check_exists=False):
+    def id_to_index(self, id, check_exists: bool=False):
         """Find the index of records with given id.
 
         Args:
@@ -216,14 +247,14 @@ class ArrayDataClass:
         fields = typing.get_type_hints(self.data_class)
         return {field: getattr(self, field) for field in fields}
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> T:
         """Create a masked copy of this arraay dataclass"""
         args = {}
         for field in typing.get_type_hints(self.data_class):
             args[field] = getattr(self, field)[idx]
         return self.__class__(**args)
 
-    def reorder(self, idx):
+    def reorder(self, idx) -> None:
         """Reorder self by given index, inplace.
 
         Note that this skips self.id: the records are renumbered.
@@ -233,122 +264,13 @@ class ArrayDataClass:
                 continue
             setattr(self, field, getattr(self, field)[idx])
 
-    def reorder_by(self, attr, **kwargs):
+    def reorder_by(self, attr: str, **kwargs) -> None:
         """Reorder self by given column, inplace.
 
         Note that this skips self.id: the records are renumbered.
         """
         idx = np.argsort(getattr(self, attr), **kwargs)
         self.reorder(idx)
-
-
-class array_of:
-    """A decorator to create an array dataclass from a normal dataclass.
-
-    The decorated class will have the same attributes as the provided dataclass
-    but then transformed into 1D numpy arrays.
-
-    Supported types are:
-    - float (becomes 1D numpy array of numpy.float64)
-    - int (becomes 1D numpy array of numpy.int32)
-    - bool (becomes 1D numpy array of numpy._bool)
-    - Enum (becomes 1D numpy array of numpy.int32)
-    - Tuple[<type>] (becomes 2D numpy array of <type>)
-
-    Other types are not converted to numpy dtypes and kept as python object.
-
-    The id field is required.
-
-    Example:
-    >>> class MyRecord:
-    ...     id: int
-    ...
-    >>> @array_of(MyRecord)
-    >>> class MyRecords:
-    >>>     pass
-    ...
-    >>> MyRecords(id=[1, 2, 3])
-    < array of MyRecord (len:3) >
-    """
-
-    def __init__(self, data_class):
-        """Validate the dataclass passed into the decorator"""
-        fields = typing.get_type_hints(data_class)
-
-        # id must be present
-        if "id" not in fields:
-            raise TypeError("The id field is required")
-        if fields["id"] is not int:
-            raise TypeError("The id field should be of integer type")
-
-        # check the subtypes of Tuples
-        for name, elem_type in fields.items():
-            if is_tuple_type(elem_type):
-                sub_types = elem_type.__args__
-                n_columns = len(sub_types)
-                if n_columns == 0:
-                    raise TypeError("Tuple cannot contain 0 elements")
-                elem_type = sub_types[0]
-                if not all(x is elem_type for x in sub_types):
-                    raise TypeError("Tuple cannot contain mixed dtypes")
-
-        self.data_class = data_class
-
-    def __call__(self, cls):
-        """Transform a class into a ArrayDataClass subclass.
-
-        Note that the normal decorator usage is equivalent to::
-
-        >>> class MyRecords:
-        ...     pass
-        ...
-        >>> MyRecords = array_of(MyRecord)(MyRecords)
-        """
-
-        class Wrapper(ArrayDataClass, cls):
-            pass
-
-        Wrapper.data_class = self.data_class
-
-        # transfers __name__, __doc__, etc. from cls to Wrapper
-        Wrapper.__doc__ = cls.__doc__
-        Wrapper.__name__ = cls.__name__
-        Wrapper.__qualname__ = cls.__qualname__
-        Wrapper.__module__ = cls.__module__
-        return Wrapper
-
-
-T = TypeVar("T")
-class DataClassArray(Generic[T], ArrayDataClass):
-    """A dataclass with fields ("columns") that are numpy arrays of equal size."""
-
-    def __init_subclass__(cls) -> None:
-        base = cls.__orig_bases__[0]  # type: ignore
-        (data_class,) = base.__args__
-        cls.validate_data_class(data_class)
-        super().__init_subclass__()
-        cls.data_class = data_class
-
-    @staticmethod
-    def validate_data_class(data_class):
-        fields = typing.get_type_hints(data_class)
-
-        # id must be present
-        if "id" not in fields:
-            raise TypeError("The id field is required")
-        if fields["id"] is not int:
-            raise TypeError("The id field should be of integer type")
-
-        # check the subtypes of Tuples
-        for name, elem_type in fields.items():
-            if is_tuple_type(elem_type):
-                sub_types = elem_type.__args__
-                n_columns = len(sub_types)
-                if n_columns == 0:
-                    raise TypeError("Tuple cannot contain 0 elements")
-                elem_type = sub_types[0]
-                if not all(x is elem_type for x in sub_types):
-                    raise TypeError("Tuple cannot contain mixed dtypes")
 
 def replace(arr, mapping, check_present=False):
     """Return array with its values replaced according to ``mapping``.

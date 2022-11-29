@@ -1,5 +1,5 @@
 import pygeos
-from .array import DataClassArray
+from .array import Array
 import numpy as np
 
 __all__ = ["LineStrings", "PointsOnLine", "LinesOnLine"]
@@ -27,7 +27,7 @@ class LineOnLine:
     s1d_end: float  # the position along the linestring
     linestring_idx: int
 
-class LineStrings(DataClassArray[LineString]):
+class LineStrings(Array[LineString]):
     @property
     def length(self):
         return pygeos.length(self.the_geom)
@@ -78,7 +78,7 @@ class LineStrings(DataClassArray[LineString]):
         return LinesOnLine(id=range(len(segment_idx)), s1d_start=start_s, s1d_end=end_s, linestring_idx=segment_idx)
 
 
-class PointsOnLine(DataClassArray[PointOnLine]):
+class PointsOnLine(Array[PointOnLine]):
     @classmethod
     def from_geometries(cls, linestrings: LineStrings, points, linestring_idx, **kwargs):
         s1d = pygeos.line_locate_point(linestrings.the_geom[linestring_idx], points)
@@ -137,7 +137,7 @@ class PointsOnLine(DataClassArray[PointOnLine]):
 
         return idx_1, idx_2
 
-class LinesOnLine(DataClassArray[LineOnLine]):
+class LinesOnLine(Array[LineOnLine]):
     @property
     def s1d(self):
         return (self.s1d_start + self.s1d_end) / 2

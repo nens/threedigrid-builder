@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from threedigrid_builder.base import DataClassArray
+from threedigrid_builder.base import Array
 from threedigrid_builder.base import surfaces
 from threedigrid_builder.base.nodes import Nodes
 from threedigrid_builder.constants import ContentType
@@ -350,7 +350,7 @@ class BaseSurfaces:
         )
 
 
-class Surfaces(DataClassArray[Surface], BaseSurfaces):
+class Surfaces(Array[Surface], BaseSurfaces):
     def as_grid_surfaces(self) -> surfaces.Surfaces:
         _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
 
@@ -385,7 +385,7 @@ class Surfaces(DataClassArray[Surface], BaseSurfaces):
         return super().as_grid_surfaces(extra_fields)
 
 
-class ImperviousSurfaces(DataClassArray[ImperviousSurface], BaseSurfaces):
+class ImperviousSurfaces(Array[ImperviousSurface], BaseSurfaces):
     def as_grid_surfaces(self) -> surfaces.Surfaces:
         params = SurfaceParams.from_surface_class_and_inclination(
             self.surface_class[self.unique_surfaces_mask],
