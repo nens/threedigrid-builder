@@ -1,7 +1,7 @@
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, LineStrings, PointsOnLine
+from threedigrid_builder.base import Array, PointsOnLine
 from threedigrid_builder.constants import FrictionType
 
 __all__ = ["CrossSectionLocations"]
@@ -119,12 +119,14 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
             np.empty((0,), dtype=float),
         )
 
-    linestrings = LineStrings(id=channels.id, the_geom=channels.the_geom)
     cs_points = PointsOnLine.from_geometries(
-        linestrings, cs.the_geom, channels.id_to_index(cs.channel_id), content_pk=cs.id
+        channels.linestrings,
+        cs.the_geom,
+        channels.id_to_index(cs.channel_id),
+        content_pk=cs.id,
     )
     queried_points = PointsOnLine.from_s1d(
-        linestrings, points, channels.id_to_index(channel_id)
+        channels.linestrings, points, channels.id_to_index(channel_id)
     )
 
     # Find what CS location comes after and before each midpoint

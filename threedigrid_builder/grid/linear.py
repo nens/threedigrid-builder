@@ -10,54 +10,12 @@ from threedigrid_builder.constants import CalculationType, NodeType
 COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
 
 
-def sanitize_linestrings(linestrings, points_1, points_2):
-    """Make sure that the linestrings go from points_1 to points_2.
-
-    The linestring is reversed if the distance from the linestring start to point_1
-    and v.v. is lowered.
-
-    Then, point_1 and/or point_2 are added to the linestring if the distance is larger
-    than the tolerance of 1e-8.
-
-    This function acts inplace on linestrings.
-    """
-    has_geom = np.where(pygeos.is_geometry(linestrings))[0]
-    if len(has_geom) == 0:
-        return
-
-    # reverse the geometries where necessary
-    node_start = points_1[has_geom]
-    node_end = points_2[has_geom]
-    line_start = pygeos.get_point(linestrings[has_geom], 0)
-    line_end = pygeos.get_point(linestrings[has_geom], -1)
-
-    dist_start_start = pygeos.distance(node_start, line_start)
-    dist_end_end = pygeos.distance(node_end, line_end)
-    dist_start_end = pygeos.distance(node_start, line_end)
-    dist_end_start = pygeos.distance(node_end, line_start)
-    needs_reversion = has_geom[
-        (dist_start_start > dist_start_end) & (dist_end_end > dist_end_start)
-    ]
-    if len(needs_reversion) > 0:
-        linestrings[needs_reversion] = pygeos.reverse(linestrings[needs_reversion])
-        line_start[needs_reversion] = pygeos.get_point(linestrings[needs_reversion], 0)
-        line_end[needs_reversion] = pygeos.get_point(linestrings[needs_reversion], -1)
-        dist_start_start[needs_reversion] = dist_start_end[needs_reversion]
-        dist_end_end[needs_reversion] = dist_end_start[needs_reversion]
-
-    # for the remaining geometries; add point if necessary
-    add_first = has_geom[dist_start_start > COORD_EQUAL_ATOL]
-    if len(add_first) > 0:
-        linestrings[add_first] = prepend_point(
-            linestrings[add_first], points_1[add_first]
-        )
-    add_end = has_geom[dist_end_end > COORD_EQUAL_ATOL]
-    if len(add_end) > 0:
-        linestrings[add_end] = append_point(linestrings[add_end], points_2[add_end])
-
-
 class BaseLinear:
     content_type = None  # to be defined by subclasses
+
+    @property
+    def linestrings(self):
+        return LineStrings(self.the_geom)
 
     def set_geometries(self, connection_nodes):
         """Set the_geom from connection nodes where necessary.
@@ -74,7 +32,8 @@ class BaseLinear:
         points_2 = connection_nodes.the_geom[
             connection_nodes.id_to_index(self.connection_node_end_id)
         ]
-        sanitize_linestrings(self.the_geom, points_1, points_2)
+
+        self.linestrings.sanitize(points_1, points_2)
 
         # construct the geometries where necessary
         has_no_geom = pygeos.is_missing(self.the_geom)
@@ -130,9 +89,7 @@ class BaseLinear:
         dists[self.calculation_type == CalculationType.EMBEDDED] = np.inf
 
         # interpolate the node geometries
-        points = LineStrings(id=self.id, the_geom=self.the_geom).interpolate_points(
-            dists
-        )
+        points = self.linestrings.interpolate_points(dists)
 
         # construct the nodes with available attributes
         return Nodes(
@@ -207,26 +164,26 @@ class BaseLinear:
             The lines are ordered by content_pk and then by position on the linestring.
         """
         if embedded_mode:
-            objs = self[self.calculation_type == CalculationType.EMBEDDED]
+            mask = self[self.calculation_type == CalculationType.EMBEDDED]
         else:
             objs = self[self.calculation_type != CalculationType.EMBEDDED]
 
-        # count the number of segments per object
-        node_line_idx = objs.id_to_index(nodes.content_pk)
-
-        linestrings = LineStrings(id=objs.id, the_geom=objs.the_geom)
+        # Cut the linestrings up into segments (LinesOnLine)
         node_points = PointsOnLine.from_s1d(
-            linestrings, nodes.s1d, node_line_idx, content_pk=nodes.content_pk
+            objs.linestrings,
+            nodes.s1d,
+            objs.id_to_index(nodes.content_pk),
+            content_pk=nodes.content_pk,
         )
-        segments = linestrings.segmentize(node_points)
+        segments = objs.linestrings.segmentize(node_points)
         segment_idx = segments.linestring_idx
 
         # Copy properties to segments
-        display_name = np.take(self.display_name, segment_idx)
-        zoom_category = np.take(self.zoom_category, segment_idx)
-        connection_node_start_id = np.take(self.connection_node_start_id, segment_idx)
-        connection_node_end_id = np.take(self.connection_node_end_id, segment_idx)
-        dist_calc_points = np.take(self.dist_calc_points, segment_idx)
+        display_name = np.take(objs.display_name, segment_idx)
+        zoom_category = np.take(objs.zoom_category, segment_idx)
+        connection_node_start_id = np.take(objs.connection_node_start_id, segment_idx)
+        connection_node_end_id = np.take(objs.connection_node_end_id, segment_idx)
+        dist_calc_points = np.take(objs.dist_calc_points, segment_idx)
 
         # set the right node indices for each segment
         first_idx, last_idx = counts_to_ranges(np.bincount(segments.linestring_idx))
@@ -306,7 +263,7 @@ class BaseLinear:
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
-            line_geometries=segments.as_geometries(self.the_geom),
+            line_geometries=segments.as_geometries(objs.the_geom),
             line=line,
             content_type=objs.content_type,
             content_pk=content_pk,
@@ -400,27 +357,3 @@ class BaseLinear:
         result[np.isnan(result)] = left[np.isnan(result)]
         result[np.isnan(result)] = right[np.isnan(result)]
         return result
-
-
-def _add_point(linestrings, points, at=0):
-    """Append or prepend points to linestrings"""
-    counts = pygeos.get_num_coordinates(linestrings)
-    coords, index = pygeos.get_coordinates(linestrings, return_index=True)
-    start, end = counts_to_ranges(counts)
-    if at == 0:
-        insert_at = start
-    elif at == -1:
-        insert_at = end
-    else:
-        raise ValueError(f"Cannot insert at {at}")
-    new_coords = np.insert(coords, insert_at, pygeos.get_coordinates(points), axis=0)
-    new_index = np.insert(index, insert_at, np.arange(len(insert_at)))
-    return pygeos.linestrings(new_coords, indices=new_index)
-
-
-def prepend_point(linestrings, points):
-    return _add_point(linestrings, points, at=0)
-
-
-def append_point(linestrings, points):
-    return _add_point(linestrings, points, at=-1)

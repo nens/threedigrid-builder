@@ -8,17 +8,18 @@ from threedigrid_builder.base import LinesOnLine, LineStrings, PointsOnLine
 
 @pytest.fixture
 def linestrings():
-    return LineStrings(id=[1], the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
+    return LineStrings(pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
 
 
 @pytest.fixture
 def two_linestrings():
     return LineStrings(
-        id=[1, 2],
-        the_geom=[
-            pygeos.linestrings([(0, 10), (10, 10)]),
-            pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
-        ],
+        np.array(
+            [
+                pygeos.linestrings([(0, 10), (10, 10)]),
+                pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
+            ]
+        )
     )
 
 

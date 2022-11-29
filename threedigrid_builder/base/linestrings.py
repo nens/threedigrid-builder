@@ -33,7 +33,14 @@ class LineOnLine:
     linestring_idx: int
 
 
-class LineStrings(Array[LineString]):
+class LineStrings:
+    def __init__(self, geometries):
+        assert isinstance(geometries, np.ndarray)
+        self.the_geom = geometries
+
+    def __len__(self):
+        return len(self.the_geom)
+
     @property
     def length(self):
         return pygeos.length(self.the_geom)
@@ -86,6 +93,59 @@ class LineStrings(Array[LineString]):
             s1d_end=end_s,
             linestring_idx=segment_idx,
         )
+
+    def sanitize(self, points_1, points_2):
+        """Make sure that the self go from points_1 to points_2.
+
+        The linestring is reversed if the distance from the linestring start to point_1
+        and v.v. is lowered.
+
+        Then, point_1 and/or point_2 are added to the linestring if the distance is larger
+        than the tolerance of 1e-8.
+
+        This function acts inplace on self.
+        """
+        has_geom = np.where(pygeos.is_geometry(self.the_geom))[0]
+        if len(has_geom) == 0:
+            return
+
+        # reverse the geometries where necessary
+        node_start = points_1[has_geom]
+        node_end = points_2[has_geom]
+        line_start = pygeos.get_point(self.the_geom[has_geom], 0)
+        line_end = pygeos.get_point(self.the_geom[has_geom], -1)
+
+        dist_start_start = pygeos.distance(node_start, line_start)
+        dist_end_end = pygeos.distance(node_end, line_end)
+        dist_start_end = pygeos.distance(node_start, line_end)
+        dist_end_start = pygeos.distance(node_end, line_start)
+        needs_reversion = has_geom[
+            (dist_start_start > dist_start_end) & (dist_end_end > dist_end_start)
+        ]
+        if len(needs_reversion) > 0:
+            self.the_geom[needs_reversion] = pygeos.reverse(
+                self.the_geom[needs_reversion]
+            )
+            line_start[needs_reversion] = pygeos.get_point(
+                self.the_geom[needs_reversion], 0
+            )
+            line_end[needs_reversion] = pygeos.get_point(
+                self.the_geom[needs_reversion], -1
+            )
+            dist_start_start[needs_reversion] = dist_start_end[needs_reversion]
+            dist_end_end[needs_reversion] = dist_end_start[needs_reversion]
+
+        # for the remaining geometries; add point if necessary
+        add_first = has_geom[dist_start_start > COORD_EQUAL_ATOL]
+        if len(add_first) > 0:
+            self.the_geom[add_first] = prepend_point(
+                self.the_geom[add_first], points_1[add_first]
+            )
+        add_end = has_geom[dist_end_end > COORD_EQUAL_ATOL]
+        if len(add_end) > 0:
+            self.the_geom[add_end] = append_point(
+                self.the_geom[add_end], points_2[add_end]
+            )
 
 
 class PointsOnLine(Array[PointOnLine]):
@@ -353,3 +413,27 @@ def segment_start_end(linestrings, segment_counts, dist_to_start):
     end_s[last_idx] = pygeos.length(linestrings)
     end_s[np.isnan(end_s)] = dist_to_start
     return start_s, end_s, counts_to_row_index(segment_counts)
+
+
+def _add_point(linestrings, points, at=0):
+    """Append or prepend points to linestrings"""
+    counts = pygeos.get_num_coordinates(linestrings)
+    coords, index = pygeos.get_coordinates(linestrings, return_index=True)
+    start, end = counts_to_ranges(counts)
+    if at == 0:
+        insert_at = start
+    elif at == -1:
+        insert_at = end
+    else:
+        raise ValueError(f"Cannot insert at {at}")
+    new_coords = np.insert(coords, insert_at, pygeos.get_coordinates(points), axis=0)
+    new_index = np.insert(index, insert_at, np.arange(len(insert_at)))
+    return pygeos.linestrings(new_coords, indices=new_index)
+
+
+def prepend_point(linestrings, points):
+    return _add_point(linestrings, points, at=0)
+
+
+def append_point(linestrings, points):
+    return _add_point(linestrings, points, at=-1)
