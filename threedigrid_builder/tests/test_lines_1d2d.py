@@ -1,23 +1,20 @@
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import ConnectedPoints
-from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import Pipes
+import itertools
 from unittest import mock
 
-import itertools
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_array_equal
 
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import (
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import Channels, ConnectedPoints, Culverts, Grid, Pipes
 
 CN = ContentType.TYPE_V2_CONNECTION_NODES
 CH = ContentType.TYPE_V2_CHANNEL

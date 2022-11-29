@@ -1,13 +1,12 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import Pipes
 from unittest import mock
 
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
+
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.grid import ConnectionNodes, Pipes
 
 
 @pytest.fixture

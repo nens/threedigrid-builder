@@ -1,17 +1,11 @@
-from threedigrid_builder.base import Lines, LineStrings, PointsOnLine
-from threedigrid_builder.base.linestrings import (
-    counts_to_column_index,
-    counts_to_ranges,
-    counts_to_row_index,
-)
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import NodeType
-
 import itertools
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Lines, LineStrings, Nodes, PointsOnLine
+from threedigrid_builder.base.linestrings import counts_to_ranges
+from threedigrid_builder.constants import CalculationType, NodeType
 
 COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
 
@@ -219,7 +213,7 @@ class BaseLinear:
 
         # count the number of segments per object
         node_line_idx = objs.id_to_index(nodes.content_pk)
-        
+
         linestrings = LineStrings(id=objs.id, the_geom=objs.the_geom)
         node_points = PointsOnLine.from_s1d(
             linestrings, nodes.s1d, node_line_idx, content_pk=nodes.content_pk

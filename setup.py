@@ -1,17 +1,15 @@
-from setuptools import find_packages
-
-import pathlib
-import sys
-import shutil
 import os
+import pathlib
+import shutil
+import sys
+
+from setuptools import find_packages
 
 try:
     from skbuild import setup
 except ImportError:
     if not any(x in sys.argv for x in {"sdist", "--version", "egg_info"}):
         sys.exit("ERROR: skbuild is required to build threedigrid-builder from source.")
-    from setuptools import Extension
-    from setuptools import setup
 
 ext_modules = []
 
@@ -100,7 +98,7 @@ setup(
         "License :: Other/Proprietary License",
     ],
     zip_safe=False,
-    entry_points = {
-        'console_scripts': ['threedigrid-builder=threedigrid_builder.cli:run'],
-    }
+    entry_points={
+        "console_scripts": ["threedigrid-builder=threedigrid_builder.cli:run"],
+    },
 )

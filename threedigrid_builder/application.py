@@ -5,24 +5,23 @@ Use cases orchestrate the flow of data to and from the domain entities.
 This layer depends on the interfaces as well as on the domain layer.
 """
 
+import itertools
+import logging
 from pathlib import Path
+from typing import Callable, Optional
+
 from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import QuadTree
+from threedigrid_builder.grid import Grid, QuadTree
 from threedigrid_builder.grid.zero_d import ImperviousSurfaces
-from threedigrid_builder.interface import DictOut
-from threedigrid_builder.interface import GDALInterface
-from threedigrid_builder.interface import GeopackageOut
-from threedigrid_builder.interface import GridAdminOut
-from threedigrid_builder.interface import SQLite
-from typing import Callable
-from typing import Optional
-
-import itertools
-import logging
-
+from threedigrid_builder.interface import (
+    DictOut,
+    GDALInterface,
+    GeopackageOut,
+    GridAdminOut,
+    SQLite,
+)
 
 __all__ = ["make_grid", "make_gridadmin"]
 
@@ -208,7 +207,7 @@ def make_gridadmin(
     out_path: Optional[Path] = None,
     meta: dict = None,
     progress_callback: Optional[Callable[[float, str], None]] = None,
-    upgrade: bool=False,
+    upgrade: bool = False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -259,7 +258,7 @@ def make_gridadmin(
         dem_path,
         meta=meta,
         progress_callback=progress_callback,
-        upgrade=upgrade
+        upgrade=upgrade,
     )
 
     progress_callback(0.99, "Writing gridadmin...")

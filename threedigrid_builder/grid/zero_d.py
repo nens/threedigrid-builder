@@ -1,15 +1,12 @@
 from dataclasses import dataclass
-from threedigrid_builder.base import array_of
-from threedigrid_builder.base import surfaces
-from threedigrid_builder.base.nodes import Nodes
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import SurfaceClass
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, surfaces
+from threedigrid_builder.base.nodes import Nodes
+from threedigrid_builder.constants import ContentType, SurfaceClass
 
 __all__ = ["Surfaces", "ImperviousSurfaces"]
 
@@ -350,8 +347,7 @@ class BaseSurfaces:
         )
 
 
-@array_of(Surface)
-class Surfaces(BaseSurfaces):
+class Surfaces(Array[Surface], BaseSurfaces):
     def as_grid_surfaces(self) -> surfaces.Surfaces:
         _, unique_surfaces_mask = np.unique(self.surface_id, return_index=True)
 
@@ -386,8 +382,7 @@ class Surfaces(BaseSurfaces):
         return super().as_grid_surfaces(extra_fields)
 
 
-@array_of(ImperviousSurface)
-class ImperviousSurfaces(BaseSurfaces):
+class ImperviousSurfaces(Array[ImperviousSurface], BaseSurfaces):
     def as_grid_surfaces(self) -> surfaces.Surfaces:
         params = SurfaceParams.from_surface_class_and_inclination(
             self.surface_class[self.unique_surfaces_mask],

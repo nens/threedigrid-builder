@@ -1,13 +1,15 @@
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid.zero_d import ImperviousSurfaces
-from threedigrid_builder.grid.zero_d import SURFACE_CLASS_MAP
-from threedigrid_builder.grid.zero_d import SURFACE_INCLINATION_MAP
-from threedigrid_builder.grid.zero_d import SURFACE_TYPE_PROPERTIES
-from threedigrid_builder.grid.zero_d import SurfaceParams
-from threedigrid_builder.grid.zero_d import Surfaces
-
 import numpy as np
 import pygeos
+
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid.zero_d import (
+    ImperviousSurfaces,
+    SURFACE_CLASS_MAP,
+    SURFACE_INCLINATION_MAP,
+    SURFACE_TYPE_PROPERTIES,
+    SurfaceParams,
+    Surfaces,
+)
 
 
 def test_surface_params():

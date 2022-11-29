@@ -1,24 +1,21 @@
 from dataclasses import fields
-from threedigrid_builder.base import Breaches
-from threedigrid_builder.base import is_int_enum
-from threedigrid_builder.base import is_tuple_type
-from threedigrid_builder.base import Levees
-from threedigrid_builder.base import OutputInterface
-from threedigrid_builder.base import search
-from threedigrid_builder.base import unpack_optional_type
-from threedigrid_builder.base.surfaces import SurfaceMaps
-from threedigrid_builder.base.surfaces import Surfaces
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import GridMeta
-from threedigrid_builder.grid import QuadtreeStats
-from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import (
+    Breaches,
+    is_int_enum,
+    is_tuple_type,
+    Levees,
+    OutputInterface,
+    search,
+    unpack_optional_type,
+)
+from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
+from threedigrid_builder.constants import ContentType, LineType, NodeType
+from threedigrid_builder.grid import Grid, GridMeta, QuadtreeStats
+from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 try:
     import h5py

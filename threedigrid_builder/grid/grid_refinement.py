@@ -1,10 +1,8 @@
-from osgeo import gdal
-from osgeo import gdal_array
-from osgeo import ogr
-from threedigrid_builder.base import array_of
-
 import numpy as np
 import pygeos
+from osgeo import gdal, gdal_array, ogr
+
+from threedigrid_builder.base import Array
 
 
 class GridRefinement:
@@ -15,8 +13,7 @@ class GridRefinement:
     the_geom: pygeos.Geometry
 
 
-@array_of(GridRefinement)
-class GridRefinements:
+class GridRefinements(Array[GridRefinement]):
     def rasterize(self, **kwargs):
         """Return a raster with refinement_level at cells where a refinement intersect.
 

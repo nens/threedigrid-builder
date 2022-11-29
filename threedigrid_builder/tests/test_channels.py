@@ -1,12 +1,11 @@
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import CrossSectionLocations
-
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_array_equal
+
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid import Channels, CrossSectionLocations
 
 
 @pytest.fixture

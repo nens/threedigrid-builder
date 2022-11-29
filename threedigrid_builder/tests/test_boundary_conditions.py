@@ -1,20 +1,20 @@
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import BoundaryConditions1D
-from threedigrid_builder.grid import BoundaryConditions2D
-from threedigrid_builder.grid import Grid
+import itertools
 from unittest import mock
 
-import itertools
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_array_equal
+
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import (
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import BoundaryConditions1D, BoundaryConditions2D, Grid
 
 
 @pytest.fixture

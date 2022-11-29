@@ -1,17 +1,17 @@
-from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import BoundaryType
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-
 import itertools
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, Lines, Nodes
+from threedigrid_builder.constants import (
+    BoundaryType,
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["BoundaryConditions1D", "BoundaryConditions2D"]
 
@@ -22,8 +22,7 @@ class BoundaryCondition1D:
     connection_node_id: int
 
 
-@array_of(BoundaryCondition1D)
-class BoundaryConditions1D:
+class BoundaryConditions1D(Array[BoundaryCondition1D]):
     def apply(self, grid):
         """Apply 1D boundary conditions to a Grid
 
@@ -96,8 +95,7 @@ class BoundaryCondition2D:
     the_geom: pygeos.Geometry
 
 
-@array_of(BoundaryCondition2D)
-class BoundaryConditions2D:
+class BoundaryConditions2D(Array[BoundaryCondition2D]):
     def get_nodes_and_lines(
         self, nodes, cell_tree, quadtree, node_id_counter, line_id_counter
     ):

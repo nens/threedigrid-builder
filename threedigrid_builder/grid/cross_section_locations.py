@@ -1,9 +1,8 @@
-from threedigrid_builder.base import array_of, LineStrings, PointsOnLine
-from threedigrid_builder.constants import FrictionType
-
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, LineStrings, PointsOnLine
+from threedigrid_builder.constants import FrictionType
 
 __all__ = ["CrossSectionLocations"]
 
@@ -20,8 +19,7 @@ class CrossSectionLocation:
     friction_value: float
 
 
-@array_of(CrossSectionLocation)
-class CrossSectionLocations:
+class CrossSectionLocations(Array[CrossSectionLocation]):
     def apply_to_lines(self, lines, channels, extrapolate=False):
         """Apply cross section locations to lines
 

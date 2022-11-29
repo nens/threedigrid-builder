@@ -1,8 +1,8 @@
-from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import LineType
-
 import numpy as np
 import pygeos
+
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import LineType
 
 
 class Obstacle:
@@ -11,8 +11,7 @@ class Obstacle:
     the_geom: pygeos.Geometry
 
 
-@array_of(Obstacle)
-class Obstacles:
+class Obstacles(Array[Obstacle]):
     pass
 
 

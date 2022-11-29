@@ -1,14 +1,11 @@
-from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Lines
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.grid import linear
-
 import itertools
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, Lines
+from threedigrid_builder.constants import CalculationType, ContentType, FrictionType
+from threedigrid_builder.grid import linear
 
 __all__ = ["Culverts", "Orifices", "Weirs"]
 
@@ -32,8 +29,7 @@ class Culvert:  # NL: duiker
     display_name: str
 
 
-@array_of(Culvert)
-class Culverts(linear.BaseLinear):
+class Culverts(Array[Culvert], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CULVERT
 
     def get_1d2d_properties(self, nodes, node_idx, connection_nodes):
@@ -76,8 +72,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     sewerage: int
 
 
-@array_of(WeirOrifice)
-class WeirOrifices:
+class WeirOrifices(Array[WeirOrifice]):
     content_type = None  # subclasses need to define this
 
     def get_lines(self, connection_nodes, line_id_counter, connection_node_offset=0):

@@ -1,18 +1,14 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from pygeos.testing import assert_geometries_equal
-from threedigrid_builder.base import array_of
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import linear
-
 import itertools
+
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
+from pygeos.testing import assert_geometries_equal
+
+from threedigrid_builder.base import Array, Nodes
+from threedigrid_builder.constants import CalculationType, ContentType, NodeType
+from threedigrid_builder.grid import ConnectionNodes, linear
 
 
 @pytest.fixture(scope="session")
@@ -68,8 +64,7 @@ class LinearObject:
     sewerage_type: int
 
 
-@array_of(LinearObject)
-class LinearObjects(linear.BaseLinear):
+class LinearObjects(Array[LinearObject], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CONNECTION_NODES  # just pick one for the test
 
 

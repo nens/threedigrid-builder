@@ -1,7 +1,6 @@
-from threedigrid_builder.base import RasterInterface
-
 import numpy as np
 
+from threedigrid_builder.base import RasterInterface
 
 try:
     from osgeo import gdal

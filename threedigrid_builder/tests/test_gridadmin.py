@@ -1,10 +1,11 @@
 from copy import copy
-from numpy.testing import assert_equal
-from threedigrid_builder.interface import GridAdminOut
 
 import h5py
 import numpy as np
 import pytest
+from numpy.testing import assert_equal
+
+from threedigrid_builder.interface import GridAdminOut
 
 
 @pytest.fixture(scope="session")

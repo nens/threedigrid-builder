@@ -1,38 +1,43 @@
-import pygeos
-from .array import array_of
 import numpy as np
+import pygeos
+
+from .array import Array
 
 __all__ = ["LineStrings", "PointsOnLine", "LinesOnLine"]
 
 
 COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
 
+
 class LineString:
     id: int
     the_geom: pygeos.Geometry  # LineString
 
-    
+
 class PointOnLine:
     """A point determined by its position 'along' a linestring"""
+
     id: int  # just a unique number, mostly unused
     content_pk: int  # externally determined id (e.g. cs location id)
     s1d: float  # the position along the linestring
     s1d_cum: float
     linestring_idx: int
 
+
 class LineOnLine:
     """A line determined by its position 'along' a linestring"""
+
     id: int  # just a unique number, mostly unused
     s1d_start: float  # the position along the linestring
     s1d_end: float  # the position along the linestring
     linestring_idx: int
 
-@array_of(LineString)
-class LineStrings:
+
+class LineStrings(Array[LineString]):
     @property
     def length(self):
         return pygeos.length(self.the_geom)
-    
+
     @property
     def cum_length(self):
         result = np.zeros(len(self) + 1, dtype=float)
@@ -41,7 +46,7 @@ class LineStrings:
 
     def locate_points(self, geoms, ids, linestring_ids) -> "PointsOnLine":
         return PointsOnLine.from_geometries(self, geoms, ids, linestring_ids)
-    
+
     def interpolate_points(self, desired_segment_size):
         """Compute points that divide linestrings into segments of equal length.
 
@@ -66,26 +71,31 @@ class LineStrings:
         dist_to_start = (j + 1) * segment_size[i]
 
         return PointsOnLine.from_s1d(self, dist_to_start, i)
-    
+
     def segmentize(self, points: "PointsOnLine") -> "LineOnLine":
-        """Return lines that result from splitting self at 'points'
-        """
+        """Return lines that result from splitting self at 'points'"""
         segment_counts = np.bincount(points.linestring_idx, minlength=len(self)) + 1
 
         # cut the channel geometries into segment geometries
         start_s, end_s, segment_idx = segment_start_end(
             self.the_geom, segment_counts, points.s1d
         )
-        return LinesOnLine(id=range(len(segment_idx)), s1d_start=start_s, s1d_end=end_s, linestring_idx=segment_idx)
+        return LinesOnLine(
+            id=range(len(segment_idx)),
+            s1d_start=start_s,
+            s1d_end=end_s,
+            linestring_idx=segment_idx,
+        )
 
 
-@array_of(PointOnLine)
-class PointsOnLine:
+class PointsOnLine(Array[PointOnLine]):
     @classmethod
-    def from_geometries(cls, linestrings: LineStrings, points, linestring_idx, **kwargs):
+    def from_geometries(
+        cls, linestrings: LineStrings, points, linestring_idx, **kwargs
+    ):
         s1d = pygeos.line_locate_point(linestrings.the_geom[linestring_idx], points)
         return cls.from_s1d(linestrings, s1d, linestring_idx, **kwargs)
-    
+
     @classmethod
     def from_s1d(cls, linestrings: LineStrings, s1d, linestring_idx, **kwargs):
         if np.any(~np.isfinite(s1d)):
@@ -99,16 +109,13 @@ class PointsOnLine:
         )
         result.reorder_by("s1d_cum")
         return result
-    
+
     def as_geometries(self, line_geoms):
-        return pygeos.line_interpolate_point(
-            line_geoms[self.linestring_idx],
-            self.s1d
-        )
-    
+        return pygeos.line_interpolate_point(line_geoms[self.linestring_idx], self.s1d)
+
     def neighbors(self, other: "PointOnLine"):
         """Return the (indices of) the points that are before and after self.
-                
+
         'other' must contain at least 1 point per linestring.
 
         If a point does not have a neigbour before it, the two returned indices
@@ -124,14 +131,18 @@ class PointsOnLine:
         idx_2[out_of_bounds_2] = len(other) - 1
 
         # Fix situations where idx_1 is incorrect
-        extrap_mask = (other.linestring_idx[idx_1] != self.linestring_idx) | out_of_bounds_1
+        extrap_mask = (
+            other.linestring_idx[idx_1] != self.linestring_idx
+        ) | out_of_bounds_1
         idx_1[extrap_mask] = idx_2[extrap_mask]
         idx_2[extrap_mask] = np.clip(idx_2[extrap_mask] + 1, None, len(other) - 1)
         equalize = extrap_mask & (other.linestring_idx[idx_2] != self.linestring_idx)
         idx_2[equalize] -= 1
 
         # Fix situations where idx_2 is incorrect
-        extrap_mask = (other.linestring_idx[idx_2] != self.linestring_idx) | out_of_bounds_2
+        extrap_mask = (
+            other.linestring_idx[idx_2] != self.linestring_idx
+        ) | out_of_bounds_2
         idx_2[extrap_mask] = idx_1[extrap_mask]
         idx_1[extrap_mask] = np.clip(idx_2[extrap_mask] - 1, 0, None)
         equalize = extrap_mask & (other.linestring_idx[idx_1] != self.linestring_idx)
@@ -139,12 +150,12 @@ class PointsOnLine:
 
         return idx_1, idx_2
 
-@array_of(LineOnLine)
-class LinesOnLine:
+
+class LinesOnLine(Array[LineOnLine]):
     @property
     def s1d(self):
         return (self.s1d_start + self.s1d_end) / 2
-    
+
     @property
     def ds1d(self):
         return self.s1d_end - self.s1d_start
@@ -154,7 +165,9 @@ class LinesOnLine:
         return self.ds1d / 2
 
     def as_geometries(self, line_geoms):
-        return line_substring(line_geoms, self.s1d_start, self.s1d_end, self.linestring_idx)
+        return line_substring(
+            line_geoms, self.s1d_start, self.s1d_end, self.linestring_idx
+        )
 
 
 def counts_to_ranges(counts):
@@ -224,7 +237,6 @@ def counts_to_column_index(counts):
         return np.empty((0,), dtype=int)
     start, stop = counts_to_ranges(counts)
     return np.arange(stop[-1]) - np.repeat(start, counts)
-
 
 
 def line_substring(linestrings, start, end, index=None):

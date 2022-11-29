@@ -1,9 +1,9 @@
-from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import Material
 from typing import Tuple
 
 import pygeos
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import Material
 
 __all__ = ["Levees", "Breaches"]
 
@@ -18,8 +18,7 @@ class Breach:
     levbr: float  # levee.max_breach_depth
 
 
-@array_of(Breach)
-class Breaches:
+class Breaches(Array[Breach]):
     pass
 
 
@@ -31,6 +30,5 @@ class Levee:
     material: Material
 
 
-@array_of(Levee)
-class Levees:
+class Levees(Array[Levee]):
     pass

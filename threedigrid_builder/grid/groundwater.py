@@ -1,11 +1,10 @@
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-
 import itertools
+
 import numpy as np
+
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import LineType, NodeType
+from threedigrid_builder.exceptions import SchematisationError
 
 
 def get_nodes(nodes, node_id_counter):

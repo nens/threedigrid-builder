@@ -1,11 +1,10 @@
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.base import Pumps
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.exceptions import SchematisationError
-
 import numpy as np
 import pytest
+from numpy.testing import assert_array_equal
+
+from threedigrid_builder.base import Nodes, Pumps
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.exceptions import SchematisationError
 
 
 @pytest.fixture

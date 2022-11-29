@@ -1,15 +1,11 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_equal
-from threedigrid_builder.base import Breaches
-from threedigrid_builder.base import Levees
-from threedigrid_builder.base import Lines
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import Material
-from threedigrid_builder.grid import ConnectedPoints
-
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_equal
+
+from threedigrid_builder.base import Breaches, Levees, Lines
+from threedigrid_builder.constants import ContentType, Material
+from threedigrid_builder.grid import ConnectedPoints
 
 
 @pytest.fixture

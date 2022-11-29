@@ -1,12 +1,11 @@
-from numpy.testing import assert_almost_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.grid import DemAverageAreas
-from threedigrid_builder.grid.grid import Grid
-
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal
+
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.grid import DemAverageAreas
+from threedigrid_builder.grid.grid import Grid
 
 
 @pytest.fixture

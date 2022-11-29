@@ -1,12 +1,11 @@
-from .array import array_of
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
 from typing import Tuple
 
 import numpy as np
 import pygeos
 
+from threedigrid_builder.constants import CalculationType, ContentType, LineType
+
+from .array import Array
 
 __all__ = ["Lines"]
 
@@ -55,8 +54,7 @@ class Line:
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
 
 
-@array_of(Line)
-class Lines:
+class Lines(Array[Line]):
     """Line between two calculation nodes (a.k.a. velocity point)."""
 
     def set_discharge_coefficients(self):

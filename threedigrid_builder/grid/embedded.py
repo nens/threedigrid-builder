@@ -1,15 +1,14 @@
-from .linear import counts_to_ranges
-from collections import defaultdict
-from collections import deque
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.exceptions import SchematisationError
-
 import itertools
+from collections import defaultdict, deque
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import CalculationType, ContentType
+from threedigrid_builder.exceptions import SchematisationError
+
+from .linear import counts_to_ranges
 
 # This is for judging from what cell to what cell a channel-cell edge intersection goes:
 VPOINT_EPSILON = 1e-7
