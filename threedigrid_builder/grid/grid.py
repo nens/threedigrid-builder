@@ -1,3 +1,19 @@
+from dataclasses import dataclass, fields
+from typing import Optional, Tuple, Union
+
+import numpy as np
+import pygeos
+from osgeo import osr
+from pyproj import CRS
+from pyproj.exceptions import CRSError
+
+import threedigrid_builder
+from threedigrid_builder.base import Lines, Nodes, Pumps, SurfaceMaps, Surfaces
+from threedigrid_builder.base.settings import GridSettings, TablesSettings
+from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
+from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import zero_d
+
 from . import connection_nodes as connection_nodes_module
 from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
@@ -5,34 +21,7 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
-from dataclasses import dataclass
-from dataclasses import fields
-from osgeo import osr
-from pyproj import CRS
-from pyproj.exceptions import CRSError
-from .levees import Breaches
-from .levees import Levees
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import SurfaceMaps
-from threedigrid_builder.base import Surfaces
-from threedigrid_builder.base.settings import GridSettings
-from threedigrid_builder.base.settings import TablesSettings
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.constants import WKT_VERSION
-from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import zero_d
-from typing import Optional
-from typing import Tuple
-from typing import Union
-
-import numpy as np
-import pygeos
-import threedigrid_builder
-
+from .levees import Breaches, Levees
 
 osr.UseExceptions()
 

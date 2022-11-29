@@ -1,6 +1,6 @@
-from threedigrid_builder.base import array_of
-
 import pygeos
+
+from threedigrid_builder.base import Array
 
 
 class DemAverageArea:
@@ -8,8 +8,7 @@ class DemAverageArea:
     the_geom: pygeos.Geometry
 
 
-@array_of(DemAverageArea)
-class DemAverageAreas:
+class DemAverageAreas(Array[DemAverageArea]):
     pass
 
 

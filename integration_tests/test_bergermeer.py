@@ -1,17 +1,14 @@
-import pytest
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.application import make_grid
-from threedigrid_builder.constants import CrossSectionShape
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
+import pathlib
 from unittest.mock import Mock
 
 import h5py
 import numpy as np
-import pathlib
-import threedigrid_builder
+import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
 
+import threedigrid_builder
+from threedigrid_builder.application import make_grid
+from threedigrid_builder.constants import CrossSectionShape, LineType, NodeType
 
 project_root = pathlib.Path(__file__).resolve().parent.parent
 unittests_data_path = project_root / "threedigrid_builder/tests/data"

@@ -1,6 +1,6 @@
-from threedigrid_builder.interface import DictOut
-
 import pytest
+
+from threedigrid_builder.interface import DictOut
 
 
 @pytest.fixture(scope="session")

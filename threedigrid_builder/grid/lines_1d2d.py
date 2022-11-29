@@ -1,17 +1,18 @@
-from threedigrid_builder.base import array_of
-from .levees import Breaches
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import search
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-
 import itertools
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, Lines, search
+from threedigrid_builder.constants import (
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+from threedigrid_builder.exceptions import SchematisationError
+
+from .levees import Breaches
 
 __all__ = ["ConnectedPoints"]
 
@@ -40,8 +41,7 @@ class ConnectedPoint:
     levee_id: int
 
 
-@array_of(ConnectedPoint)
-class ConnectedPoints:
+class ConnectedPoints(Array[ConnectedPoint]):
     def get_node_index(self, nodes, channels, pipes, culverts):
         """Find the node index to which connected points belong.
 

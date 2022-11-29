@@ -1,12 +1,10 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_equal
-from pygeos.testing import assert_geometries_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_equal
+from pygeos.testing import assert_geometries_equal
+
+from threedigrid_builder.base import Lines, Nodes
 
 
 @pytest.fixture

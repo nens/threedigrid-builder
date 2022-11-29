@@ -1,16 +1,14 @@
-from numpy import nan
-from numpy.testing import assert_almost_equal
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid.initial_waterlevels import (
-    compute_initial_waterlevels,
-)
 from unittest import mock
 
 import pygeos
 import pytest
+from numpy import nan
+from numpy.testing import assert_almost_equal
+
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid import Channels, ConnectionNodes
+from threedigrid_builder.grid.initial_waterlevels import compute_initial_waterlevels
 
 
 @pytest.fixture

@@ -1,12 +1,15 @@
-from .array import array_of
-from threedigrid_builder.constants import BoundaryType
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import NodeType
 from typing import Tuple
 
 import numpy as np
 
+from threedigrid_builder.constants import (
+    BoundaryType,
+    CalculationType,
+    ContentType,
+    NodeType,
+)
+
+from .array import Array
 
 __all__ = ["Nodes"]
 
@@ -44,8 +47,7 @@ class Node:
     width: float
 
 
-@array_of(Node)
-class Nodes:
+class Nodes(Array[Node]):
     """Calculation node."""
 
     @property

@@ -1,20 +1,18 @@
-from threedigrid_builder.grid import Breaches
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.base import OutputInterface
-from threedigrid_builder.constants import BoundaryType
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import Material
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import GridMeta
-
 import dataclasses
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Lines, Nodes, OutputInterface
+from threedigrid_builder.constants import (
+    BoundaryType,
+    CalculationType,
+    ContentType,
+    LineType,
+    Material,
+    NodeType,
+)
+from threedigrid_builder.grid import Breaches, Grid, GridMeta
 
 __all__ = ["DictOut"]
 

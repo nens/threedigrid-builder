@@ -1,13 +1,9 @@
-from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import linear
-from threedigrid_builder.grid.cross_section_locations import (
-    compute_bottom_level,
-)
-
 import pygeos
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import CalculationType, ContentType
+from threedigrid_builder.grid import linear
+from threedigrid_builder.grid.cross_section_locations import compute_bottom_level
 
 __all__ = ["Channels"]
 
@@ -24,8 +20,7 @@ class Channel:
     zoom_category: int
 
 
-@array_of(Channel)
-class Channels(linear.BaseLinear):
+class Channels(Array[Channel], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CHANNEL
 
     def get_1d2d_properties(self, nodes, node_idx, locations):

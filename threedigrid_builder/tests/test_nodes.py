@@ -1,7 +1,7 @@
+import pytest
+
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import NodeType
-
-import pytest
 
 
 @pytest.fixture

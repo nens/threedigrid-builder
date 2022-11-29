@@ -1,52 +1,47 @@
 # Module containing functions to read from the SQLite
 
-from condenser import NumpyQuery
+import pathlib
 from contextlib import contextmanager
 from enum import Enum
 from functools import lru_cache
+from typing import Callable, ContextManager, Tuple
+
+import numpy as np
+import pygeos
+from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import cast
-from sqlalchemy import inspect
-from sqlalchemy import Integer
+from sqlalchemy import cast, inspect, Integer
 from sqlalchemy.orm import Session
 from threedi_modelchecker.schema import ModelSchema
 from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
-from threedigrid_builder.base import GridSettings
-from threedigrid_builder.grid import Levees, PotentialBreaches
-from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import InitializationType
-from threedigrid_builder.constants import LineType
+
+from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
+from threedigrid_builder.constants import ContentType, InitializationType, LineType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import BoundaryConditions1D
-from threedigrid_builder.grid import BoundaryConditions2D
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import ConnectedPoints
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import CrossSectionDefinitions
-from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import DemAverageAreas
-from threedigrid_builder.grid import GridRefinements
-from threedigrid_builder.grid import ImperviousSurfaces
-from threedigrid_builder.grid import Obstacles
-from threedigrid_builder.grid import Orifices
-from threedigrid_builder.grid import Pipes
-from threedigrid_builder.grid import Surfaces
-from threedigrid_builder.grid import Weirs
-from threedigrid_builder.grid import Windshieldings
-from typing import Callable
-from typing import ContextManager
-from typing import Tuple
-
-import numpy as np
-import pathlib
-import pygeos
-
+from threedigrid_builder.grid import (
+    BoundaryConditions1D,
+    BoundaryConditions2D,
+    Channels,
+    ConnectedPoints,
+    ConnectionNodes,
+    CrossSectionDefinitions,
+    CrossSectionLocations,
+    Culverts,
+    DemAverageAreas,
+    GridRefinements,
+    ImperviousSurfaces,
+    Levees,
+    Obstacles,
+    Orifices,
+    Pipes,
+    PotentialBreaches,
+    Surfaces,
+    Weirs,
+    Windshieldings,
+)
 
 __all__ = ["SQLite"]
 
@@ -225,7 +220,9 @@ class SQLite:
             )
         if infiltration:
             _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
-            _set_initialization_type(infiltration, "max_infiltration_capacity", default=NO_AGG)
+            _set_initialization_type(
+                infiltration, "max_infiltration_capacity", default=NO_AGG
+            )
 
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)
@@ -832,7 +829,7 @@ class SQLite:
             )
 
         return Windshieldings(**{name: arr[name] for name in arr.dtype.names})
-    
+
     def get_potential_breaches(self) -> PotentialBreaches:
         with self.get_session() as session:
             arr = (
@@ -852,10 +849,7 @@ class SQLite:
         # reproject
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        return PotentialBreaches(
-            **{name: arr[name] for name in arr.dtype.names}
-        )
-
+        return PotentialBreaches(**{name: arr[name] for name in arr.dtype.names})
 
 
 # Constructing a Transformer takes quite long, so we use caching here. The

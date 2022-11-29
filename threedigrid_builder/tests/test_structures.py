@@ -1,17 +1,14 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import Orifices
-from threedigrid_builder.grid import Weirs
+import itertools
 from unittest import mock
 
-import itertools
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
+
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid import ConnectionNodes, Culverts, Orifices, Weirs
 
 
 @pytest.fixture

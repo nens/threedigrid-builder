@@ -1,7 +1,4 @@
-from enum import Enum
-from enum import IntEnum
-from enum import unique
-
+from enum import Enum, IntEnum, unique
 
 # The WKT spec to use in the output crs_wkt field:
 WKT_VERSION = "WKT2_2015"

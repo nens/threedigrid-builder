@@ -1,16 +1,14 @@
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-from .fgrid import m_quadtree
-from .fgrid import m_cells
-
 import itertools
 import logging
 import math
+
 import numpy as np
 
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import LineType, NodeType
+from threedigrid_builder.exceptions import SchematisationError
+
+from .fgrid import m_cells, m_quadtree
 
 logger = logging.getLogger(__name__)
 

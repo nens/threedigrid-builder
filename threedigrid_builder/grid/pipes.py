@@ -1,11 +1,8 @@
-from threedigrid_builder.base import array_of
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.grid import linear
-
 import pygeos
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import CalculationType, ContentType, FrictionType
+from threedigrid_builder.grid import linear
 
 __all__ = ["Pipes"]
 
@@ -31,8 +28,7 @@ class Pipe:
     material: int
 
 
-@array_of(Pipe)
-class Pipes(linear.BaseLinear):
+class Pipes(Array[Pipe], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_PIPE
 
     def get_1d2d_properties(self, nodes, node_idx, connection_nodes):

@@ -1,9 +1,9 @@
-from numpy.testing import assert_array_equal
-from threedigrid_builder.grid import GridRefinements
-
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_array_equal
+
+from threedigrid_builder.grid import GridRefinements
 
 
 @pytest.fixture
