@@ -106,6 +106,7 @@ def _make_gridadmin(
         channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=channels,
+            breaches=db.get_potential_breaches(),
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -125,6 +126,7 @@ def _make_gridadmin(
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=pipes,
+            breaches=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
@@ -138,6 +140,7 @@ def _make_gridadmin(
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=culverts,
+            breaches=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
             global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,

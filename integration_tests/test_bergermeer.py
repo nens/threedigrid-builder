@@ -35,6 +35,7 @@ def test_integration(tmp_path, filename):
             "threedi_version": "1.2.3.dev",
         },
         progress_callback=progress_callback,
+        upgrade=True,
     )
     with h5py.File(tmp_path / "gridadmin.h5", "r") as f:
         ## REPROJECTION

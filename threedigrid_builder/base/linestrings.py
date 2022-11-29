@@ -1,3 +1,5 @@
+import typing
+
 import numpy as np
 import pygeos
 
@@ -47,34 +49,6 @@ class LineStrings:
         result = np.zeros(len(self) + 1, dtype=float)
         np.cumsum(self.length + 1e-6, out=result[1:])
         return result
-
-    def locate_points(self, geoms, ids, linestring_ids) -> "PointsOnLine":
-        return PointsOnLine.from_geometries(self, geoms, ids, linestring_ids)
-
-    def interpolate_points(self, desired_segment_size):
-        """Compute points that divide linestrings into segments of equal length.
-
-        Args:
-            desired_segment_size (ndarray of float): the desired size of the segments; the
-            actual size will depend on the linestring length and is computed by rounding
-            ``line length / size`` to the nearest integer.
-            Inf inputs will lead to no segmentation for that line (n_segments=1)
-
-        Returns:
-            PointsOnLine (excluding linestrings start and end)
-        """
-        # compute number of nodes to add per channel
-        length = self.length
-        n_segments = np.maximum(np.round(length / desired_segment_size).astype(int), 1)
-        segment_size = length / n_segments
-        n_nodes = n_segments - 1
-
-        # get the distance to the start of each channel
-        i = counts_to_row_index(n_nodes)  # e.g. [0, 0, 0, 1, 1, 3]
-        j = counts_to_column_index(n_nodes)  # e.g. [0, 1, 2, 0, 1, 0]
-        dist_to_start = (j + 1) * segment_size[i]
-
-        return PointsOnLine.from_s1d(self, dist_to_start, i)
 
     def segmentize(self, points: "PointsOnLine") -> "LineOnLine":
         """Return lines that result from splitting self at 'points'"""
@@ -154,6 +128,10 @@ class PointsOnLine(Array[PointOnLine]):
         self.linestrings = linestrings
 
     @classmethod
+    def empty(cls, linestrings: LineStrings):
+        return cls(linestrings, id=[])
+
+    @classmethod
     def from_geometries(
         cls, linestrings: LineStrings, points, linestring_idx, **kwargs
     ):
@@ -183,6 +161,20 @@ class PointsOnLine(Array[PointOnLine]):
         return pygeos.line_interpolate_point(
             self.linestrings.the_geom[self.linestring_idx], self.s1d
         )
+
+    def merge_with(self, other: "PointsOnLine"):
+        if len(other) == 0:
+            return self
+        fields = list(typing.get_type_hints(self.data_class).keys())
+        fields.remove("id")
+        new_fields = {
+            name: np.concatenate((getattr(self, name), getattr(other, name)))
+            for name in fields
+        }
+        new_fields["id"] = np.arange(len(self) + len(other))
+        result = self.__class__(linestrings=self.linestrings, **new_fields)
+        result.reorder(np.argsort(result.s1d_cum))
+        return result
 
     def neighbours(self, other: "PointsOnLine"):
         """Compute neighbours in self of 'other'
@@ -245,6 +237,33 @@ class LinesOnLine(Array[LineOnLine]):
     def the_geom(self):
         return line_substring(
             self.linestrings.the_geom, self.s1d_start, self.s1d_end, self.linestring_idx
+        )
+
+    def interpolate_points(self, desired_segment_size):
+        """Compute points that divide sublinestrings into segments of equal length.
+
+        Args:
+            desired_segment_size (ndarray of float): the desired size of the segments; the
+            actual size will depend on the linestring length and is computed by rounding
+            ``line length / size`` to the nearest integer.
+            Inf inputs will lead to no segmentation for that line (n_segments=1)
+
+        Returns:
+            PointsOnLine (excluding linestrings start and end)
+        """
+        # compute number of nodes to add per channel
+        length = self.ds1d
+        n_segments = np.maximum(np.round(length / desired_segment_size).astype(int), 1)
+        segment_size = length / n_segments
+        n_nodes = n_segments - 1
+
+        # get the distance to the start of each channel
+        i = counts_to_row_index(n_nodes)  # e.g. [0, 0, 0, 1, 1, 3]
+        j = counts_to_column_index(n_nodes)  # e.g. [0, 1, 2, 0, 1, 0]
+        dist_to_start = (j + 1) * segment_size[i] + self.s1d_start[i]
+
+        return PointsOnLine.from_s1d(
+            self.linestrings, dist_to_start, self.linestring_idx[i]
         )
 
 

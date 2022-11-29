@@ -5,8 +5,6 @@ import pygeos
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import Material
 
-from .channels import Channels
-
 __all__ = ["Levees", "Breaches", "PotentialBreaches"]
 
 
@@ -44,14 +42,6 @@ class PotentialBreaches(Array[PotentialBreach]):
     @property
     def side_2d(self):
         return pygeos.get_point(self.the_geom, -1)
-
-    def project_on_channel(self, channels: Channels):
-        """Return the dist_to_start of breaches on its corresponding channel."""
-        channel_idx = channels.id_to_index(self.channel_id, check_exists=True)
-        dist_to_start = pygeos.line_locate_point(
-            channels.the_geom[channel_idx], self.side_1d
-        )
-        return channel_idx, dist_to_start
 
 
 class Levee:

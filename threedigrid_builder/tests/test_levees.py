@@ -7,7 +7,6 @@ from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import ContentType, Material
 from threedigrid_builder.grid import (
     Breaches,
-    Channels,
     ConnectedPoints,
     Levees,
     PotentialBreaches,
@@ -78,43 +77,11 @@ def test_no_breaches(connected_points, lines, levees):
     assert len(breaches) == 0
 
 
-@pytest.mark.parametrize(
-    "channel_geom,breach_geom,expected",
-    [
-        ([[0, 0], [10, 0]], [[0, 0], [0, 1]], 0.0),
-        ([[0, 0], [10, 0]], [[5, 0], [5, 1]], 5.0),
-        ([[0, 0], [10, 0]], [[10, 0], [10, 1]], 10.0),
-        ([[0, 0], [10, 0]], [[5, 1], [5, 2]], 5.0),  # first point is projected
-        ([[0, 0], [10, 0]], [[5, 1], [8, 0]], 5.0),  # first point is projected
-        ([[0, 0], [10, 0]], [[12, 0], [10, 1]], 10.0),  # no out of bounds
-    ],
-)
-def test_potential_breach_project_on_channel(channel_geom, breach_geom, expected):
-    channels = Channels(
-        id=[1],
-        the_geom=[pygeos.linestrings(channel_geom)],
-    )
+def test_potential_breach_sides():
     potential_breaches = PotentialBreaches(
         id=[1],
         channel_id=[1],
-        the_geom=[pygeos.linestrings(breach_geom)],
+        the_geom=[pygeos.linestrings([[0, 0], [0, 1]])],
     )
-    _, actual = potential_breaches.project_on_channel(channels)
-    assert_almost_equal(actual, [expected])
-
-
-def test_potential_breach_project_on_channel_multiple():
-    channels = Channels(
-        id=[1, 2],
-        the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
-    )
-    potential_breaches = PotentialBreaches(
-        id=[1, 2, 3],
-        channel_id=[1, 2, 1],
-        the_geom=pygeos.linestrings(
-            [[[3, 0], [3, 1]], [[0, 4], [1, 4]], [[6, 0], [6, 1]]]
-        ),
-    )
-    i, actual = potential_breaches.project_on_channel(channels)
-    assert_equal(i, [0, 1, 0])
-    assert_almost_equal(actual, [3.0, 4.0, 6.0])
+    assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_1d), [[0, 0]])
+    assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_2d), [[0, 1]])
