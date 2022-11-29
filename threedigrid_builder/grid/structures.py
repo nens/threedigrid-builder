@@ -1,14 +1,11 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import Lines
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.grid import linear
-
 import itertools
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, Lines
+from threedigrid_builder.constants import CalculationType, ContentType, FrictionType
+from threedigrid_builder.grid import linear
 
 __all__ = ["Culverts", "Orifices", "Weirs"]
 

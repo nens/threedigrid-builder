@@ -1,11 +1,8 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.grid import linear
-
 import pygeos
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import CalculationType, ContentType, FrictionType
+from threedigrid_builder.grid import linear
 
 __all__ = ["Pipes"]
 

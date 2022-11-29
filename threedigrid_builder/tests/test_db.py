@@ -1,33 +1,35 @@
-from pygeos.testing import assert_geometries_equal
-from threedigrid_builder.base import GridSettings
-from threedigrid_builder.base import Levees
-from threedigrid_builder.base import Pumps
-from threedigrid_builder.base import TablesSettings
-from threedigrid_builder.constants import BoundaryType
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import CrossSectionShape
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.constants import InitializationType
-from threedigrid_builder.constants import Material
-from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import BoundaryConditions1D
-from threedigrid_builder.grid import BoundaryConditions2D
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import ConnectedPoints
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import CrossSectionDefinitions
-from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import Orifices
-from threedigrid_builder.grid import Pipes
-from threedigrid_builder.grid import Weirs
-from threedigrid_builder.interface import SQLite
 from unittest import mock
 
 import numpy as np
 import pygeos
 import pytest
+from pygeos.testing import assert_geometries_equal
+
+from threedigrid_builder.base import GridSettings, Levees, Pumps, TablesSettings
+from threedigrid_builder.constants import (
+    BoundaryType,
+    CalculationType,
+    ContentType,
+    CrossSectionShape,
+    FrictionType,
+    InitializationType,
+    Material,
+)
+from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import (
+    BoundaryConditions1D,
+    BoundaryConditions2D,
+    Channels,
+    ConnectedPoints,
+    ConnectionNodes,
+    CrossSectionDefinitions,
+    CrossSectionLocations,
+    Culverts,
+    Orifices,
+    Pipes,
+    Weirs,
+)
+from threedigrid_builder.interface import SQLite
 
 
 def test_init(tmp_path):
@@ -285,7 +287,7 @@ def test_get_settings(db):
     assert s.interception_global == 100.0
     assert s.interception_type == InitializationType.NO_AGG
     assert s.table_step_size_1d == 0.05
-    assert s.maximum_table_step_size == 5.
+    assert s.maximum_table_step_size == 5.0
     assert s.manhole_storage_area is None
 
     # groundwater settings

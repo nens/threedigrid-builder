@@ -1,11 +1,8 @@
+import typing
 from enum import IntEnum
+from typing import _GenericAlias, Generic, TypeVar
 
 import numpy as np
-import typing
-
-
-from typing import _GenericAlias, Generic, TypeVar
-from numpy.typing import NDArray, ArrayLike
 
 __all__ = [
     "is_tuple_type",
@@ -113,10 +110,12 @@ def _to_ndarray(value, elem_type, expected_length):
 
 T = TypeVar("T")
 
+
 class Array(Generic[T]):
     """A dataclass with fields ("columns") that are numpy arrays of equal size."""
 
     def __init_subclass__(cls) -> None:
+        # Trick to get the record dataclass from the generic typing
         base = cls.__orig_bases__[0]  # type: ignore
         (data_class,) = base.__args__
         cls.validate_data_class(data_class)
@@ -207,7 +206,7 @@ class Array(Generic[T]):
         }
         return self.__class__(**new_fields)
 
-    def id_to_index(self, id, check_exists: bool=False):
+    def id_to_index(self, id, check_exists: bool = False):
         """Find the index of records with given id.
 
         Args:
@@ -271,6 +270,7 @@ class Array(Generic[T]):
         """
         idx = np.argsort(getattr(self, attr), **kwargs)
         self.reorder(idx)
+
 
 def replace(arr, mapping, check_present=False):
     """Return array with its values replaced according to ``mapping``.

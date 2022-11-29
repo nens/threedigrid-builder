@@ -1,26 +1,31 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid import Culverts
-from threedigrid_builder.grid import Orifices
-from threedigrid_builder.grid import Pipes
-from threedigrid_builder.grid import Weirs
-from threedigrid_builder.grid.connection_nodes import set_bottom_levels
-from threedigrid_builder.grid.connection_nodes import set_calculation_types
-
 import itertools
 import logging
+
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
+
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import (
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+from threedigrid_builder.grid import (
+    Channels,
+    ConnectionNodes,
+    CrossSectionLocations,
+    Culverts,
+    Orifices,
+    Pipes,
+    Weirs,
+)
+from threedigrid_builder.grid.connection_nodes import (
+    set_bottom_levels,
+    set_calculation_types,
+)
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
-from threedigrid_builder.base import Array
-
 import pygeos
+
+from threedigrid_builder.base import Array
 
 
 class DemAverageArea:

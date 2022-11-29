@@ -1,16 +1,18 @@
-from .cross_section_locations import compute_bottom_level
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-
 import itertools
 import logging
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, Nodes
+from threedigrid_builder.constants import (
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+
+from .cross_section_locations import compute_bottom_level
 
 logger = logging.getLogger(__name__)
 

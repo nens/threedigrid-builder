@@ -1,10 +1,10 @@
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from pathlib import Path
-from pyproj import CRS
-from threedigrid_builder.exceptions import SchematisationError
 from typing import Optional
 
+from pyproj import CRS
+
+from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["OutputInterface", "RasterInterface"]
 

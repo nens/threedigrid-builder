@@ -1,17 +1,17 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import BoundaryType
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-
 import itertools
+
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, Lines, Nodes
+from threedigrid_builder.constants import (
+    BoundaryType,
+    CalculationType,
+    ContentType,
+    LineType,
+    NodeType,
+)
+from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["BoundaryConditions1D", "BoundaryConditions2D"]
 

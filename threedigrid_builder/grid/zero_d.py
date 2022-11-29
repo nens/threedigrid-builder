@@ -1,15 +1,12 @@
 from dataclasses import dataclass
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import surfaces
-from threedigrid_builder.base.nodes import Nodes
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import SurfaceClass
-from typing import Dict
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, surfaces
+from threedigrid_builder.base.nodes import Nodes
+from threedigrid_builder.constants import ContentType, SurfaceClass
 
 __all__ = ["Surfaces", "ImperviousSurfaces"]
 

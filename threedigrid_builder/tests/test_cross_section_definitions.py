@@ -1,21 +1,18 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.constants import CrossSectionShape
-from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import CrossSectionDefinitions, CrossSections
-from threedigrid_builder.grid.cross_section_definitions import tabulate_builtin
-from threedigrid_builder.grid.cross_section_definitions import (
-    tabulate_closed_rectangle,
-)
-from threedigrid_builder.grid.cross_section_definitions import tabulate_egg
-from threedigrid_builder.grid.cross_section_definitions import (
-    tabulate_tabulated,
-)
 from unittest import mock
 
 import numpy as np
 import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
 
+from threedigrid_builder.constants import CrossSectionShape
+from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import CrossSectionDefinitions, CrossSections
+from threedigrid_builder.grid.cross_section_definitions import (
+    tabulate_builtin,
+    tabulate_closed_rectangle,
+    tabulate_egg,
+    tabulate_tabulated,
+)
 
 SHP = CrossSectionShape
 

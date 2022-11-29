@@ -1,7 +1,6 @@
-from .array import Array
-
 import numpy as np
 
+from .array import Array
 
 __all__ = ["Surfaces", "SurfaceMaps"]
 

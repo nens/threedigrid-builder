@@ -1,2 +1,1 @@
-from ._fgrid import m_quadtree
-from ._fgrid import m_cells
+from ._fgrid import m_cells, m_quadtree  # NOQA

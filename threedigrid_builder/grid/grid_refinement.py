@@ -1,10 +1,8 @@
-from osgeo import gdal
-from osgeo import gdal_array
-from osgeo import ogr
-from threedigrid_builder.base import Array
-
 import numpy as np
 import pygeos
+from osgeo import gdal, gdal_array, ogr
+
+from threedigrid_builder.base import Array
 
 
 class GridRefinement:

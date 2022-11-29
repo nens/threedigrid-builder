@@ -1,9 +1,7 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import search
-from threedigrid_builder.constants import ContentType
-
 import numpy as np
 
+from threedigrid_builder.base import Array, search
+from threedigrid_builder.constants import ContentType
 
 __all__ = ["Windshieldings"]
 

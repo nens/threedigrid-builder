@@ -1,13 +1,12 @@
+import itertools
 from enum import IntEnum
-from numpy.testing import assert_equal
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import replace
-from threedigrid_builder.base import search
 from typing import Tuple
 
-import itertools
 import numpy as np
 import pytest
+from numpy.testing import assert_equal
+
+from threedigrid_builder.base import Array, replace, search
 
 
 class Animal(IntEnum):

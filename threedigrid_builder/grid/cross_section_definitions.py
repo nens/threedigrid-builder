@@ -1,9 +1,8 @@
+import numpy as np
+
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
-
-import numpy as np
-
 
 __all__ = ["CrossSectionDefinitions", "CrossSections"]
 
@@ -143,8 +142,8 @@ def tabulate_egg(shape, width, height):
     w = width / 2
     a = position / 2
     x = h - heights
-    p = (h ** 2 - (x ** 2)) * w ** 2
-    q = h ** 2 + 2 * a * x + a ** 2
+    p = (h**2 - (x**2)) * w**2
+    q = h**2 + 2 * a * x + a**2
     widths = np.sqrt(p / q) * 2
 
     table = np.array([heights, widths]).T

@@ -1,8 +1,8 @@
-from threedigrid_builder.base import search
-from threedigrid_builder.constants import ContentType
-
 import numpy as np
 import pygeos
+
+from threedigrid_builder.base import search
+from threedigrid_builder.constants import ContentType
 
 
 def _compute_for_interpolated_nodes(nodes, cn_idx, objects):

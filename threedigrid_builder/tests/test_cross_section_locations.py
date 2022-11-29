@@ -1,19 +1,19 @@
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import Channels
-from threedigrid_builder.grid import CrossSectionDefinitions
-from threedigrid_builder.grid import CrossSectionLocations
-from threedigrid_builder.grid.cross_section_locations import (
-    compute_bottom_level,
-)
-from threedigrid_builder.grid.cross_section_locations import compute_weights
-
 import numpy as np
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_equal
+
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.grid import (
+    Channels,
+    CrossSectionDefinitions,
+    CrossSectionLocations,
+)
+from threedigrid_builder.grid.cross_section_locations import (
+    compute_bottom_level,
+    compute_weights,
+)
 
 
 @pytest.fixture

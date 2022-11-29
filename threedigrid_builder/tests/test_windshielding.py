@@ -1,10 +1,10 @@
+import numpy as np
+import pytest
 from numpy.testing import assert_equal
+
 from threedigrid_builder.base import Lines
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Windshieldings
-
-import numpy as np
-import pytest
 
 
 @pytest.fixture

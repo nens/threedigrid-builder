@@ -1,13 +1,9 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.grid import linear
-from threedigrid_builder.grid.cross_section_locations import (
-    compute_bottom_level,
-)
-
 import pygeos
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import CalculationType, ContentType
+from threedigrid_builder.grid import linear
+from threedigrid_builder.grid.cross_section_locations import compute_bottom_level
 
 __all__ = ["Channels"]
 

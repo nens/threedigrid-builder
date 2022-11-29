@@ -1,12 +1,12 @@
 try:
-    import geopandas
     import fiona  # NOQA, see Github issue 265
+    import geopandas
 except ImportError:
     geopandas = None
-from .dict_out import DictOut
 from threedigrid_builder.base import OutputInterface
 from threedigrid_builder.grid import Grid
 
+from .dict_out import DictOut
 
 __all__ = ["GeopackageOut"]
 

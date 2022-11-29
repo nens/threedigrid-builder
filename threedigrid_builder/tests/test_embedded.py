@@ -1,22 +1,19 @@
 from itertools import count
-from numpy.testing import assert_almost_equal
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Array
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import CalculationType
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import ConnectionNodes
-from threedigrid_builder.grid import embed_linear_objects
-from threedigrid_builder.grid import embed_nodes
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid.linear import BaseLinear
 
 import pygeos
 import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal
 
+from threedigrid_builder.base import Array, Lines, Nodes
+from threedigrid_builder.constants import CalculationType, ContentType, NodeType
+from threedigrid_builder.exceptions import SchematisationError
+from threedigrid_builder.grid import (
+    ConnectionNodes,
+    embed_linear_objects,
+    embed_nodes,
+    Grid,
+)
+from threedigrid_builder.grid.linear import BaseLinear
 
 NODE_2D = NodeType.NODE_2D_OPEN_WATER
 NODE_1D = NodeType.NODE_1D_STORAGE

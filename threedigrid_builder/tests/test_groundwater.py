@@ -1,13 +1,12 @@
 from itertools import count
-from numpy.testing import assert_array_equal
-from threedigrid_builder.base import Lines
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import LineType
-from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import Grid
-from threedigrid_builder.grid import groundwater as groundwater_module
 
 import pytest
+from numpy.testing import assert_array_equal
+
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import LineType, NodeType
+from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid import groundwater as groundwater_module
 
 
 @pytest.fixture

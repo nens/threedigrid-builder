@@ -1,9 +1,9 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.constants import Material
 from typing import Tuple
 
 import pygeos
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import Material
 
 __all__ = ["Levees", "Breaches"]
 

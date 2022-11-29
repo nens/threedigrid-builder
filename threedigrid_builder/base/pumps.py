@@ -1,10 +1,10 @@
-from threedigrid_builder.base import Array
-from threedigrid_builder.constants import ContentType
-from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
 
 import numpy as np
 
+from threedigrid_builder.base import Array
+from threedigrid_builder.constants import ContentType
+from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["Pumps"]
 

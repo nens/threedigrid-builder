@@ -1,9 +1,8 @@
-from threedigrid_builder.base import Array, LineStrings, PointsOnLine
-from threedigrid_builder.constants import FrictionType
-
 import numpy as np
 import pygeos
 
+from threedigrid_builder.base import Array, LineStrings, PointsOnLine
+from threedigrid_builder.constants import FrictionType
 
 __all__ = ["CrossSectionLocations"]
 
