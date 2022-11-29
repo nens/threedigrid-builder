@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Breaches, Levees, Lines
@@ -13,9 +13,9 @@ def levees():
     return Levees(
         id=[1, 2, 3],
         the_geom=[
-            pygeos.linestrings([[0, 0], [10, 0], [10, 10]]),
-            pygeos.linestrings([[5, 5], [8, 5]]),
-            pygeos.linestrings([[0, 0], [1, 1]]),
+            shapely.linestrings([[0, 0], [10, 0], [10, 10]]),
+            shapely.linestrings([[5, 5], [8, 5]]),
+            shapely.linestrings([[0, 0], [1, 1]]),
         ],
         max_breach_depth=[4.0, 2.0, np.nan],
         material=[Material.CLAY, Material.SAND, -9999],
@@ -39,9 +39,9 @@ def lines():
         line_geometries=[
             None,
             None,
-            pygeos.linestrings([[5, 5], [15, 5]]),  # crosses levee 1 at [10, 5]
-            pygeos.linestrings([[3, 2], [4, 1], [5, 2]]),  # (closest on levee: [4, 0])
-            pygeos.linestrings([[6, 5], [10, 5]]),  # tangent to levee 2
+            shapely.linestrings([[5, 5], [15, 5]]),  # crosses levee 1 at [10, 5]
+            shapely.linestrings([[3, 2], [4, 1], [5, 2]]),  # (closest on levee: [4, 0])
+            shapely.linestrings([[6, 5], [10, 5]]),  # tangent to levee 2
             None,
         ],
         content_type=[CH, -9999, CP, CP, CP, CP],

@@ -1,7 +1,7 @@
 import itertools
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, Breaches, Lines, search
 from threedigrid_builder.constants import (
@@ -30,7 +30,7 @@ HAS_1D2D_CALC_TYPES = (
 
 class ConnectedPoint:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     exchange_level: float
     content_type: ContentType
     content_pk: int
@@ -313,7 +313,7 @@ class ConnectedPoints(Array[ConnectedPoint]):
         - content_pk: the ConnectedPoint's id if available
 
         Args:
-          cell_tree (pygeos.STRtree): An STRtree containing the cells. The indices into
+          cell_tree (shapely.STRtree): An STRtree containing the cells. The indices into
             the STRtree must be equal to the indices into the nodes.
           nodes (Grid): Aall 1D and 2D nodes to compute 1D-2D lines for.
             Requires nodes from channels, pipes, culverts, manholes and 1d boundary
@@ -346,13 +346,13 @@ class ConnectedPoints(Array[ConnectedPoint]):
         # Collect the 2D sides of the 1D2D line (user supplied or 1D node coordinate)
         points = np.empty(n_lines, dtype=object)
         points[line_has_cp] = self.the_geom[line_cp_idx[line_has_cp]]
-        points[~line_has_cp] = pygeos.points(
+        points[~line_has_cp] = shapely.points(
             nodes.coordinates[line_node_idx[~line_has_cp]]
         )
 
         # The query_bulk returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
-        idx = cell_tree.query_bulk(points)
+        idx = cell_tree.query(points)
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, first_unique_index = np.unique(idx[0], return_index=True)
         idx = idx[:, first_unique_index]
@@ -485,8 +485,8 @@ class ConnectedPoints(Array[ConnectedPoint]):
 
         # compute the intersections (use shortest_line and not intersects to
         # account for the possibility that the levee may not intersect the line)
-        points = pygeos.get_point(
-            pygeos.shortest_line(
+        points = shapely.get_point(
+            shapely.shortest_line(
                 levees.the_geom[levee_idx], lines.line_geometries[line_idx]
             ),
             0,
@@ -499,7 +499,7 @@ class ConnectedPoints(Array[ConnectedPoint]):
             levmat=levees.material[levee_idx],
             levbr=levees.max_breach_depth[levee_idx],
             content_pk=lines.content_pk[line_idx],
-            coordinates=np.array([pygeos.get_x(points), pygeos.get_y(points)]).T,
+            coordinates=np.array([shapely.get_x(points), shapely.get_y(points)]).T,
         )
 
 

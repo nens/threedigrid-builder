@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal
 
 from threedigrid_builder.base import Lines, Nodes
@@ -23,7 +23,7 @@ def grid():
     )
     nodes = Nodes(id=id, calculation_type=calculation_type, bounds=bounds)
     grid = Grid(nodes=nodes, lines=Lines(id=np.array([1])))
-    grid._cell_tree = pygeos.STRtree(pygeos.box(*grid.nodes.bounds.T))
+    grid._cell_tree = shapely.STRtree(shapely.box(*grid.nodes.bounds.T))
     return grid
 
 
@@ -31,7 +31,7 @@ def grid():
 def dem_average_areas():
     return DemAverageAreas(
         id=np.array([1], dtype=np.int32),
-        the_geom=np.array([pygeos.box(0.2, 0.2, 0.8, 1.8)]),
+        the_geom=np.array([shapely.box(0.2, 0.2, 0.8, 1.8)]),
     )
 
 
@@ -39,7 +39,7 @@ def dem_average_areas():
 def dem_average_areas_no_intersect():
     return DemAverageAreas(
         id=np.array([1], dtype=np.int32),
-        the_geom=np.array([pygeos.box(11, 11, 18, 18)]),
+        the_geom=np.array([shapely.box(11, 11, 18, 18)]),
     )
 
 

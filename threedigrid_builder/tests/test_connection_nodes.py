@@ -2,8 +2,8 @@ import itertools
 import logging
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
 
 from threedigrid_builder.base import Lines, Nodes
@@ -31,7 +31,7 @@ from threedigrid_builder.grid.connection_nodes import (
 @pytest.fixture
 def connection_nodes():
     return ConnectionNodes(
-        the_geom=pygeos.points([(0, 0), (10, 0), (10, 20), (10, 30), (0, 0)]),
+        the_geom=shapely.points([(0, 0), (10, 0), (10, 20), (10, 30), (0, 0)]),
         id=np.array([1, 3, 4, 9, 10]),
         code=np.array(["one", "two", "", "", ""]),
         storage_area=np.array([15, np.nan, np.nan, np.nan, 0]),
@@ -243,7 +243,7 @@ def test_1d2d_properties(connection_nodes, caplog):
         id=[32, 33, 34, 35],
         connection_node_start_id=[1, 3, 3, 3],
         connection_node_end_id=[3, 9, 9, 10],
-        the_geom=pygeos.linestrings(
+        the_geom=shapely.linestrings(
             [
                 [(0, 0), (10, 0)],
                 [(10, 20), (10, 30)],
@@ -255,7 +255,9 @@ def test_1d2d_properties(connection_nodes, caplog):
     locations = CrossSectionLocations(
         id=range(6),
         channel_id=[32, 32, 33, 34, 34, 35],
-        the_geom=pygeos.points([(0, 0), (10, 0), (10, 25), (10, 22), (10, 28), (0, 0)]),
+        the_geom=shapely.points(
+            [(0, 0), (10, 0), (10, 25), (10, 22), (10, 28), (0, 0)]
+        ),
         bank_level=[4.0, 0.0, 1.0, -10.0, np.nan, 3.4],
     )
 

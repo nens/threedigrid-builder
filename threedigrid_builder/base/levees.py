@@ -1,6 +1,6 @@
 from typing import Tuple
 
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import Material
@@ -24,7 +24,7 @@ class Breaches(Array[Breach]):
 
 class Levee:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     crest_level: float
     max_breach_depth: float
     material: Material

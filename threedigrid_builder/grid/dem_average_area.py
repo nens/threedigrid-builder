@@ -1,11 +1,11 @@
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array
 
 
 class DemAverageArea:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
 
 
 class DemAverageAreas(Array[DemAverageArea]):
@@ -22,5 +22,5 @@ def apply_dem_average_areas(nodes, cell_tree, dem_average_areas):
         cell_tree (STRTree)
         dem_average_areas (DemAverageAreas)
     """
-    idx = cell_tree.query_bulk(dem_average_areas.the_geom, "intersects")
+    idx = cell_tree.query(dem_average_areas.the_geom, "intersects")
     nodes.has_dem_averaged[idx[1, :]] = 1

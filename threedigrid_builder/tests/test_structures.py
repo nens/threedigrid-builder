@@ -2,8 +2,8 @@ import itertools
 from unittest import mock
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
 
 from threedigrid_builder.base import Nodes
@@ -16,7 +16,7 @@ def connection_nodes():
     # Used to map connection_node_start/end_id to an index (sequence id)
     return ConnectionNodes(
         id=np.array([21, 25, 33, 42]),
-        the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+        the_geom=shapely.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
     )
 
 
@@ -32,8 +32,8 @@ def culverts():
         invert_level_start_point=[3.0, 5.0],
         invert_level_end_point=[4.0, 6.0],
         the_geom=[
-            pygeos.linestrings([(0, 21), (0.5, 22), (1, 25)]),
-            pygeos.linestrings([(0, 21), (3, 42)]),
+            shapely.linestrings([(0, 21), (0.5, 22), (1, 25)]),
+            shapely.linestrings([(0, 21), (3, 42)]),
         ],
     )
 
@@ -94,7 +94,7 @@ def test_get_lines(connection_nodes, two_weir_orifices):
 def test_culverts_compute_bottom_level(culvert_ids, ds, culverts, expected):
     # set geometries with lengths 10 and 1 (resp. id 1 and 2)
     # invert levels are [3, 4] for id=1 and [5, 6] for id=2
-    culverts.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
+    culverts.the_geom = shapely.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
 
     actual = culverts.compute_bottom_level(culvert_ids, ds)
 
@@ -115,7 +115,7 @@ def test_culverts_compute_bottom_level_raises_no_geom(culverts):
     ],
 )
 def test_culverts_compute_bottom_level_raises_out_of_bounds(culvert_ids, ds, culverts):
-    culverts.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
+    culverts.the_geom = shapely.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
     with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
         culverts.compute_bottom_level(culvert_ids, ds)
 

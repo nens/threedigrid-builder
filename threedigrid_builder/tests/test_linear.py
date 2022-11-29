@@ -1,10 +1,10 @@
 import itertools
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
-from pygeos.testing import assert_geometries_equal
+from shapely.testing import assert_geometries_equal
 
 from threedigrid_builder.base import Array, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, NodeType
@@ -20,9 +20,9 @@ def random_lines():
     # discard lines with fewer than 2 coordinates
     indices = indices[~np.isin(indices, np.where(np.bincount(indices) < 2)[0])]
     coords = np.around(np.random.random((len(indices), 2)), decimals=6)
-    lines = pygeos.linestrings(coords, indices=indices)
+    lines = shapely.linestrings(coords, indices=indices)
     # discard nones
-    lines = lines[~pygeos.is_missing(lines)]
+    lines = lines[~shapely.is_missing(lines)]
     return lines
 
 
@@ -30,8 +30,8 @@ def random_lines():
 def two_lines():
     return np.array(
         [
-            pygeos.linestrings([(0, 10), (10, 10)]),
-            pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
+            shapely.linestrings([(0, 10), (10, 10)]),
+            shapely.linestrings([(0, 0), (6, 0), (6, 6)]),
         ]
     )
 
@@ -41,14 +41,14 @@ def connection_nodes():
     # Used to map connection_node_start/end_id to an index (sequence id)
     return ConnectionNodes(
         id=np.array([21, 25, 33, 42]),
-        the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+        the_geom=shapely.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
         drain_level=[0.0, 20.0, 30.0, 10.0],
     )
 
 
 class LinearObject:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     calculation_type: CalculationType
     connection_node_start_id: int
     connection_node_end_id: int
@@ -71,7 +71,7 @@ class LinearObjects(Array[LinearObject], linear.BaseLinear):
 @pytest.fixture
 def one_linear_object():
     return LinearObjects(
-        the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]),
+        the_geom=shapely.linestrings([[(0, 0), (6, 0), (6, 6)]]),
         dist_calc_points=np.array([5.0]),
         id=np.array([1]),
         connection_node_start_id=np.array([21]),
@@ -84,7 +84,7 @@ def one_linear_object():
 @pytest.fixture
 def two_linear_objects():
     return LinearObjects(
-        the_geom=pygeos.linestrings(
+        the_geom=shapely.linestrings(
             [[(0, 0), (10, 0), (10, 10)], [(0, 0), (0, 100), (100, 100)]]
         ),
         dist_calc_points=[5.0, np.nan],
@@ -210,7 +210,7 @@ def test_get_lines(connection_nodes, two_linear_objects):
     assert_array_equal(lines.discharge_coefficient_negative, [1.0, 0.5, 1.0, 1.0, 0.8])
     assert_almost_equal(lines.s1d, expected_centers)
     assert_almost_equal(lines.ds1d, expected_sizes)
-    assert_almost_equal(pygeos.length(lines.line_geometries), expected_sizes)
+    assert_almost_equal(shapely.length(lines.line_geometries), expected_sizes)
     assert_almost_equal(lines.invert_level_start_point, [1.0, 2.0, 2.0, 2.5, 3.5])
     assert_almost_equal(lines.invert_level_end_point, [2.0, 3.0, 2.5, 3.5, 4])
     assert_almost_equal(lines.dpumax, [2, 3, 2.5, 3.5, 4])
@@ -328,10 +328,10 @@ def test_get_lines_two_linear_objects(
     ],
 )
 def test_set_geometries(two_linear_objects, connection_nodes, geom, expected):
-    two_linear_objects.the_geom[0] = pygeos.linestrings(geom) if geom else None
+    two_linear_objects.the_geom[0] = shapely.linestrings(geom) if geom else None
     two_linear_objects.set_geometries(connection_nodes)
 
-    expected_geometry = pygeos.linestrings(expected)
+    expected_geometry = shapely.linestrings(expected)
     assert_geometries_equal(two_linear_objects.the_geom[0], expected_geometry)
 
 

@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Levees, Lines, Nodes
@@ -37,7 +37,7 @@ def obstacles():
     return Obstacles(
         id=np.array([1, 2], dtype=np.int32),
         crest_level=np.array([-0.1, -0.3], dtype=np.float64),
-        the_geom=pygeos.linestrings(
+        the_geom=shapely.linestrings(
             [[[12.0, 11.0], [17.5, 17.0]], [[13.0, 11.0], [13.0, 17.0]]]
         ),
     )
@@ -48,7 +48,7 @@ def obstacles_no_intersect():
     return Obstacles(
         id=[1],
         crest_level=[-0.1],
-        the_geom=pygeos.linestrings(
+        the_geom=shapely.linestrings(
             [[[11, 11], [11, 18], [18, 18], [18, 11], [11, 11]]]
         ),
     )

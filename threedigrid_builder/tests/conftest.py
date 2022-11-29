@@ -2,8 +2,8 @@ import os
 import pathlib
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from pyproj import CRS
 
 from threedigrid_builder.base import (
@@ -57,8 +57,8 @@ def grid_all():
         dpumax=[1.2, 2.2, 3.3, 4.2, 5.1],
         line=[[0, 1], [1, 2], [2, 0], [0, 2], [2, 1]],
         line_geometries=[
-            pygeos.linestrings([[1, 1], [2, 2]]),
-            pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
+            shapely.linestrings([[1, 1], [2, 2]]),
+            shapely.linestrings([[1, 1], [2, 2], [3, 3]]),
             None,
             None,
             None,
@@ -117,8 +117,8 @@ def grid_all():
     levees = Levees(
         id=[0, 1],
         the_geom=[
-            pygeos.linestrings([[1, 1], [2, 2], [4, 4]]),
-            pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
+            shapely.linestrings([[1, 1], [2, 2], [4, 4]]),
+            shapely.linestrings([[1, 1], [2, 2], [3, 3]]),
         ],
     )
     breaches = Breaches(

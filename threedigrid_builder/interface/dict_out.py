@@ -1,7 +1,7 @@
 import dataclasses
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Breaches, Lines, Nodes, OutputInterface
 from threedigrid_builder.constants import (
@@ -149,9 +149,9 @@ class DictOut(OutputInterface):
         if geometry_format == "native":
             geom_serializer = None
         elif geometry_format == "wkb":
-            geom_serializer = pygeos.to_wkb
+            geom_serializer = shapely.to_wkb
         elif geometry_format == "wkt":
-            geom_serializer = pygeos.to_wkt
+            geom_serializer = shapely.to_wkt
         else:
             raise ValueError(f"Unknown geometry format '{geometry_format}'")
 
@@ -194,13 +194,13 @@ class DictOut(OutputInterface):
         node_geometries = np.empty(len(nodes), dtype=object)
         coordinates = node_data.pop("coordinates")
         has_coord = np.isfinite(coordinates).all(axis=1)
-        node_geometries[has_coord] = pygeos.points(coordinates[has_coord])
+        node_geometries[has_coord] = shapely.points(coordinates[has_coord])
 
         # construct cells from nodes.bounds
         bounds = node_data.pop("bounds")[is_2d]
         has_cell = np.isfinite(bounds).all(axis=1)
         cell_geometries = np.empty(bounds.shape[0], dtype=object)
-        cell_geometries[has_cell] = pygeos.box(*bounds[has_cell].T)
+        cell_geometries[has_cell] = shapely.box(*bounds[has_cell].T)
 
         # convert enums to strings
         node_data["node_type"] = _enum_to_str(node_data["node_type"], NodeType)
@@ -241,7 +241,7 @@ class DictOut(OutputInterface):
         node_geometries = np.empty(len(nodes_embedded), dtype=object)
         coordinates = node_data.pop("coordinates")
         has_coord = np.isfinite(coordinates).all(axis=1)
-        node_geometries[has_coord] = pygeos.points(coordinates[has_coord])
+        node_geometries[has_coord] = shapely.points(coordinates[has_coord])
 
         # convert enums to strings
         node_data["node_type"] = _enum_to_str(node_data["node_type"], NodeType)
@@ -306,7 +306,7 @@ class DictOut(OutputInterface):
         geometries = np.empty(len(breaches), dtype=object)
         coordinates = breach_data.pop("coordinates")
         has_coord = np.isfinite(coordinates).all(axis=1)
-        geometries[has_coord] = pygeos.points(coordinates[has_coord])
+        geometries[has_coord] = shapely.points(coordinates[has_coord])
 
         # convert enums to strings
         breach_data["levmat"] = _enum_to_str(breach_data["levmat"], Material)

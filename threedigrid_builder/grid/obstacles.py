@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import LineType
@@ -8,7 +8,7 @@ from threedigrid_builder.constants import LineType
 class Obstacle:
     id: int
     crest_level: float
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
 
 
 class Obstacles(Array[Obstacle]):
@@ -38,9 +38,9 @@ def apply_obstacles(lines, obstacles, levees):
         raise ValueError(
             f"{lines.__class__.__name__} object has inclomplete line_coords."
         )
-    lines_tree = pygeos.STRtree(pygeos.linestrings(coordinates.reshape(-1, 2, 2)))
+    lines_tree = shapely.STRtree(shapely.linestrings(coordinates.reshape(-1, 2, 2)))
 
-    inscts = lines_tree.query_bulk(the_geom, predicate="intersects")
+    inscts = lines_tree.query(the_geom, predicate="intersects")
     is_u = np.where(lines.kcu == LineType.LINE_2D_U)[0]
     mask = np.isin(is_u, inscts[1, :])
     lines.kcu[is_u[mask]] = LineType.LINE_2D_OBSTACLE_U

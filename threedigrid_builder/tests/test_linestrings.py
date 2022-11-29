@@ -1,15 +1,15 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
-from pygeos.testing import assert_geometries_equal
+from shapely.testing import assert_geometries_equal
 
 from threedigrid_builder.base import LinesOnLine, LineStrings, PointsOnLine
 
 
 @pytest.fixture
 def linestrings():
-    return LineStrings(pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
+    return LineStrings(shapely.linestrings([[(0, 0), (6, 0), (6, 6)]]))
 
 
 @pytest.fixture
@@ -17,8 +17,8 @@ def two_linestrings():
     return LineStrings(
         np.array(
             [
-                pygeos.linestrings([(0, 10), (10, 10)]),
-                pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
+                shapely.linestrings([(0, 10), (10, 10)]),
+                shapely.linestrings([(0, 0), (6, 0), (6, 6)]),
             ]
         )
     )
@@ -103,12 +103,12 @@ def test_segmentize_multiple(two_linestrings):
     ],
 )
 def test_sanitize(geom, expected):
-    linestrings = LineStrings(np.array([pygeos.linestrings(geom) if geom else None]))
+    linestrings = LineStrings(np.array([shapely.linestrings(geom) if geom else None]))
     linestrings.sanitize(
-        points_1=pygeos.points([(0, 21)]), points_2=pygeos.points([(3, 42)])
+        points_1=shapely.points([(0, 21)]), points_2=shapely.points([(3, 42)])
     )
 
-    expected = [None] if expected is None else [pygeos.linestrings(expected)]
+    expected = [None] if expected is None else [shapely.linestrings(expected)]
     assert_geometries_equal(linestrings.the_geom, expected)
 
 
@@ -118,7 +118,7 @@ def test_point_on_line_the_geom_multiple(two_linestrings):
     )
     actual = points_on_line.the_geom
 
-    coords, index = pygeos.get_coordinates(actual, return_index=True)
+    coords, index = shapely.get_coordinates(actual, return_index=True)
 
     assert_almost_equal(coords, [(3.0, 10.0), (4.0, 0)])
     assert_almost_equal(index, [0, 1])
@@ -146,7 +146,7 @@ def test_line_on_line_the_geom(linestrings, start, end, expected_coords):
     )
     geometries = lines_on_line.the_geom
     assert geometries.shape == (1,)
-    assert_almost_equal(expected_coords, pygeos.get_coordinates(geometries), decimal=7)
+    assert_almost_equal(expected_coords, shapely.get_coordinates(geometries), decimal=7)
 
 
 def test_line_on_line_the_geom_multiple(two_linestrings):
@@ -159,7 +159,7 @@ def test_line_on_line_the_geom_multiple(two_linestrings):
     )
     segments = lines_on_line.the_geom
 
-    coords, index = pygeos.get_coordinates(segments, return_index=True)
+    coords, index = shapely.get_coordinates(segments, return_index=True)
 
     assert_almost_equal(
         coords, [(3.0, 10.0), (9.0, 10.0), (4.0, 0), (6.0, 0.0), (6.0, 4.0)]

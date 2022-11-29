@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, surfaces
 from threedigrid_builder.base.nodes import Nodes
@@ -210,10 +210,10 @@ class BaseSurface:
     nr_of_inhabitants: float
     area: float
     dry_weather_flow: float
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
 
     connection_node_id: int
-    connection_node_the_geom: pygeos.Geometry
+    connection_node_the_geom: shapely.Geometry
     percentage: float
 
 
@@ -250,7 +250,7 @@ def fill_missing_centroids(
     """
     Fill any missing centroids with (centroids of the) connection node geometries
     """
-    no_centroid_mask = pygeos.is_missing(centroids)
+    no_centroid_mask = shapely.is_missing(centroids)
 
     if np.any(no_centroid_mask):
         # Try to fill empty centroids
@@ -259,8 +259,8 @@ def fill_missing_centroids(
         sort_idx = np.argsort(s_unique)
         lookup = sort_idx[np.searchsorted(s_unique, empty_surface_ids, sorter=sort_idx)]
 
-        computed_centroids = pygeos.centroid(
-            pygeos.multipoints(connection_node_the_geom[no_centroid_mask], lookup)
+        computed_centroids = shapely.centroid(
+            shapely.multipoints(connection_node_the_geom[no_centroid_mask], lookup)
         )
 
         centroids[no_centroid_mask] = computed_centroids[lookup]
@@ -281,15 +281,15 @@ class BaseSurfaces:
         if extra_fields is None:
             extra_fields = {}
 
-        centroids = pygeos.centroid(self.the_geom)
-        no_centroid_mask = pygeos.is_missing(centroids)
+        centroids = shapely.centroid(self.the_geom)
+        no_centroid_mask = shapely.is_missing(centroids)
 
         if np.any(no_centroid_mask):
             fill_missing_centroids(
                 centroids, self.surface_id, self.connection_node_the_geom
             )
 
-        centroid_coords = pygeos.get_coordinates(centroids)
+        centroid_coords = shapely.get_coordinates(centroids)
 
         return surfaces.Surfaces(
             id=np.arange(1, len(self.unique_surfaces_mask) + 1, dtype=int),
@@ -311,7 +311,7 @@ class BaseSurfaces:
         imp_lookup = sort_idx[
             np.searchsorted(search_array, self.surface_id, sorter=sort_idx)
         ]
-        connection_node_coords = pygeos.get_coordinates(self.connection_node_the_geom)
+        connection_node_coords = shapely.get_coordinates(self.connection_node_the_geom)
 
         # Find connection_node (calc) node id's both in nodes and embedded nodes
         connection_node_mask = (
@@ -389,7 +389,7 @@ class ImperviousSurfaces(Array[ImperviousSurface], BaseSurfaces):
             self.surface_inclination[self.unique_surfaces_mask],
         )
         surface_sub_class = self.surface_sub_class[self.unique_surfaces_mask]
-        surface_sub_class[pygeos.is_missing(surface_sub_class)] = b""
+        surface_sub_class[shapely.is_missing(surface_sub_class)] = b""
 
         extra_fields = dict(
             surface_inclination=self.surface_inclination[self.unique_surfaces_mask],

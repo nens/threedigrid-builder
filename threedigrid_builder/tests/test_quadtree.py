@@ -1,8 +1,8 @@
 import itertools
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_array_equal
 
 from threedigrid_builder.exceptions import SchematisationError
@@ -52,7 +52,7 @@ def quadtree_line_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
         refinement_level=np.array([1]),
-        the_geom=pygeos.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
+        the_geom=shapely.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
     )
     return QuadTree(
         subgrid_meta=subgrid_meta,
@@ -68,7 +68,7 @@ def quadtree_poly_refinement(subgrid_meta):
     refinement = GridRefinements(
         id=np.array([1]),
         refinement_level=np.array([2]),
-        the_geom=np.array([pygeos.box(12.4, 11.4, 13.9, 13.4)]),
+        the_geom=np.array([shapely.box(12.4, 11.4, 13.9, 13.4)]),
     )
     return QuadTree(
         subgrid_meta=subgrid_meta,
@@ -357,7 +357,7 @@ def test_reduce_refinement_levels(
     refinements = GridRefinements(
         id=[1],
         refinement_level=[refinement_level],
-        the_geom=pygeos.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
+        the_geom=shapely.linestrings([[[15.0, 17.5], [17.5, 17.5], [17.5, 14.5]]]),
     )
     actual = reduce_refinement_levels(refinements, kmax)
 

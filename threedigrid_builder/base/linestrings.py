@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from .array import Array
 
@@ -31,7 +31,7 @@ class LineOnLine:
 class LineStrings:
     def __init__(self, geometries):
         assert isinstance(geometries, np.ndarray)
-        geom_types = pygeos.get_type_id(geometries)
+        geom_types = shapely.get_type_id(geometries)
         assert np.all((geom_types == -1) | (geom_types == 1))
         self.the_geom = geometries
 
@@ -40,7 +40,7 @@ class LineStrings:
 
     @property
     def length(self):
-        return pygeos.length(self.the_geom)
+        return shapely.length(self.the_geom)
 
     @property
     def length_cumulative(self):
@@ -105,31 +105,31 @@ class LineStrings:
 
         This function acts inplace on self.
         """
-        has_geom = np.where(pygeos.is_geometry(self.the_geom))[0]
+        has_geom = np.where(shapely.is_geometry(self.the_geom))[0]
         if len(has_geom) == 0:
             return
 
         # reverse the geometries where necessary
         node_start = points_1[has_geom]
         node_end = points_2[has_geom]
-        line_start = pygeos.get_point(self.the_geom[has_geom], 0)
-        line_end = pygeos.get_point(self.the_geom[has_geom], -1)
+        line_start = shapely.get_point(self.the_geom[has_geom], 0)
+        line_end = shapely.get_point(self.the_geom[has_geom], -1)
 
-        dist_start_start = pygeos.distance(node_start, line_start)
-        dist_end_end = pygeos.distance(node_end, line_end)
-        dist_start_end = pygeos.distance(node_start, line_end)
-        dist_end_start = pygeos.distance(node_end, line_start)
+        dist_start_start = shapely.distance(node_start, line_start)
+        dist_end_end = shapely.distance(node_end, line_end)
+        dist_start_end = shapely.distance(node_start, line_end)
+        dist_end_start = shapely.distance(node_end, line_start)
         needs_reversion = has_geom[
             (dist_start_start > dist_start_end) & (dist_end_end > dist_end_start)
         ]
         if len(needs_reversion) > 0:
-            self.the_geom[needs_reversion] = pygeos.reverse(
+            self.the_geom[needs_reversion] = shapely.reverse(
                 self.the_geom[needs_reversion]
             )
-            line_start[needs_reversion] = pygeos.get_point(
+            line_start[needs_reversion] = shapely.get_point(
                 self.the_geom[needs_reversion], 0
             )
-            line_end[needs_reversion] = pygeos.get_point(
+            line_end[needs_reversion] = shapely.get_point(
                 self.the_geom[needs_reversion], -1
             )
             dist_start_start[needs_reversion] = dist_start_end[needs_reversion]
@@ -157,7 +157,7 @@ class PointsOnLine(Array[PointOnLine]):
     def from_geometries(
         cls, linestrings: LineStrings, points, linestring_idx, **kwargs
     ):
-        s1d = pygeos.line_locate_point(linestrings.the_geom[linestring_idx], points)
+        s1d = shapely.line_locate_point(linestrings.the_geom[linestring_idx], points)
         return cls.from_s1d(linestrings, s1d, linestring_idx, **kwargs)
 
     @classmethod
@@ -180,7 +180,7 @@ class PointsOnLine(Array[PointOnLine]):
 
     @property
     def the_geom(self):
-        return pygeos.line_interpolate_point(
+        return shapely.line_interpolate_point(
             self.linestrings.the_geom[self.linestring_idx], self.s1d
         )
 
@@ -324,7 +324,7 @@ def line_substring(linestrings, start, end, index=None):
     errors if start is negative or if end is larger than the linestring length.
 
     Args:
-        linestrings (ndarray of pygeos.Geometry): Linestrings to segmentize
+        linestrings (ndarray of shapely.Geometry): Linestrings to segmentize
         start (ndarray of float): The start of the segment, measured along the line.
         end (ndarray of float): The end of the segment, measured along the line.
         index (ndarray of int, optional): An optional linestring index per start/end.
@@ -343,8 +343,8 @@ def line_substring(linestrings, start, end, index=None):
     if n_segments == 0:
         return np.empty((0,), dtype=object)
 
-    coords, coord_line_idx = pygeos.get_coordinates(linestrings, return_index=True)
-    line_n_coords = pygeos.get_num_coordinates(linestrings)
+    coords, coord_line_idx = shapely.get_coordinates(linestrings, return_index=True)
+    line_n_coords = shapely.get_num_coordinates(linestrings)
 
     ## compute the length of each vertex-vertex distance
     coord_ds = np.sqrt(np.sum((coords - np.roll(coords, 1, axis=0)) ** 2, axis=1))
@@ -395,7 +395,7 @@ def line_substring(linestrings, start, end, index=None):
     segment_coords[segment_coords_to_fill] = coords[coords_to_fill_with]
 
     # construct the segments
-    segments = pygeos.linestrings(
+    segments = shapely.linestrings(
         segment_coords,
         indices=counts_to_row_index(segment_n_coords),
     )
@@ -407,7 +407,7 @@ def segment_start_end(linestrings, segment_counts, dist_to_start):
     """Utility function to use the output of segmentize as input of line_substrings.
 
     Args:
-        linestrings (ndarray of pygeos.Geometry): linestrings to segmentize
+        linestrings (ndarray of shapely.Geometry): linestrings to segmentize
         segment_counts (ndarray of int): the number of segments per linestring
         dist_to_start (ndarray of float): the location of added nodes, measured along
           the linestring. The length of this array is such that:
@@ -428,15 +428,15 @@ def segment_start_end(linestrings, segment_counts, dist_to_start):
     start_s[start_idx] = 0.0
     start_s[np.isnan(start_s)] = dist_to_start
     # every last end_s equals to the length, the rest are added nodes with an s1d
-    end_s[last_idx] = pygeos.length(linestrings)
+    end_s[last_idx] = shapely.length(linestrings)
     end_s[np.isnan(end_s)] = dist_to_start
     return start_s, end_s, counts_to_row_index(segment_counts)
 
 
 def _add_point(linestrings, points, at=0):
     """Append or prepend points to linestrings"""
-    counts = pygeos.get_num_coordinates(linestrings)
-    coords, index = pygeos.get_coordinates(linestrings, return_index=True)
+    counts = shapely.get_num_coordinates(linestrings)
+    coords, index = shapely.get_coordinates(linestrings, return_index=True)
     start, end = counts_to_ranges(counts)
     if at == 0:
         insert_at = start
@@ -444,9 +444,9 @@ def _add_point(linestrings, points, at=0):
         insert_at = end
     else:
         raise ValueError(f"Cannot insert at {at}")
-    new_coords = np.insert(coords, insert_at, pygeos.get_coordinates(points), axis=0)
+    new_coords = np.insert(coords, insert_at, shapely.get_coordinates(points), axis=0)
     new_index = np.insert(index, insert_at, np.arange(len(insert_at)))
-    return pygeos.linestrings(new_coords, indices=new_index)
+    return shapely.linestrings(new_coords, indices=new_index)
 
 
 def prepend_point(linestrings, points):

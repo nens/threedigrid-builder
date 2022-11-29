@@ -1,7 +1,7 @@
 import itertools
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Lines, LineStrings, Nodes, PointsOnLine
 from threedigrid_builder.base.linestrings import counts_to_ranges
@@ -38,13 +38,13 @@ class BaseLinear:
         self.linestrings.sanitize(points_1, points_2)
 
         # construct the geometries where necessary
-        has_no_geom = pygeos.is_missing(self.the_geom)
+        has_no_geom = shapely.is_missing(self.the_geom)
         coordinates = np.empty((np.count_nonzero(has_no_geom), 2, 2))
-        coordinates[:, 0, 0] = pygeos.get_x(points_1[has_no_geom])
-        coordinates[:, 0, 1] = pygeos.get_y(points_1[has_no_geom])
-        coordinates[:, 1, 0] = pygeos.get_x(points_2[has_no_geom])
-        coordinates[:, 1, 1] = pygeos.get_y(points_2[has_no_geom])
-        self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
+        coordinates[:, 0, 0] = shapely.get_x(points_1[has_no_geom])
+        coordinates[:, 0, 1] = shapely.get_y(points_1[has_no_geom])
+        coordinates[:, 1, 0] = shapely.get_x(points_2[has_no_geom])
+        coordinates[:, 1, 1] = shapely.get_y(points_2[has_no_geom])
+        self.the_geom[has_no_geom] = shapely.linestrings(coordinates)
 
     def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
         """Compute nodes on each linear object with constant intervals
@@ -70,7 +70,7 @@ class BaseLinear:
             - s1d: distance (along the linestring) to the start of the linestring
             The nodes are ordered by content_pk and then by position on the linestring.
         """
-        if pygeos.is_missing(self.the_geom).any():
+        if shapely.is_missing(self.the_geom).any():
             raise ValueError(
                 f"{self.__class__.__name__} encountered without a geometry."
             )
@@ -96,7 +96,7 @@ class BaseLinear:
         # construct the nodes with available attributes
         return Nodes(
             id=itertools.islice(node_id_counter, len(points)),
-            coordinates=pygeos.get_coordinates(points.the_geom),
+            coordinates=shapely.get_coordinates(points.the_geom),
             content_type=self.content_type,
             content_pk=self.id[points.linestring_idx],
             node_type=NodeType.NODE_1D_NO_STORAGE,
@@ -306,12 +306,12 @@ class BaseLinear:
         Returns:
             an array of the same shape as ids and ds containing the interpolated values
         """
-        if pygeos.is_missing(self.the_geom).any():
+        if shapely.is_missing(self.the_geom).any():
             raise ValueError(
                 f"{self.__class__.__name__} found without a geometry. Call "
                 f"set_geometries first."
             )
-        lengths = pygeos.length(self.the_geom)
+        lengths = shapely.length(self.the_geom)
         idx = self.id_to_index(ids)
         weights = s / lengths[idx]
         if np.any(weights < 0.0) or np.any(weights > 1.0):
@@ -335,12 +335,12 @@ class BaseLinear:
         Returns:
             an array of the same shape as ids and ds containing the interpolated values
         """
-        if pygeos.is_missing(self.the_geom).any():
+        if shapely.is_missing(self.the_geom).any():
             raise ValueError(
                 f"{self.__class__.__name__} found without a geometry. Call "
                 f"set_geometries first."
             )
-        lengths = pygeos.length(self.the_geom)
+        lengths = shapely.length(self.the_geom)
         idx = self.id_to_index(ids)
         weights = s / lengths[idx]
         if np.any(weights < 0.0) or np.any(weights > 1.0):

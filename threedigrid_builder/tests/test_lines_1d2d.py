@@ -2,8 +2,8 @@ import itertools
 from unittest import mock
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import Lines, Nodes
@@ -206,7 +206,7 @@ def test_get_lines_conn_point_no_2d_cell(grid2d):
     )
     connected_points = ConnectedPoints(
         id=[1],
-        the_geom=pygeos.points([(4.0, 5.0)]),
+        the_geom=shapely.points([(4.0, 5.0)]),
         exchange_level=[np.nan],
         # don't set the content_pk etc., instead, we patch .get_node_index()
     )
@@ -247,7 +247,7 @@ def test_get_lines_multiple_with_conn_points(grid2d):
     )
     connected_points = ConnectedPoints(
         id=range(3),
-        the_geom=pygeos.points([(1.5, 0.5), (1.5, 0.5), (1.5, 0.5)]),
+        the_geom=shapely.points([(1.5, 0.5), (1.5, 0.5), (1.5, 0.5)]),
         exchange_level=[np.nan, 0.1, 0.2],
         # don't set the content_pk etc., instead, we patch .get_node_index()
     )

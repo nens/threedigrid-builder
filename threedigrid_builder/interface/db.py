@@ -6,12 +6,13 @@ from enum import Enum
 from functools import lru_cache
 from typing import Callable, ContextManager, Tuple
 
+import geoalchemy2
 import numpy as np
-import pygeos
+import shapely
 from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import cast, inspect, Integer
+from sqlalchemy import cast, func, inspect, Integer
 from sqlalchemy.orm import Session
 from threedi_modelchecker.schema import ModelSchema
 from threedi_modelchecker.threedi_database import ThreediDatabase
@@ -53,6 +54,11 @@ NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
 NumpyQuery.default_numpy_settings[IntegerEnum] = {
     **NumpyQuery.default_numpy_settings[Integer],
     "sql_cast": lambda x: cast(x, Integer),
+}
+NumpyQuery.default_numpy_settings[geoalchemy2.Geometry] = {
+    "dtype": np.dtype("O"),
+    "sql_cast": func.ST_AsBinary,
+    "numpy_cast": shapely.from_wkb,
 }
 
 # To parse CalculationPoint.user_ref
@@ -256,14 +262,14 @@ class SQLite:
         """Reproject geometries from 4326 to the EPSG in the settings.
 
         Notes:
-          pygeos+pyproj is approx 2x faster than spatialite
+          shapely+pyproj is approx 2x faster than spatialite
 
         Args:
-          geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
+          geometries (ndarray of shapely.Geometry): geometries in EPSG 4326
         """
         target_epsg = self.epsg_code
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
-        return pygeos.apply(geometries, func)
+        return shapely.transform(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:
