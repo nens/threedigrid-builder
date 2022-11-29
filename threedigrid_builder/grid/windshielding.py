@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.base import search
 from threedigrid_builder.constants import ContentType
 
@@ -21,8 +21,7 @@ class Windshielding:
     northwest: float
 
 
-@array_of(Windshielding)
-class Windshieldings:
+class Windshieldings(DataClassArray[Windshielding]):
     def apply_to_lines(self, lines):
         """Set windshielding factors on lines. Only channels can have windshielding,
         as only channels can have wind applied to them

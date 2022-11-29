@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.exceptions import SchematisationError
 from typing import Tuple
@@ -30,8 +30,7 @@ class Pump:
     bottom_level: float
 
 
-@array_of(Pump)
-class Pumps:
+class Pumps(DataClassArray[Pump]):
     def renumber(self):
         """Renumber the ids of the pumps with a sequential ID.
 

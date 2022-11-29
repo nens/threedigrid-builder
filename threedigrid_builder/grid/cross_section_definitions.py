@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
 
@@ -16,8 +16,7 @@ class CrossSectionDefinition:
     width: str  # space-separated list of floats
 
 
-@array_of(CrossSectionDefinition)
-class CrossSectionDefinitions:
+class CrossSectionDefinitions(DataClassArray[CrossSectionDefinition]):
     def convert(self, ids):
         """Convert to CrossSections.
 
@@ -86,8 +85,7 @@ class CrossSection:
     # tables: Tuple[float, float] has different length so is specified on CrossSections
 
 
-@array_of(CrossSection)
-class CrossSections:
+class CrossSections(DataClassArray[CrossSection]):
     tables = None
 
 

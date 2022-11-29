@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import linear
@@ -24,8 +24,7 @@ class Channel:
     zoom_category: int
 
 
-@array_of(Channel)
-class Channels(linear.BaseLinear):
+class Channels(DataClassArray[Channel], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CHANNEL
 
     def get_1d2d_properties(self, nodes, node_idx, locations):

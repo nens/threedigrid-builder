@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of, LineStrings, PointsOnLine
+from threedigrid_builder.base import DataClassArray, LineStrings, PointsOnLine
 from threedigrid_builder.constants import FrictionType
 
 import numpy as np
@@ -20,8 +20,7 @@ class CrossSectionLocation:
     friction_value: float
 
 
-@array_of(CrossSectionLocation)
-class CrossSectionLocations:
+class CrossSectionLocations(DataClassArray[CrossSectionLocation]):
     def apply_to_lines(self, lines, channels, extrapolate=False):
         """Apply cross section locations to lines
 

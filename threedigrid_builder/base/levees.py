@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.constants import Material
 from typing import Tuple
 
@@ -18,8 +18,7 @@ class Breach:
     levbr: float  # levee.max_breach_depth
 
 
-@array_of(Breach)
-class Breaches:
+class Breaches(DataClassArray[Breach]):
     pass
 
 
@@ -31,6 +30,5 @@ class Levee:
     material: Material
 
 
-@array_of(Levee)
-class Levees:
+class Levees(DataClassArray[Levee]):
     pass

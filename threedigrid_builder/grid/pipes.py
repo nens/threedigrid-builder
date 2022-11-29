@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.constants import FrictionType
@@ -31,8 +31,7 @@ class Pipe:
     material: int
 
 
-@array_of(Pipe)
-class Pipes(linear.BaseLinear):
+class Pipes(DataClassArray[Pipe], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_PIPE
 
     def get_1d2d_properties(self, nodes, node_idx, connection_nodes):

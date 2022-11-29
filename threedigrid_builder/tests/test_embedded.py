@@ -1,7 +1,7 @@
 from itertools import count
 from numpy.testing import assert_almost_equal
 from numpy.testing import assert_array_equal
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
@@ -33,8 +33,7 @@ class LinearObject:
     display_name: str
 
 
-@array_of(LinearObject)
-class LinearObjects(BaseLinear):
+class LinearObjects(DataClassArray[LinearObject], BaseLinear):
     content_type = ContentType.TYPE_V2_WINDSHIELD  # just pick one for the test
 
 

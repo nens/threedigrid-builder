@@ -1,24 +1,18 @@
 from enum import IntEnum
 
 import numpy as np
-import sys
 import typing
 
 
-USE_PEP560 = sys.version_info[:3] >= (3, 7, 0)
-if USE_PEP560:
-    from typing import _GenericAlias
-else:
-    from typing import _Union
-    from typing import TupleMeta
+from typing import _GenericAlias, Generic, TypeVar
 
 __all__ = [
-    "array_of",
     "is_tuple_type",
     "is_int_enum",
     "unpack_optional_type",
     "replace",
     "search",
+    "DataClassArray",
 ]
 
 
@@ -28,10 +22,7 @@ def is_tuple_type(_type):
     Examples:
         is_tuple_type(Tuple[int, int]) == True
     """
-    if USE_PEP560:
-        return isinstance(_type, _GenericAlias) and _type.__origin__ is tuple
-    else:
-        return type(_type) is TupleMeta
+    return isinstance(_type, _GenericAlias) and _type.__origin__ is tuple
 
 
 def is_union_type(_type):
@@ -40,10 +31,7 @@ def is_union_type(_type):
     Examples:
         is_union_type(Union[int, str]) == True
     """
-    if USE_PEP560:
-        return isinstance(_type, _GenericAlias) and _type.__origin__ is typing.Union
-    else:
-        return type(_type) is _Union
+    return isinstance(_type, _GenericAlias) and _type.__origin__ is typing.Union
 
 
 def is_int_enum(_type):
@@ -329,6 +317,38 @@ class array_of:
         Wrapper.__module__ = cls.__module__
         return Wrapper
 
+
+T = TypeVar("T")
+class DataClassArray(Generic[T], ArrayDataClass):
+    """A dataclass with fields ("columns") that are numpy arrays of equal size."""
+
+    def __init_subclass__(cls) -> None:
+        base = cls.__orig_bases__[0]  # type: ignore
+        (data_class,) = base.__args__
+        cls.validate_data_class(data_class)
+        super().__init_subclass__()
+        cls.data_class = data_class
+
+    @staticmethod
+    def validate_data_class(data_class):
+        fields = typing.get_type_hints(data_class)
+
+        # id must be present
+        if "id" not in fields:
+            raise TypeError("The id field is required")
+        if fields["id"] is not int:
+            raise TypeError("The id field should be of integer type")
+
+        # check the subtypes of Tuples
+        for name, elem_type in fields.items():
+            if is_tuple_type(elem_type):
+                sub_types = elem_type.__args__
+                n_columns = len(sub_types)
+                if n_columns == 0:
+                    raise TypeError("Tuple cannot contain 0 elements")
+                elem_type = sub_types[0]
+                if not all(x is elem_type for x in sub_types):
+                    raise TypeError("Tuple cannot contain mixed dtypes")
 
 def replace(arr, mapping, check_present=False):
     """Return array with its values replaced according to ``mapping``.

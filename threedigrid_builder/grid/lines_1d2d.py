@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.base import Breaches
 from threedigrid_builder.base import Lines
 from threedigrid_builder.base import search
@@ -40,8 +40,7 @@ class ConnectedPoint:
     levee_id: int
 
 
-@array_of(ConnectedPoint)
-class ConnectedPoints:
+class ConnectedPoints(DataClassArray[ConnectedPoint]):
     def get_node_index(self, nodes, channels, pipes, culverts):
         """Find the node index to which connected points belong.
 

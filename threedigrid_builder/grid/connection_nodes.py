@@ -1,5 +1,5 @@
 from .cross_section_locations import compute_bottom_level
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import DataClassArray
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType
 from threedigrid_builder.constants import ContentType
@@ -35,8 +35,7 @@ class ConnectionNode:
     zoom_category: int
 
 
-@array_of(ConnectionNode)
-class ConnectionNodes:
+class ConnectionNodes(DataClassArray[ConnectionNode]):
     def get_nodes(self, node_id_counter):
         """Convert connection nodes to a nodes instance
 
