@@ -51,7 +51,7 @@ jobs:
             pins: "h5py==3.7.* sqlalchemy==1.4.40 pygeos==0.13 pyproj==3.4.*"
             extras: "[test,gridadmin]"
           # current
-          - python: '3.10'
+          - python: '3.11'
             os: ubuntu-latest
             numpy: numpy
             display_name: "latest"
