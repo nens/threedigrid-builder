@@ -1,7 +1,7 @@
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, LineStrings, PointsOnLine
+from threedigrid_builder.base import Array, PointsOnLine
 from threedigrid_builder.constants import FrictionType
 
 __all__ = ["CrossSectionLocations"]
@@ -119,16 +119,18 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
             np.empty((0,), dtype=float),
         )
 
-    linestrings = LineStrings(id=channels.id, the_geom=channels.the_geom)
     cs_points = PointsOnLine.from_geometries(
-        linestrings, cs.the_geom, channels.id_to_index(cs.channel_id), content_pk=cs.id
+        channels.linestrings,
+        cs.the_geom,
+        channels.id_to_index(cs.channel_id),
+        content_pk=cs.id,
     )
     queried_points = PointsOnLine.from_s1d(
-        linestrings, points, channels.id_to_index(channel_id)
+        channels.linestrings, points, channels.id_to_index(channel_id)
     )
 
     # Find what CS location comes after and before each midpoint
-    cs_idx_1, cs_idx_2 = queried_points.neighbors(cs_points)
+    cs_idx_1, cs_idx_2 = cs_points.neighbours(queried_points)
 
     # Map index to id and create the array that matches the input channel_id and ds
     cross_loc1 = cs_points.content_pk[cs_idx_1]
@@ -141,11 +143,11 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
     #
     # The weight is calculated such that a value at midpoint can be interpolated
     # as:   weight * v_1 + (1 - weight) * v_2
-    s_1 = cs_points.s1d_cum[cs_idx_1]
-    s_2 = cs_points.s1d_cum[cs_idx_2]
+    s_1 = cs_points.s1d[cs_idx_1]
+    s_2 = cs_points.s1d[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
-        cross_weight = (s_2 - queried_points.s1d_cum) / (s_2 - s_1)
+        cross_weight = (s_2 - queried_points.s1d) / (s_2 - s_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
 
     if not extrapolate:

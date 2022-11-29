@@ -9,18 +9,12 @@ __all__ = ["LineStrings", "PointsOnLine", "LinesOnLine"]
 COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
 
 
-class LineString:
-    id: int
-    the_geom: pygeos.Geometry  # LineString
-
-
 class PointOnLine:
     """A point determined by its position 'along' a linestring"""
 
     id: int  # just a unique number, mostly unused
-    content_pk: int  # externally determined id (e.g. cs location id)
+    content_pk: int  # externally determined id
     s1d: float  # the position along the linestring
-    s1d_cum: float
     linestring_idx: int
 
 
@@ -28,18 +22,28 @@ class LineOnLine:
     """A line determined by its position 'along' a linestring"""
 
     id: int  # just a unique number, mostly unused
+    content_pk: int  # externally determined id
     s1d_start: float  # the position along the linestring
     s1d_end: float  # the position along the linestring
     linestring_idx: int
 
 
-class LineStrings(Array[LineString]):
+class LineStrings:
+    def __init__(self, geometries):
+        assert isinstance(geometries, np.ndarray)
+        geom_types = pygeos.get_type_id(geometries)
+        assert np.all((geom_types == -1) | (geom_types == 1))
+        self.the_geom = geometries
+
+    def __len__(self):
+        return len(self.the_geom)
+
     @property
     def length(self):
         return pygeos.length(self.the_geom)
 
     @property
-    def cum_length(self):
+    def length_cumulative(self):
         result = np.zeros(len(self) + 1, dtype=float)
         np.cumsum(self.length + 1e-6, out=result[1:])
         return result
@@ -74,6 +78,8 @@ class LineStrings(Array[LineString]):
 
     def segmentize(self, points: "PointsOnLine") -> "LineOnLine":
         """Return lines that result from splitting self at 'points'"""
+        assert points.linestrings is self
+
         segment_counts = np.bincount(points.linestring_idx, minlength=len(self)) + 1
 
         # cut the channel geometries into segment geometries
@@ -81,14 +87,72 @@ class LineStrings(Array[LineString]):
             self.the_geom, segment_counts, points.s1d
         )
         return LinesOnLine(
+            self,
             id=range(len(segment_idx)),
             s1d_start=start_s,
             s1d_end=end_s,
             linestring_idx=segment_idx,
         )
 
+    def sanitize(self, points_1, points_2) -> None:
+        """Make sure that the self go from points_1 to points_2.
+
+        The linestring is reversed if the distance from the linestring start to point_1
+        and v.v. is lowered.
+
+        Then, point_1 and/or point_2 are added to the linestring if the distance is larger
+        than the tolerance of 1e-8.
+
+        This function acts inplace on self.
+        """
+        has_geom = np.where(pygeos.is_geometry(self.the_geom))[0]
+        if len(has_geom) == 0:
+            return
+
+        # reverse the geometries where necessary
+        node_start = points_1[has_geom]
+        node_end = points_2[has_geom]
+        line_start = pygeos.get_point(self.the_geom[has_geom], 0)
+        line_end = pygeos.get_point(self.the_geom[has_geom], -1)
+
+        dist_start_start = pygeos.distance(node_start, line_start)
+        dist_end_end = pygeos.distance(node_end, line_end)
+        dist_start_end = pygeos.distance(node_start, line_end)
+        dist_end_start = pygeos.distance(node_end, line_start)
+        needs_reversion = has_geom[
+            (dist_start_start > dist_start_end) & (dist_end_end > dist_end_start)
+        ]
+        if len(needs_reversion) > 0:
+            self.the_geom[needs_reversion] = pygeos.reverse(
+                self.the_geom[needs_reversion]
+            )
+            line_start[needs_reversion] = pygeos.get_point(
+                self.the_geom[needs_reversion], 0
+            )
+            line_end[needs_reversion] = pygeos.get_point(
+                self.the_geom[needs_reversion], -1
+            )
+            dist_start_start[needs_reversion] = dist_start_end[needs_reversion]
+            dist_end_end[needs_reversion] = dist_end_start[needs_reversion]
+
+        # for the remaining geometries; add point if necessary
+        add_first = has_geom[dist_start_start > COORD_EQUAL_ATOL]
+        if len(add_first) > 0:
+            self.the_geom[add_first] = prepend_point(
+                self.the_geom[add_first], points_1[add_first]
+            )
+        add_end = has_geom[dist_end_end > COORD_EQUAL_ATOL]
+        if len(add_end) > 0:
+            self.the_geom[add_end] = append_point(
+                self.the_geom[add_end], points_2[add_end]
+            )
+
 
 class PointsOnLine(Array[PointOnLine]):
+    def __init__(self, linestrings: "LineStrings", **kwargs):
+        super().__init__(**kwargs)
+        self.linestrings = linestrings
+
     @classmethod
     def from_geometries(
         cls, linestrings: LineStrings, points, linestring_idx, **kwargs
@@ -101,57 +165,74 @@ class PointsOnLine(Array[PointOnLine]):
         if np.any(~np.isfinite(s1d)):
             raise ValueError("NaN values encountered in s1d")
         result = cls(
+            linestrings,
             id=np.arange(len(linestring_idx)),
             s1d=s1d,
-            s1d_cum=s1d + linestrings.cum_length[linestring_idx],
             linestring_idx=linestring_idx,
             **kwargs,
         )
-        result.reorder_by("s1d_cum")
+        result.reorder(np.argsort(result.s1d_cum))
         return result
 
-    def as_geometries(self, line_geoms):
-        return pygeos.line_interpolate_point(line_geoms[self.linestring_idx], self.s1d)
+    @property
+    def s1d_cum(self):
+        return self.s1d + self.linestrings.length_cumulative[self.linestring_idx]
 
-    def neighbors(self, other: "PointOnLine"):
-        """Return the (indices of) the points that are before and after self.
+    @property
+    def the_geom(self):
+        return pygeos.line_interpolate_point(
+            self.linestrings.the_geom[self.linestring_idx], self.s1d
+        )
+
+    def neighbours(self, other: "PointsOnLine"):
+        """Compute neighbours in self of 'other'
+
+        Returns two arrays that index into self: the neighbours 'before' and the
+        neighbours 'after'.
 
         'other' must contain at least 1 point per linestring.
 
         If a point does not have a neigbour before it, the two returned indices
-        will be equal (both pointing to the neighbour after it). Vice versa, if it
-        does not have a neighboar after it, the two returned indices will be that
-        of the neighboar before.
+        will be the two points after it. Vice versa, if it does not have a neighbour after
+        it, the two returned indices will be that of the neighboar before.
+
+        If there there is only 1 point on a linestring, the neighbours will be equal.
         """
-        idx_2 = np.searchsorted(other.s1d_cum, self.s1d_cum)
+        assert self.linestrings is other.linestrings
+
+        idx_2 = np.searchsorted(self.s1d_cum, other.s1d_cum)
         idx_1 = idx_2 - 1
         out_of_bounds_1 = idx_1 < 0
-        out_of_bounds_2 = idx_2 >= len(other)
+        out_of_bounds_2 = idx_2 >= len(self)
         idx_1[out_of_bounds_1] = 0
-        idx_2[out_of_bounds_2] = len(other) - 1
+        idx_2[out_of_bounds_2] = len(self) - 1
 
         # Fix situations where idx_1 is incorrect
         extrap_mask = (
-            other.linestring_idx[idx_1] != self.linestring_idx
+            self.linestring_idx[idx_1] != other.linestring_idx
         ) | out_of_bounds_1
         idx_1[extrap_mask] = idx_2[extrap_mask]
-        idx_2[extrap_mask] = np.clip(idx_2[extrap_mask] + 1, None, len(other) - 1)
-        equalize = extrap_mask & (other.linestring_idx[idx_2] != self.linestring_idx)
+        idx_2[extrap_mask] = np.clip(idx_2[extrap_mask] + 1, None, len(self) - 1)
+        equalize = extrap_mask & (self.linestring_idx[idx_2] != other.linestring_idx)
         idx_2[equalize] -= 1
 
         # Fix situations where idx_2 is incorrect
         extrap_mask = (
-            other.linestring_idx[idx_2] != self.linestring_idx
+            self.linestring_idx[idx_2] != other.linestring_idx
         ) | out_of_bounds_2
         idx_2[extrap_mask] = idx_1[extrap_mask]
         idx_1[extrap_mask] = np.clip(idx_2[extrap_mask] - 1, 0, None)
-        equalize = extrap_mask & (other.linestring_idx[idx_1] != self.linestring_idx)
+        equalize = extrap_mask & (self.linestring_idx[idx_1] != other.linestring_idx)
         idx_1[equalize] += 1
 
         return idx_1, idx_2
 
 
 class LinesOnLine(Array[LineOnLine]):
+    def __init__(self, linestrings: "LineStrings", **kwargs):
+        super().__init__(**kwargs)
+        self.linestrings = linestrings
+
     @property
     def s1d(self):
         return (self.s1d_start + self.s1d_end) / 2
@@ -161,12 +242,9 @@ class LinesOnLine(Array[LineOnLine]):
         return self.s1d_end - self.s1d_start
 
     @property
-    def ds1d_half(self):
-        return self.ds1d / 2
-
-    def as_geometries(self, line_geoms):
+    def the_geom(self):
         return line_substring(
-            line_geoms, self.s1d_start, self.s1d_end, self.linestring_idx
+            self.linestrings.the_geom, self.s1d_start, self.s1d_end, self.linestring_idx
         )
 
 
@@ -353,3 +431,27 @@ def segment_start_end(linestrings, segment_counts, dist_to_start):
     end_s[last_idx] = pygeos.length(linestrings)
     end_s[np.isnan(end_s)] = dist_to_start
     return start_s, end_s, counts_to_row_index(segment_counts)
+
+
+def _add_point(linestrings, points, at=0):
+    """Append or prepend points to linestrings"""
+    counts = pygeos.get_num_coordinates(linestrings)
+    coords, index = pygeos.get_coordinates(linestrings, return_index=True)
+    start, end = counts_to_ranges(counts)
+    if at == 0:
+        insert_at = start
+    elif at == -1:
+        insert_at = end
+    else:
+        raise ValueError(f"Cannot insert at {at}")
+    new_coords = np.insert(coords, insert_at, pygeos.get_coordinates(points), axis=0)
+    new_index = np.insert(index, insert_at, np.arange(len(insert_at)))
+    return pygeos.linestrings(new_coords, indices=new_index)
+
+
+def prepend_point(linestrings, points):
+    return _add_point(linestrings, points, at=0)
+
+
+def append_point(linestrings, points):
+    return _add_point(linestrings, points, at=-1)
