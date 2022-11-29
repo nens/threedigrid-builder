@@ -1,4 +1,4 @@
-from threedigrid_builder.base import array_of
+from threedigrid_builder.base import array_of, LineStrings, PointsOnLine
 from threedigrid_builder.constants import FrictionType
 
 import numpy as np
@@ -121,77 +121,33 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
             np.empty((0,), dtype=float),
         )
 
-    if np.any(~np.isfinite(points)):
-        raise ValueError("NaN values encountered in points")
-
-    cs_channel_idx = channels.id_to_index(cs.channel_id)
-    points_channel_idx = channels.id_to_index(channel_id)
-
-    # Locate the position measured along the channel (ds) of the CS locations
-    cs_s = pygeos.line_locate_point(channels.the_geom[cs_channel_idx], cs.the_geom)
-
-    # To each cs_s, add the length of all channels before it
-    # the lengths are increased by a small number to mitigate overlapping start/ends
-    ch_cum_length = np.cumsum(pygeos.length(channels.the_geom) + 1e-6)
-    ch_cum_length = np.roll(ch_cum_length, 1)
-    ch_cum_length[0] = 0.0
-    cs_s += ch_cum_length[cs_channel_idx]
-
-    # Make cs_s monotonically increasing and update cs_sorter to match it
-    cs_sorter = np.argsort(cs_s)
-    cs_s = cs_s[cs_sorter]
-    cs_channel_idx = cs_channel_idx[cs_sorter]
-
-    # Compute the ds of the line points, cumulative over all channels
-    points_cum = points + ch_cum_length[points_channel_idx]
+    linestrings = LineStrings(id=channels.id, the_geom=channels.the_geom)
+    cs_points = PointsOnLine.from_geometries(
+        linestrings, cs.the_geom, channels.id_to_index(cs.channel_id), content_pk=cs.id
+    )
+    queried_points = PointsOnLine.from_s1d(
+        linestrings, points, channels.id_to_index(channel_id)
+    )
 
     # Find what CS location comes after and before each midpoint
-    cs_idx_2 = np.searchsorted(cs_s, points_cum)
-    cs_idx_1 = cs_idx_2 - 1
-    out_of_bounds_1 = cs_idx_1 < 0
-    out_of_bounds_2 = cs_idx_2 >= len(cs)
-    cs_idx_1[out_of_bounds_1] = 0
-    cs_idx_2[out_of_bounds_2] = len(cs) - 1
-
-    # Extrapolation: if a point does not have a cross section location
-    # to its left (cs_idx_1 is invalid), assign to it the 2 cross_idx
-    # to its right. And vice versa for cs_idx_2 that is invalid. Note
-    # that because every channel has at least 1 crosssection, one the two
-    # must always be valid. This is not checked here.
-    # Equalization: if a newly assigned crosssection location would not
-    # belong to the correct channel, we have only 1 crossection location
-    # in the channel so we assign the same cross_idx to both 1 and 2.
-
-    # Fix situations where cs_idx_1 is incorrect
-    extrap_mask = (cs_channel_idx[cs_idx_1] != points_channel_idx) | out_of_bounds_1
-    cs_idx_1[extrap_mask] = cs_idx_2[extrap_mask]
-    cs_idx_2[extrap_mask] = np.clip(cs_idx_2[extrap_mask] + 1, None, len(cs) - 1)
-    equalize = extrap_mask & (cs_channel_idx[cs_idx_2] != points_channel_idx)
-    cs_idx_2[equalize] -= 1
-
-    # Fix situations where cs_idx_2 is incorrect
-    extrap_mask = (cs_channel_idx[cs_idx_2] != points_channel_idx) | out_of_bounds_2
-    cs_idx_2[extrap_mask] = cs_idx_1[extrap_mask]
-    cs_idx_1[extrap_mask] = np.clip(cs_idx_2[extrap_mask] - 1, 0, None)
-    equalize = extrap_mask & (cs_channel_idx[cs_idx_1] != points_channel_idx)
-    cs_idx_1[equalize] += 1
+    cs_idx_1, cs_idx_2 = queried_points.neighbors(cs_points)
 
     # Map index to id and create the array that matches the input channel_id and ds
-    cross_loc1 = cs.id[cs_sorter][cs_idx_1]
-    cross_loc2 = cs.id[cs_sorter][cs_idx_2]
+    cross_loc1 = cs_points.content_pk[cs_idx_1]
+    cross_loc2 = cs_points.content_pk[cs_idx_2]
 
     # Compute the weights. For each line, we have 3 times s:
-    # 1. the s of the CrossSectionLocation before it (s_1)
-    # 2. the s of the CrossSectionLocation after it (s_2)
-    # 3. the s of the midpoint (velocity point) (points)
+    # 1. the s of the CrossSectionLocation before it (cs_idx_1)
+    # 2. the s of the CrossSectionLocation after it (cs_idx_2)
+    # 3. the s of the midpoint (velocity point) (queried_points)
     #
     # The weight is calculated such that a value at midpoint can be interpolated
     # as:   weight * v_1 + (1 - weight) * v_2
-    s_1 = cs_s[cs_idx_1]
-    s_2 = cs_s[cs_idx_2]
+    s_1 = cs_points.s1d_cum[cs_idx_1]
+    s_2 = cs_points.s1d_cum[cs_idx_2]
     with np.errstate(divide="ignore", invalid="ignore"):
         # this transforms 1 / 0 to inf and 0 / 0 to nan without warning
-        cross_weight = (s_2 - points_cum) / (s_2 - s_1)
+        cross_weight = (s_2 - queried_points.s1d_cum) / (s_2 - s_1)
     cross_weight[~np.isfinite(cross_weight)] = 1.0
 
     if not extrapolate:

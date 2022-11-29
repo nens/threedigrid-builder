@@ -6,3 +6,4 @@ from .surfaces import *  # NOQA
 from .interfaces import *  # NOQA
 from .settings import *  # NOQA
 from .levees import *  # NOQA
+from .linestrings import *  # NOQA
