@@ -1,10 +1,11 @@
 Changelog of threedigrid-builder
 ================================
 
-1.5.2 (unreleased)
+1.6.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Adapt channel interpolated nodes based on the new v2_potential_breach table.
+  Temporarily depends on threedi-modelchecker master branch.
 
 
 1.5.1 (2022-11-30)
