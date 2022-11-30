@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Breaches, Lines, search
+from threedigrid_builder.base import Array, Lines, search
 from threedigrid_builder.constants import (
     CalculationType,
     ContentType,
@@ -11,6 +11,8 @@ from threedigrid_builder.constants import (
     NodeType,
 )
 from threedigrid_builder.exceptions import SchematisationError
+
+from .levees import Breaches
 
 __all__ = ["ConnectedPoints"]
 

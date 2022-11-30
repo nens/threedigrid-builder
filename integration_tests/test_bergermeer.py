@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 from unittest.mock import Mock
 
 import h5py
@@ -23,9 +24,10 @@ def count_unique(arr):
     "filename", ["v2_bergermeer.sqlite", "v2_bergermeer_spatialite4.sqlite"]
 )
 def test_integration(tmp_path, filename):
+    shutil.copyfile(unittests_data_path / filename, tmp_path / filename)
     progress_callback = Mock()
     make_grid(
-        unittests_data_path / filename,
+        tmp_path / filename,
         unittests_data_path / "dem_test_5m.tif",
         tmp_path / "gridadmin.h5",
         meta={
@@ -35,6 +37,7 @@ def test_integration(tmp_path, filename):
             "threedi_version": "1.2.3.dev",
         },
         progress_callback=progress_callback,
+        upgrade=True,
     )
     with h5py.File(tmp_path / "gridadmin.h5", "r") as f:
         ## REPROJECTION

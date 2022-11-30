@@ -4,17 +4,15 @@ import numpy as np
 import pygeos
 
 from threedigrid_builder.base import (
-    Breaches,
     is_int_enum,
     is_tuple_type,
-    Levees,
     OutputInterface,
     search,
     unpack_optional_type,
 )
 from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 from threedigrid_builder.constants import ContentType, LineType, NodeType
-from threedigrid_builder.grid import Grid, GridMeta, QuadtreeStats
+from threedigrid_builder.grid import Breaches, Grid, GridMeta, Levees, QuadtreeStats
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 try:

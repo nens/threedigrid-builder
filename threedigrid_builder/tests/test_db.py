@@ -5,7 +5,7 @@ import pygeos
 import pytest
 from pygeos.testing import assert_geometries_equal
 
-from threedigrid_builder.base import GridSettings, Levees, Pumps, TablesSettings
+from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import (
     BoundaryType,
     CalculationType,
@@ -25,6 +25,7 @@ from threedigrid_builder.grid import (
     CrossSectionDefinitions,
     CrossSectionLocations,
     Culverts,
+    Levees,
     Orifices,
     Pipes,
     Weirs,
@@ -39,7 +40,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 208
+        get_version.return_value = 211
         sqlite = SQLite(path)
 
     db.assert_called_with(
@@ -70,7 +71,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 208
+    assert db.get_version() == 211
 
 
 def test_get_boundary_conditions_1d(db):
@@ -423,3 +424,9 @@ def test_get_windshieldings(db):
     windshieldings = db.get_windshieldings()
     # No windshielding in test dataset
     assert len(windshieldings) == 0
+
+
+def test_get_potential_breaches(db):
+    potential_breaches = db.get_potential_breaches()
+    # No potential breaches in test dataset
+    assert len(potential_breaches) == 0
