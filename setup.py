@@ -51,11 +51,11 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15",
-    "threedi-modelchecker @ git+https://github.com/nens/threedi-modelchecker@casper-breach#egg=threedi-modelchecker",
+    "threedi-modelchecker @ git+https://github.com/nens/threedi-modelchecker@master#egg=threedi-modelchecker",
     "pygeos>=0.11.1",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
-    "sqlalchemy",
+    "sqlalchemy>=1.3.12",
 ]
 
 test_requires = ["pytest"]
