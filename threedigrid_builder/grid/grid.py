@@ -8,7 +8,14 @@ from pyproj import CRS
 from pyproj.exceptions import CRSError
 
 import threedigrid_builder
-from threedigrid_builder.base import Lines, Nodes, Pumps, SurfaceMaps, Surfaces
+from threedigrid_builder.base import (
+    Lines,
+    Nodes,
+    PointsOnLine,
+    Pumps,
+    SurfaceMaps,
+    Surfaces,
+)
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
@@ -22,6 +29,7 @@ from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from .levees import Breaches, Levees
+from .linear import BaseLinear
 
 osr.UseExceptions()
 
@@ -348,16 +356,16 @@ class Grid:
     @classmethod
     def from_linear_objects(
         cls,
-        connection_nodes,
-        objects,
-        fixed_nodes,
-        cell_tree,
-        global_dist_calc_points,
-        embedded_cutoff_threshold,
+        connection_nodes: connection_nodes_module.ConnectionNodes,
+        objects: BaseLinear,
+        fixed_nodes: PointsOnLine,
+        cell_tree: pygeos.STRtree,
+        global_dist_calc_points: float,
+        embedded_cutoff_threshold: float,
         node_id_counter,
         embedded_node_id_counter,
         line_id_counter,
-        connection_node_offset=0,
+        connection_node_offset: int = 0,
     ):
         """Construct a grid for linear objects (channels, pipes, culverts)
 

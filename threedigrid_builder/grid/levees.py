@@ -46,13 +46,20 @@ class PotentialBreaches(Array[PotentialBreach]):
     def side_2d(self):
         return pygeos.get_point(self.the_geom, -1)
 
-    def project_on_channels(self, channels: Channels) -> PointsOnLine:
-        return PointsOnLine.from_geometries(
+    def project_on_channels(
+        self, channels: Channels, merge_tolerance: float
+    ) -> PointsOnLine:
+        """Project the potential breaches on channels, yielding points on channels.
+
+        This method also calls the 'merge' logic.
+        """
+        points = PointsOnLine.from_geometries(
             channels.linestrings,
             points=self.side_1d,
             linestring_idx=channels.id_to_index(self.channel_id, check_exists=True),
             content_pk=self.id,
         )
+        return self.merge(points, merge_tolerance)
 
     @staticmethod
     def merge(points: PointsOnLine, tolerance: float) -> PointsOnLine:
@@ -78,14 +85,12 @@ class PotentialBreaches(Array[PotentialBreach]):
         same_channel = np.diff(points.linestring_idx) == 0
         too_close = np.where((dists < tolerance) & same_channel)[0]
 
-        # iterate over too close pairs
+        # disable the second one of a 'too close' pair
         mask = np.full(len(points), fill_value=True, dtype=bool)
-        for ind in too_close:
-            mask[ind + 1] = False
-            # This will give wrong averages for more than two breaches that
-            # are too close, but that situation is not allowed anyway.
-            s1d[ind] = (s1d[ind] + s1d[ind + 1]) / 2
+        mask[too_close + 1] = False
 
+        # adapt the s1d to be in the middle of a pair
+        s1d[too_close] = (s1d[too_close] + s1d[too_close + 1]) / 2
         return PointsOnLine(
             points.linestrings,
             id=points.id[mask],

@@ -50,7 +50,7 @@ class LineStrings:
         np.cumsum(self.length + 1e-6, out=result[1:])
         return result
 
-    def segmentize(self, points: "PointsOnLine") -> "LineOnLine":
+    def segmentize(self, points: "PointsOnLine") -> "LinesOnLine":
         """Return lines that result from splitting self at 'points'"""
         assert points.linestrings is self
 
