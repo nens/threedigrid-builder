@@ -31,8 +31,8 @@ class PotentialBreach:
     the_geom: pygeos.Geometry
     code: str
     display_name: str
-    levee_material: Material
-    maximum_breach_depth: float
+    # levee_material: Material
+    # maximum_breach_depth: float
     channel_id: int
     line_id: int
 

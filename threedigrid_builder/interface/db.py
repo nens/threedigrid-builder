@@ -839,8 +839,8 @@ class SQLite:
                     models.PotentialBreach.display_name,
                     models.PotentialBreach.the_geom,
                     models.PotentialBreach.channel_id,
-                    models.PotentialBreach.maximum_breach_depth,
-                    models.PotentialBreach.levee_material,
+                    # models.PotentialBreach.maximum_breach_depth,
+                    # models.PotentialBreach.levee_material,
                 )
                 .order_by(models.PotentialBreach.id)
                 .as_structarray()
