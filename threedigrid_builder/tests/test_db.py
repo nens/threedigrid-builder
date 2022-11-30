@@ -430,3 +430,9 @@ def test_get_potential_breaches(db):
     potential_breaches = db.get_potential_breaches()
     # No potential breaches in test dataset
     assert len(potential_breaches) == 0
+
+
+def test_get_exchange_lines(db):
+    exchange_lines = db.get_exchange_lines()
+    # No potential breaches in test dataset
+    assert len(exchange_lines) == 0
