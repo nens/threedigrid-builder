@@ -1,6 +1,6 @@
 import typing
 from enum import IntEnum
-from typing import _GenericAlias, Generic, Tuple, TypeVar
+from typing import _GenericAlias, Generic, TypeVar
 
 import numpy as np
 
@@ -230,7 +230,7 @@ class Array(Generic[T]):
         """Find the id of records with given index.
 
         Note:
-            Index should be 0 <= index < len(self).
+            Index should be 0 <= index < len(self). Values of -9999 will persist.
 
         Args:
             index (int or array_like): The indices to return from self.id
@@ -242,7 +242,8 @@ class Array(Generic[T]):
         # len(id)    len(self.id)   timing (microseconds)
         # 1000       2000           5.2
         # 1000       10000          5.2
-        return np.take(self.id, index)  # same as self.id[index]
+        index = np.asarray(index)
+        return np.where(index != -9999, np.take(self.id, index, mode="clip"), -9999)
 
     def to_dict(self):
         fields = typing.get_type_hints(self.data_class)
@@ -273,21 +274,23 @@ class Array(Generic[T]):
         idx = np.argsort(getattr(self, attr), **kwargs)
         self.reorder(idx)
 
-    def split_in_two(self: TArray, by: str) -> Tuple[TArray, TArray]:
+    def split_in_two(self, by):
         """Split self in to 2 arrays having the first and second occurence of 'by'.
+
+        Returned are index arrays that index into self.
 
         If 'by' contains only unique values, the second array will be empty. If any value
         occurs more than 2 times, a 'TooManyExist' error is raised, having a 'values'
         attribute of the values that occur more than 2 times.
         """
-        values, idx1, counts = np.unique(
-            getattr(self, by), return_index=True, return_counts=True
-        )
+        if len(by) != len(self):
+            raise ValueError("'by' must have the same length as 'self'")
+        values, idx1, counts = np.unique(by, return_index=True, return_counts=True)
         if np.any(counts > 2):
             raise TooManyExist("", values=values[counts > 2])
         assert not np.any(counts > 2)
         idx2 = np.delete(np.arange(len(self)), idx1)
-        return self[idx1], self[idx2]
+        return idx1, idx2
 
 
 class TooManyExist(KeyError):
@@ -354,7 +357,7 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
                 values=v,
                 indices=np.arange(v.shape[0]),
             )
-        return np.zeros(len(v), dtype=int)
+        return np.full(len(v), -9999, dtype=int)
 
     if assume_ordered:
         ind = np.searchsorted(a, v)
@@ -362,17 +365,21 @@ def search(a, v, mask=None, assume_ordered=False, check_exists=True):
         sorter = np.argsort(a)
         ind = np.take(sorter, np.searchsorted(a, v, sorter=sorter), mode="clip")
 
-    if check_exists:
-        missing = np.take(a, ind, mode="clip") != v
-        if missing.any():
-            raise DoesNotExist(
-                "search encountered missing elements",
-                values=np.compress(missing, v),
-                indices=np.where(missing)[0],
-            )
+    missing = np.take(a, ind, mode="clip") != v
+    if check_exists and missing.any():
+        raise DoesNotExist(
+            "search encountered missing elements",
+            values=np.compress(missing, v),
+            indices=np.where(missing)[0],
+        )
+    elif missing.any():
+        if np.isscalar(ind):
+            ind = -9999
+        else:
+            ind[missing] = -9999
 
     # Map to original (unmasked) indices
     if mask is not None:
-        ind = np.take(mask, ind, mode="clip")
+        ind = np.where(ind != -9999, np.take(mask, ind, mode="clip"), -9999)
 
     return ind
