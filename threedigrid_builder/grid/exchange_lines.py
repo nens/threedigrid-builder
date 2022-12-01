@@ -5,7 +5,7 @@ import numpy as np
 import pygeos
 
 from threedigrid_builder.base import Array, Lines, Nodes, search
-from threedigrid_builder.constants import CalculationType, ContentType
+from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 __all__ = ["ExchangeLines", "Lines1D2D"]
 
@@ -66,44 +66,74 @@ class Lines1D2D(Lines):
                 idx != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
             )
 
-    def assign_line_coords(self, nodes: Nodes, exchange_lines: ExchangeLines) -> None:
-        """Assign line coordinates based exchange lines.
+    def get_1d_node_idx(self, nodes: Nodes):
+        """Get the 1D node index based on line[:, 1]"""
+        return nodes.id_to_index(self.line[:, 1])
 
-        The line is the shortest path between the exchange line and the 1D node.
-        If there is no exchange line, the line starts and ends at the 1D node.
+    def compute_2d_side(self, nodes: Nodes, exchange_lines: ExchangeLines):
+        """Compute a Point on the (user-requested) 2D side for each line
 
+        If there is no exchange line this is the 1D node location. If there is
+        an exchange line, it is the closest point on the exchange line.
+
+        Returns an array of pygeos Point geometries
         Requires: line[:, 1], content_pk, content_type
-        Sets: line_coords
+        Sets: nothing
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
 
         # Collect the 1D sides of the 1D2D line
-        coords_1d = nodes.coordinates[nodes.id_to_index(self.line[:, 1])]
-        coords_2d = coords_1d.copy()
+        coords_1d = nodes.coordinates[self.get_1d_node_idx(nodes)]
 
-        # Change these into the 2D sides through the exchange line
-        # if there is no exchange line, 2D side equals 1D side.
+        # Find the closest points on the exchange lines
         exc_geoms = exchange_lines.the_geom[
             exchange_lines.id_to_index(self.content_pk[has_exc])
         ]
         pygeos.prepare(exc_geoms)
         line_geom = pygeos.shortest_line(exc_geoms, pygeos.points(coords_1d[has_exc]))
-        coords_2d[has_exc] = pygeos.get_coordinates(pygeos.get_point(line_geom, 0))
 
-        self.line_coords[:, :2] = coords_2d
-        self.line_coords[:, 2:] = coords_1d
+        result = np.empty(len(self), dtype=object)
+        result[~has_exc] = pygeos.points(coords_1d[~has_exc])
+        result[has_exc] = pygeos.get_point(line_geom, 0)
+        return result
 
-    def assign_2d_node(self, cell_tree: pygeos.STRtree) -> None:
+    def assign_2d_node(self, points_2d_side, cell_tree: pygeos.STRtree) -> None:
         """Assigns the 2D node id based on the line_coords
 
-        Requires: line_coords
         Sets: line[:, 0]
         """
         # The query_bulk returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
-        idx = cell_tree.query_bulk(pygeos.points(self.line_coords[:, :2]))
+        idx = cell_tree.query_bulk(points_2d_side)
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, unique_matches = np.unique(idx[0], return_index=True)
         line_idx, cell_idx = idx[:, unique_matches]
         self.line[line_idx, 0] = cell_idx
+
+    def assign_kcu(self, mask, is_closed) -> None:
+        node_id = self.line[mask, 1]
+        node_id_unique, counts = np.unique(node_id, return_counts=True)
+        line_is_double = np.isin(self.line[mask, 1], node_id_unique[counts == 2])
+        self.kcu[mask] = np.choose(
+            line_is_double * 2 + is_closed,
+            choices=[
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+            ],
+        )
+
+    def assign_dpumax(self, mask, dpumax) -> None:
+        self.dpumax[mask] = dpumax
+
+    def assign_ds1d(self, nodes: Nodes) -> None:
+        """Sets the length (ds1d) based on the 2D cell with
+
+        Requires: line[:, 0]
+        Sets: ds1d, ds1d_half
+        """
+        cell_idx = nodes.id_to_index(self.line[:, 0])
+        self.ds1d[:] = nodes.bounds[cell_idx, 2] - nodes.bounds[cell_idx, 0]
+        self.ds1d_half[:] = 0.5 * self.ds1d

@@ -197,7 +197,7 @@ class Array(Generic[T]):
 
     def __add__(self, other: T) -> T:
         """Concatenate two array dataclasses of equal type."""
-        if self.__class__ is not other.__class__:
+        if not issubclass(other.__class__, self.__class__):
             raise TypeError(
                 f"Cannot concatenate {self} with {other} as they are not of "
                 f"equal types."

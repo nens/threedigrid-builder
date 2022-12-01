@@ -181,9 +181,9 @@ def _make_gridadmin(
     if grid.nodes.has_1d and grid.nodes.has_2d:
         progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.embed_nodes(embedded_node_id_counter)
-        connected_points = db.get_connected_points()
+        exchange_lines = db.get_exchange_lines()
         grid.add_1d2d(
-            connected_points,
+            exchange_lines,
             connection_nodes=connection_nodes,
             channels=channels,
             pipes=pipes,
@@ -191,7 +191,7 @@ def _make_gridadmin(
             culverts=culverts,
             line_id_counter=line_id_counter,
         )
-        grid.add_breaches(connected_points)
+        # grid.add_breaches(connected_points)
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,

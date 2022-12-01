@@ -28,6 +28,7 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
+from .exchange_lines import Lines1D2D
 from .levees import Breaches, Levees
 from .linear import BaseLinear
 
@@ -632,7 +633,7 @@ class Grid:
 
     def add_1d2d(
         self,
-        connected_points,
+        exchange_lines,
         connection_nodes,
         channels,
         pipes,
@@ -648,17 +649,28 @@ class Grid:
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
         """
-
-        self.lines += connected_points.get_lines(
+        lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
+        lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
+        lines_1d2d.assign_2d_node(
+            lines_1d2d.compute_2d_side(self.nodes, exchange_lines),
             self.cell_tree,
-            self.nodes,
-            connection_nodes,
-            channels,
-            pipes,
-            locations,
-            culverts,
-            line_id_counter,
         )
+        # Go through objects and dispatch to get_1d2d_properties
+        node_idx = lines_1d2d.get_1d_node_idx(self.nodes)
+        for objects in (channels, connection_nodes, pipes, culverts):
+            mask = self.nodes.content_type[node_idx] == objects.content_type
+            is_closed, dpumax = objects.get_1d2d_properties(
+                self.nodes,
+                node_idx[mask],
+                locations=locations,
+                channels=channels,
+                connection_nodes=connection_nodes,
+            )
+            lines_1d2d.assign_kcu(mask, is_closed)
+            lines_1d2d.assign_dpumax(mask, dpumax)
+
+        lines_1d2d.assign_ds1d(self.nodes)
+        self.lines += lines_1d2d
 
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """

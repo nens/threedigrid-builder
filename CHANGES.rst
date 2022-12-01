@@ -7,6 +7,8 @@ Changelog of threedigrid-builder
 - Adapt channel interpolated nodes based on the new v2_potential_breach table.
   Temporarily depends on threedi-modelchecker master branch.
 
+- Adapt 1D-2D lines generation to v2_exchange_line table. v2_connected_points are
+  ignored. Breaches are temporarily ignored.
 
 1.5.1 (2022-11-30)
 ------------------

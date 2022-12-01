@@ -23,7 +23,7 @@ class Channel:
 class Channels(Array[Channel], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CHANNEL
 
-    def get_1d2d_properties(self, nodes, node_idx, locations):
+    def get_1d2d_properties(self, nodes, node_idx, locations, **kwargs):
         """Compute properties (is_closed, dpumax) of 1D-2D channel flowlines.
 
         Args:

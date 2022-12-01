@@ -31,7 +31,7 @@ class Pipe:
 class Pipes(Array[Pipe], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_PIPE
 
-    def get_1d2d_properties(self, nodes, node_idx, connection_nodes):
+    def get_1d2d_properties(self, nodes, node_idx, connection_nodes, **kwargs):
         """Compute properties (is_closed, dpumax) of 1D-2D pipe flowlines.
 
         Args:
