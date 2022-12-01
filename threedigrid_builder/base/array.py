@@ -1,6 +1,6 @@
 import typing
 from enum import IntEnum
-from typing import _GenericAlias, Generic, TypeVar
+from typing import _GenericAlias, Generic, Tuple, TypeVar
 
 import numpy as np
 
@@ -11,6 +11,7 @@ __all__ = [
     "replace",
     "search",
     "Array",
+    "TooManyExist",
 ]
 
 
@@ -109,6 +110,7 @@ def _to_ndarray(value, elem_type, expected_length):
 
 
 T = TypeVar("T")
+TArray = TypeVar("TArray", bound="Array")
 
 
 class Array(Generic[T]):
@@ -270,6 +272,28 @@ class Array(Generic[T]):
         """
         idx = np.argsort(getattr(self, attr), **kwargs)
         self.reorder(idx)
+
+    def split_in_two(self: TArray, by: str) -> Tuple[TArray, TArray]:
+        """Split self in to 2 arrays having the first and second occurence of 'by'.
+
+        If 'by' contains only unique values, the second array will be empty. If any value
+        occurs more than 2 times, a 'TooManyExist' error is raised, having a 'values'
+        attribute of the values that occur more than 2 times.
+        """
+        values, idx1, counts = np.unique(
+            getattr(self, by), return_index=True, return_counts=True
+        )
+        if np.any(counts > 2):
+            raise TooManyExist("", values=values[counts > 2])
+        assert not np.any(counts > 2)
+        idx2 = np.delete(np.arange(len(self)), idx1)
+        return self[idx1], self[idx2]
+
+
+class TooManyExist(KeyError):
+    def __init__(self, msg, values):
+        self.values = values
+        super().__init__(msg)
 
 
 def replace(arr, mapping, check_present=False):

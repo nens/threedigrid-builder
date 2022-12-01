@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_equal
 
-from threedigrid_builder.base import Array, replace, search
+from threedigrid_builder.base import Array, replace, search, TooManyExist
 
 
 class Animal(IntEnum):
@@ -378,3 +378,47 @@ def test_search_empty_mask_check_exists():
             assume_ordered=False,
             check_exists=True,
         )
+
+
+def test_split_in_two():
+    records = Records(
+        id=[0, 1, 2, 3, 4, 5],
+        animal=[Animal.ANT, Animal.BEE, Animal.ANT, Animal.CAT, Animal.CAT, Animal.DOG],
+    )
+
+    actual_1, actual_2 = records.split_in_two("animal")
+    assert_equal(actual_1.id, [0, 1, 3, 5])
+    assert_equal(actual_2.id, [2, 4])
+
+
+def test_split_in_two_empty():
+    records = Records(
+        id=[],
+    )
+
+    actual_1, actual_2 = records.split_in_two("animal")
+    assert len(actual_1) == 0
+    assert len(actual_2) == 0
+
+
+def test_split_in_two_unique():
+    records = Records(
+        id=[0, 1, 2],
+        animal=[Animal.ANT, Animal.BEE, Animal.CAT],
+    )
+
+    actual_1, actual_2 = records.split_in_two("animal")
+    assert_equal(actual_1.id, [0, 1, 2])
+    assert_equal(actual_2.id, [])
+
+
+def test_split_in_two_err():
+    records = Records(
+        id=[0, 1, 2, 3],
+        animal=[Animal.ANT, Animal.BEE, Animal.ANT, Animal.ANT],
+    )
+
+    with pytest.raises(TooManyExist) as e:
+        records.split_in_two("animal")
+
+    assert_equal(e.value.values, [Animal.ANT])
