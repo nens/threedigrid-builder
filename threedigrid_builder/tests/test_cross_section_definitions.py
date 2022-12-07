@@ -14,7 +14,6 @@ from threedigrid_builder.grid.cross_section_definitions import (
     tabulate_inverted_egg,
     tabulate_tabulated,
     tabulate_yz_profile,
-    YZ_PROFILE_TOLERANCE,
 )
 
 SHP = CrossSectionShape
@@ -192,14 +191,27 @@ def test_tabulate_inverted_egg():
 @pytest.mark.parametrize(
     "width,height,exp_width,exp_height,exp_table",
     [
-        ("0 0.5 1 1.5", "0.5 0 0 0.5", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]]),
-        ("0 0.5 1 1.5", "0.5 0 0 0.25", 1.25, 0.25, [[0, 0.5], [0.25, 1.25]]),
+        ("0 0.5 1 1.5", "0.5 0 0 0.5", 1.5, 0.5, [[0, 0], [0.0001, 0.5], [0.5, 1.5]]),
+        (
+            "0 0.5 1 1.5",
+            "0.5 0 0 0.25",
+            1.25,
+            0.25,
+            [[0, 0], [0.0001, 0.5], [0.25, 1.25]],
+        ),
+        (
+            "0 1 2 3 4 5",
+            "1 0 0.5 0.5 0 1",
+            5,
+            1,
+            [[0, 0], [0.5, 3], [0.5001, 4], [1, 5]],
+        ),
         (
             "0 1 2 2 0 0",
             "0.5 0 0.5 1.5 1.5 0.5",
             2.0,
-            1.5,
-            [[0, 0], [0.5, 2.0], [0.5, 2.0], [1.5, 2.0], [1.5, 0.0]],
+            1.5001,
+            [[0, 0], [0.5, 2.0], [1.5, 2.0], [1.5001, 0.0]],
         ),
     ],
 )
@@ -207,13 +219,9 @@ def test_tabulate_yz_profile(width, height, exp_width, exp_height, exp_table):
     shape, width_1d, height_1d, table = tabulate_yz_profile("my-shape", width, height)
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
-    assert width_1d == pytest.approx(exp_width, abs=YZ_PROFILE_TOLERANCE)
-    assert height_1d == pytest.approx(exp_height, abs=YZ_PROFILE_TOLERANCE)
-    assert_almost_equal(
-        table,
-        np.array(exp_table, dtype=float),
-        decimal=int(-np.log10(YZ_PROFILE_TOLERANCE)) - 1,
-    )
+    assert width_1d == exp_width
+    assert height_1d == exp_height
+    assert_almost_equal(table, np.array(exp_table, dtype=float))
 
 
 @pytest.mark.parametrize(

@@ -8,7 +8,7 @@ from threedigrid_builder.exceptions import SchematisationError
 __all__ = ["CrossSectionDefinitions", "CrossSections"]
 
 
-YZ_PROFILE_TOLERANCE = 1e-4
+YZ_PROFILE_DECIMALS = 3
 
 
 class CrossSectionDefinition:
@@ -271,14 +271,15 @@ def tabulate_yz_profile(shape, width, height):
             f"Cross section definition should be closed or have increasing widths "
             f"(got: {width})."
         )
-    if is_closed:
-        # adapt non-unique height coordinates
-        seen = set()
-        for i, x in enumerate(zs[:-1]):
-            while x in seen:
-                x += YZ_PROFILE_TOLERANCE
-            seen.add(x)
-            zs[i] = x
+    # Adapt non-unique height coordinates. Why?
+    # Because if a pipe boundary is exactly horizontal, we need 2 unique Z coordinates.
+    seen = set()
+    eps = 1 / (10 ** (YZ_PROFILE_DECIMALS + 1))
+    for i, x in enumerate(zs[:-1]):
+        while x in seen:
+            x += eps
+        seen.add(x)
+        zs[i] = x
     heights = np.unique(zs)
 
     # pygeos will automatically close an open profile
@@ -290,11 +291,19 @@ def tabulate_yz_profile(shape, width, height):
     for i, height in enumerate(heights):
         line = pygeos.linestrings([[y_min, height], [y_max, height]])
         cross_section_line = pygeos.intersection(profile, line)
+        width = pygeos.length(cross_section_line)
         table[i, 0] = height
-        table[i, 1] = pygeos.length(cross_section_line)
+        table[i, 1] = width
 
     if not is_closed and table[-1, 1] == 0.0:
         table = table[:-1]
+
+    # eliminate duplicates and get rid of the epsilon introduced earlier
+    _, idx = np.unique(
+        np.round(table, decimals=YZ_PROFILE_DECIMALS), axis=0, return_index=True
+    )
+    table = table[np.sort(idx)]
+    table[:, 1] = np.round(table[:, 1], decimals=YZ_PROFILE_DECIMALS)
 
     height_1d, width_1d = table.max(axis=0).tolist()
     return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table
