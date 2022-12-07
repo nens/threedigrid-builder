@@ -1,10 +1,14 @@
 import numpy as np
+import pygeos
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["CrossSectionDefinitions", "CrossSections"]
+
+
+YZ_PROFILE_TOLERANCE = 1e-4
 
 
 class CrossSectionDefinition:
@@ -184,6 +188,28 @@ def tabulate_closed_rectangle(shape, width, height):
     return CrossSectionShape.TABULATED_RECTANGLE, width, height, table
 
 
+def _parse_tabulated(width, height):
+    try:
+        heights = np.array([float(x) for x in height.split(" ")])
+        widths = np.array([float(x) for x in width.split(" ")])
+    except ValueError:
+        raise SchematisationError(
+            f"Unable to parse cross section definition width and/or height "
+            f"(got: '{width}', '{height}')."
+        )
+    if len(heights) == 0:
+        raise SchematisationError(
+            f"Cross section definitions of tabulated or profile type must have at least one "
+            f"height element (got: {height})."
+        )
+    if len(heights) != len(widths):
+        raise SchematisationError(
+            f"Cross section definitions of tabulated or profile type must have equal number of "
+            f"height and width elements (got: {height}, {width})."
+        )
+    return widths, heights
+
+
 def tabulate_tabulated(shape, width, height):
     """Tabulate the tabulated shapes.
 
@@ -196,24 +222,7 @@ def tabulate_tabulated(shape, width, height):
         tuple:  shape, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2))
     """
-    try:
-        heights = [float(x) for x in height.split(" ")]
-        widths = [float(x) for x in width.split(" ")]
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width and/or height "
-            f"(got: '{width}', '{height}')."
-        )
-    if len(heights) == 0:
-        raise SchematisationError(
-            f"Cross section definitions of tabulated type must have at least one "
-            f"height element (got: {height})."
-        )
-    if len(heights) != len(widths):
-        raise SchematisationError(
-            f"Cross section definitions of tabulated type must have equal number of "
-            f"height and width elements (got: {height}, {width})."
-        )
+    widths, heights = _parse_tabulated(width, height)
     if len(heights) > 1 and np.any(np.diff(heights) < 0.0):
         raise SchematisationError(
             f"Cross section definitions of tabulated type must have increasing heights "
@@ -221,6 +230,68 @@ def tabulate_tabulated(shape, width, height):
         )
 
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
+
+
+def tabulate_yz_profile(shape, width, height):
+    """Tabulate an (open or closed) YZ profile
+
+    Args:
+        shape: ignored
+        width (str): space-separated horizontal (Y or X) coordinates
+        height (str): space-separated Z coordinates
+
+    Returns:
+        tuple:  shape, width_1d (float),
+                height_1d (float), table (ndarray of shape (M, 2))
+    """
+    ys, zs = _parse_tabulated(width, height)
+    is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
+    if len(zs) < (4 if is_closed else 3):
+        raise SchematisationError(
+            f"Cross section definitions of profiles must have at least 3 "
+            f"(for open) or 4 (for closed) coordinates (got: {len(zs)})."
+        )
+    if np.any(zs < 0):
+        raise SchematisationError(
+            f"Cross section definitions of profiles cannot have negative "
+            f"vertical (Z) coordinates (got: {height})."
+        )
+    if not np.any(zs == 0):
+        raise SchematisationError(
+            f"Cross section definitions of profiles must have at least one "
+            f"vertical (Z) coordinate at 0.0 (got: {height})."
+        )
+    if not is_closed and np.any(np.diff(ys) < 0.0):
+        raise SchematisationError(
+            f"Cross section definitions of open profiles must have increasing widths "
+            f"(got: {width})."
+        )
+    if is_closed:
+        # adapt non-unique height coordinates
+        seen = set()
+        for i, x in enumerate(zs):
+            while x in seen:
+                x += YZ_PROFILE_TOLERANCE
+            seen.add(x)
+            zs[i] = x
+    heights = np.unique(zs)
+
+    # pygeos will automatically close an open profile
+    profile = pygeos.polygons(np.array([ys, zs]).T)
+    pygeos.prepare(profile)
+
+    table = np.empty((len(heights), 2), dtype=float)
+    y_min, y_max = ys.min(), ys.max()
+    for i, height in enumerate(heights):
+        line = pygeos.linestrings([[y_min, height], [y_max, height]])
+        cross_section_line = pygeos.intersection(profile, line)
+        table[i, 0] = height
+        table[i, 1] = pygeos.length(cross_section_line)
+
+    if not is_closed and table[-1, 1] == 0.0:
+        table = table[::-1]
+
+    return CrossSectionShape.TABULATED_TRAPEZIUM, table[1].max(), table[0].max(), table
 
 
 tabulators = {
