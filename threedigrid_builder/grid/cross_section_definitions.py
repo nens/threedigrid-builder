@@ -271,26 +271,26 @@ def tabulate_yz_profile(shape, width, height):
             f"Cross section definition should be closed or have increasing widths "
             f"(got: {width})."
         )
+
+    if is_closed:
+        ys = ys[:-1]
+        zs = zs[:-1]
+
     # Adapt non-unique height coordinates. Why?
-    # Because if a pipe boundary is exactly horizontal, we need 2 unique Z coordinates.
+    # Because if a segment of the profile is exactly horizontal, we need 2 widths
     seen = set()
     eps = 1 / (10 ** (YZ_PROFILE_DECIMALS + 1))
-    for i, x in enumerate(zs[:-1]):
+    for i, x in enumerate(zs):
         while x in seen:
             x += eps
         seen.add(x)
         zs[i] = x
-    heights = np.unique(zs)
 
     # pygeos will automatically close an open profile
-    profile = pygeos.polygons(np.array([ys, zs]).T)
-    if not pygeos.is_valid(profile):
-        raise SchematisationError(
-            f"Cross section definition profile is an invalid geometry "
-            f"(got: {width}, {height}) ."
-        )
-    pygeos.prepare(profile)
+    profile = pygeos.make_valid(pygeos.polygons(np.array([ys, zs]).T))
 
+    # take the length of the intersection with a horizontal line at each Z
+    heights = np.unique(pygeos.get_coordinates(profile)[:, 1])
     table = np.empty((len(heights), 2), dtype=float)
     y_min, y_max = ys.min(), ys.max()
     for i, height in enumerate(heights):
@@ -300,15 +300,22 @@ def tabulate_yz_profile(shape, width, height):
         table[i, 0] = height
         table[i, 1] = width
 
+    # For open profiles, if the end coordinate is closed, that means that left
+    # and right sides are not equal in Z. We take the max width in that case.
     if not is_closed and table[-1, 1] == 0.0:
-        table = table[:-1]
+        table[-1, 1] = y_max - y_min
 
-    # eliminate duplicates and get rid of the epsilon introduced earlier
-    _, idx = np.unique(
-        np.round(table, decimals=YZ_PROFILE_DECIMALS), axis=0, return_index=True
-    )
-    table = table[np.sort(idx)]
-    table[:, 1] = np.round(table[:, 1], decimals=YZ_PROFILE_DECIMALS)
+    # Eliminate duplicates and get rid of the epsilon introduced earlier
+    # NB: Calccore allows a dicontinuity like [[0, 1], [1, 2], [1, 3]]
+    table = np.round(table, decimals=YZ_PROFILE_DECIMALS)
+    table = table[np.sort(np.unique(table, axis=0, return_index=True)[1])]
+
+    # Drop first elements until we have 1 0.0 height at the start.
+    # NB: An strong increase of width at the dry-wet transition may give issues.
+    while True:
+        if len(table) <= 1 or table[1, 0] > 0:
+            break
+        table = table[1:]
 
     height_1d, width_1d = table.max(axis=0).tolist()
     return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table

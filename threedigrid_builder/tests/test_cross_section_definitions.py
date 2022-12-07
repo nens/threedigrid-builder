@@ -191,28 +191,30 @@ def test_tabulate_inverted_egg():
 @pytest.mark.parametrize(
     "width,height,exp_width,exp_height,exp_table",
     [
-        ("0 0.5 1 1.5", "0.5 0 0 0.5", 1.5, 0.5, [[0, 0], [0.0001, 0.5], [0.5, 1.5]]),
+        ("0 0.5 1 1.5", "0.5 0 0 0.5", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]]),
         (
             "0 0.5 1 1.5",
             "0.5 0 0 0.25",
-            1.25,
-            0.25,
-            [[0, 0], [0.0001, 0.5], [0.25, 1.25]],
+            1.5,
+            0.5,
+            [[0, 0.5], [0.25, 1.25], [0.5, 1.5]],
         ),
         (
             "0 1 2 3 4 5",
             "1 0 0.5 0.5 0 1",
             5,
             1,
-            [[0, 0], [0.5, 3], [0.5001, 4], [1, 5]],
+            [[0, 0], [0.5, 3], [0.5, 4], [1, 5]],
         ),
         (
             "0 1 2 2 0 0",
             "0.5 0 0.5 1.5 1.5 0.5",
             2.0,
-            1.5001,
-            [[0, 0], [0.5, 2.0], [1.5, 2.0], [1.5001, 0.0]],
+            1.5,
+            [[0, 0], [0.5, 2.0], [1.5, 2.0], [1.5, 0.0]],
         ),
+        ("0 0.5 0.75 1.0 1.5", "0.5 0 0 0 0.5", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]]),
+        ("0 1 0 1 0", "0 1 1 0 0", 1, 1, [[0, 1], [0.5, 0], [1, 1], [1, 0]]),
     ],
 )
 def test_tabulate_yz_profile(width, height, exp_width, exp_height, exp_table):
@@ -241,7 +243,6 @@ def test_tabulate_yz_profile(width, height, exp_width, exp_height, exp_table):
         ("0 0.5 1.0", "0 1 -1", r".*cannot have negative height coordinate.*"),
         ("0 0.5 1.0", "1 2 1", r".*must have at least one height coordinate at 0.*"),
         ("0 0.5 1.0 0.5", "0 1 2 3", r".*should be closed or have increasing widths.*"),
-        ("0 1 0 1 0", "0 1 1 0 0", r".*is an invalid geometry.*"),
     ],
 )
 def test_tabulate_yz_profile_err(width, height, match):
