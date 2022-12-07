@@ -284,6 +284,11 @@ def tabulate_yz_profile(shape, width, height):
 
     # pygeos will automatically close an open profile
     profile = pygeos.polygons(np.array([ys, zs]).T)
+    if not pygeos.is_valid(profile):
+        raise SchematisationError(
+            f"Cross section definition profile is an invalid geometry "
+            f"(got: {width}, {height}) ."
+        )
     pygeos.prepare(profile)
 
     table = np.empty((len(heights), 2), dtype=float)

@@ -241,6 +241,7 @@ def test_tabulate_yz_profile(width, height, exp_width, exp_height, exp_table):
         ("0 0.5 1.0", "0 1 -1", r".*cannot have negative height coordinate.*"),
         ("0 0.5 1.0", "1 2 1", r".*must have at least one height coordinate at 0.*"),
         ("0 0.5 1.0 0.5", "0 1 2 3", r".*should be closed or have increasing widths.*"),
+        ("0 1 0 1 0", "0 1 1 0 0", r".*is an invalid geometry.*"),
     ],
 )
 def test_tabulate_yz_profile_err(width, height, match):
