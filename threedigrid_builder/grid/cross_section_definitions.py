@@ -150,6 +150,16 @@ def tabulate_egg(shape, width, height):
     return CrossSectionShape.TABULATED_TRAPEZIUM, width, height, table
 
 
+def tabulate_inverted_egg(shape, width, height):
+    """Tabulate the egg shape, upside down.
+
+    See tabulate_egg.
+    """
+    type_, width, height, table = tabulate_egg(shape, width, height)
+    table[:, 1] = table[::-1, 1]
+    return type_, width, height, table
+
+
 def tabulate_closed_rectangle(shape, width, height):
     """Tabulate the closed rectangle shape.
 

@@ -11,6 +11,7 @@ from threedigrid_builder.grid.cross_section_definitions import (
     tabulate_builtin,
     tabulate_closed_rectangle,
     tabulate_egg,
+    tabulate_inverted_egg,
     tabulate_tabulated,
 )
 
@@ -151,3 +152,36 @@ def test_tabulate_tabulated():
 def test_tabulate_tabulated_err(shape, width, height):
     with pytest.raises(SchematisationError):
         tabulate_tabulated(shape, width, height)
+
+
+def test_tabulate_inverted_egg():
+    shape, width_1d, height_1d, table = tabulate_inverted_egg(
+        "my-shape", "1.52", "ignored"
+    )
+
+    assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
+    assert width_1d == 1.52
+    assert height_1d == 1.52 * 1.5
+
+    # the expected table is exactly what inpy returns for a width of 1.52
+    expected_table = np.array(
+        [
+            [0.0, 0.0],
+            [0.152, 1.038],
+            [0.304, 1.31],
+            [0.456, 1.442],
+            [0.608, 1.504],
+            [0.76, 1.52],
+            [0.912, 1.506],
+            [1.064, 1.468],
+            [1.216, 1.41],
+            [1.368, 1.336],
+            [1.52, 1.242],
+            [1.672, 1.128],
+            [1.824, 0.99],
+            [1.976, 0.816],
+            [2.128, 0.584],
+            [2.28, 0.0],
+        ]
+    )
+    assert_almost_equal(table, expected_table, decimal=3)
