@@ -307,4 +307,6 @@ tabulators = {
     CrossSectionShape.EGG: tabulate_egg,
     CrossSectionShape.TABULATED_RECTANGLE: tabulate_tabulated,
     CrossSectionShape.TABULATED_TRAPEZIUM: tabulate_tabulated,
+    CrossSectionShape.YZ_PROFILE: tabulate_yz_profile,
+    CrossSectionShape.INVERTED_EGG: tabulate_inverted_egg,
 }
