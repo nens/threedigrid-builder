@@ -246,30 +246,35 @@ def tabulate_yz_profile(shape, width, height):
     """
     ys, zs = _parse_tabulated(width, height)
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
-    if len(zs) < (4 if is_closed else 3):
+    if is_closed and len(zs) < 4:
         raise SchematisationError(
-            f"Cross section definitions of profiles must have at least 3 "
-            f"(for open) or 4 (for closed) coordinates (got: {len(zs)})."
+            f"Cross section definitions of closed profiles must have at least "
+            f"4 coordinates (got: {len(zs)})."
+        )
+    if (not is_closed) and len(zs) < 3:
+        raise SchematisationError(
+            f"Cross section definitions of open profiles must have at least "
+            f"3 coordinates (got: {len(zs)})."
         )
     if np.any(zs < 0):
         raise SchematisationError(
             f"Cross section definitions of profiles cannot have negative "
-            f"vertical (Z) coordinates (got: {height})."
+            f"height coordinate (got: {height})."
         )
     if not np.any(zs == 0):
         raise SchematisationError(
             f"Cross section definitions of profiles must have at least one "
-            f"vertical (Z) coordinate at 0.0 (got: {height})."
+            f"height coordinate at 0.0 (got: {height})."
         )
     if not is_closed and np.any(np.diff(ys) < 0.0):
         raise SchematisationError(
-            f"Cross section definitions of open profiles must have increasing widths "
+            f"Cross section definition should be closed or have increasing widths "
             f"(got: {width})."
         )
     if is_closed:
         # adapt non-unique height coordinates
         seen = set()
-        for i, x in enumerate(zs):
+        for i, x in enumerate(zs[:-1]):
             while x in seen:
                 x += YZ_PROFILE_TOLERANCE
             seen.add(x)
@@ -289,9 +294,10 @@ def tabulate_yz_profile(shape, width, height):
         table[i, 1] = pygeos.length(cross_section_line)
 
     if not is_closed and table[-1, 1] == 0.0:
-        table = table[::-1]
+        table = table[:-1]
 
-    return CrossSectionShape.TABULATED_TRAPEZIUM, table[1].max(), table[0].max(), table
+    height_1d, width_1d = table.max(axis=0).tolist()
+    return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table
 
 
 tabulators = {
