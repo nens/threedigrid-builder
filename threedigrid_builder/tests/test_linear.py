@@ -1,4 +1,5 @@
 import itertools
+from unittest import mock
 
 import numpy as np
 import pygeos
@@ -6,7 +7,7 @@ import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
 from pygeos.testing import assert_geometries_equal
 
-from threedigrid_builder.base import Array, Nodes
+from threedigrid_builder.base import Array, Nodes, PointsOnLine
 from threedigrid_builder.constants import CalculationType, ContentType, NodeType
 from threedigrid_builder.grid import ConnectionNodes, linear
 
@@ -103,81 +104,97 @@ def two_linear_objects():
 
 
 @pytest.mark.parametrize(
-    "dist,expected",
+    "global_dist_calc_points,expected_dists",
     [
-        (3.0, [(3, 0), (6, 0), (6, 3)]),  # 12 / 3  = 4 segments
-        (4.0, [(4, 0), (6, 2)]),  # 12 / 4  = 3 segments
-        (5.0, [(6, 0)]),  # 12 / 5  = 2.4 -> 2 segments
-        (6.0, [(6, 0)]),  # 12 / 6  = 2 segments
-        (8.0, [(6, 0)]),  # 12 / 8  = 1.5 -> 2
-        (9.0, np.empty((0, 2), dtype=float)),  # 12 / 9  = 1.33 -> 1
-        (100.0, np.empty((0, 2), dtype=float)),
-        (0.0, np.empty((0, 2), dtype=float)),
-        (-9999.0, np.empty((0, 2), dtype=float)),
-        (np.nan, np.empty((0, 2), dtype=float)),
+        (74.0, [5.0, 74.0]),
+        (0.0, [5.0, np.inf]),
+        (-9999.0, [5.0, np.inf]),
+        (np.nan, [5.0, np.inf]),
+        (None, [5.0, np.inf]),
     ],
 )
-def test_interpolate_nodes_one_linear_object(dist, expected, one_linear_object):
-    one_linear_object.dist_calc_points[0] = dist
-    nodes = one_linear_object.interpolate_nodes(
-        itertools.count(start=2), global_dist_calc_points=74.0
+def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_objects):
+    dummy_points = PointsOnLine(
+        two_linear_objects.linestrings,
+        id=[0, 1, 2],
+        s1d=[1.0, 2.0, 3.0],
+        linestring_idx=[0, 0, 1],
     )
+    with mock.patch.object(two_linear_objects.linestrings, "segmentize") as segmentize:
+        segmentize().linestring_idx = [0, 1]
+        segmentize().interpolate_points.return_value = dummy_points
+        nodes = two_linear_objects.interpolate_nodes(
+            itertools.count(start=2), global_dist_calc_points
+        )
 
-    assert_array_equal(nodes.id, range(2, 2 + len(expected)))
-    assert_almost_equal(nodes.coordinates, expected, decimal=7)
-    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
-    assert_array_equal(nodes.content_pk, 1)
-    assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
-    assert_array_equal(nodes.calculation_type, 2)
+    (fixed_nodes,), _ = segmentize.call_args
+    assert isinstance(fixed_nodes, PointsOnLine)
+    assert len(fixed_nodes) == 0
 
-    expected_size = 12.0 / (len(expected) + 1)
-    assert_array_equal(nodes.s1d, np.arange(1, len(expected) + 1) * expected_size)
+    (dists,), _ = segmentize().interpolate_points.call_args
+    assert_almost_equal(dists, expected_dists)
 
-
-@pytest.mark.parametrize("global_value", [0.0, -9999.0, np.nan, None])
-def test_interpolate_nodes_global_none(one_linear_object, global_value):
-    expected = np.empty((0, 2), dtype=float)
-
-    one_linear_object.dist_calc_points[0] = np.nan
-    nodes = one_linear_object.interpolate_nodes(
-        itertools.count(start=2), global_dist_calc_points=global_value
+    assert_array_equal(nodes.id, range(2, 2 + len(dummy_points)))
+    assert_almost_equal(
+        nodes.coordinates, pygeos.get_coordinates(dummy_points.the_geom)
     )
-
-    assert_array_equal(nodes.id, range(2, 2 + len(expected)))
-    assert_almost_equal(nodes.coordinates, expected, decimal=7)
     assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
-    assert_array_equal(nodes.content_pk, 1)
+    assert_array_equal(nodes.content_pk, [1, 1, 2])
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
-    assert_array_equal(nodes.calculation_type, 2)
-
-    expected_size = 12.0 / (len(expected) + 1)
-    assert_array_equal(nodes.s1d, np.arange(1, len(expected) + 1) * expected_size)
-
-
-def test_interpolate_nodes_two_linear_objects(two_linear_objects):
-    nodes = two_linear_objects.interpolate_nodes(
-        itertools.count(start=2), global_dist_calc_points=50.0
-    )
-
-    expected_points = [(5, 0), (10, 0), (10, 5), (0, 50), (0, 100), (50, 100)]
-
-    assert_array_equal(nodes.id, range(2, 8))
-    assert_array_equal(nodes.coordinates, expected_points)
-    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
-    assert_array_equal(nodes.content_pk, [1, 1, 1, 2, 2, 2])
-    assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
-    assert_array_equal(nodes.calculation_type, [2, 2, 2, 1, 1, 1])
+    assert_array_equal(nodes.calculation_type, [2, 2, 1])
+    assert_array_equal(nodes.s1d, dummy_points.s1d)
 
 
 def test_interpolate_nodes_skips_embedded(two_linear_objects):
     two_linear_objects.calculation_type[0] = CalculationType.EMBEDDED
-    nodes = two_linear_objects.interpolate_nodes(
-        itertools.count(start=2), global_dist_calc_points=50.0
-    )
 
-    assert_array_equal(nodes.coordinates, [(0, 50), (0, 100), (50, 100)])
-    assert_array_equal(nodes.content_pk, 2)
-    assert_array_equal(nodes.calculation_type, 1)
+    with mock.patch.object(two_linear_objects.linestrings, "segmentize") as segmentize:
+        segmentize().linestring_idx = [0, 1]
+        segmentize().interpolate_points.return_value = PointsOnLine.empty(
+            two_linear_objects.linestrings
+        )
+        two_linear_objects.interpolate_nodes(
+            itertools.count(start=2), global_dist_calc_points=74.0
+        )
+
+    (dists,), _ = segmentize().interpolate_points.call_args
+    assert_almost_equal(dists, [np.inf, 74.0])
+
+
+def test_interpolate_nodes_with_fixture(two_linear_objects):
+    fixed_nodes = PointsOnLine(
+        two_linear_objects.linestrings,
+        id=[0, 1],
+        s1d=[30.0, 50.0],
+        linestring_idx=[1, 1],
+    )
+    dummy_points = PointsOnLine(
+        two_linear_objects.linestrings,
+        id=[0, 1],
+        s1d=[10.0, 125.0],
+        linestring_idx=[0, 1],
+    )
+    with mock.patch.object(two_linear_objects.linestrings, "segmentize") as segmentize:
+        segmentize().linestring_idx = np.array([0, 1, 1, 1])
+        segmentize().interpolate_points.return_value = dummy_points
+        nodes = two_linear_objects.interpolate_nodes(
+            itertools.count(start=2),
+            global_dist_calc_points=74.0,
+            fixed_nodes=fixed_nodes,
+        )
+
+    (arg,), _ = segmentize.call_args
+    assert arg is fixed_nodes
+
+    (dists,), _ = segmentize().interpolate_points.call_args
+    assert_almost_equal(dists, [5.0, 74.0, 74.0, 74.0])
+
+    assert_array_equal(nodes.id, [2, 3, 4, 5])
+    assert_almost_equal(nodes.coordinates, [(10, 0), (0, 30), (0, 50), (25, 100)])
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
+    assert_array_equal(nodes.content_pk, [1, 2, 2, 2])
+    assert_array_equal(nodes.calculation_type, [2, 1, 1, 1])
+    assert_array_equal(nodes.s1d, [10.0, 30.0, 50.0, 125.0])
 
 
 def test_get_lines(connection_nodes, two_linear_objects):

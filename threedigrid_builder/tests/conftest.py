@@ -1,5 +1,6 @@
 import os
 import pathlib
+import shutil
 
 import numpy as np
 import pygeos
@@ -7,9 +8,7 @@ import pytest
 from pyproj import CRS
 
 from threedigrid_builder.base import (
-    Breaches,
     GridSettings,
-    Levees,
     Lines,
     Nodes,
     Pumps,
@@ -18,20 +17,29 @@ from threedigrid_builder.base import (
 )
 from threedigrid_builder.base.surfaces import SurfaceMaps
 from threedigrid_builder.constants import NodeType
-from threedigrid_builder.grid import CrossSections, Grid, GridMeta, QuadtreeStats
+from threedigrid_builder.grid import (
+    Breaches,
+    CrossSections,
+    Grid,
+    GridMeta,
+    Levees,
+    QuadtreeStats,
+)
 from threedigrid_builder.interface.db import SQLite
 
 data_path = pathlib.Path(__file__).resolve().parents[0] / "data"
 
 
 @pytest.fixture(scope="session")
-def db():
+def db(tmp_path_factory):
     """Yields a threedigrid_builder.interface.db.SQLite object with access
     to the test v2_bergermeer.sqlite."""
+    fn = tmp_path_factory.mktemp("data") / "v2_bergermeer.sqlite"
     sqlite_path = data_path / "v2_bergermeer.sqlite"
-    if not os.path.isfile(sqlite_path):
+    shutil.copyfile(sqlite_path, fn)
+    if not os.path.isfile(fn):
         pytest.skip("sample sqlite is not available", allow_module_level=True)
-    return SQLite(sqlite_path)
+    return SQLite(fn, upgrade=True)
 
 
 @pytest.fixture

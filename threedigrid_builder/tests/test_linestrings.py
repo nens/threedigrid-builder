@@ -25,38 +25,6 @@ def two_linestrings():
 
 
 @pytest.mark.parametrize(
-    "segment_size,expected_size,expected_nodes",
-    [
-        (3.0, 12 / 4, [(3, 0), (6, 0), (6, 3)]),
-        (4.0, 12 / 3, [(4, 0), (6, 2)]),
-        (5.0, 12 / 2, [(6, 0)]),
-        (6.0, 12 / 2, [(6, 0)]),
-        (8.0, 12 / 2, [(6, 0)]),
-        (9.0, 12, np.empty((0, 2), dtype=float)),
-        (100.0, 12, np.empty((0, 2), dtype=float)),
-    ],
-)
-def test_interpolate_points_one(
-    linestrings, segment_size, expected_size, expected_nodes
-):
-    points = linestrings.interpolate_points(segment_size)
-
-    assert isinstance(points, PointsOnLine)
-    assert_array_equal(points.linestring_idx, 0)
-    assert_almost_equal(
-        points.s1d, expected_size * (np.arange(len(expected_nodes)) + 1)
-    )
-
-
-def test_interpolate_points_two(two_linestrings):
-    points = two_linestrings.interpolate_points(5.0)
-
-    assert isinstance(points, PointsOnLine)
-    assert_array_equal(points.linestring_idx, [0, 1])
-    assert_almost_equal(points.s1d, [5.0, 6.0])
-
-
-@pytest.mark.parametrize(
     "s1d,expected_idx,expected_idx_s1d_start, expected_s1d_end",
     [
         ([], [0], [0.0], [12.0]),
@@ -124,6 +92,20 @@ def test_point_on_line_the_geom_multiple(two_linestrings):
     assert_almost_equal(index, [0, 1])
 
 
+def test_point_on_line_merge_with(linestrings):
+    a = PointsOnLine(
+        linestrings, id=[0, 1], content_pk=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
+    )
+    b = PointsOnLine(
+        linestrings, id=[0, 1], content_pk=[5, 6], s1d=[1.0, 2.0], linestring_idx=[0, 1]
+    )
+    actual = a.merge_with(b)
+
+    assert_array_equal(actual.s1d, [1.0, 3.0, 2.0, 4.0])
+    assert_array_equal(actual.content_pk, [5, 1, 6, 2])
+    assert_array_equal(actual.linestring_idx, [0, 0, 1, 1])
+
+
 @pytest.mark.parametrize(
     "start,end,expected_coords",
     [
@@ -165,6 +147,94 @@ def test_line_on_line_the_geom_multiple(two_linestrings):
         coords, [(3.0, 10.0), (9.0, 10.0), (4.0, 0), (6.0, 0.0), (6.0, 4.0)]
     )
     assert_almost_equal(index, [0, 0, 1, 1, 1])
+
+
+@pytest.mark.parametrize(
+    "segment_size,expected_size,expected_count",
+    [
+        (3.0, 12 / 4, 3),
+        (4.0, 12 / 3, 2),
+        (5.0, 12 / 2, 1),
+        (6.0, 12 / 2, 1),
+        (8.0, 12 / 2, 1),
+        (9.0, 12, 0),
+        (100.0, 12, 0),
+    ],
+)
+def test_line_on_line_interpolate_points_one(
+    linestrings, segment_size, expected_size, expected_count
+):
+    lines_on_line = LinesOnLine(
+        linestrings,
+        id=[1],
+        s1d_start=[0.0],
+        s1d_end=linestrings.length,
+        linestring_idx=[0],
+    )
+    points = lines_on_line.interpolate_points(segment_size)
+
+    assert isinstance(points, PointsOnLine)
+    assert len(points) == expected_count
+    assert_array_equal(points.linestring_idx, 0)
+    assert_almost_equal(points.s1d, np.arange(1, expected_count + 1) * expected_size)
+
+
+@pytest.mark.parametrize(
+    "s1d_start,s1d_end,expected_s1d",
+    [
+        (0.0, 6.0, [3.0]),
+        (6.0, 12.0, [9.0]),
+        (1.0, 10.0, [4.0, 7.0]),
+    ],
+)
+def test_line_on_line_interpolate_points_partial(
+    linestrings, s1d_start, s1d_end, expected_s1d
+):
+    lines_on_line = LinesOnLine(
+        linestrings,
+        id=[1],
+        s1d_start=[s1d_start],
+        s1d_end=[s1d_end],
+        linestring_idx=[0],
+    )
+
+    points = lines_on_line.interpolate_points(3.0)
+
+    assert isinstance(points, PointsOnLine)
+    assert_array_equal(points.linestring_idx, 0)
+    assert_almost_equal(points.s1d, expected_s1d)
+
+
+def test_line_on_line_interpolate_points_two(two_linestrings):
+    lines_on_line = LinesOnLine(
+        two_linestrings,
+        id=[1, 2],
+        s1d_start=[0.0, 0.0],
+        s1d_end=two_linestrings.length,
+        linestring_idx=[0, 1],
+    )
+
+    points = lines_on_line.interpolate_points(5.0)
+
+    assert isinstance(points, PointsOnLine)
+    assert_array_equal(points.linestring_idx, [0, 1])
+    assert_almost_equal(points.s1d, [5.0, 6.0])
+
+
+def test_line_on_line_interpolate_points_two_partial(linestrings):
+    lines_on_line = LinesOnLine(
+        linestrings,
+        id=[1, 2],
+        s1d_start=[0.0, 5.0],
+        s1d_end=[5.0, 12.0],
+        linestring_idx=[0, 0],
+    )
+
+    points = lines_on_line.interpolate_points(3.0)
+
+    assert isinstance(points, PointsOnLine)
+    assert_array_equal(points.linestring_idx, [0, 0])
+    assert_almost_equal(points.s1d, [2.5, 8.5])
 
 
 @pytest.mark.parametrize(

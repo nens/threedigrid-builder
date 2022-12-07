@@ -1,6 +1,5 @@
 from .array import *  # NOQA
 from .interfaces import *  # NOQA
-from .levees import *  # NOQA
 from .lines import *  # NOQA
 from .linestrings import *  # NOQA
 from .nodes import *  # NOQA

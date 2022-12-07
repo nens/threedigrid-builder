@@ -3,7 +3,7 @@ import dataclasses
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Breaches, Lines, Nodes, OutputInterface
+from threedigrid_builder.base import Lines, Nodes, OutputInterface
 from threedigrid_builder.constants import (
     BoundaryType,
     CalculationType,
@@ -12,7 +12,7 @@ from threedigrid_builder.constants import (
     Material,
     NodeType,
 )
-from threedigrid_builder.grid import Grid, GridMeta
+from threedigrid_builder.grid import Breaches, Grid, GridMeta
 
 __all__ = ["DictOut"]
 

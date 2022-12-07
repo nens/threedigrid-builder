@@ -18,7 +18,7 @@ from threedi_modelchecker.threedi_database import ThreediDatabase
 from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 
-from threedigrid_builder.base import GridSettings, Levees, Pumps, TablesSettings
+from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import ContentType, InitializationType, LineType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import (
@@ -33,9 +33,11 @@ from threedigrid_builder.grid import (
     DemAverageAreas,
     GridRefinements,
     ImperviousSurfaces,
+    Levees,
     Obstacles,
     Orifices,
     Pipes,
+    PotentialBreaches,
     Surfaces,
     Weirs,
     Windshieldings,
@@ -46,7 +48,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 208
+MIN_SQLITE_VERSION = 211
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -827,6 +829,27 @@ class SQLite:
             )
 
         return Windshieldings(**{name: arr[name] for name in arr.dtype.names})
+
+    def get_potential_breaches(self) -> PotentialBreaches:
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.PotentialBreach.id,
+                    models.PotentialBreach.code,
+                    models.PotentialBreach.display_name,
+                    models.PotentialBreach.the_geom,
+                    models.PotentialBreach.channel_id,
+                    # models.PotentialBreach.maximum_breach_depth,
+                    # models.PotentialBreach.levee_material,
+                )
+                .order_by(models.PotentialBreach.id)
+                .as_structarray()
+            )
+
+        # reproject
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        return PotentialBreaches(**{name: arr[name] for name in arr.dtype.names})
 
 
 # Constructing a Transformer takes quite long, so we use caching here. The

@@ -9,10 +9,9 @@ from pyproj.exceptions import CRSError
 
 import threedigrid_builder
 from threedigrid_builder.base import (
-    Breaches,
-    Levees,
     Lines,
     Nodes,
+    PointsOnLine,
     Pumps,
     SurfaceMaps,
     Surfaces,
@@ -29,6 +28,8 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
+from .levees import Breaches, Levees
+from .linear import BaseLinear
 
 osr.UseExceptions()
 
@@ -355,21 +356,23 @@ class Grid:
     @classmethod
     def from_linear_objects(
         cls,
-        connection_nodes,
-        objects,
-        cell_tree,
-        global_dist_calc_points,
-        embedded_cutoff_threshold,
+        connection_nodes: connection_nodes_module.ConnectionNodes,
+        objects: BaseLinear,
+        fixed_nodes: PointsOnLine,
+        cell_tree: pygeos.STRtree,
+        global_dist_calc_points: float,
+        embedded_cutoff_threshold: float,
         node_id_counter,
         embedded_node_id_counter,
         line_id_counter,
-        connection_node_offset=0,
+        connection_node_offset: int = 0,
     ):
         """Construct a grid for linear objects (channels, pipes, culverts)
 
         Args:
             connection_nodes (ConnectionNodes): used to map ids to indices
             objects (Channels, Pipes, Culverts)
+            fixed_nodes (PointsOnLine): to optionally fix interpolated node positions
             cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             embedded_cutoff_threshold (float): The min length of an embedded line.
@@ -407,7 +410,9 @@ class Grid:
             - lines.discharge_coefficient_positive & _positive: culverts only
         """
         objects.set_geometries(connection_nodes)
-        nodes = objects.interpolate_nodes(node_id_counter, global_dist_calc_points)
+        nodes = objects.interpolate_nodes(
+            node_id_counter, global_dist_calc_points, fixed_nodes
+        )
         lines = objects.get_lines(
             connection_nodes,
             nodes,

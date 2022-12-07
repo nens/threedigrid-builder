@@ -5,21 +5,20 @@ import pygeos
 import pytest
 from numpy.testing import assert_array_equal
 
-from threedigrid_builder.base import (
-    Breaches,
-    GridSettings,
-    Lines,
-    Nodes,
-    Pumps,
-    TablesSettings,
-)
+from threedigrid_builder.base import GridSettings, Lines, Nodes, Pumps, TablesSettings
 from threedigrid_builder.constants import (
     ContentType,
     InitializationType,
     LineType,
     NodeType,
 )
-from threedigrid_builder.grid import ConnectionNodes, Grid, GridMeta, QuadtreeStats
+from threedigrid_builder.grid import (
+    Breaches,
+    ConnectionNodes,
+    Grid,
+    GridMeta,
+    QuadtreeStats,
+)
 
 
 @pytest.fixture

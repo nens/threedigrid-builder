@@ -1,4 +1,5 @@
 import itertools
+from typing import Optional
 
 import numpy as np
 import pygeos
@@ -46,7 +47,12 @@ class BaseLinear:
         coordinates[:, 1, 1] = pygeos.get_y(points_2[has_no_geom])
         self.the_geom[has_no_geom] = pygeos.linestrings(coordinates)
 
-    def interpolate_nodes(self, node_id_counter, global_dist_calc_points):
+    def interpolate_nodes(
+        self,
+        node_id_counter,
+        global_dist_calc_points,
+        fixed_nodes: Optional[PointsOnLine] = None,
+    ):
         """Compute nodes on each linear object with constant intervals
 
         The following fields are expected to be filled on self:
@@ -58,6 +64,7 @@ class BaseLinear:
         Args:
             node_id_counter (iterable): an iterable yielding integers
             global_dist_calc_points (float): Default node interdistance.
+            fixed_nodes: optional fixed points that will become a node
 
         Returns:
             tuple of nodes (Nodes)
@@ -83,6 +90,9 @@ class BaseLinear:
         ):
             global_dist_calc_points = np.inf  # means: no interpolation
 
+        if fixed_nodes is None:
+            fixed_nodes = PointsOnLine.empty(self.linestrings)
+
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()
         dists[np.isnan(dists)] = global_dist_calc_points
@@ -91,7 +101,11 @@ class BaseLinear:
         dists[self.calculation_type == CalculationType.EMBEDDED] = np.inf
 
         # interpolate the node geometries
-        points = self.linestrings.interpolate_points(dists)
+        sublinestrings = self.linestrings.segmentize(fixed_nodes)
+        points = sublinestrings.interpolate_points(dists[sublinestrings.linestring_idx])
+
+        # fixed_nodes also become nodes
+        points = points.merge_with(fixed_nodes)
 
         # construct the nodes with available attributes
         return Nodes(

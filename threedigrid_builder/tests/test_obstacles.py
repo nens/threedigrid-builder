@@ -3,9 +3,9 @@ import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
-from threedigrid_builder.base import Levees, Lines, Nodes
+from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.grid import Obstacles
+from threedigrid_builder.grid import Levees, Obstacles
 from threedigrid_builder.grid.grid import Grid
 
 

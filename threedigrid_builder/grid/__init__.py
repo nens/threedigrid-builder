@@ -14,6 +14,7 @@ from .dem_average_area import *  # NOQA
 from .embedded import *  # NOQA
 from .grid import *  # NOQA
 from .grid_refinement import *  # NOQA
+from .levees import *  # NOQA
 from .lines_1d2d import *  # NOQA
 from .obstacles import *  # NOQA
 from .pipes import *  # NOQA
