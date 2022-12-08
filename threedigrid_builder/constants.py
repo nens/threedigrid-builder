@@ -92,6 +92,8 @@ class CrossSectionShape(IntEnum):
     EGG = 3  # --> only user input, convert to tabulated trapezium
     TABULATED_RECTANGLE = 5
     TABULATED_TRAPEZIUM = 6
+    TABULATED_YZ = 7  # --> only user input, convert to tabulated trapezium
+    INVERTED_EGG = 8  # --> only user input, convert to tabulated trapezium
 
 
 @unique
