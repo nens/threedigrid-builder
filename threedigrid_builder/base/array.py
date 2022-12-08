@@ -110,7 +110,6 @@ def _to_ndarray(value, elem_type, expected_length):
 
 
 T = TypeVar("T")
-TArray = TypeVar("TArray", bound="Array")
 
 
 class Array(Generic[T]):

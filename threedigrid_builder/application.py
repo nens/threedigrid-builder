@@ -197,7 +197,6 @@ def _make_gridadmin(
             )
             grid.add_breaches(connected_points)
         else:
-            exchange_lines = db.get_exchange_lines()
             grid.add_1d2d(
                 exchange_lines,
                 connection_nodes=connection_nodes,
