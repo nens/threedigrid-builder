@@ -8,6 +8,7 @@ from setuptools import find_packages
 try:
     from skbuild import setup
 except ImportError:
+    from setuptools import setup
     if not any(x in sys.argv for x in {"sdist", "--version", "egg_info"}):
         sys.exit("ERROR: skbuild is required to build threedigrid-builder from source.")
 
