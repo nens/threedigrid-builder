@@ -8,7 +8,7 @@ from threedigrid_builder.exceptions import SchematisationError
 __all__ = ["CrossSectionDefinitions", "CrossSections"]
 
 
-YZ_PROFILE_DECIMALS = 3
+TABULATED_YZ_DECIMALS = 3
 
 
 class CrossSectionDefinition:
@@ -232,7 +232,7 @@ def tabulate_tabulated(shape, width, height):
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
 
 
-def tabulate_yz_profile(shape, width, height):
+def tabulate_yz(shape, width, height):
     """Tabulate an (open or closed) YZ profile
 
     Args:
@@ -279,7 +279,7 @@ def tabulate_yz_profile(shape, width, height):
     # Adapt non-unique height coordinates. Why?
     # Because if a segment of the profile is exactly horizontal, we need 2 widths
     seen = set()
-    eps = 1 / (10 ** (YZ_PROFILE_DECIMALS + 1))
+    eps = 1 / (10 ** (TABULATED_YZ_DECIMALS + 1))
     for i, x in enumerate(zs):
         while x in seen:
             x += eps
@@ -307,7 +307,7 @@ def tabulate_yz_profile(shape, width, height):
 
     # Eliminate duplicates and get rid of the epsilon introduced earlier
     # NB: Calccore allows a dicontinuity like [[0, 1], [1, 2], [1, 3]]
-    table = np.round(table, decimals=YZ_PROFILE_DECIMALS)
+    table = np.round(table, decimals=TABULATED_YZ_DECIMALS)
     table = table[np.sort(np.unique(table, axis=0, return_index=True)[1])]
 
     # Drop first elements until we have 1 0.0 height at the start.
@@ -328,6 +328,6 @@ tabulators = {
     CrossSectionShape.EGG: tabulate_egg,
     CrossSectionShape.TABULATED_RECTANGLE: tabulate_tabulated,
     CrossSectionShape.TABULATED_TRAPEZIUM: tabulate_tabulated,
-    CrossSectionShape.YZ_PROFILE: tabulate_yz_profile,
+    CrossSectionShape.TABULATED_YZ: tabulate_yz,
     CrossSectionShape.INVERTED_EGG: tabulate_inverted_egg,
 }

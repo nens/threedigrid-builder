@@ -13,7 +13,7 @@ from threedigrid_builder.grid.cross_section_definitions import (
     tabulate_egg,
     tabulate_inverted_egg,
     tabulate_tabulated,
-    tabulate_yz_profile,
+    tabulate_yz,
 )
 
 SHP = CrossSectionShape
@@ -217,8 +217,8 @@ def test_tabulate_inverted_egg():
         ("0 1 0 1 0", "0 1 1 0 0", 1, 1, [[0, 1], [0.5, 0], [1, 1], [1, 0]]),
     ],
 )
-def test_tabulate_yz_profile(width, height, exp_width, exp_height, exp_table):
-    shape, width_1d, height_1d, table = tabulate_yz_profile("my-shape", width, height)
+def test_tabulate_yz(width, height, exp_width, exp_height, exp_table):
+    shape, width_1d, height_1d, table = tabulate_yz("my-shape", width, height)
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
     assert width_1d == exp_width
@@ -245,6 +245,6 @@ def test_tabulate_yz_profile(width, height, exp_width, exp_height, exp_table):
         ("0 0.5 1.0 0.5", "0 1 2 3", r".*should be closed or have increasing widths.*"),
     ],
 )
-def test_tabulate_yz_profile_err(width, height, match):
+def test_tabulate_yz_err(width, height, match):
     with pytest.raises(SchematisationError, match=match):
-        tabulate_yz_profile("my-shape", width, height)
+        tabulate_yz("my-shape", width, height)

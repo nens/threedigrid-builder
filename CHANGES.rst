@@ -7,7 +7,7 @@ Changelog of threedigrid-builder
 - Adapt channel interpolated nodes based on the new v2_potential_breach table.
   Temporarily depends on threedi-modelchecker master branch.
 
-- Add YZ_PROFILE (7) and INVERTED_EGG (8) cross section shapes. Both are converted
+- Add TABULATED_YZ (7) and INVERTED_EGG (8) cross section shapes. Both are converted
   to tabulated trapezium.
 
 
