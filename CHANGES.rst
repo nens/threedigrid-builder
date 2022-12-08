@@ -10,6 +10,10 @@ Changelog of threedigrid-builder
 - Adapt 1D-2D lines generation to v2_exchange_line table. v2_connected_points are
   ignored. Breaches are temporarily ignored.
 
+- Add TABULATED_YZ (7) and INVERTED_EGG (8) cross section shapes. Both are converted
+  to tabulated trapezium.
+
+
 1.5.1 (2022-11-30)
 ------------------
 

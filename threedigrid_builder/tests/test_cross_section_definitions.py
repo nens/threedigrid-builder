@@ -11,7 +11,9 @@ from threedigrid_builder.grid.cross_section_definitions import (
     tabulate_builtin,
     tabulate_closed_rectangle,
     tabulate_egg,
+    tabulate_inverted_egg,
     tabulate_tabulated,
+    tabulate_yz,
 )
 
 SHP = CrossSectionShape
@@ -138,16 +140,111 @@ def test_tabulate_tabulated():
 
 
 @pytest.mark.parametrize(
-    "shape,width,height",
+    "width,height,match",
     [
-        (CrossSectionShape.TABULATED_RECTANGLE, "", "1"),
-        (CrossSectionShape.TABULATED_RECTANGLE, "1", ""),
-        (CrossSectionShape.TABULATED_RECTANGLE, "", ""),
-        (CrossSectionShape.TABULATED_RECTANGLE, "1", "1 2"),
-        (CrossSectionShape.TABULATED_RECTANGLE, "1 2", "1"),
-        (CrossSectionShape.TABULATED_RECTANGLE, "1 1", "2 1"),
+        ("", "1", r"Unable to parse cross section definition.*"),
+        ("1", "", r"Unable to parse cross section definition.*"),
+        ("", "", r"Unable to parse cross section definition.*"),
+        ("1", "1 2", r".*of tabulated or profile type must have equal number.*"),
+        ("1 2", "1", r".*of tabulated or profile type must have equal number.*"),
+        ("1 1", "2 1", r".*of tabulated type must have increasing heights.*"),
     ],
 )
-def test_tabulate_tabulated_err(shape, width, height):
-    with pytest.raises(SchematisationError):
-        tabulate_tabulated(shape, width, height)
+def test_tabulate_tabulated_err(width, height, match):
+    with pytest.raises(SchematisationError, match=match):
+        tabulate_tabulated(CrossSectionShape.TABULATED_RECTANGLE, width, height)
+
+
+def test_tabulate_inverted_egg():
+    shape, width_1d, height_1d, table = tabulate_inverted_egg(
+        "my-shape", "1.52", "ignored"
+    )
+
+    assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
+    assert width_1d == 1.52
+    assert height_1d == 1.52 * 1.5
+
+    # the expected table is exactly what inpy returns for a width of 1.52
+    expected_table = np.array(
+        [
+            [0.0, 0.0],
+            [0.152, 1.038],
+            [0.304, 1.31],
+            [0.456, 1.442],
+            [0.608, 1.504],
+            [0.76, 1.52],
+            [0.912, 1.506],
+            [1.064, 1.468],
+            [1.216, 1.41],
+            [1.368, 1.336],
+            [1.52, 1.242],
+            [1.672, 1.128],
+            [1.824, 0.99],
+            [1.976, 0.816],
+            [2.128, 0.584],
+            [2.28, 0.0],
+        ]
+    )
+    assert_almost_equal(table, expected_table, decimal=3)
+
+
+@pytest.mark.parametrize(
+    "width,height,exp_width,exp_height,exp_table",
+    [
+        ("0 0.5 1 1.5", "0.5 0 0 0.5", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]]),
+        (
+            "0 0.5 1 1.5",
+            "0.5 0 0 0.25",
+            1.5,
+            0.5,
+            [[0, 0.5], [0.25, 1.25], [0.5, 1.5]],
+        ),
+        (
+            "0 1 2 3 4 5",
+            "1 0 0.5 0.5 0 1",
+            5,
+            1,
+            [[0, 0], [0.5, 3], [0.5, 4], [1, 5]],
+        ),
+        (
+            "0 1 2 2 0 0",
+            "0.5 0 0.5 1.5 1.5 0.5",
+            2.0,
+            1.5,
+            [[0, 0], [0.5, 2.0], [1.5, 2.0], [1.5, 0.0]],
+        ),
+        ("0 0.5 0.75 1.0 1.5", "0.5 0 0 0 0.5", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]]),
+        ("0 1 0 1 0", "0 1 1 0 0", 1, 1, [[0, 1], [0.5, 0], [1, 1], [1, 0]]),
+    ],
+)
+def test_tabulate_yz(width, height, exp_width, exp_height, exp_table):
+    shape, width_1d, height_1d, table = tabulate_yz("my-shape", width, height)
+
+    assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
+    assert width_1d == exp_width
+    assert height_1d == exp_height
+    assert_almost_equal(table, np.array(exp_table, dtype=float))
+
+
+@pytest.mark.parametrize(
+    "width,height,match",
+    [
+        ("", "1", r"Unable to parse cross section definition.*"),
+        ("1", "", r"Unable to parse cross section definition.*"),
+        ("", "", r"Unable to parse cross section definition.*"),
+        ("1", "1 2", r".*of tabulated or profile type must have equal number.*"),
+        ("1 2", "1", r".*of tabulated or profile type must have equal number.*"),
+        (
+            "0 0.5 0",
+            "0 1 0",
+            r".*of closed profiles must have at least 4 coordinates.*",
+        ),
+        ("0 0.5", "0 1", r".*of open profiles must have at least 3 coordinates.*"),
+        ("0 0.5 1.0", "0 1 -1", r".*cannot have negative height coordinate.*"),
+        ("0 0.5 1.0", "1 2 1", r".*must have at least one height coordinate at 0.*"),
+        ("0 0.5 1.0 0.5", "0 1 2 3", r".*should be closed or have increasing widths.*"),
+    ],
+)
+def test_tabulate_yz_err(width, height, match):
+    with pytest.raises(SchematisationError, match=match):
+        tabulate_yz("my-shape", width, height)
