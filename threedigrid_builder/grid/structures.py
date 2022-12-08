@@ -32,7 +32,7 @@ class Culvert:  # NL: duiker
 class Culverts(Array[Culvert], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CULVERT
 
-    def get_1d2d_properties(self, nodes, node_idx, connection_nodes):
+    def get_1d2d_properties(self, nodes, node_idx, connection_nodes, **kwargs):
         """Compute properties (is_closed, dpumax) of 1D-2D culvert flowlines.
 
         Args:

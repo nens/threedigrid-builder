@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_equal
 
-from threedigrid_builder.base import Array, replace, search
+from threedigrid_builder.base import Array, replace, search, TooManyExist
 
 
 class Animal(IntEnum):
@@ -173,7 +173,16 @@ def test_id_to_index_check_exists():
 
 
 @pytest.mark.parametrize(
-    "id,expected", [(1, 3), ([2], [5]), ([1, 0], [3, 1]), ([1, 1, 1], [3, 3, 3])]
+    "id,expected",
+    [
+        (1, 3),
+        ([2], [5]),
+        ([1, 0], [3, 1]),
+        ([1, 1, 1], [3, 3, 3]),
+        (-9999, -9999),
+        ([-9999], [-9999]),
+        ([1, -9999], [3, -9999]),
+    ],
 )
 def test_index_to_id(id, expected):
     records = Records(id=[1, 3, 5])
@@ -275,6 +284,17 @@ def test_search_ordered():
     assert_equal(actual, [2, 0, 1])
 
 
+def test_search_missing():
+    actual = search(
+        [1, 4, 5, 9, 2],
+        [4, 1, 10],
+        assume_ordered=False,
+        check_exists=False,
+    )
+
+    assert_equal(actual, [1, 0, -9999])
+
+
 def test_search_bool_mask():
     actual = search(
         [1, 4, 2, 9, 2],
@@ -311,6 +331,18 @@ def test_search_int_mask_ordered():
     assert_equal(actual, [1, 0, 4])
 
 
+def test_search_int_mask_missing():
+    actual = search(
+        [1, 4, 2, 9, 2],
+        [4, 1, 9],
+        mask=[0, 1, 4],
+        assume_ordered=False,
+        check_exists=False,
+    )
+
+    assert_equal(actual, [1, 0, -9999])
+
+
 def test_search_check_exists():
     with pytest.raises(KeyError) as e:
         search(
@@ -344,7 +376,7 @@ def test_search_empty():
         check_exists=False,
     )
 
-    assert_equal(actual, [0, 0, 0])
+    assert_equal(actual, [-9999, -9999, -9999])
 
 
 def test_search_empty_check_exists():
@@ -366,7 +398,7 @@ def test_search_empty_mask():
         check_exists=False,
     )
 
-    assert_equal(actual, [0, 0, 0])
+    assert_equal(actual, [-9999, -9999, -9999])
 
 
 def test_search_empty_mask_check_exists():
@@ -378,3 +410,36 @@ def test_search_empty_mask_check_exists():
             assume_ordered=False,
             check_exists=True,
         )
+
+
+def test_split_in_two():
+    records = Records(id=[0, 1, 2, 3, 4, 5])
+
+    actual_1, actual_2 = records.split_in_two([0, 1, 1, 2, 3, 2])
+    assert_equal(actual_1, [0, 1, 3, 4])
+    assert_equal(actual_2, [2, 5])
+
+
+def test_split_in_two_empty():
+    records = Records(id=[])
+
+    actual_1, actual_2 = records.split_in_two([])
+    assert len(actual_1) == 0
+    assert len(actual_2) == 0
+
+
+def test_split_in_two_unique():
+    records = Records(id=[0, 1, 2])
+
+    actual_1, actual_2 = records.split_in_two([1, 2, 7])
+    assert_equal(actual_1, [0, 1, 2])
+    assert_equal(actual_2, [])
+
+
+def test_split_in_two_err():
+    records = Records(id=[0, 1, 2, 3])
+
+    with pytest.raises(TooManyExist) as e:
+        records.split_in_two([5, 2, 5, 5])
+
+    assert_equal(e.value.values, [5])

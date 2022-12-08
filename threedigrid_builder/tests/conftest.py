@@ -39,7 +39,23 @@ def db(tmp_path_factory):
     shutil.copyfile(sqlite_path, fn)
     if not os.path.isfile(fn):
         pytest.skip("sample sqlite is not available", allow_module_level=True)
-    return SQLite(fn, upgrade=True)
+    return SQLite(fn)
+
+
+@pytest.fixture(scope="session")
+def db_upgraded(tmp_path_factory):
+    """Yields a threedigrid_builder.interface.db.SQLite object with access
+    to the test v2_bergermeer.sqlite.
+
+    The sqlite is upgraded"""
+    fn = tmp_path_factory.mktemp("data") / "v2_bergermeer_upgraded.sqlite"
+    sqlite_path = data_path / "v2_bergermeer.sqlite"
+    shutil.copyfile(sqlite_path, fn)
+    if not os.path.isfile(fn):
+        pytest.skip("sample sqlite is not available", allow_module_level=True)
+    sqlite = SQLite(fn)
+    sqlite.upgrade()
+    return sqlite
 
 
 @pytest.fixture

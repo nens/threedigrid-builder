@@ -31,6 +31,7 @@ from threedigrid_builder.grid import (
     CrossSectionLocations,
     Culverts,
     DemAverageAreas,
+    ExchangeLines,
     GridRefinements,
     ImperviousSurfaces,
     Levees,
@@ -48,7 +49,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 211
+MIN_SQLITE_VERSION = 208
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -621,6 +622,27 @@ class SQLite:
         # transform to a CrossSectionLocations object
         return Culverts(**{name: arr[name] for name in arr.dtype.names})
 
+    def get_exchange_lines(self) -> ExchangeLines:
+        # exchange lines are available from schema version 211
+        if self.get_version() < 211:
+            return ExchangeLines(id=[])
+
+        with self.get_session() as session:
+            arr = (
+                session.query(
+                    models.ExchangeLine.id,
+                    models.ExchangeLine.channel_id,
+                    models.ExchangeLine.the_geom,
+                )
+                .order_by(models.ExchangeLine.id)
+                .as_structarray()
+            )
+
+        arr["the_geom"] = self.reproject(arr["the_geom"])
+
+        # transform to a Channels object
+        return ExchangeLines(**{name: arr[name] for name in arr.dtype.names})
+
     def get_grid_refinements(self) -> GridRefinements:
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
@@ -831,6 +853,10 @@ class SQLite:
         return Windshieldings(**{name: arr[name] for name in arr.dtype.names})
 
     def get_potential_breaches(self) -> PotentialBreaches:
+        # potential breaches are available from schema version 211
+        if self.get_version() < 211:
+            return PotentialBreaches(id=[])
+
         with self.get_session() as session:
             arr = (
                 session.query(

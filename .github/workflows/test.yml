@@ -54,6 +54,7 @@ jobs:
           - python: '3.10'
             os: ubuntu-latest
             numpy: numpy
+            pins: "git+https://github.com/nens/threedi-modelchecker@master#egg=threedi-modelchecker"
             display_name: "latest"
             extras: "[test,gridadmin]"
 

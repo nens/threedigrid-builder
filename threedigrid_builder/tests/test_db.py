@@ -71,7 +71,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 211
+    assert db.get_version() == 208
 
 
 def test_get_boundary_conditions_1d(db):
@@ -428,5 +428,23 @@ def test_get_windshieldings(db):
 
 def test_get_potential_breaches(db):
     potential_breaches = db.get_potential_breaches()
+    # No potential breaches table (schema version 208)
+    assert len(potential_breaches) == 0
+
+
+def test_get_potential_breaches_after_upgrade(db_upgraded):
+    potential_breaches = db_upgraded.get_potential_breaches()
     # No potential breaches in test dataset
     assert len(potential_breaches) == 0
+
+
+def test_get_exchange_lines(db):
+    exchange_lines = db.get_exchange_lines()
+    # No exchange lines table (schema version 208)
+    assert len(exchange_lines) == 0
+
+
+def test_get_exchange_lines_after_upgrade(db_upgraded):
+    exchange_lines = db_upgraded.get_exchange_lines()
+    # No exchange lines in test dataset
+    assert len(exchange_lines) == 0

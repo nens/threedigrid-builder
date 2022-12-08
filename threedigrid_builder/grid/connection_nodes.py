@@ -38,6 +38,8 @@ class ConnectionNode:
 
 
 class ConnectionNodes(Array[ConnectionNode]):
+    content_type = ContentType.TYPE_V2_CONNECTION_NODES
+
     def get_nodes(self, node_id_counter):
         """Convert connection nodes to a nodes instance
 
@@ -80,7 +82,7 @@ class ConnectionNodes(Array[ConnectionNode]):
         )
         return nodes
 
-    def get_1d2d_properties(self, nodes, node_idx, channels, locations):
+    def get_1d2d_properties(self, nodes, node_idx, channels, locations, **kwargs):
         """Compute properties (is_closed, dpumax) of 1D-2D connection node flowlines.
 
         Args:
