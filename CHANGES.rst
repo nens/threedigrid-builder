@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.6.1 (unreleased)
+1.6.1 (2022-12-08)
 ------------------
 
 - Fix setup.py (for sdist creation).
