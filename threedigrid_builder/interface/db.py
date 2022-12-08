@@ -49,7 +49,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 211
+MIN_SQLITE_VERSION = 208
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -623,6 +623,10 @@ class SQLite:
         return Culverts(**{name: arr[name] for name in arr.dtype.names})
 
     def get_exchange_lines(self) -> ExchangeLines:
+        # exchange lines are available from schema version 211
+        if self.get_version() < 211:
+            return ExchangeLines(id=[])
+
         with self.get_session() as session:
             arr = (
                 session.query(
@@ -849,6 +853,10 @@ class SQLite:
         return Windshieldings(**{name: arr[name] for name in arr.dtype.names})
 
     def get_potential_breaches(self) -> PotentialBreaches:
+        # potential breaches are available from schema version 211
+        if self.get_version() < 211:
+            return PotentialBreaches(id=[])
+
         with self.get_session() as session:
             arr = (
                 session.query(

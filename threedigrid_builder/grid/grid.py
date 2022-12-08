@@ -631,6 +631,35 @@ class Grid:
             self, embedded_node_id_counter
         )
 
+    def add_1d2d_legacy(
+        self,
+        connected_points,
+        connection_nodes,
+        channels,
+        pipes,
+        locations,
+        culverts,
+        line_id_counter,
+    ):
+        """Connect 1D and 2D elements by adding 1D-2D lines.
+
+        Every (double) connected node gets a 1D-2D connection to the cell in which it
+        is located. Double connected gives two lines to the same node.
+
+        In addition to id and line attributes, also the kcu (line type) and dpumax
+        (bottom level) are computed.
+        """
+        self.lines += connected_points.get_lines(
+            self.cell_tree,
+            self.nodes,
+            connection_nodes,
+            channels,
+            pipes,
+            locations,
+            culverts,
+            line_id_counter,
+        )
+
     def add_1d2d(
         self,
         exchange_lines,

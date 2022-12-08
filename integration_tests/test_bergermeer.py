@@ -88,12 +88,12 @@ def test_integration(tmp_path, filename):
             LineType.LINE_2D_VERTICAL: 5374,
         }
         assert count_unique(f["lines"]["content_type"]) == {
-            b"": 27449 + 1931,  # Inpy: 29380
+            b"": 27449,  # Inpy: 29380
             b"v2_channel": 2346,
             b"v2_culvert": 92,
             b"v2_pipe": 42,
             b"v2_weir": 56,
-            #  b"v2_added_c": 1931,
+            b"v2_added_c": 1931,
         }
 
         ## PUMPS
@@ -117,10 +117,10 @@ def test_integration(tmp_path, filename):
         assert f["levees"]["id"][:].tolist() == [1, 2, 3]
 
         ## BREACHES
-        # assert f["breaches"]["id"][:].tolist() == [0, 1]
-        # assert_almost_equal(
-        #     f["breaches"]["coordinates"][:, 1], [108990.32, 517277.12], decimal=2
-        # )
+        assert f["breaches"]["id"][:].tolist() == [0, 1]
+        assert_almost_equal(
+            f["breaches"]["coordinates"][:, 1], [108990.32, 517277.12], decimal=2
+        )
 
         ## COUNTS
         assert {ds: f["meta"][ds][()] for ds in f["meta"]} == {
@@ -162,7 +162,7 @@ def test_integration(tmp_path, filename):
             "epsg_code": "28992",
             "has_1d": True,
             "has_2d": True,
-            "has_breaches": False,
+            "has_breaches": True,
             "has_embedded": False,
             "has_groundwater": True,
             "has_groundwater_flow": True,

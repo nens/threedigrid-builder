@@ -4,11 +4,12 @@ Changelog of threedigrid-builder
 1.6.0 (unreleased)
 ------------------
 
-- Adapt channel interpolated nodes based on the new v2_potential_breach table.
-  Temporarily depends on threedi-modelchecker master branch.
+- Adapt channel interpolated nodes based on the new v2_potential_breach table
+  (only if the table exists).
 
-- Adapt 1D-2D lines generation to v2_exchange_line table. v2_connected_points are
-  ignored. Breaches are temporarily ignored.
+- Adapt 1D-2D lines generation to v2_exchange_line table. Breaches are not implemented
+  in that case. If there are no excange lines (or the table is missing),
+  v2_connected_points are still used and breaches still work.
 
 - Add TABULATED_YZ (7) and INVERTED_EGG (8) cross section shapes. Both are converted
   to tabulated trapezium.
