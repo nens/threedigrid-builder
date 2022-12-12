@@ -150,15 +150,23 @@ def test_assign_kcu():
     )
 
 
-def test_assign_dpumax():
-    lines = Lines1D2D(id=range(3))
+@pytest.mark.parametrize(
+    "existing,mask,expected",
+    [
+        ([np.nan, np.nan, np.nan], [1, 0, 1], [3.0, np.nan, 6.0]),
+        ([5.0, 5.0, 5.0], [1, 0, 1], [5.0, 5.0, 5.0]),
+        ([5.0, np.nan, np.nan], [1, 0, 1], [5.0, np.nan, 6.0]),
+    ],
+)
+def test_assign_dpumax(existing, mask, expected):
+    lines = Lines1D2D(id=range(3), dpumax=existing)
 
     lines.assign_dpumax(
-        np.array([1, 0, 1], dtype=bool),
-        np.array([3, 6]),
+        np.array(mask, dtype=bool),
+        np.array([3.0, 6.0]),
     )
 
-    assert_array_equal(lines.dpumax, [3.0, np.nan, 6.0])
+    assert_array_equal(lines.dpumax, expected)
 
 
 def test_get_1d_node_idx():
