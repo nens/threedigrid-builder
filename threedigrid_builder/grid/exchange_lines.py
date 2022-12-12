@@ -126,6 +126,16 @@ class Lines1D2D(Lines):
             ],
         )
 
+    def assign_dpumax_from_exchange_lines(self, exchange_lines: ExchangeLines):
+        """Set the dpumax based exchange_lines.exchange_level"""
+        has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
+        self.assign_dpumax(
+            has_exc,
+            exchange_lines.exchange_level[
+                exchange_lines.id_to_index(self.content_pk[has_exc])
+            ],
+        )
+
     def assign_dpumax(self, mask, dpumax) -> None:
         """Assign dpumax only where it is not set already"""
         is_nan = np.isnan(self.dpumax)

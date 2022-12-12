@@ -1,4 +1,5 @@
 import itertools
+from unittest import mock
 
 import numpy as np
 import pygeos
@@ -61,7 +62,6 @@ def test_assign_exchange_lines(
     exchange_lines = ExchangeLines(
         id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
     )
-
     lines.assign_exchange_lines(nodes, exchange_lines)
 
     assert_array_equal(lines.content_pk, expected_content_pk)
@@ -181,3 +181,16 @@ def test_get_1d_node_idx():
     actual = lines.get_1d_node_idx(nodes)
 
     assert_array_equal(actual, [0, 0, 1, 2])
+
+
+@mock.patch.object(Lines1D2D, "assign_dpumax")
+def test_assign_dpumax_from_exchange_lines(assign_dpumax):
+    lines = Lines1D2D(id=range(3), content_pk=[1, 2, 3], content_type=[EXC, -9999, EXC])
+    exchange_lines = ExchangeLines(id=[1, 2, 3], exchange_level=[1.2, 2.3, np.nan])
+
+    lines.assign_dpumax_from_exchange_lines(exchange_lines)
+
+    (actual_mask, actual_dpumax), _ = assign_dpumax.call_args
+
+    assert_array_equal(actual_mask, [1, 0, 1])
+    assert_array_equal(actual_dpumax, [1.2, np.nan])
