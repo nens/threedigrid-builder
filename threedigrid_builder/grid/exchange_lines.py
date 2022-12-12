@@ -14,6 +14,7 @@ class ExchangeLine:
     id: int
     the_geom: pygeos.Geometry
     channel_id: int
+    exchange_level: float
 
 
 class ExchangeLines(Array[ExchangeLine]):
@@ -126,7 +127,9 @@ class Lines1D2D(Lines):
         )
 
     def assign_dpumax(self, mask, dpumax) -> None:
-        self.dpumax[mask] = dpumax
+        """Assign dpumax only where it is not set already"""
+        is_nan = np.isnan(self.dpumax)
+        self.dpumax[mask & is_nan] = dpumax[is_nan[mask]]
 
     def assign_ds1d(self, nodes: Nodes) -> None:
         """Sets the length (ds1d) based on the 2D cell with

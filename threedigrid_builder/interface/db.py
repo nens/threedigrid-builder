@@ -633,6 +633,7 @@ class SQLite:
                     models.ExchangeLine.id,
                     models.ExchangeLine.channel_id,
                     models.ExchangeLine.the_geom,
+                    models.ExchangeLine.exchange_level,
                 )
                 .order_by(models.ExchangeLine.id)
                 .as_structarray()
