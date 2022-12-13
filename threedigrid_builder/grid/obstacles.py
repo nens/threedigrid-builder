@@ -1,8 +1,7 @@
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array
-from threedigrid_builder.constants import LineType
+from threedigrid_builder.base import Array, Lines
 
 
 class Obstacle:
@@ -12,42 +11,29 @@ class Obstacle:
 
 
 class Obstacles(Array[Obstacle]):
-    pass
+    def compute_dpumax(self, lines: Lines, where):
+        """Compute the dpumax for lines that intersect with the obstacles.
 
+        Args:
+            lines (Lines)
+            where (int array): indices into lines to compute dpumax for
 
-def apply_obstacles(lines, obstacles, levees):
-    """Set obstacles on 2D lines by calculating intersection between
-    2D flowline line_coords and obstacle linestring. In case of an
-    intersection the flowline becomes and LINE_2D_OBSTACLE.
-    The LINE_2D_OBSTACLE is set on kcu. Also flod and flou of lines is set to
-    crest_level.
-
-    Args:
-        lines (Lines)
-        obstacles (Obstacles)
-        levees (Levees)
-    """
-    if len(obstacles) == 0 and len(levees) == 0:
-        return
-    the_geom = np.concatenate([obstacles.the_geom, levees.the_geom])
-    crest_level = np.concatenate([obstacles.crest_level, levees.crest_level])
-
-    is_2d = np.isin(lines.kcu, (LineType.LINE_2D_U, LineType.LINE_2D_V))
-    coordinates = lines.line_coords[is_2d]
-    if not np.isfinite(coordinates).all():
-        raise ValueError(
-            f"{lines.__class__.__name__} object has inclomplete line_coords."
-        )
-    lines_tree = pygeos.STRtree(pygeos.linestrings(coordinates.reshape(-1, 2, 2)))
-
-    inscts = lines_tree.query_bulk(the_geom, predicate="intersects")
-    is_u = np.where(lines.kcu == LineType.LINE_2D_U)[0]
-    mask = np.isin(is_u, inscts[1, :])
-    lines.kcu[is_u[mask]] = LineType.LINE_2D_OBSTACLE_U
-    is_v = np.where(lines.kcu == LineType.LINE_2D_V)[0]
-    mask = np.isin(is_v, inscts[1, :])
-    lines.kcu[is_v[mask]] = LineType.LINE_2D_OBSTACLE_V
-    for i in range(len(crest_level)):
-        indices = inscts[1, np.where(inscts[0, :] == i)]
-        lines.flod[indices] = np.fmax(lines.flod[indices], crest_level[i])
-        lines.flou[indices] = lines.flod[indices]
+        Returns:
+            dpumax for each line (length equals length of 'where' array)
+        """
+        exchange_level = np.full(len(where), np.nan)
+        if len(self) == 0:
+            return exchange_level
+        coordinates = lines.line_coords[where]
+        if not np.isfinite(coordinates).all():
+            raise ValueError(
+                f"{lines.__class__.__name__} object has inclomplete line_coords."
+            )
+        lines_tree = pygeos.STRtree(pygeos.linestrings(coordinates.reshape(-1, 2, 2)))
+        inscts = lines_tree.query_bulk(self.the_geom, predicate="intersects")
+        for i in range(len(self)):
+            indices = inscts[1, np.where(inscts[0, :] == i)]
+            exchange_level[indices] = np.fmax(
+                exchange_level[indices], self.crest_level[i]
+            )
+        return exchange_level

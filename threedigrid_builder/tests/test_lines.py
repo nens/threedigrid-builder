@@ -5,6 +5,7 @@ from numpy.testing import assert_almost_equal, assert_equal
 from pygeos.testing import assert_geometries_equal
 
 from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import LineType
 
 
 @pytest.fixture
@@ -72,3 +73,49 @@ def test_sort_by_nodes(lines):
     lines.sort_by_nodes([1, 4])
 
     assert_equal(lines.line, [[1, 0], [6, 7], [4, 5]])
+
+
+@pytest.mark.parametrize(
+    "kcu,expected",
+    [
+        ([], []),
+        ([LineType.LINE_1D_CONNECTED], []),
+        ([LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER], []),
+        ([LineType.LINE_2D_U], [0]),
+        ([LineType.LINE_2D_V], [0]),
+        ([LineType.LINE_2D_OBSTACLE_U], [0]),
+        ([LineType.LINE_2D_OBSTACLE_V], [0]),
+        ([LineType.LINE_2D], [0]),
+        ([LineType.LINE_2D_OBSTACLE], [0]),
+        ([LineType.LINE_2D_U, LineType.LINE_1D_CONNECTED, LineType.LINE_2D_V], [0, 2]),
+    ],
+)
+def test_get_2d_lines_idx(kcu, expected):
+    lines = Lines(id=range(len(kcu)), kcu=kcu)
+    assert_equal(lines.get_2d_lines_idx(), expected)
+
+
+U = LineType.LINE_2D_U
+V = LineType.LINE_2D_V
+U_OBS = LineType.LINE_2D_OBSTACLE_U
+V_OBS = LineType.LINE_2D_OBSTACLE_V
+
+
+@pytest.mark.parametrize(
+    "kcu,crest_levels,expected_kcu,expected_flod",
+    [
+        ([U, V, V], [0.1, 0.3], [U_OBS, V_OBS, V], [0.1, 0.3, np.nan]),
+        ([U, U, V], [], [U, U, V], [np.nan, np.nan, np.nan]),
+    ],
+)
+def test_set_2d_crest_levels(
+    lines: Lines, kcu, crest_levels, expected_kcu, expected_flod
+):
+    lines.kcu[:] = kcu
+    lines.set_2d_crest_levels(
+        np.array(crest_levels), where=np.arange(len(crest_levels))
+    )
+
+    assert_equal(lines.kcu, expected_kcu)
+    assert_equal(lines.flod, expected_flod)
+    assert_equal(lines.flou, expected_flod)

@@ -7,6 +7,7 @@ from threedigrid_builder.base import Array, PointsOnLine
 from threedigrid_builder.constants import Material
 
 from .channels import Channels
+from .obstacles import Obstacles
 
 __all__ = ["Levees", "Breaches", "PotentialBreaches"]
 
@@ -109,4 +110,7 @@ class Levee:
 
 
 class Levees(Array[Levee]):
-    pass
+    def as_obstacles(self) -> Obstacles:
+        return Obstacles(
+            id=self.id, the_geom=self.the_geom, crest_level=self.crest_level
+        )

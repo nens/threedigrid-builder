@@ -26,11 +26,11 @@ from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
 from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
-from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
 from .levees import Breaches, Levees
 from .linear import BaseLinear
+from .obstacles import Obstacles
 
 osr.UseExceptions()
 
@@ -561,10 +561,10 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles, levees):
+    def set_obstacles(self, obstacles: Obstacles, levees: Levees):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
-           Set kcu to 101 and changes flod and flou to crest_level.
+           Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Also store levees on this grid for later output (and Breach determination)
 
@@ -572,8 +572,13 @@ class Grid:
             obstacles (Obstacles)
             levees (Levees)
         """
+        is_2d = self.lines.get_2d_lines_idx()
+        crest_level = np.fmax(
+            obstacles.compute_dpumax(self.lines, where=is_2d),
+            levees.as_obstacles().compute_dpumax(self.lines, where=is_2d),
+        )
+        self.lines.set_2d_crest_levels(crest_level, where=is_2d)
         self.levees = levees
-        obstacles_module.apply_obstacles(self.lines, obstacles, levees)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
