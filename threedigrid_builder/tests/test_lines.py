@@ -75,11 +75,6 @@ def test_sort_by_nodes(lines):
     assert_equal(lines.line, [[1, 0], [6, 7], [4, 5]])
 
 
-def test_get_lines_idx():
-    lines = Lines(id=range(3), kcu=[LineType.LINE_2D_U, -9999, LineType.LINE_2D_V])
-    assert_equal(lines.get_lines_idx([LineType.LINE_2D_V]), [2])
-
-
 U = LineType.LINE_2D_U
 V = LineType.LINE_2D_V
 U_OBS = LineType.LINE_2D_OBSTACLE_U

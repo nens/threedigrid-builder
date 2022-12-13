@@ -569,8 +569,8 @@ class Grid:
         Args:
             obstacles (Obstacles), including levees (see Levees.merge_into_obstacles)
         """
-        to_select = [LineType.LINE_2D_U, LineType.LINE_2D_V]
-        selection = self.lines.get_lines_idx(to_select)
+        line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
+        selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
         crest_level = obstacles.compute_dpumax(self.lines, where=selection)
         self.lines.set_2d_crest_levels(crest_level, where=selection)
 

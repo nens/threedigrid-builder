@@ -4,7 +4,8 @@ Changelog of threedigrid-builder
 1.6.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Set 1D-2D line dpumax based on 1. v2_exchange_line.exchange_level, 2. intersected
+  obstacles/levees, or 3. (existing logic) manhole/channel/pipe/culvert details.
 
 
 1.6.1 (2022-12-08)

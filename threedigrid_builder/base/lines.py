@@ -106,10 +106,6 @@ class Lines(Array[Line]):
         new_line_idx[line_idx] = new_line_idx[line_idx][sorter]
         self.reorder(new_line_idx)
 
-    def get_lines_idx(self, to_select):
-        """Get the indices into self where lines are of certain types"""
-        return np.where(np.isin(self.kcu, to_select))[0]
-
     def set_2d_crest_levels(self, crest_levels, where):
         """Set obstacle/levee crest levels to 2D lines
 
