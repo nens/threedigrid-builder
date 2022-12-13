@@ -93,9 +93,8 @@ def _make_gridadmin(
         grid.set_dem_averaged_cells(dem_average_areas)
 
         # for later usage:
-        levees = db.get_levees()
-        obstacles = db.get_obstacles()
-        grid.levees = levees
+        grid.levees = db.get_levees()
+        obstacles_and_levees = grid.levees.merge_into_obstacles(db.get_obstacles())
 
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
@@ -178,7 +177,7 @@ def _make_gridadmin(
             pipes=pipes,
             culverts=culverts,
         )
-        grid.set_obstacles(obstacles, levees)
+        grid.set_obstacles(obstacles_and_levees)
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
@@ -209,8 +208,7 @@ def _make_gridadmin(
                 pipes=pipes,
                 locations=locations,
                 culverts=culverts,
-                levees=levees,
-                obstacles=obstacles,
+                obstacles=obstacles_and_levees,
                 line_id_counter=line_id_counter,
             )
 

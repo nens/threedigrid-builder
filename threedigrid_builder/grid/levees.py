@@ -110,7 +110,17 @@ class Levee:
 
 
 class Levees(Array[Levee]):
-    def as_obstacles(self) -> Obstacles:
-        return Obstacles(
-            id=self.id, the_geom=self.the_geom, crest_level=self.crest_level
+    def merge_into_obstacles(self, obstacles: Obstacles) -> Obstacles:
+        """Merge the levees into obstacles.
+
+        This drops the 'id' column
+        """
+        if len(obstacles) == 0:
+            first_id = 1
+        else:
+            first_id = obstacles.id.max() + 1
+        return obstacles + Obstacles(
+            id=range(first_id, first_id + len(self)),
+            the_geom=self.the_geom,
+            crest_level=self.crest_level,
         )

@@ -561,21 +561,17 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles: Obstacles, levees: Levees):
+    def set_obstacles(self, obstacles: Obstacles):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Args:
-            obstacles (Obstacles)
-            levees (Levees)
+            obstacles (Obstacles), including levees (see Levees.merge_into_obstacles)
         """
         to_select = [LineType.LINE_2D_U, LineType.LINE_2D_V]
         selection = self.lines.get_lines_idx(to_select)
-        crest_level = np.fmax(
-            obstacles.compute_dpumax(self.lines, where=selection),
-            levees.as_obstacles().compute_dpumax(self.lines, where=selection),
-        )
+        crest_level = obstacles.compute_dpumax(self.lines, where=selection)
         self.lines.set_2d_crest_levels(crest_level, where=selection)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):

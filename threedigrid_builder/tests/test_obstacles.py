@@ -5,7 +5,7 @@ from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import LineType
-from threedigrid_builder.grid import Levees, Obstacles
+from threedigrid_builder.grid import Obstacles
 from threedigrid_builder.grid.grid import Grid
 
 
@@ -57,7 +57,7 @@ def obstacles_no_intersect():
 
 
 def test_set_obstacles(grid, obstacles):
-    grid.set_obstacles(obstacles, Levees(id=[]))
+    grid.set_obstacles(obstacles)
 
     expected_kcu = np.array(
         [102, 102, 102, 102, 98, 99, 103, 99, 99, 103], dtype=np.int32
@@ -72,7 +72,7 @@ def test_set_obstacles(grid, obstacles):
 
 
 def test_set_obstacles_no_intersect(grid, obstacles_no_intersect):
-    grid.set_obstacles(obstacles_no_intersect, Levees(id=[]))
+    grid.set_obstacles(obstacles_no_intersect)
 
     assert np.all(grid.lines.kcu != LineType.LINE_2D_OBSTACLE)
     assert_equal(grid.lines.flod, np.nan)
