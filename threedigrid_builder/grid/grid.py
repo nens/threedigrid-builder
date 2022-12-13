@@ -705,7 +705,7 @@ class Grid:
         self.lines += lines_1d2d
 
     def add_breaches(
-        self, potential_breaches: PotentialBreaches, breach_points: PointsOnLine
+        self, channels, potential_breaches: PotentialBreaches, breach_points: PointsOnLine
     ):
         pass
 

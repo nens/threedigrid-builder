@@ -110,6 +110,9 @@ def _make_gridadmin(
         breach_points = potential_breaches.project_on_channels(
             channels, grid_settings.breach_merge_tolerance
         )
+        potential_breaches.assign_to_connection_nodes(
+            grid.nodes, channels, breach_points
+        )
 
         channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,
