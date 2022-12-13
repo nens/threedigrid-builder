@@ -116,6 +116,7 @@ class BaseLinear:
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
+            breach_ids=np.array([points.content_pk, points.secondary_content_pk]).T,
         )
 
     def get_embedded(

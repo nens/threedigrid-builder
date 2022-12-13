@@ -167,6 +167,8 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
         id=[0, 1],
         s1d=[30.0, 50.0],
         linestring_idx=[1, 1],
+        content_pk=[1, 2],
+        secondary_content_pk=[-9999, 4],
     )
     dummy_points = PointsOnLine(
         two_linear_objects.linestrings,
@@ -195,6 +197,9 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
     assert_array_equal(nodes.content_pk, [1, 2, 2, 2])
     assert_array_equal(nodes.calculation_type, [2, 1, 1, 1])
     assert_array_equal(nodes.s1d, [10.0, 30.0, 50.0, 125.0])
+    assert_array_equal(
+        nodes.breach_ids, [(-9999, -9999), (1, -9999), (2, 4), (-9999, -9999)]
+    )
 
 
 def test_get_lines(connection_nodes, two_linear_objects):
