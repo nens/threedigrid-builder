@@ -667,7 +667,6 @@ class Grid:
         pipes,
         locations,
         culverts,
-        levees,
         obstacles,
         line_id_counter,
     ):
@@ -682,7 +681,7 @@ class Grid:
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
         lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
-        lines_1d2d.assign_dpumax_from_obstacles(levees, obstacles)
+        lines_1d2d.assign_dpumax_from_obstacles(obstacles)
         lines_1d2d.assign_2d_node(
             lines_1d2d.compute_2d_side(self.nodes, exchange_lines),
             self.cell_tree,

@@ -83,6 +83,9 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
+        grid.levees = db.get_levees()
+        obstacles_and_levees = grid.levees.merge_into_obstacles(db.get_obstacles())
+        grid.set_obstacles(obstacles_and_levees)
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -91,10 +94,6 @@ def _make_gridadmin(
         )
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)
-
-        # for later usage:
-        grid.levees = db.get_levees()
-        obstacles_and_levees = grid.levees.merge_into_obstacles(db.get_obstacles())
 
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
@@ -177,7 +176,6 @@ def _make_gridadmin(
             pipes=pipes,
             culverts=culverts,
         )
-        grid.set_obstacles(obstacles_and_levees)
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
