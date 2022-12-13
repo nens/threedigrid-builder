@@ -107,6 +107,17 @@ def test_potential_breach_merge():
     assert_almost_equal(after.secondary_content_pk, [-9999, -9999, 4, -9999, 8])
 
 
+def test_potential_breach_merge_empty():
+    before = PointsOnLine.empty(
+        linestrings=LineStrings(
+            pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]])
+        )
+    )
+    after = PotentialBreaches.merge(before, tolerance=2.0)
+
+    assert len(after) == 0
+
+
 def test_levees_merge_into_obstacles(levees):
     obstacles = Obstacles(id=[2, 3], crest_level=[5.0, np.nan])
     actual = levees.merge_into_obstacles(obstacles)

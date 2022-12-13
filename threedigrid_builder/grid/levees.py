@@ -91,6 +91,8 @@ class PotentialBreaches(Array[PotentialBreach]):
         # for each primary point, compute a possible secondary one
         secondary_content_pk = np.full(len(points), fill_value=-9999, dtype=np.int32)
         for rng in np.split(too_close, np.where(np.diff(too_close) != 1)[0] + 1):
+            if len(rng) == 0:
+                continue
             secondary_content_pk[rng[0]] = points.content_pk[rng[0] + 1]
 
         # adapt the s1d to be in the middle of a pair
