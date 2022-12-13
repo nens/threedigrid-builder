@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, PointsOnLine
+from threedigrid_builder.base import Array, Nodes, PointsOnLine
 from threedigrid_builder.constants import Material
 
 from .channels import Channels
@@ -107,6 +107,9 @@ class PotentialBreaches(Array[PotentialBreach]):
             linestring_idx=np.delete(points.linestring_idx, to_delete),
             s1d=np.delete(s1d, to_delete),
         )
+
+    def set_to_connection_nodes(self, nodes: Nodes, breach_points: PointsOnLine):
+        pass
 
 
 class Levee:

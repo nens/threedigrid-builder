@@ -186,7 +186,8 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
         )
 
     (arg,), _ = segmentize.call_args
-    assert arg is fixed_nodes
+    assert isinstance(arg, PointsOnLine)
+    assert_array_equal(arg.s1d, fixed_nodes.s1d)
 
     (dists,), _ = segmentize().interpolate_points.call_args
     assert_almost_equal(dists, [5.0, 74.0, 74.0, 74.0])
