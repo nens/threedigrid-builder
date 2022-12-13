@@ -627,17 +627,16 @@ class SQLite:
         if self.get_version() < 211:
             return ExchangeLines(id=[])
 
+        cols = [
+            models.ExchangeLine.id,
+            models.ExchangeLine.channel_id,
+            models.ExchangeLine.the_geom,
+        ]
+        if self.get_version() >= 212:
+            cols += [models.ExchangeLine.exchange_level]
+
         with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.ExchangeLine.id,
-                    models.ExchangeLine.channel_id,
-                    models.ExchangeLine.the_geom,
-                    models.ExchangeLine.exchange_level,
-                )
-                .order_by(models.ExchangeLine.id)
-                .as_structarray()
-            )
+            arr = session.query(*cols).order_by(models.ExchangeLine.id).as_structarray()
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 
