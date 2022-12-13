@@ -92,6 +92,8 @@ class BaseLinear:
 
         if fixed_nodes is None:
             fixed_nodes = PointsOnLine.empty(self.linestrings)
+        else:
+            fixed_nodes = fixed_nodes[~(fixed_nodes.at_start | fixed_nodes.at_end)]
 
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()

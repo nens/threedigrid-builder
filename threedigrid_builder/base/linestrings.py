@@ -128,6 +128,13 @@ class PointsOnLine(Array[PointOnLine]):
         super().__init__(**kwargs)
         self.linestrings = linestrings
 
+    def __getitem__(self, idx) -> "PointsOnLine":
+        """Create a masked copy of this arraay dataclass"""
+        args = {}
+        for field in typing.get_type_hints(self.data_class):
+            args[field] = getattr(self, field)[idx]
+        return self.__class__(linestrings=self.linestrings, **args)
+
     @classmethod
     def empty(cls, linestrings: LineStrings):
         return cls(linestrings, id=[])
@@ -162,6 +169,14 @@ class PointsOnLine(Array[PointOnLine]):
         return pygeos.line_interpolate_point(
             self.linestrings.the_geom[self.linestring_idx], self.s1d
         )
+
+    @property
+    def at_start(self):
+        return self.s1d == 0.0
+
+    @property
+    def at_end(self):
+        return self.s1d == self.linestrings.length[self.linestring_idx]
 
     def merge_with(self, other: "PointsOnLine"):
         if len(other) == 0:

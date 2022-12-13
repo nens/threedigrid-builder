@@ -106,6 +106,18 @@ def test_point_on_line_merge_with(linestrings):
     assert_array_equal(actual.linestring_idx, [0, 0, 1, 1])
 
 
+def test_point_on_line_at_start_at_end(two_linestrings):
+    points_on_line = PointsOnLine(
+        two_linestrings,
+        id=range(4),
+        s1d=[0.0, 10.0, 0.0, 12.0],
+        linestring_idx=[0, 0, 1, 1],
+    )
+
+    assert_array_equal(points_on_line.at_start, [True, False, True, False])
+    assert_array_equal(points_on_line.at_end, [False, True, False, True])
+
+
 @pytest.mark.parametrize(
     "start,end,expected_coords",
     [

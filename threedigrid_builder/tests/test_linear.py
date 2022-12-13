@@ -202,6 +202,28 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
     )
 
 
+def test_interpolate_nodes_with_fixture_on_start_end(one_linear_object):
+    fixed_nodes = PointsOnLine(
+        one_linear_object.linestrings,
+        id=[0, 1],
+        s1d=[0.0, 12.0],
+        linestring_idx=[0, 0],
+        content_pk=[1, 2],
+        secondary_content_pk=[-9999, 4],
+    )
+    dummy_points = PointsOnLine.empty(one_linear_object.linestrings)
+    with mock.patch.object(one_linear_object.linestrings, "segmentize") as segmentize:
+        segmentize().linestring_idx = np.array([0])
+        segmentize().interpolate_points.return_value = dummy_points
+        nodes = one_linear_object.interpolate_nodes(
+            itertools.count(start=2),
+            global_dist_calc_points=74.0,
+            fixed_nodes=fixed_nodes,
+        )
+
+    assert len(nodes) == 0
+
+
 def test_get_lines(connection_nodes, two_linear_objects):
     nodes = Nodes(
         id=[10, 11, 12],
