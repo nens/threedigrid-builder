@@ -7,6 +7,8 @@ import pygeos
 from threedigrid_builder.base import Array, Lines, Nodes, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
+from .obstacles import Obstacles
+
 __all__ = ["ExchangeLines", "Lines1D2D"]
 
 
@@ -14,6 +16,7 @@ class ExchangeLine:
     id: int
     the_geom: pygeos.Geometry
     channel_id: int
+    exchange_level: float
 
 
 class ExchangeLines(Array[ExchangeLine]):
@@ -125,8 +128,30 @@ class Lines1D2D(Lines):
             ],
         )
 
+    def assign_dpumax_from_exchange_lines(self, exchange_lines: ExchangeLines):
+        """Set the dpumax based exchange_lines.exchange_level"""
+        has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
+        self.assign_dpumax(
+            has_exc,
+            exchange_lines.exchange_level[
+                exchange_lines.id_to_index(self.content_pk[has_exc])
+            ],
+        )
+
+    def assign_dpumax_from_obstacles(self, obstacles: Obstacles):
+        """Set the dpumax based on intersected obstacles
+
+        Only for (open) connections that are computed via an exchange line.
+        """
+        has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
+        self.assign_dpumax(
+            has_exc, obstacles.compute_dpumax(self, where=np.where(has_exc)[0])
+        )
+
     def assign_dpumax(self, mask, dpumax) -> None:
-        self.dpumax[mask] = dpumax
+        """Assign dpumax only where it is not set already"""
+        is_nan = np.isnan(self.dpumax)
+        self.dpumax[mask & is_nan] = dpumax[is_nan[mask]]
 
     def assign_ds1d(self, nodes: Nodes) -> None:
         """Sets the length (ds1d) based on the 2D cell with

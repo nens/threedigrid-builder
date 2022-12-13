@@ -9,6 +9,7 @@ from threedigrid_builder.grid import (
     Breaches,
     ConnectedPoints,
     Levees,
+    Obstacles,
     PotentialBreaches,
 )
 
@@ -22,6 +23,7 @@ def levees():
             pygeos.linestrings([[5, 5], [8, 5]]),
             pygeos.linestrings([[0, 0], [1, 1]]),
         ],
+        crest_level=[2.0, 4.0, np.nan],
         max_breach_depth=[4.0, 2.0, np.nan],
         material=[Material.CLAY, Material.SAND, -9999],
     )
@@ -103,3 +105,26 @@ def test_potential_breach_merge():
     assert_almost_equal(after.linestring_idx, [0, 0, 0, 0, 1])
     assert_almost_equal(after.content_pk, [1, 2, 3, 6, 7])
     assert_almost_equal(after.secondary_content_pk, [-9999, -9999, 4, -9999, 8])
+
+
+def test_levees_merge_into_obstacles(levees):
+    obstacles = Obstacles(id=[2, 3], crest_level=[5.0, np.nan])
+    actual = levees.merge_into_obstacles(obstacles)
+
+    assert isinstance(actual, Obstacles)
+    assert actual is not obstacles
+
+    # levees are added, with other ids
+    assert_equal(actual.id, [2, 3, 4, 5, 6])
+    assert_equal(actual.crest_level, [5.0, np.nan, 2.0, 4.0, np.nan])
+
+
+def test_levees_merge_into_obstacles_no_obstacles(levees):
+    obstacles = Obstacles(id=[])
+    actual = levees.merge_into_obstacles(obstacles)
+
+    assert isinstance(actual, Obstacles)
+    assert actual is not obstacles
+
+    assert_equal(actual.id, [1, 2, 3])
+    assert_equal(actual.crest_level, [2.0, 4.0, np.nan])

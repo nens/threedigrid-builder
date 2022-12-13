@@ -105,3 +105,16 @@ class Lines(Array[Line]):
         sorter = np.argsort(self.line[line_idx, start_or_end])
         new_line_idx[line_idx] = new_line_idx[line_idx][sorter]
         self.reorder(new_line_idx)
+
+    def set_2d_crest_levels(self, crest_levels, where):
+        """Set obstacle/levee crest levels to 2D lines
+
+        Sets: flod, flou, kcu inplace (for 2D lines)
+        """
+        has_crest_level = where[np.isfinite(crest_levels)]
+        is_2d_u = self.kcu[has_crest_level] == LineType.LINE_2D_U
+        is_2d_v = self.kcu[has_crest_level] == LineType.LINE_2D_V
+        self.kcu[has_crest_level[is_2d_u]] = LineType.LINE_2D_OBSTACLE_U
+        self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
+        self.flod[where] = crest_levels
+        self.flou[where] = crest_levels
