@@ -714,7 +714,7 @@ class Grid:
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
 
-    def add_breaches(self, connected_points):
+    def add_breaches(self, connected_points, levees):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
         references a Levee, it will result in a Breach. The Breach gets the properties
         from the Levee (max_breach_depth, material) but these may be unset.
@@ -722,7 +722,7 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.fix_ds1d()
-        self.breaches = connected_points.get_breaches(self.lines, self.levees)
+        self.breaches = connected_points.get_breaches(self.lines, levees)
 
     def add_groundwater(self, has_groundwater_flow, node_id_counter, line_id_counter):
         """Add groundwater nodes and lines.
