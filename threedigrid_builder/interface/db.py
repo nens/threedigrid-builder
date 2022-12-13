@@ -857,17 +857,23 @@ class SQLite:
         if self.get_version() < 211:
             return PotentialBreaches(id=[])
 
+        cols = [
+            models.PotentialBreach.id,
+            models.PotentialBreach.code,
+            models.PotentialBreach.display_name,
+            models.PotentialBreach.the_geom,
+            models.PotentialBreach.channel_id,
+        ]
+
+        if self.get_version() >= 212:
+            cols += [
+                models.PotentialBreach.maximum_breach_depth,
+                models.PotentialBreach.levee_material,
+            ]
+
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.PotentialBreach.id,
-                    models.PotentialBreach.code,
-                    models.PotentialBreach.display_name,
-                    models.PotentialBreach.the_geom,
-                    models.PotentialBreach.channel_id,
-                    # models.PotentialBreach.maximum_breach_depth,
-                    # models.PotentialBreach.levee_material,
-                )
+                session.query(*cols)
                 .order_by(models.PotentialBreach.id)
                 .as_structarray()
             )
