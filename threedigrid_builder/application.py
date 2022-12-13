@@ -195,7 +195,7 @@ def _make_gridadmin(
                 culverts=culverts,
                 line_id_counter=line_id_counter,
             )
-            grid.add_breaches(connected_points)
+            grid.add_breaches_legacy(connected_points)
         else:
             grid.add_1d2d(
                 exchange_lines,
@@ -206,6 +206,7 @@ def _make_gridadmin(
                 culverts=culverts,
                 line_id_counter=line_id_counter,
             )
+            grid.add_breaches(potential_breaches, breach_points)
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,

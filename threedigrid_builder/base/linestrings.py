@@ -18,6 +18,7 @@ class PointOnLine:
     content_pk: int  # externally determined id
     s1d: float  # the position along the linestring
     linestring_idx: int
+    secondary_content_pk: int  # for double connected points
 
 
 class LineOnLine:

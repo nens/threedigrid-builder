@@ -29,7 +29,7 @@ from . import initial_waterlevels as initial_waterlevels_module
 from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import Breaches, Levees
+from .levees import Breaches, Levees, PotentialBreaches
 from .linear import BaseLinear
 
 osr.UseExceptions()
@@ -701,6 +701,11 @@ class Grid:
         lines_1d2d.assign_ds1d(self.nodes)
         self.lines += lines_1d2d
 
+    def add_breaches(
+        self, potential_breaches: PotentialBreaches, breach_points: PointsOnLine
+    ):
+        pass
+
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """
         Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
@@ -708,7 +713,7 @@ class Grid:
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
 
-    def add_breaches(self, connected_points):
+    def add_breaches_legacy(self, connected_points):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
         references a Levee, it will result in a Breach. The Breach gets the properties
         from the Levee (max_breach_depth, material) but these may be unset.

@@ -89,12 +89,17 @@ def test_potential_breach_sides():
 
 def test_potential_breach_merge():
     before = PointsOnLine(
-        linestrings=LineStrings(pygeos.linestrings([[[0, 0], [10, 0]]])),
-        id=[0, 1, 2, 3, 4, 5],
-        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0],
-        linestring_idx=[0, 0, 0, 0, 0, 0],
+        linestrings=LineStrings(
+            pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]])
+        ),
+        id=range(8),
+        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0, 4, 5],
+        linestring_idx=[0, 0, 0, 0, 0, 0, 1, 1],
+        content_pk=range(1, 9),
     )
     after = PotentialBreaches.merge(before, tolerance=2.0)
 
-    assert_almost_equal(after.s1d, [0.0, 2.0, 5.5, 10.0])
-    assert_almost_equal(after.linestring_idx, [0, 0, 0, 0])
+    assert_almost_equal(after.s1d, [0.0, 2.0, 5.5, 10.0, 4.5])
+    assert_almost_equal(after.linestring_idx, [0, 0, 0, 0, 1])
+    assert_almost_equal(after.content_pk, [1, 2, 3, 6, 7])
+    assert_almost_equal(after.secondary_content_pk, [-9999, -9999, 4, -9999, 8])

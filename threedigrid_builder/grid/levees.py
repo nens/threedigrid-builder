@@ -35,6 +35,7 @@ class PotentialBreach:
     maximum_breach_depth: float
     channel_id: int
     line_id: int
+    node_id: int  # temporary field, for internal usage
 
 
 class PotentialBreaches(Array[PotentialBreach]):
@@ -80,23 +81,28 @@ class PotentialBreaches(Array[PotentialBreach]):
         mask = lengths - s1d < tolerance
         s1d[mask] = lengths[mask]
 
-        # compute interdistances
+        # compute interdistances and a list of points that are 'too close'
         dists = np.diff(s1d)
         same_channel = np.diff(points.linestring_idx) == 0
         too_close = np.where((dists < tolerance) & same_channel)[0]
+        to_delete = too_close + 1  # deleting these leaves only 'primary points'
 
-        # disable the second one of a 'too close' pair
-        mask = np.full(len(points), fill_value=True, dtype=bool)
-        mask[too_close + 1] = False
+        # for each primary point, compute a possible secondary one
+        secondary_content_pk = np.full(len(points), fill_value=-9999, dtype=np.int32)
+        for rng in np.split(too_close, np.where(np.diff(too_close) != 1)[0] + 1):
+            secondary_content_pk[rng[0]] = points.content_pk[rng[0] + 1]
 
         # adapt the s1d to be in the middle of a pair
         s1d[too_close] = (s1d[too_close] + s1d[too_close + 1]) / 2
+
+        # get the second one of a too close pair
         return PointsOnLine(
             points.linestrings,
-            id=points.id[mask],
-            content_pk=points.content_pk[mask],
-            linestring_idx=points.linestring_idx[mask],
-            s1d=s1d[mask],
+            id=np.delete(points.id, to_delete),
+            content_pk=np.delete(points.content_pk, to_delete),
+            secondary_content_pk=np.delete(secondary_content_pk, to_delete),
+            linestring_idx=np.delete(points.linestring_idx, to_delete),
+            s1d=np.delete(s1d, to_delete),
         )
 
 
