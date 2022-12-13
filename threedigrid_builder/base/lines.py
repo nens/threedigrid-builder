@@ -10,16 +10,6 @@ from .array import Array
 __all__ = ["Lines"]
 
 
-LINE_2D_TYPES = [
-    LineType.LINE_2D_U,
-    LineType.LINE_2D_OBSTACLE_U,
-    LineType.LINE_2D_V,
-    LineType.LINE_2D_OBSTACLE_V,
-    LineType.LINE_2D,
-    LineType.LINE_2D_OBSTACLE,
-]
-
-
 class Line:
     id: int
     code: str
@@ -116,9 +106,9 @@ class Lines(Array[Line]):
         new_line_idx[line_idx] = new_line_idx[line_idx][sorter]
         self.reorder(new_line_idx)
 
-    def get_2d_lines_idx(self):
-        """Get the indices into self where lines are 2D-2D lines"""
-        return np.where(np.isin(self.kcu, LINE_2D_TYPES))[0]
+    def get_lines_idx(self, to_select):
+        """Get the indices into self where lines are of certain types"""
+        return np.where(np.isin(self.kcu, to_select))[0]
 
     def set_2d_crest_levels(self, crest_levels, where):
         """Set obstacle/levee crest levels to 2D lines
@@ -126,11 +116,9 @@ class Lines(Array[Line]):
         Sets: flod, flou, kcu inplace (for 2D lines)
         """
         has_crest_level = where[np.isfinite(crest_levels)]
-        self.kcu[
-            has_crest_level[self.kcu[has_crest_level] == LineType.LINE_2D_U]
-        ] = LineType.LINE_2D_OBSTACLE_U
-        self.kcu[
-            has_crest_level[self.kcu[has_crest_level] == LineType.LINE_2D_V]
-        ] = LineType.LINE_2D_OBSTACLE_V
+        is_2d_u = self.kcu[has_crest_level] == LineType.LINE_2D_U
+        is_2d_v = self.kcu[has_crest_level] == LineType.LINE_2D_V
+        self.kcu[has_crest_level[is_2d_u]] = LineType.LINE_2D_OBSTACLE_U
+        self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
         self.flod[where] = crest_levels
         self.flou[where] = crest_levels

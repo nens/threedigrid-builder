@@ -7,6 +7,9 @@ import pygeos
 from threedigrid_builder.base import Array, Lines, Nodes, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
+from .levees import Levees
+from .obstacles import Obstacles
+
 __all__ = ["ExchangeLines", "Lines1D2D"]
 
 
@@ -135,6 +138,9 @@ class Lines1D2D(Lines):
                 exchange_lines.id_to_index(self.content_pk[has_exc])
             ],
         )
+
+    def assign_dpumax_from_obstacles(self, levees: Levees, obstacles: Obstacles):
+        pass
 
     def assign_dpumax(self, mask, dpumax) -> None:
         """Assign dpumax only where it is not set already"""

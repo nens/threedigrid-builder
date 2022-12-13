@@ -566,19 +566,17 @@ class Grid:
            line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
-        Also store levees on this grid for later output (and Breach determination)
-
         Args:
             obstacles (Obstacles)
             levees (Levees)
         """
-        is_2d = self.lines.get_2d_lines_idx()
+        to_select = [LineType.LINE_2D_U, LineType.LINE_2D_V]
+        selection = self.lines.get_lines_idx(to_select)
         crest_level = np.fmax(
-            obstacles.compute_dpumax(self.lines, where=is_2d),
-            levees.as_obstacles().compute_dpumax(self.lines, where=is_2d),
+            obstacles.compute_dpumax(self.lines, where=selection),
+            levees.as_obstacles().compute_dpumax(self.lines, where=selection),
         )
-        self.lines.set_2d_crest_levels(crest_level, where=is_2d)
-        self.levees = levees
+        self.lines.set_2d_crest_levels(crest_level, where=selection)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
@@ -673,6 +671,8 @@ class Grid:
         pipes,
         locations,
         culverts,
+        levees,
+        obstacles,
         line_id_counter,
     ):
         """Connect 1D and 2D elements by adding 1D-2D lines.
@@ -686,6 +686,7 @@ class Grid:
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
         lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
+        lines_1d2d.assign_dpumax_from_obstacles(levees, obstacles)
         lines_1d2d.assign_2d_node(
             lines_1d2d.compute_2d_side(self.nodes, exchange_lines),
             self.cell_tree,

@@ -92,6 +92,11 @@ def _make_gridadmin(
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)
 
+        # for later usage:
+        levees = db.get_levees()
+        obstacles = db.get_obstacles()
+        grid.levees = levees
+
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
         progress_callback(0.8, "Constructing 1D computational grid...")
@@ -173,6 +178,7 @@ def _make_gridadmin(
             pipes=pipes,
             culverts=culverts,
         )
+        grid.set_obstacles(obstacles, levees)
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
         grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
@@ -194,7 +200,7 @@ def _make_gridadmin(
                 culverts=culverts,
                 line_id_counter=line_id_counter,
             )
-            grid.add_breaches(connected_points, db.get_levees())
+            grid.add_breaches(connected_points, grid.levees)
         else:
             grid.add_1d2d(
                 exchange_lines,
@@ -203,11 +209,10 @@ def _make_gridadmin(
                 pipes=pipes,
                 locations=locations,
                 culverts=culverts,
+                levees=levees,
+                obstacles=obstacles,
                 line_id_counter=line_id_counter,
             )
-
-    if grid.nodes.has_2d:
-        grid.set_obstacles(db.get_obstacles(), db.get_levees())
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,

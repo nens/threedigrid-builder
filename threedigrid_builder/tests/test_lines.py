@@ -75,30 +75,16 @@ def test_sort_by_nodes(lines):
     assert_equal(lines.line, [[1, 0], [6, 7], [4, 5]])
 
 
-@pytest.mark.parametrize(
-    "kcu,expected",
-    [
-        ([], []),
-        ([LineType.LINE_1D_CONNECTED], []),
-        ([LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER], []),
-        ([LineType.LINE_2D_U], [0]),
-        ([LineType.LINE_2D_V], [0]),
-        ([LineType.LINE_2D_OBSTACLE_U], [0]),
-        ([LineType.LINE_2D_OBSTACLE_V], [0]),
-        ([LineType.LINE_2D], [0]),
-        ([LineType.LINE_2D_OBSTACLE], [0]),
-        ([LineType.LINE_2D_U, LineType.LINE_1D_CONNECTED, LineType.LINE_2D_V], [0, 2]),
-    ],
-)
-def test_get_2d_lines_idx(kcu, expected):
-    lines = Lines(id=range(len(kcu)), kcu=kcu)
-    assert_equal(lines.get_2d_lines_idx(), expected)
+def test_get_lines_idx():
+    lines = Lines(id=range(3), kcu=[LineType.LINE_2D_U, -9999, LineType.LINE_2D_V])
+    assert_equal(lines.get_lines_idx([LineType.LINE_2D_V]), [2])
 
 
 U = LineType.LINE_2D_U
 V = LineType.LINE_2D_V
 U_OBS = LineType.LINE_2D_OBSTACLE_U
 V_OBS = LineType.LINE_2D_OBSTACLE_V
+L1D2D = LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED
 
 
 @pytest.mark.parametrize(
