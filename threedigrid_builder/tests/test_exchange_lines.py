@@ -1,4 +1,5 @@
 import itertools
+from unittest import mock
 
 import numpy as np
 import pygeos
@@ -61,7 +62,6 @@ def test_assign_exchange_lines(
     exchange_lines = ExchangeLines(
         id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
     )
-
     lines.assign_exchange_lines(nodes, exchange_lines)
 
     assert_array_equal(lines.content_pk, expected_content_pk)
@@ -150,15 +150,23 @@ def test_assign_kcu():
     )
 
 
-def test_assign_dpumax():
-    lines = Lines1D2D(id=range(3))
+@pytest.mark.parametrize(
+    "existing,mask,expected",
+    [
+        ([np.nan, np.nan, np.nan], [1, 0, 1], [3.0, np.nan, 6.0]),
+        ([5.0, 5.0, 5.0], [1, 0, 1], [5.0, 5.0, 5.0]),
+        ([5.0, np.nan, np.nan], [1, 0, 1], [5.0, np.nan, 6.0]),
+    ],
+)
+def test_assign_dpumax(existing, mask, expected):
+    lines = Lines1D2D(id=range(3), dpumax=existing)
 
     lines.assign_dpumax(
-        np.array([1, 0, 1], dtype=bool),
-        np.array([3, 6]),
+        np.array(mask, dtype=bool),
+        np.array([3.0, 6.0]),
     )
 
-    assert_array_equal(lines.dpumax, [3.0, np.nan, 6.0])
+    assert_array_equal(lines.dpumax, expected)
 
 
 def test_get_1d_node_idx():
@@ -173,3 +181,37 @@ def test_get_1d_node_idx():
     actual = lines.get_1d_node_idx(nodes)
 
     assert_array_equal(actual, [0, 0, 1, 2])
+
+
+@mock.patch.object(Lines1D2D, "assign_dpumax")
+def test_assign_dpumax_from_exchange_lines(assign_dpumax):
+    lines = Lines1D2D(id=range(3), content_pk=[1, 2, 3], content_type=[EXC, -9999, EXC])
+    exchange_lines = ExchangeLines(id=[1, 2, 3], exchange_level=[1.2, 2.3, np.nan])
+
+    lines.assign_dpumax_from_exchange_lines(exchange_lines)
+
+    (actual_mask, actual_dpumax), _ = assign_dpumax.call_args
+
+    assert_array_equal(actual_mask, [1, 0, 1])
+    assert_array_equal(actual_dpumax, [1.2, np.nan])
+
+
+@mock.patch.object(Lines1D2D, "assign_dpumax")
+def test_assign_dpumax_from_obstacles(assign_dpumax):
+    obstacles = mock.Mock()
+    obstacles.compute_dpumax.return_value = np.array([1.2, np.nan])
+
+    lines = Lines1D2D(id=range(3), content_type=[EXC, -9999, EXC])
+
+    lines.assign_dpumax_from_obstacles(obstacles)
+
+    args, kwargs = obstacles.compute_dpumax.call_args
+    assert len(args) == 1
+    assert args[0] is lines
+    assert len(kwargs) == 1
+    assert_array_equal(kwargs["where"], [0, 2])
+
+    (actual_mask, actual_dpumax), _ = assign_dpumax.call_args
+
+    assert_array_equal(actual_mask, [1, 0, 1])
+    assert_array_equal(actual_dpumax, [1.2, np.nan])

@@ -7,6 +7,7 @@ from threedigrid_builder.base import Array, PointsOnLine
 from threedigrid_builder.constants import Material
 
 from .channels import Channels
+from .obstacles import Obstacles
 
 __all__ = ["Levees", "Breaches", "PotentialBreaches"]
 
@@ -109,4 +110,17 @@ class Levee:
 
 
 class Levees(Array[Levee]):
-    pass
+    def merge_into_obstacles(self, obstacles: Obstacles) -> Obstacles:
+        """Merge the levees into obstacles.
+
+        This drops the 'id' column
+        """
+        if len(obstacles) == 0:
+            first_id = 1
+        else:
+            first_id = obstacles.id.max() + 1
+        return obstacles + Obstacles(
+            id=range(first_id, first_id + len(self)),
+            the_geom=self.the_geom,
+            crest_level=self.crest_level,
+        )

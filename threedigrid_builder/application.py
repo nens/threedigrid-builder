@@ -83,7 +83,9 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        grid.set_obstacles(db.get_obstacles(), db.get_levees())
+        grid.levees = db.get_levees()
+        obstacles_and_levees = grid.levees.merge_into_obstacles(db.get_obstacles())
+        grid.set_obstacles(obstacles_and_levees)
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -195,7 +197,7 @@ def _make_gridadmin(
                 culverts=culverts,
                 line_id_counter=line_id_counter,
             )
-            grid.add_breaches(connected_points)
+            grid.add_breaches(connected_points, grid.levees)
         else:
             grid.add_1d2d(
                 exchange_lines,
@@ -204,6 +206,7 @@ def _make_gridadmin(
                 pipes=pipes,
                 locations=locations,
                 culverts=culverts,
+                obstacles=obstacles_and_levees,
                 line_id_counter=line_id_counter,
             )
 

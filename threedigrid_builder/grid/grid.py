@@ -26,11 +26,11 @@ from . import dem_average_area as dem_average_area_module
 from . import embedded as embedded_module
 from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
-from . import obstacles as obstacles_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
 from .levees import Breaches, Levees
 from .linear import BaseLinear
+from .obstacles import Obstacles
 
 osr.UseExceptions()
 
@@ -561,19 +561,18 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles, levees):
+    def set_obstacles(self, obstacles: Obstacles):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
-           Set kcu to 101 and changes flod and flou to crest_level.
-
-        Also store levees on this grid for later output (and Breach determination)
+           Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Args:
-            obstacles (Obstacles)
-            levees (Levees)
+            obstacles (Obstacles), including levees (see Levees.merge_into_obstacles)
         """
-        self.levees = levees
-        obstacles_module.apply_obstacles(self.lines, obstacles, levees)
+        line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
+        selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
+        crest_level = obstacles.compute_dpumax(self.lines, where=selection)
+        self.lines.set_2d_crest_levels(crest_level, where=selection)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
@@ -668,6 +667,7 @@ class Grid:
         pipes,
         locations,
         culverts,
+        obstacles,
         line_id_counter,
     ):
         """Connect 1D and 2D elements by adding 1D-2D lines.
@@ -684,6 +684,9 @@ class Grid:
             lines_1d2d.compute_2d_side(self.nodes, exchange_lines),
             self.cell_tree,
         )
+        lines_1d2d.set_line_coords(self.nodes)
+        lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
+        lines_1d2d.assign_dpumax_from_obstacles(obstacles)
         # Go through objects and dispatch to get_1d2d_properties
         node_idx = lines_1d2d.get_1d_node_idx(self.nodes)
         for objects in (channels, connection_nodes, pipes, culverts):
@@ -708,7 +711,7 @@ class Grid:
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
 
-    def add_breaches(self, connected_points):
+    def add_breaches(self, connected_points, levees):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
         references a Levee, it will result in a Breach. The Breach gets the properties
         from the Levee (max_breach_depth, material) but these may be unset.
@@ -716,7 +719,7 @@ class Grid:
         self.lines.set_line_coords(self.nodes)
         self.lines.fix_line_geometries()
         self.lines.fix_ds1d()
-        self.breaches = connected_points.get_breaches(self.lines, self.levees)
+        self.breaches = connected_points.get_breaches(self.lines, levees)
 
     def add_groundwater(self, has_groundwater_flow, node_id_counter, line_id_counter):
         """Add groundwater nodes and lines.
