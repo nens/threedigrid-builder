@@ -142,3 +142,14 @@ def test_line_endpoints_reduce_per_node(lines: Lines, ufunc, expected):
 
     assert_equal(node_ids, [1, 5])
     assert_almost_equal(maximums, expected)
+
+
+def test_line_endpoints_invert_level(lines: Lines):
+    lines.invert_level_start_point[:] = [1, 2, 3]
+    lines.invert_level_end_point[:] = [4, 5, 6]
+
+    endpoints = Endpoints(
+        lines=lines, id=range(3), line_idx=[0, 2, 1], is_start=[False, True, False]
+    )
+
+    assert_almost_equal(endpoints.invert_level, [4, 3, 5])

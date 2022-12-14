@@ -209,7 +209,7 @@ def _put_if_less(a, ind, v):
         np.put(a, ind[is_less], v[is_less])
 
 
-def set_bottom_levels(nodes, lines):
+def set_bottom_levels(nodes: Nodes, lines: Lines):
     """Set the bottom level (dmax) for connection nodes that do not yet have one.
 
     The bottom level (dmax) of a connection nodes is based on:
@@ -226,7 +226,7 @@ def set_bottom_levels(nodes, lines):
           and without a dmax will get a new dmax
         lines (Lines): the lines, including channels, pipes, weirs, and culverts
     """
-    # The connection node dmax will be the lowest of these object types:
+    # Compute the lowest invert level for each node connection node dmax will be the lowest of these object types:
     OBJECT_TYPES = [
         ContentType.TYPE_V2_CHANNEL,
         ContentType.TYPE_V2_PIPE,
@@ -234,40 +234,27 @@ def set_bottom_levels(nodes, lines):
         ContentType.TYPE_V2_WEIR,
         ContentType.TYPE_V2_ORIFICE,
     ]
-
     is_connection_node = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-    is_manhole = nodes.manhole_id != -9999
-    # Copy the dmax of the manholes for later reference
-    manhole_dmax = nodes.dmax[is_manhole].copy()
-    # Get ids of the relevant nodes (including manholes for checking bottom levels)
-    node_id = nodes.index_to_id(np.where(is_connection_node)[0])
+    endpoints = lines.as_endpoints(
+        where=np.isin(lines.content_type, OBJECT_TYPES)
+    ).filter_by_node_id(nodes.id[is_connection_node])
+    node_id, dmax = endpoints.reduce_per_node(np.fmin, endpoints.invert_level)
+    node_idx = nodes.id_to_index(node_id)
 
-    # line_idx: relevant lines
-    line_idx = np.where(np.isin(lines.content_type, OBJECT_TYPES))[0]
-    # line_idx_1: lines for which the connection node is the start
-    line_idx_1 = line_idx[np.isin(lines.line[line_idx, 0], node_id)]
-    if line_idx_1.size > 0:
-        # get the dmax from the invert_level_start
-        dmax = lines.invert_level_start_point[line_idx_1]
-        # find the nodes that match to these lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx_1, 0])
-        _put_if_less(nodes.dmax, _node_idx, dmax)
-    # line_idx_2: lines for which the connection node is the end
-    line_idx_2 = line_idx[np.isin(lines.line[line_idx, 1], node_id)]
-    if line_idx_2.size > 0:
-        # get the dmax from the invert_level_end
-        dmax = lines.invert_level_end_point[line_idx_2]
-        # find the nodes that match to these pipe lines and put the dmax
-        _node_idx = nodes.id_to_index(lines.line[line_idx_2, 1])
-        _put_if_less(nodes.dmax, _node_idx, dmax)
+    # The new dmax is the minimum of the existing one and the one from above computation
+    dmax = np.fmin(nodes.dmax[node_idx], dmax)
 
     # Check if the new node dmax is below the original manhole dmax
-    has_lower_dmax = nodes.dmax[is_manhole] < manhole_dmax
+    is_manhole = nodes.manhole_id[node_idx] != -9999
+    has_lower_dmax = dmax[is_manhole] < nodes.dmax[node_idx[is_manhole]]
     if np.any(has_lower_dmax):
-        ids = nodes.manhole_id[is_manhole][has_lower_dmax]
+        ids = nodes.manhole_id[node_idx[is_manhole][has_lower_dmax]]
         logger.warning(
             f"Manholes {sorted(ids.tolist())} have a "
             f"bottom_level that is above one ore more of the following connected "
             f"objects: channel reference level, pipe/culvert invert level, "
             f"weir/orifice crest level."
         )
+
+    # Place computed dmax values
+    nodes.dmax[node_idx] = dmax

@@ -154,6 +154,12 @@ class Endpoints(Array[Endpoint]):
     def is_end(self):
         return ~self.is_start
 
+    @property
+    def invert_level(self):
+        return np.where(
+            self.is_start, self.invert_level_start_point, self.invert_level_end_point
+        )
+
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]
 
@@ -169,6 +175,8 @@ class Endpoints(Array[Endpoint]):
         """
         if len(values) != len(self):
             raise ValueError("values must have the same length as self")
+        if len(values) == 0:
+            return np.empty(0, dtype=int), np.empty(0, dtype=float)
         diff = np.diff(self.node_id)
         if np.any(diff < 0):
             raise ValueError("node_id must be sorted")
