@@ -28,7 +28,12 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import Breaches, Levees, PotentialBreaches, PotentialBreachPoints
+from .levees import (
+    Levees,
+    PotentialBreaches,
+    PotentialBreachesOut,
+    PotentialBreachPoints,
+)
 from .linear import BaseLinear
 from .obstacles import Obstacles
 
@@ -198,7 +203,7 @@ class Grid:
 
         if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
-        if breaches is not None and not isinstance(breaches, Breaches):
+        if breaches is not None and not isinstance(breaches, PotentialBreachesOut):
             raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
         self.lines = lines
@@ -659,7 +664,7 @@ class Grid:
             line_id_counter,
         )
 
-    def add_1d2d(
+    def compute_1d2d_lines(
         self,
         exchange_lines,
         connection_nodes,
@@ -669,8 +674,8 @@ class Grid:
         culverts,
         obstacles,
         line_id_counter,
-    ):
-        """Connect 1D and 2D elements by adding 1D-2D lines.
+    ) -> Lines1D2D:
+        """Connect 1D and 2D elements by computing 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
         is located. Double connected gives two lines to the same node.
@@ -702,14 +707,14 @@ class Grid:
             lines_1d2d.assign_dpumax(mask, dpumax)
 
         lines_1d2d.assign_ds1d(self.nodes)
-        self.lines += lines_1d2d
+        return lines_1d2d
 
-    def add_breaches(
-        self,
-        potential_breaches: PotentialBreaches,
-        breach_points: PotentialBreachPoints,
-    ):
+    def set_breach_ids(self, breach_points: PotentialBreachPoints):
         breach_points.assign_to_connection_nodes(self.nodes, self.lines)
+
+    def add_1d2d(self, lines_1d2d: Lines1D2D, potential_breaches: PotentialBreaches):
+        self.lines += lines_1d2d
+        self.breaches = potential_breaches.assign_to_lines(lines_1d2d, self.nodes)
 
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """
@@ -822,7 +827,7 @@ class Grid:
                 new_node_ids, self.nodes_embedded.embedded_in
             )
         if self.breaches is not None:
-            self.breaches.levl[:] = np.take(new_line_ids, self.breaches.levl)
+            self.breaches.line_id[:] = np.take(new_line_ids, self.breaches.line_id)
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 

@@ -18,11 +18,11 @@ from threedigrid_builder.base import (
 from threedigrid_builder.base.surfaces import SurfaceMaps
 from threedigrid_builder.constants import NodeType
 from threedigrid_builder.grid import (
-    Breaches,
     CrossSections,
     Grid,
     GridMeta,
     Levees,
+    PotentialBreachesOut,
     QuadtreeStats,
 )
 from threedigrid_builder.interface.db import SQLite
@@ -145,10 +145,10 @@ def grid_all():
             pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
         ],
     )
-    breaches = Breaches(
+    breaches = PotentialBreachesOut(
         id=[0, 1],
         coordinates=[[0, 0], [1, 1]],
-        levl=[4, 3],
+        line_id=[4, 3],
         levee_id=[1, 0],
     )
     surfaces = Surfaces(

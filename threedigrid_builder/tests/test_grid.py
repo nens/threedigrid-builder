@@ -13,10 +13,10 @@ from threedigrid_builder.constants import (
     NodeType,
 )
 from threedigrid_builder.grid import (
-    Breaches,
     ConnectionNodes,
     Grid,
     GridMeta,
+    PotentialBreachesOut,
     QuadtreeStats,
 )
 
@@ -262,7 +262,7 @@ def grid_for_sorting():
         ),
         pumps=Pumps(id=[0], line=[(4, 5)]),
         nodes_embedded=Nodes(id=[0], embedded_in=[1]),
-        breaches=Breaches(id=[0], levl=[6]),
+        breaches=PotentialBreachesOut(id=[0], line_id=[6]),
     )
 
 
@@ -277,7 +277,7 @@ def test_sort(grid_for_sorting):
     assert_array_equal(grid.lines.line, [(3, 4), (4, 0), (5, 3)])
     assert_array_equal(grid.pumps.line, [(3, 4)])
     assert_array_equal(grid.nodes_embedded.embedded_in, [0])
-    assert_array_equal(grid.breaches.levl, [1])
+    assert_array_equal(grid.breaches.line_id, [1])
 
 
 def test_sort_no_lines(grid_for_sorting):

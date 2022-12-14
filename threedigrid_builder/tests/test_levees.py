@@ -6,12 +6,12 @@ from numpy.testing import assert_almost_equal, assert_equal
 from threedigrid_builder.base import Lines, LineStrings, Nodes
 from threedigrid_builder.constants import ContentType, Material
 from threedigrid_builder.grid import (
-    Breaches,
     Channels,
     ConnectedPoints,
     Levees,
     Obstacles,
     PotentialBreaches,
+    PotentialBreachesOut,
     PotentialBreachPoints,
 )
 
@@ -61,23 +61,23 @@ def lines():
 def test_get_breaches(connected_points, lines, levees):
     breaches = connected_points.get_breaches(lines, levees)
 
-    assert isinstance(breaches, Breaches)
+    assert isinstance(breaches, PotentialBreachesOut)
     assert len(breaches) == 3
 
     assert_equal(breaches.id, [0, 1, 2])
     assert_equal(breaches.content_pk, [0, 1, 2])
     assert_almost_equal(breaches.coordinates, [[10, 5], [4, 0], [6, 5]])
     assert_equal(breaches.levee_id, [1, 1, 2])
-    assert_equal(breaches.levl, [2, 3, 4])
-    assert_almost_equal(breaches.levbr, [4, 4, 2])
-    assert_equal(breaches.levmat, [Material.CLAY, Material.CLAY, Material.SAND])
+    assert_equal(breaches.line_id, [2, 3, 4])
+    assert_almost_equal(breaches.maximum_breach_depth, [4, 4, 2])
+    assert_equal(breaches.levee_material, [Material.CLAY, Material.CLAY, Material.SAND])
 
 
 def test_no_breaches(connected_points, lines, levees):
     connected_points.levee_id[:] = -9999
     breaches = connected_points.get_breaches(lines, levees)
 
-    assert isinstance(breaches, Breaches)
+    assert isinstance(breaches, PotentialBreachesOut)
     assert len(breaches) == 0
 
 
@@ -221,3 +221,19 @@ def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
     )
     breach_points.assign_to_connection_nodes(nodes, lines)
     assert_equal(nodes.breach_ids[0], expected)
+
+
+def test_assign_to_lines():
+    nodes = Nodes(id=range(10, 13), breach_ids=[(1, -9999), (2, 3), (-9999, -9999)])
+    potential_breaches = PotentialBreaches(
+        id=range(1, 4),
+        code=["a", "b", "c"],
+        levee_material=[Material.SAND, Material.SAND, Material.CLAY],
+    )
+    lines = Lines(id=range(4), line=[(1, 10), (2, 11), (3, 11), (4, 12)])
+    actual = potential_breaches.assign_to_lines(lines, nodes)
+    assert isinstance(actual, PotentialBreachesOut)
+    assert_equal(actual.content_pk, [1, 2, 3])
+    assert_equal(actual.line_id, [0, 1, 2])
+    assert_equal(actual.code, ["a", "b", "c"])
+    assert_equal(actual.levee_material, [Material.SAND, Material.SAND, Material.CLAY])

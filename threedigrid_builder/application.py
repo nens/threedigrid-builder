@@ -170,6 +170,7 @@ def _make_gridadmin(
 
         grid.set_calculation_types()
         grid.set_bottom_levels()
+        grid.set_breach_ids(breach_points)
         grid.set_initial_waterlevels(
             connection_nodes=connection_nodes,
             channels=channels,
@@ -199,7 +200,7 @@ def _make_gridadmin(
             )
             grid.add_breaches_legacy(connected_points, grid.levees)
         else:
-            grid.add_1d2d(
+            lines_1d2d = grid.compute_1d2d_lines(
                 exchange_lines,
                 connection_nodes=connection_nodes,
                 channels=channels,
@@ -209,7 +210,7 @@ def _make_gridadmin(
                 obstacles=obstacles_and_levees,
                 line_id_counter=line_id_counter,
             )
-            grid.add_breaches(potential_breaches, breach_points)
+            grid.add_1d2d(lines_1d2d, potential_breaches)
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,

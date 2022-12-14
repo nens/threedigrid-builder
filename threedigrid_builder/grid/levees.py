@@ -9,7 +9,13 @@ from threedigrid_builder.constants import ContentType, Material
 from .channels import Channels
 from .obstacles import Obstacles
 
-__all__ = ["Levees", "Breaches", "PotentialBreaches", "PotentialBreachPoints"]
+__all__ = [
+    "Levees",
+    "Breaches",
+    "PotentialBreaches",
+    "PotentialBreachPoints",
+    "PotentialBreachesOut",
+]
 
 
 class Breach:
@@ -35,7 +41,6 @@ class PotentialBreach:
     levee_material: Material
     maximum_breach_depth: float
     channel_id: int
-    line_id: int
 
 
 class PotentialBreachPoints(PointsOnLine):
@@ -152,6 +157,38 @@ class PotentialBreaches(Array[PotentialBreach]):
             content_pk=self.id,
         ).merge(merge_tolerance)
 
+    def assign_to_lines(
+        self, lines_1d2d: Lines, nodes: Nodes
+    ) -> "PotentialBreachesOut":
+        """Assign breaches to 1D-2D lines
+
+        Breaches are assigned through the 'line_id' field in the output of this method.
+        """
+
+        out = PotentialBreachesOut(id=[])
+        for i, line_idx in enumerate(lines_1d2d.split_in_two(lines_1d2d.line[:, 1])):
+            breach_ids = nodes.breach_ids[
+                nodes.id_to_index(lines_1d2d.line[line_idx, 1]), i
+            ]
+            mask = breach_ids != -9999
+            breach_ids = breach_ids[mask]
+            line_idx = line_idx[mask]
+            breach_idx = self.id_to_index(breach_ids)
+
+            out += PotentialBreachesOut(
+                id=range(len(out), len(out) + len(line_idx)),
+                # coordinates,  TODO
+                code=self.code[breach_idx],
+                display_name=self.display_name[breach_idx],
+                levee_material=self.levee_material[breach_idx],
+                maximum_breach_depth=self.maximum_breach_depth[breach_idx],
+                line_id=lines_1d2d.id[line_idx],
+                content_pk=breach_ids,
+            )
+
+        out.reorder_by("line_id")
+        return out
+
 
 class Levee:
     id: int
@@ -176,3 +213,19 @@ class Levees(Array[Levee]):
             the_geom=self.the_geom,
             crest_level=self.crest_level,
         )
+
+
+class PotentialBreachOut:
+    id: int
+    coordinates: Tuple[float, float]  # where it crosses a levee
+    code: str
+    display_name: str
+    levee_material: Material  # levmat
+    maximum_breach_depth: float  # levbr
+    line_id: int  # levl
+    content_pk: int  # refers to v2_potential_breach
+    levee_id: int
+
+
+class PotentialBreachesOut(Array[PotentialBreachOut]):
+    pass

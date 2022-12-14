@@ -12,7 +12,13 @@ from threedigrid_builder.base import (
 )
 from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 from threedigrid_builder.constants import ContentType, LineType, NodeType
-from threedigrid_builder.grid import Breaches, Grid, GridMeta, Levees, QuadtreeStats
+from threedigrid_builder.grid import (
+    Grid,
+    GridMeta,
+    Levees,
+    PotentialBreachesOut,
+    QuadtreeStats,
+)
 from threedigrid_builder.grid.cross_section_definitions import CrossSections
 
 try:
@@ -698,19 +704,23 @@ class GridAdminOut(OutputInterface):
             group, "coords", levees.the_geom, insert_dummy=False
         )
 
-    def write_breaches(self, breaches: Breaches):
+    def write_breaches(self, breaches: PotentialBreachesOut):
         if breaches is None:
             return
         group = self._file.create_group("breaches")
 
         # Datasets that match directly to a levees attribute:
         self.write_dataset(group, "id", breaches.id + 1)
-        self.write_dataset(group, "levl", breaches.levl + 1)
+        self.write_dataset(group, "levl", breaches.line_id + 1)
         self.write_dataset(group, "levee_id", breaches.levee_id)
         self.write_dataset(group, "content_pk", breaches.content_pk)
-        self.write_dataset(group, "levbr", breaches.levbr)
-        self.write_dataset(group, "levmat", breaches.levmat)
+        self.write_dataset(group, "levbr", breaches.maximum_breach_depth)
+        self.write_dataset(group, "levmat", breaches.levee_material)
         self.write_dataset(group, "coordinates", breaches.coordinates.T)
+        self.write_dataset(group, "code", to_bytes_array(breaches.code, 32))
+        self.write_dataset(
+            group, "display_name", to_bytes_array(breaches.display_name, 64)
+        )
 
     def write_dataset(
         self, group, name, values, fill=None, insert_dummy=True, fill_nan=None

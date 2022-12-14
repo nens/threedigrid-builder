@@ -74,11 +74,11 @@ EMBEDDED_NODE_FIELDS = (
 
 BREACH_FIELDS = (
     "id",
-    "levl",
-    "content_pk",  # refers to v2_connected_pnt
+    "line_id",
+    "content_pk",
     "levee_id",
-    "levmat",
-    "levbr",
+    "levee_material",
+    "maximum_breach_depth",
 )
 
 
@@ -219,9 +219,6 @@ class DictOut(OutputInterface):
         node_data_filt = {field: node_data[field] for field in NODE_FIELDS}
         node_data_filt["geometry"] = node_geometries
 
-        node_data_filt["breach_id_1"] = node_data["breach_ids"][:, 0]
-        node_data_filt["breach_id_2"] = node_data["breach_ids"][:, 1]
-
         cell_data = {field: node_data[field][is_2d] for field in CELL_FIELDS}
         cell_data["geometry"] = cell_geometries
 
@@ -312,10 +309,12 @@ class DictOut(OutputInterface):
         geometries[has_coord] = pygeos.points(coordinates[has_coord])
 
         # convert enums to strings
-        breach_data["levmat"] = _enum_to_str(breach_data["levmat"], Material)
+        breach_data["levee_material"] = _enum_to_str(
+            breach_data["levee_material"], Material
+        )
 
         # go from 0-based to 1-based indexing
-        for field in ("id", "levl"):
+        for field in ("id", "line_id"):
             breach_data[field] = increase(breach_data[field])
 
         breach_data = {field: breach_data[field] for field in BREACH_FIELDS}
