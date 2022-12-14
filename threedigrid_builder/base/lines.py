@@ -159,3 +159,19 @@ class Endpoints(Array[Endpoint]):
 
     def filter_by_node_id(self, node_ids) -> "Endpoints":
         return self[np.isin(self.node_id, node_ids)]
+
+    def reduce_per_node(self, ufunc, values):
+        """Compute the per-node ufunc reduction of 'values'
+
+        For computing the maximum, use 'np.fmax'. For computing the sum, use 'np.add'.
+
+        Returns node ids and corresponding maximum values.
+        """
+        if len(values) != len(self):
+            raise ValueError("values must have the same length as self")
+        diff = np.diff(self.node_id)
+        if np.any(diff < 0):
+            raise ValueError("node_id must be sorted")
+        indices = np.concatenate([[0], np.where(diff > 0)[0] + 1])
+        result = ufunc.reduceat(values, indices)
+        return self.node_id[indices], result

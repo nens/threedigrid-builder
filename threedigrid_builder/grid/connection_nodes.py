@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Nodes
+from threedigrid_builder.base import Array, Lines, Nodes, replace
 from threedigrid_builder.constants import (
     CalculationType,
     ContentType,
@@ -142,7 +142,7 @@ class ConnectionNodes(Array[ConnectionNode]):
         return is_closed, dpumax
 
 
-def set_calculation_types(nodes, lines):
+def set_calculation_types(nodes: Nodes, lines: Lines):
     """Set the calculation types for connection nodes that do not yet have one.
 
     The calculation_type of a connection nodes is based on
@@ -157,35 +157,38 @@ def set_calculation_types(nodes, lines):
           and without a calculation_type will get a new calculation_type
         lines (Lines): the lines, including channels and pipes
     """
-    # Get the indices of the relevant nodes and lines
-    node_idx = np.where(
-        (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
-        & (nodes.calculation_type == -9999)
-    )[0]
-    line_idx = np.where(
-        (lines.content_type == ContentType.TYPE_V2_CHANNEL)
-        | (lines.content_type == ContentType.TYPE_V2_PIPE)
-        | (lines.content_type == ContentType.TYPE_V2_CULVERT)
-    )[0]
+    mapping = {
+        LineType.LINE_1D_EMBEDDED: 0,
+        LineType.LINE_1D_ISOLATED: 1,
+        LineType.LINE_1D_DOUBLE_CONNECTED: 2,
+        LineType.LINE_1D_CONNECTED: 3,
+        -9999: 4,
+    }
+    inverse_mapping = {v: k for (k, v) in mapping.items()}
+    inverse_mapping[4] = LineType.LINE_1D_ISOLATED  # -9999 becomes isolated
 
-    for _type in (
-        LineType.LINE_1D_EMBEDDED,
-        LineType.LINE_1D_ISOLATED,
-        LineType.LINE_1D_DOUBLE_CONNECTED,
-        LineType.LINE_1D_CONNECTED,
-    ):
-        # Do the nodes have a line with this _type?
-        has_this_type = np.isin(
-            nodes.index_to_id(node_idx),
-            lines.line[line_idx[lines.kcu[line_idx] == _type]],
+    node_mask = (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES) & (
+        nodes.calculation_type == -9999
+    )
+    endpoints = lines.as_endpoints(
+        where=np.isin(
+            lines.content_type,
+            [
+                ContentType.TYPE_V2_CHANNEL,
+                ContentType.TYPE_V2_PIPE,
+                ContentType.TYPE_V2_CULVERT,
+            ],
         )
-        # set the type (note: LineType and CalculationType have equal enum values)
-        nodes.calculation_type[node_idx[has_this_type]] = _type
-        # these nodes are 'done', skip them in the next loop
-        node_idx = node_idx[~has_this_type]
+    ).filter_by_node_id(nodes.id[node_mask])
 
-    # Remaining nodes get ISOLATED
-    nodes.calculation_type[node_idx] = CalculationType.ISOLATED
+    priority = replace(endpoints.kcu, mapping)
+    node_id, priority_per_node = endpoints.reduce_per_node(np.fmin, priority)
+    calculation_type = replace(priority_per_node, inverse_mapping)
+
+    # start off with ISOLATED
+    nodes.calculation_type[node_mask] = CalculationType.ISOLATED
+    # overwrite with the one derived from the line endpoints
+    nodes.calculation_type[nodes.id_to_index(node_id)] = calculation_type
 
 
 def _put_if_less(a, ind, v):

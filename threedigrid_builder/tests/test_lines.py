@@ -124,3 +124,21 @@ def test_line_endpoints_getattr(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[0, 1, 2], line_idx=[1, 2, 1])
 
     assert_equal(endpoints.ds1d, lines.ds1d[[1, 2, 1]])
+
+
+@pytest.mark.parametrize(
+    "ufunc,expected",
+    [
+        (np.fmax, [16.0, 16.0]),
+        (np.fmin, [2.0, 16.0]),
+        (np.add, [18.0, np.nan]),
+    ],
+)
+def test_line_endpoints_reduce_per_node(lines: Lines, ufunc, expected):
+    endpoints = Endpoints(
+        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
+    )
+    node_ids, maximums = endpoints.reduce_per_node(ufunc, endpoints.ds1d)
+
+    assert_equal(node_ids, [1, 5])
+    assert_almost_equal(maximums, expected)
