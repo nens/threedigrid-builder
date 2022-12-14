@@ -143,8 +143,8 @@ def test_levees_merge_into_obstacles_no_obstacles(levees):
     assert_equal(actual.crest_level, [2.0, 4.0, np.nan])
 
 
-def test_assign_to_connection_nodes():
-    """Set the breach ids on a connection node with 3 channels"""
+@pytest.fixture
+def threeway_junction():
     nodes = Nodes(
         id=range(1, 5),
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -160,15 +160,64 @@ def test_assign_to_connection_nodes():
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=[11, 12, 13],
     )
+    return nodes, lines, linestrings
+
+
+@pytest.mark.parametrize(
+    "breach_points,expected",
+    [
+        (  # no breach points: nothing assigned
+            {"id_1": [], "id_2": [], "s1d": [], "ch_idx": []},
+            (-9999, -9999),
+        ),
+        (  # breach point at start, single connected
+            {"id_1": [5], "id_2": [-9999], "s1d": [0.0], "ch_idx": [0]},
+            (5, -9999),
+        ),
+        (  # breach point at end, single connected (linestring 2 is swapped)
+            {"id_1": [7], "id_2": [-9999], "s1d": [1.0], "ch_idx": [2]},
+            (7, -9999),
+        ),
+        (  # breach point at start, far side
+            {"id_1": [5], "id_2": [-9999], "s1d": [1.0], "ch_idx": [0]},
+            (-9999, -9999),
+        ),
+        (  # breach point at end, far side (linestring 2 is swapped)
+            {"id_1": [7], "id_2": [-9999], "s1d": [0.0], "ch_idx": [2]},
+            (-9999, -9999),
+        ),
+        (  # breach point at start, double connected
+            {"id_1": [5], "id_2": [6], "s1d": [0.0], "ch_idx": [0]},
+            (5, 6),
+        ),
+        (  # breach point at end, double connected (linestring 2 is swapped)
+            {"id_1": [7], "id_2": [8], "s1d": [1.0], "ch_idx": [2]},
+            (7, 8),
+        ),
+        (  # two breach points, single connected
+            {"id_1": [5, 6], "id_2": -9999, "s1d": [0.0, 0.0], "ch_idx": [0, 1]},
+            (5, -9999),
+        ),
+        (  # two breach points, single connected (orders by ch_idx)
+            {"id_1": [5, 6], "id_2": -9999, "s1d": [0.0, 0.0], "ch_idx": [1, 0]},
+            (6, -9999),
+        ),
+        (  # two breach points, one double connected (gets priority)
+            {"id_1": [5, 6], "id_2": [-9999, 8], "s1d": [0.0, 0.0], "ch_idx": [0, 1]},
+            (6, 8),
+        ),
+    ],
+)
+def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
+    """Set the breach ids on a connection node with 3 channels"""
+    nodes, lines, linestrings = threeway_junction
     breach_points = PotentialBreachPoint(
         linestrings=linestrings,
-        id=range(3),
-        content_pk=[5, 6, 7],
-        secondary_content_pk=[-9999, 8, 9],
-        s1d=[0.0, 0.0, 1.0],
-        linestring_idx=[0, 1, 2],
+        id=range(len(breach_points["id_1"])),
+        content_pk=breach_points["id_1"],
+        secondary_content_pk=breach_points["id_2"],
+        s1d=breach_points["s1d"],
+        linestring_idx=breach_points["ch_idx"],
     )
     breach_points.assign_to_connection_nodes(nodes, lines)
-    assert_equal(
-        nodes.breach_ids, [(6, 8), (-9999, -9999), (-9999, -9999), (-9999, -9999)]
-    )
+    assert_equal(nodes.breach_ids[0], expected)

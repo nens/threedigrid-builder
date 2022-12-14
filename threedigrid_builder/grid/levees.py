@@ -36,7 +36,6 @@ class PotentialBreach:
     maximum_breach_depth: float
     channel_id: int
     line_id: int
-    node_id: int  # temporary field, for internal usage
 
 
 class PotentialBreachPoint(PointsOnLine):
@@ -85,7 +84,14 @@ class PotentialBreachPoint(PointsOnLine):
         )
 
     def assign_to_connection_nodes(self, nodes: Nodes, lines: Lines):
-        """Per connection node, assign max two potential breach ids"""
+        """Per connection node, assign max two potential breach ids.
+
+        The priority is as follows:
+        - Take the breach points of the first channel that has 2 breach
+          points at the node.
+        - If there are no double breach points: take the breach points of
+          the first channel.
+        """
         # disassemble lines into Channel - Connection Node endpoints
         endpoints = lines.as_endpoints(
             where=lines.content_type == ContentType.TYPE_V2_CHANNEL
@@ -93,7 +99,7 @@ class PotentialBreachPoint(PointsOnLine):
             nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES]
         )
 
-        # per endpoint, assemble first and second breach points
+        # per endpoint, look for a breach point
         breach_point_idx = np.full(len(endpoints), fill_value=-9999, dtype=np.int32)
         breach_point_idx[endpoints.is_start] = search(
             self.linestring_id,
@@ -111,11 +117,15 @@ class PotentialBreachPoint(PointsOnLine):
         node_idx = nodes.id_to_index(endpoints.node_id[mask])
         breach_point_idx = breach_point_idx[mask]
 
+        # iterate over nodes with a breach point and assign (if present)
+        # the first double breach point
         for node_i in np.unique(node_idx):
-            breach_id_1 = self.content_pk[node_idx == node_i]
-            breach_id_2 = self.secondary_content_pk[node_idx == node_i]
-            has_secondary = np.where(breach_id_2 != -9999)[0]
-            idx = has_secondary[0] if len(has_secondary) > 0 else 0
+            mask = np.where(node_idx == node_i)[0]
+            mask = mask[np.argsort(self.linestring_id[mask])]
+            breach_id_1 = self.content_pk[mask]
+            breach_id_2 = self.secondary_content_pk[mask]
+            is_double = np.where(breach_id_2 != -9999)[0]
+            idx = is_double[0] if len(is_double) > 0 else 0
             nodes.breach_ids[node_i] = [breach_id_1[idx], breach_id_2[idx]]
 
 
