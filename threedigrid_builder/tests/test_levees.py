@@ -3,17 +3,18 @@ import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
-from threedigrid_builder.base import Lines, LineStrings, PointsOnLine, Nodes
+from threedigrid_builder.base import Lines, LineStrings, Nodes
 from threedigrid_builder.constants import ContentType, Material
 from threedigrid_builder.grid import (
     Breaches,
-    ConnectedPoints,
     Channels,
+    ConnectedPoints,
     Levees,
     Obstacles,
     PotentialBreaches,
     PotentialBreachPoint,
 )
+
 
 @pytest.fixture
 def levees():
@@ -91,7 +92,7 @@ def test_potential_breach_sides():
 
 
 def test_potential_breach_merge():
-    actual = PointsOnLine(
+    actual = PotentialBreachPoint(
         linestrings=LineStrings(
             pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]])
         ),
@@ -108,7 +109,7 @@ def test_potential_breach_merge():
 
 
 def test_potential_breach_merge_empty():
-    actual = PointsOnLine.empty(
+    actual = PotentialBreachPoint.empty(
         linestrings=LineStrings(
             pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]])
         )
@@ -143,23 +144,29 @@ def test_levees_merge_into_obstacles_no_obstacles(levees):
 def test_assign_to_connection_nodes():
     """Set the breach ids on a connection node with 3 channels"""
     nodes = Nodes(
-        id=range(4),
+        id=range(1, 5),
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         content_pk=[1, 2, 3, 4],
     )
     channels = Channels(
         id=[11, 12, 13],
         the_geom=pygeos.linestrings([[[0, 0], [0, 1]]] * 3),
-        connection_node_start_id=[1, 1, 1],
-        connection_node_end_id=[2, 3, 4],
+    )
+    lines = Lines(
+        id=range(3),
+        line=[(1, 2), (1, 3), (4, 1)],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=[11, 12, 13],
     )
     breach_points = PotentialBreachPoint(
         linestrings=channels.linestrings,
         id=range(3),
         content_pk=[5, 6, 7],
         secondary_content_pk=[-9999, 8, 9],
-        s1d=[0., 0., 0.],
+        s1d=[0.0, 0.0, 1.0],
         linestring_idx=[0, 1, 2],
     )
-    breach_points.assign_to_connection_nodes(nodes, channels)
-    assert_equal(nodes.breach_ids, [(6, 8), (-9999, -9999),(-9999, -9999), (-9999, -9999)])
+    breach_points.assign_to_connection_nodes(nodes, lines, channels)
+    assert_equal(
+        nodes.breach_ids, [(6, 8), (-9999, -9999), (-9999, -9999), (-9999, -9999)]
+    )

@@ -2,10 +2,9 @@ from typing import Tuple
 
 import numpy as np
 import pygeos
-from collections import defaultdict
 
-from threedigrid_builder.base import Array, Nodes, PointsOnLine, Lines, search
-from threedigrid_builder.constants import Material, ContentType, LineType
+from threedigrid_builder.base import Array, Lines, Nodes, PointsOnLine, search
+from threedigrid_builder.constants import ContentType, Material
 
 from .channels import Channels
 from .obstacles import Obstacles
@@ -85,23 +84,59 @@ class PotentialBreachPoint(PointsOnLine):
             s1d=np.delete(s1d, to_delete),
         )
 
-    def assign_to_connection_nodes(self, nodes: Nodes, channels: Channels):
+    def assign_to_connection_nodes(
+        self, nodes: Nodes, lines: Lines, channels: Channels
+    ):
         """Per connection node, assign max two potential breach ids"""
-        assert np.all(nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES)
 
-        # per connection node, assemble options
-        lookup = {} 
-        for (mask, channel_field) in ((self.at_start, "connection_node_start_id"), (self.at_end, "connection_node_end_id")):
-            for breach_point_idx in np.where(mask)[0]:
-                channel_idx = self.linestring_idx[breach_point_idx]
-                cn_id = getattr(channels, channel_field)[channel_idx]
-                node_idx = search(nodes.content_pk, cn_id, assume_ordered=True)
-                breach_id_1 = self.content_pk[breach_point_idx]
-                breach_id_2 = self.secondary_content_pk[breach_point_idx]
-                if nodes.breach_ids[node_idx, 0] == -9999 or (nodes.breach_ids[node_idx, 1] == -9999) and (breach_id_2 != -9999):
-                    nodes.breach_ids[node_idx] = [breach_id_1, breach_id_2]
+        # disassemble lines into endpoints (each line has 2 endpoints)
+        endpoints = lines.as_endpoints(
+            where=lines.content_type == ContentType.TYPE_V2_CHANNEL
+        )
 
-        breach_points.content_pk[is_start]
+        # only keep connection node endpoints (TODO)
+        # endpoints = endpoints.filter_by_node_id(nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES])
+
+        # per endpoint, assemble first and second breach points
+        start_channel_idx = channels.id_to_index(
+            lines.content_pk[lines.id_to_index(endpoints.line_id[endpoints.is_start])]
+        )
+        end_channel_idx = channels.id_to_index(
+            lines.content_pk[lines.id_to_index(endpoints.line_id[~endpoints.is_start])]
+        )
+        node_ids = np.concatenate(
+            [
+                endpoints.node_id[endpoints.is_start],
+                endpoints.node_id[~endpoints.is_start],
+            ]
+        )
+        breach_point_idx = np.concatenate(
+            [
+                search(
+                    self.linestring_idx,
+                    start_channel_idx,
+                    mask=self.at_start,
+                    check_exists=False,
+                ),
+                search(
+                    self.linestring_idx,
+                    end_channel_idx,
+                    mask=self.at_end,
+                    check_exists=False,
+                ),
+            ]
+        )
+        mask = breach_point_idx != -9999
+        node_ids = node_ids[mask]
+        node_idx = nodes.id_to_index(node_ids)
+        breach_point_idx = breach_point_idx[mask]
+
+        for node_i in np.unique(node_idx):
+            breach_id_1 = self.content_pk[node_idx == node_i]
+            breach_id_2 = self.secondary_content_pk[node_idx == node_i]
+            has_secondary = np.where(breach_id_2 != -9999)[0]
+            idx = has_secondary[0] if len(has_secondary) > 0 else 0
+            nodes.breach_ids[node_i] = [breach_id_1[idx], breach_id_2[idx]]
 
 
 class PotentialBreaches(Array[PotentialBreach]):
@@ -151,4 +186,3 @@ class Levees(Array[Levee]):
             the_geom=self.the_geom,
             crest_level=self.crest_level,
         )
-        
