@@ -123,8 +123,9 @@ class LineStrings(Array[LineString]):
 class PointsOnLine(Array[PointOnLine]):
     scalars = ("linestrings",)
 
-    def __getattr__(self, name):
-        return getattr(self.linestrings, name)[self.linestring_idx]
+    @property
+    def linestring_id(self):
+        return self.linestrings.index_to_id(self.linestring_idx)
 
     @classmethod
     def empty(cls, linestrings: LineStrings):
@@ -226,9 +227,6 @@ class PointsOnLine(Array[PointOnLine]):
 
 class LinesOnLine(Array[LineOnLine]):
     scalars = ("linestrings",)
-
-    def __getattr__(self, name):
-        return getattr(self.linestrings, name)[self.linestring_idx]
 
     @property
     def s1d(self):

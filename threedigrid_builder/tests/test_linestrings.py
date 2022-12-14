@@ -15,7 +15,7 @@ def linestrings():
 @pytest.fixture
 def two_linestrings():
     return LineStrings(
-        id=[0, 1],
+        id=[1, 3],
         the_geom=np.array(
             [
                 pygeos.linestrings([(0, 10), (10, 10)]),
@@ -133,6 +133,16 @@ def test_point_on_line_at_start_at_end(two_linestrings):
 
     assert_array_equal(points_on_line.at_start, [True, False, True, False])
     assert_array_equal(points_on_line.at_end, [False, True, False, True])
+
+
+def test_point_on_line_linestring_id(two_linestrings):
+    points_on_line = PointsOnLine(
+        linestrings=two_linestrings,
+        id=range(3),
+        linestring_idx=[0, 1, 0],
+    )
+
+    assert_array_equal(points_on_line.linestring_id, [1, 3, 1])
 
 
 @pytest.mark.parametrize(
