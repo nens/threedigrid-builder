@@ -186,3 +186,6 @@ class Endpoints(Array[Endpoint]):
         indices = np.concatenate([[0], np.where(diff > 0)[0] + 1])
         result = ufunc.reduceat(values, indices)
         return self.node_id[indices], result
+
+    def nanmin_per_node(self, values):
+        return self.reduce_per_node(np.fmin, values)

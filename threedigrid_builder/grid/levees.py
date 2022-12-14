@@ -9,7 +9,7 @@ from threedigrid_builder.constants import ContentType, Material
 from .channels import Channels
 from .obstacles import Obstacles
 
-__all__ = ["Levees", "Breaches", "PotentialBreaches", "PotentialBreachPoint"]
+__all__ = ["Levees", "Breaches", "PotentialBreaches", "PotentialBreachPoints"]
 
 
 class Breach:
@@ -38,8 +38,8 @@ class PotentialBreach:
     line_id: int
 
 
-class PotentialBreachPoint(PointsOnLine):
-    def merge(self, tolerance: float) -> "PotentialBreachPoint":
+class PotentialBreachPoints(PointsOnLine):
+    def merge(self, tolerance: float) -> "PotentialBreachPoints":
         """Merge breach points with a certain tolerance.
 
         - Breaches are merged into channel start / end if they are closer than
@@ -140,12 +140,12 @@ class PotentialBreaches(Array[PotentialBreach]):
 
     def project_on_channels(
         self, channels: Channels, merge_tolerance: float
-    ) -> PotentialBreachPoint:
+    ) -> PotentialBreachPoints:
         """Project the potential breaches on channels, yielding points on channels.
 
         This method also calls the 'merge' logic.
         """
-        return PotentialBreachPoint.from_geometries(
+        return PotentialBreachPoints.from_geometries(
             channels.linestrings,
             points=self.side_1d,
             linestring_idx=channels.id_to_index(self.channel_id, check_exists=True),

@@ -28,7 +28,7 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import Breaches, Levees, PotentialBreaches
+from .levees import Breaches, Levees, PotentialBreaches, PotentialBreachPoints
 from .linear import BaseLinear
 from .obstacles import Obstacles
 
@@ -706,11 +706,10 @@ class Grid:
 
     def add_breaches(
         self,
-        channels,
         potential_breaches: PotentialBreaches,
-        breach_points: PointsOnLine,
+        breach_points: PotentialBreachPoints,
     ):
-        pass
+        breach_points.assign_to_connection_nodes(self.nodes, self.lines)
 
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """

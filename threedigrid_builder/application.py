@@ -170,7 +170,6 @@ def _make_gridadmin(
 
         grid.set_calculation_types()
         grid.set_bottom_levels()
-        breach_points.assign_to_connection_nodes(grid.nodes, grid.lines)
         grid.set_initial_waterlevels(
             connection_nodes=connection_nodes,
             channels=channels,

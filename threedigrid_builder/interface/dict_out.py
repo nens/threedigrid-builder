@@ -219,6 +219,9 @@ class DictOut(OutputInterface):
         node_data_filt = {field: node_data[field] for field in NODE_FIELDS}
         node_data_filt["geometry"] = node_geometries
 
+        node_data_filt["breach_id_1"] = node_data["breach_ids"][:, 0]
+        node_data_filt["breach_id_2"] = node_data["breach_ids"][:, 1]
+
         cell_data = {field: node_data[field][is_2d] for field in CELL_FIELDS}
         cell_data["geometry"] = cell_geometries
 

@@ -182,7 +182,7 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     ).filter_by_node_id(nodes.id[node_mask])
 
     priority = replace(endpoints.kcu, mapping)
-    node_id, priority_per_node = endpoints.reduce_per_node(np.fmin, priority)
+    node_id, priority_per_node = endpoints.nanmin_per_node(priority)
     calculation_type = replace(priority_per_node, inverse_mapping)
 
     # start off with ISOLATED
@@ -238,7 +238,7 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
     endpoints = lines.as_endpoints(
         where=np.isin(lines.content_type, OBJECT_TYPES)
     ).filter_by_node_id(nodes.id[is_connection_node])
-    node_id, dmax = endpoints.reduce_per_node(np.fmin, endpoints.invert_level)
+    node_id, dmax = endpoints.nanmin_per_node(endpoints.invert_level)
     node_idx = nodes.id_to_index(node_id)
 
     # The new dmax is the minimum of the existing one and the one from above computation

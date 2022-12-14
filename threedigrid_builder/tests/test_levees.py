@@ -12,7 +12,7 @@ from threedigrid_builder.grid import (
     Levees,
     Obstacles,
     PotentialBreaches,
-    PotentialBreachPoint,
+    PotentialBreachPoints,
 )
 
 
@@ -92,7 +92,7 @@ def test_potential_breach_sides():
 
 
 def test_potential_breach_merge():
-    actual = PotentialBreachPoint(
+    actual = PotentialBreachPoints(
         linestrings=LineStrings(
             id=[0, 1],
             the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
@@ -110,7 +110,7 @@ def test_potential_breach_merge():
 
 
 def test_potential_breach_merge_empty():
-    actual = PotentialBreachPoint.empty(
+    actual = PotentialBreachPoints.empty(
         linestrings=LineStrings(
             id=[0, 1],
             the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
@@ -211,7 +211,7 @@ def threeway_junction():
 def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
     """Set the breach ids on a connection node with 3 channels"""
     nodes, lines, linestrings = threeway_junction
-    breach_points = PotentialBreachPoint(
+    breach_points = PotentialBreachPoints(
         linestrings=linestrings,
         id=range(len(breach_points["id_1"])),
         content_pk=breach_points["id_1"],
