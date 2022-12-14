@@ -7,7 +7,7 @@ from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .array import Array
 
-__all__ = ["Lines"]
+__all__ = ["Lines", "Endpoints"]
 
 
 class Line:
@@ -118,3 +118,34 @@ class Lines(Array[Line]):
         self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
         self.flod[where] = crest_levels
         self.flou[where] = crest_levels
+
+    def as_endpoints(self, where=None) -> "Endpoints":
+        if where is None:
+            n = len(self)
+            where = slice(None)
+        elif where.dtype == bool:
+            where = np.where(where)[0]
+            n = len(where)
+        else:
+            n = len(where)
+
+        result = Endpoints(
+            id=range(n * 2),
+            line_id=np.repeat(self.id[where], 2),
+            node_id=self.line[where].ravel(),
+            is_start=np.tile([True, False], n),
+        )
+        result.reorder_by("node_id")
+        return result
+
+
+class Endpoint:
+    id: int
+    node_id: int
+    line_id: int
+    is_start: bool
+
+
+class Endpoints(Array[Endpoint]):
+    def compute_node_degree(self):
+        pass

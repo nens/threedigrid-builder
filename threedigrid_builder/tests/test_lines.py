@@ -4,7 +4,7 @@ import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 from pygeos.testing import assert_geometries_equal
 
-from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.base import Endpoints, Lines, Nodes
 from threedigrid_builder.constants import LineType
 
 
@@ -100,3 +100,21 @@ def test_set_2d_crest_levels(
     assert_equal(lines.kcu, expected_kcu)
     assert_equal(lines.flod, expected_flod)
     assert_equal(lines.flou, expected_flod)
+
+
+def test_as_line_endpoints(lines: Lines):
+    endpoints = lines.as_endpoints()
+    assert isinstance(endpoints, Endpoints)
+    assert_equal(endpoints.node_id, [1, 1, 2, 2, 3, 3])
+    assert_equal(endpoints.line_id, [0, 2, 0, 1, 1, 2])
+    assert_equal(endpoints.is_start, [1, 1, 0, 1, 0, 0])
+
+
+@pytest.mark.parametrize("where", [np.array([False, True, False]), np.array([1])])
+def test_as_line_endpoints_where_bool(lines: Lines, where):
+    endpoints = lines.as_endpoints(where=where)
+    assert isinstance(endpoints, Endpoints)
+
+    assert_equal(endpoints.node_id, [2, 3])
+    assert_equal(endpoints.line_id, [1, 1])
+    assert_equal(endpoints.is_start, [1, 0])
