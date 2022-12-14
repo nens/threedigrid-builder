@@ -146,7 +146,10 @@ class Endpoint:
 
 
 class Endpoints(Array[Endpoint]):
-    """Each line has 2 endpoints."""
+    """Each line has 2 endpoints.
+
+    This class makes it easier to reason about all the objects on a node.
+    """
 
     scalars = ("lines",)
 
