@@ -94,7 +94,8 @@ def test_potential_breach_sides():
 def test_potential_breach_merge():
     actual = PotentialBreachPoint(
         linestrings=LineStrings(
-            pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]])
+            id=[0, 1],
+            the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
         ),
         id=range(8),
         s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0, 4, 5],
@@ -111,7 +112,8 @@ def test_potential_breach_merge():
 def test_potential_breach_merge_empty():
     actual = PotentialBreachPoint.empty(
         linestrings=LineStrings(
-            pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]])
+            id=[0, 1],
+            the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
         )
     ).merge(tolerance=2.0)
 

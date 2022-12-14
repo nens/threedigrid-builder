@@ -29,15 +29,16 @@ class LineOnLine:
     linestring_idx: int
 
 
-class LineStrings:
-    def __init__(self, geometries):
-        assert isinstance(geometries, np.ndarray)
-        geom_types = pygeos.get_type_id(geometries)
-        assert np.all((geom_types == -1) | (geom_types == 1))
-        self.the_geom = geometries
+class LineString:
+    id: int
+    the_geom: pygeos.Geometry
 
-    def __len__(self):
-        return len(self.the_geom)
+
+class LineStrings(Array[LineString]):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        geom_types = pygeos.get_type_id(self.the_geom)
+        assert np.all((geom_types == -1) | (geom_types == 1))
 
     @property
     def length(self):
@@ -51,8 +52,6 @@ class LineStrings:
 
     def segmentize(self, points: "PointsOnLine") -> "LinesOnLine":
         """Return lines that result from splitting self at 'points'"""
-        assert points.linestrings is self
-
         segment_counts = np.bincount(points.linestring_idx, minlength=len(self)) + 1
 
         # cut the channel geometries into segment geometries
@@ -60,7 +59,7 @@ class LineStrings:
             self.the_geom, segment_counts, points.s1d
         )
         return LinesOnLine(
-            self,
+            linestrings=self,
             id=range(len(segment_idx)),
             s1d_start=start_s,
             s1d_end=end_s,
@@ -123,6 +122,9 @@ class LineStrings:
 
 class PointsOnLine(Array[PointOnLine]):
     scalars = ("linestrings",)
+
+    def __getattr__(self, name):
+        return getattr(self.linestrings, name)[self.linestring_idx]
 
     @classmethod
     def empty(cls, linestrings: LineStrings):
@@ -194,8 +196,6 @@ class PointsOnLine(Array[PointOnLine]):
 
         If there there is only 1 point on a linestring, the neighbours will be equal.
         """
-        assert self.linestrings is other.linestrings
-
         idx_2 = np.searchsorted(self.s1d_cum, other.s1d_cum)
         idx_1 = idx_2 - 1
         out_of_bounds_1 = idx_1 < 0
@@ -225,9 +225,10 @@ class PointsOnLine(Array[PointOnLine]):
 
 
 class LinesOnLine(Array[LineOnLine]):
-    def __init__(self, linestrings: "LineStrings", **kwargs):
-        super().__init__(**kwargs)
-        self.linestrings = linestrings
+    scalars = ("linestrings",)
+
+    def __getattr__(self, name):
+        return getattr(self.linestrings, name)[self.linestring_idx]
 
     @property
     def s1d(self):

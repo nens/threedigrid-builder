@@ -120,18 +120,18 @@ def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_o
         s1d=[1.0, 2.0, 3.0],
         linestring_idx=[0, 0, 1],
     )
-    with mock.patch.object(two_linear_objects.linestrings, "segmentize") as segmentize:
-        segmentize().linestring_idx = [0, 1]
-        segmentize().interpolate_points.return_value = dummy_points
+    with mock.patch.object(two_linear_objects.__class__, "linestrings") as linestrings:
+        linestrings.segmentize().linestring_idx = [0, 1]
+        linestrings.segmentize().interpolate_points.return_value = dummy_points
         nodes = two_linear_objects.interpolate_nodes(
             itertools.count(start=2), global_dist_calc_points
         )
 
-    (fixed_nodes,), _ = segmentize.call_args
+    (fixed_nodes,), _ = linestrings.segmentize.call_args
     assert isinstance(fixed_nodes, PointsOnLine)
     assert len(fixed_nodes) == 0
 
-    (dists,), _ = segmentize().interpolate_points.call_args
+    (dists,), _ = linestrings.segmentize().interpolate_points.call_args
     assert_almost_equal(dists, expected_dists)
 
     assert_array_equal(nodes.id, range(2, 2 + len(dummy_points)))
@@ -148,16 +148,16 @@ def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_o
 def test_interpolate_nodes_skips_embedded(two_linear_objects):
     two_linear_objects.calculation_type[0] = CalculationType.EMBEDDED
 
-    with mock.patch.object(two_linear_objects.linestrings, "segmentize") as segmentize:
-        segmentize().linestring_idx = [0, 1]
-        segmentize().interpolate_points.return_value = PointsOnLine.empty(
+    with mock.patch.object(LinearObjects, "linestrings") as linestrings:
+        linestrings.segmentize().linestring_idx = [0, 1]
+        linestrings.segmentize().interpolate_points.return_value = PointsOnLine.empty(
             two_linear_objects.linestrings
         )
         two_linear_objects.interpolate_nodes(
             itertools.count(start=2), global_dist_calc_points=74.0
         )
 
-    (dists,), _ = segmentize().interpolate_points.call_args
+    (dists,), _ = linestrings.segmentize().interpolate_points.call_args
     assert_almost_equal(dists, [np.inf, 74.0])
 
 
@@ -176,20 +176,20 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
         s1d=[10.0, 125.0],
         linestring_idx=[0, 1],
     )
-    with mock.patch.object(two_linear_objects.linestrings, "segmentize") as segmentize:
-        segmentize().linestring_idx = np.array([0, 1, 1, 1])
-        segmentize().interpolate_points.return_value = dummy_points
+    with mock.patch.object(LinearObjects, "linestrings") as linestrings:
+        linestrings.segmentize().linestring_idx = np.array([0, 1, 1, 1])
+        linestrings.segmentize().interpolate_points.return_value = dummy_points
         nodes = two_linear_objects.interpolate_nodes(
             itertools.count(start=2),
             global_dist_calc_points=74.0,
             fixed_nodes=fixed_nodes,
         )
 
-    (arg,), _ = segmentize.call_args
+    (arg,), _ = linestrings.segmentize.call_args
     assert isinstance(arg, PointsOnLine)
     assert_array_equal(arg.s1d, fixed_nodes.s1d)
 
-    (dists,), _ = segmentize().interpolate_points.call_args
+    (dists,), _ = linestrings.segmentize().interpolate_points.call_args
     assert_almost_equal(dists, [5.0, 74.0, 74.0, 74.0])
 
     assert_array_equal(nodes.id, [2, 3, 4, 5])
@@ -213,9 +213,9 @@ def test_interpolate_nodes_with_fixture_on_start_end(one_linear_object):
         secondary_content_pk=[-9999, 4],
     )
     dummy_points = PointsOnLine.empty(one_linear_object.linestrings)
-    with mock.patch.object(one_linear_object.linestrings, "segmentize") as segmentize:
-        segmentize().linestring_idx = np.array([0])
-        segmentize().interpolate_points.return_value = dummy_points
+    with mock.patch.object(LinearObjects, "linestrings") as linestrings:
+        linestrings.segmentize().linestring_idx = np.array([0])
+        linestrings.segmentize().interpolate_points.return_value = dummy_points
         nodes = one_linear_object.interpolate_nodes(
             itertools.count(start=2),
             global_dist_calc_points=74.0,

@@ -16,9 +16,7 @@ class BaseLinear:
 
     @property
     def linestrings(self):
-        if not hasattr(self, "_linestrings"):
-            self._linestrings = LineStrings(self.the_geom)
-        return self._linestrings
+        return LineStrings(id=self.id, the_geom=self.the_geom)
 
     def set_geometries(self, connection_nodes):
         """Set the_geom from connection nodes where necessary.

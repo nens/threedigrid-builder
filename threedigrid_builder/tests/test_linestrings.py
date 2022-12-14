@@ -9,18 +9,19 @@ from threedigrid_builder.base import LinesOnLine, LineStrings, PointsOnLine
 
 @pytest.fixture
 def linestrings():
-    return LineStrings(pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
+    return LineStrings(id=[0], the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
 
 
 @pytest.fixture
 def two_linestrings():
     return LineStrings(
-        np.array(
+        id=[0, 1],
+        the_geom=np.array(
             [
                 pygeos.linestrings([(0, 10), (10, 10)]),
                 pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
             ]
-        )
+        ),
     )
 
 
@@ -77,7 +78,9 @@ def test_segmentize_multiple(two_linestrings):
     ],
 )
 def test_sanitize(geom, expected):
-    linestrings = LineStrings(np.array([pygeos.linestrings(geom) if geom else None]))
+    linestrings = LineStrings(
+        id=[0], the_geom=[pygeos.linestrings(geom) if geom else None]
+    )
     linestrings.sanitize(
         points_1=pygeos.points([(0, 21)]), points_2=pygeos.points([(3, 42)])
     )
@@ -150,7 +153,11 @@ def test_point_on_line_at_start_at_end(two_linestrings):
 )
 def test_line_on_line_the_geom(linestrings, start, end, expected_coords):
     lines_on_line = LinesOnLine(
-        linestrings, id=[1], s1d_start=[start], s1d_end=[end], linestring_idx=[0]
+        linestrings=linestrings,
+        id=[1],
+        s1d_start=[start],
+        s1d_end=[end],
+        linestring_idx=[0],
     )
     geometries = lines_on_line.the_geom
     assert geometries.shape == (1,)
@@ -159,7 +166,7 @@ def test_line_on_line_the_geom(linestrings, start, end, expected_coords):
 
 def test_line_on_line_the_geom_multiple(two_linestrings):
     lines_on_line = LinesOnLine(
-        two_linestrings,
+        linestrings=two_linestrings,
         id=[1, 2],
         s1d_start=[3.0, 4.0],
         s1d_end=[9.0, 10.0],
@@ -191,7 +198,7 @@ def test_line_on_line_interpolate_points_one(
     linestrings, segment_size, expected_size, expected_count
 ):
     lines_on_line = LinesOnLine(
-        linestrings,
+        linestrings=linestrings,
         id=[1],
         s1d_start=[0.0],
         s1d_end=linestrings.length,
@@ -217,7 +224,7 @@ def test_line_on_line_interpolate_points_partial(
     linestrings, s1d_start, s1d_end, expected_s1d
 ):
     lines_on_line = LinesOnLine(
-        linestrings,
+        linestrings=linestrings,
         id=[1],
         s1d_start=[s1d_start],
         s1d_end=[s1d_end],
@@ -233,7 +240,7 @@ def test_line_on_line_interpolate_points_partial(
 
 def test_line_on_line_interpolate_points_two(two_linestrings):
     lines_on_line = LinesOnLine(
-        two_linestrings,
+        linestrings=two_linestrings,
         id=[1, 2],
         s1d_start=[0.0, 0.0],
         s1d_end=two_linestrings.length,
@@ -249,7 +256,7 @@ def test_line_on_line_interpolate_points_two(two_linestrings):
 
 def test_line_on_line_interpolate_points_two_partial(linestrings):
     lines_on_line = LinesOnLine(
-        linestrings,
+        linestrings=linestrings,
         id=[1, 2],
         s1d_start=[0.0, 5.0],
         s1d_end=[5.0, 12.0],
