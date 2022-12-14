@@ -75,7 +75,7 @@ class PotentialBreachPoint(PointsOnLine):
         s1d[too_close] = (s1d[too_close] + s1d[too_close + 1]) / 2
 
         # get the second one of a too close pair
-        return PointsOnLine(
+        return self.__class__(
             linestrings=self.linestrings,
             id=np.delete(self.id, to_delete),
             content_pk=np.delete(self.content_pk, to_delete),
@@ -84,9 +84,7 @@ class PotentialBreachPoint(PointsOnLine):
             s1d=np.delete(s1d, to_delete),
         )
 
-    def assign_to_connection_nodes(
-        self, nodes: Nodes, lines: Lines, channels: Channels
-    ):
+    def assign_to_connection_nodes(self, nodes: Nodes, lines: Lines):
         """Per connection node, assign max two potential breach ids"""
         # disassemble lines into Channel - Connection Node endpoints
         endpoints = lines.as_endpoints(
@@ -96,17 +94,16 @@ class PotentialBreachPoint(PointsOnLine):
         )
 
         # per endpoint, assemble first and second breach points
-        channel_idx = channels.id_to_index(endpoints.content_pk)
-        breach_point_idx = np.full_like(channel_idx, fill_value=-9999)
+        breach_point_idx = np.full(len(endpoints), fill_value=-9999, dtype=np.int32)
         breach_point_idx[endpoints.is_start] = search(
-            self.linestring_idx,
-            channel_idx[endpoints.is_start],
+            self.linestring_id,
+            endpoints.content_pk[endpoints.is_start],
             mask=self.at_start,
             check_exists=False,
         )
         breach_point_idx[endpoints.is_end] = search(
-            self.linestring_idx,
-            channel_idx[endpoints.is_end],
+            self.linestring_id,
+            endpoints.content_pk[endpoints.is_end],
             mask=self.at_end,
             check_exists=False,
         )
