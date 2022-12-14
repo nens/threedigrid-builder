@@ -121,17 +121,16 @@ class Lines(Array[Line]):
 
     def as_endpoints(self, where=None) -> "Endpoints":
         if where is None:
-            n = len(self)
-            where = slice(None)
+            where = np.arange(len(self), dtype=int)
         elif where.dtype == bool:
             where = np.where(where)[0]
-            n = len(where)
-        else:
-            n = len(where)
+
+        n = len(where)
 
         result = Endpoints(
+            lines=self,
             id=range(n * 2),
-            line_id=np.repeat(self.id[where], 2),
+            line_idx=np.repeat(where, 2),
             node_id=self.line[where].ravel(),
             is_start=np.tile([True, False], n),
         )
@@ -141,11 +140,22 @@ class Lines(Array[Line]):
 
 class Endpoint:
     id: int
-    node_id: int
-    line_id: int
+    line_idx: int
     is_start: bool
+    node_id: int
 
 
 class Endpoints(Array[Endpoint]):
-    def compute_node_degree(self):
-        pass
+    """Each line has 2 endpoints."""
+
+    scalars = ("lines",)
+
+    @property
+    def is_end(self):
+        return ~self.is_start
+
+    def __getattr__(self, name):
+        return getattr(self.lines, name)[self.line_idx]
+
+    def filter_by_node_id(self, node_ids) -> "Endpoints":
+        return self[np.isin(self.node_id, node_ids)]

@@ -115,7 +115,7 @@ def two_linear_objects():
 )
 def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_objects):
     dummy_points = PointsOnLine(
-        two_linear_objects.linestrings,
+        linestrings=two_linear_objects.linestrings,
         id=[0, 1, 2],
         s1d=[1.0, 2.0, 3.0],
         linestring_idx=[0, 0, 1],
@@ -163,7 +163,7 @@ def test_interpolate_nodes_skips_embedded(two_linear_objects):
 
 def test_interpolate_nodes_with_fixture(two_linear_objects):
     fixed_nodes = PointsOnLine(
-        two_linear_objects.linestrings,
+        linestrings=two_linear_objects.linestrings,
         id=[0, 1],
         s1d=[30.0, 50.0],
         linestring_idx=[1, 1],
@@ -171,7 +171,7 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
         secondary_content_pk=[-9999, 4],
     )
     dummy_points = PointsOnLine(
-        two_linear_objects.linestrings,
+        linestrings=two_linear_objects.linestrings,
         id=[0, 1],
         s1d=[10.0, 125.0],
         linestring_idx=[0, 1],
@@ -205,7 +205,7 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
 
 def test_interpolate_nodes_with_fixture_on_start_end(one_linear_object):
     fixed_nodes = PointsOnLine(
-        one_linear_object.linestrings,
+        linestrings=one_linear_object.linestrings,
         id=[0, 1],
         s1d=[0.0, 12.0],
         linestring_idx=[0, 0],

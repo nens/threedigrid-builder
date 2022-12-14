@@ -443,3 +443,34 @@ def test_split_in_two_err():
         records.split_in_two([5, 2, 5, 5])
 
     assert_equal(e.value.values, [5])
+
+
+class RecordsWithScalarArg(Array[Record]):
+    """Records docstring."""
+
+    scalars = ("foo",)
+
+
+def test_scalar_arg_init():
+    records = RecordsWithScalarArg(id=[], foo="bar")
+    assert records.foo == "bar"
+
+
+def test_scalar_arg_init_typeerror():
+    with pytest.raises(TypeError):
+        RecordsWithScalarArg(id=[])
+
+
+def test_scalar_arg_getitem():
+    records = RecordsWithScalarArg(id=[1, 2], foo="bar")
+    actual = records[:1]
+    assert len(actual) == 1
+    assert actual.foo == "bar"
+
+
+def test_scalar_arg_add():
+    a = RecordsWithScalarArg(id=[1, 2], foo="bar")
+    b = RecordsWithScalarArg(id=[3, 4], foo="baz")
+    actual = a + b
+    assert len(actual) == 4
+    assert actual.foo == "bar"

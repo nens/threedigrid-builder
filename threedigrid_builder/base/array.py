@@ -115,6 +115,8 @@ T = TypeVar("T")
 class Array(Generic[T]):
     """A dataclass with fields ("columns") that are numpy arrays of equal size."""
 
+    scalars = tuple()
+
     def __init_subclass__(cls) -> None:
         # Trick to get the record dataclass from the generic typing
         base = cls.__orig_bases__[0]  # type: ignore
@@ -166,6 +168,13 @@ class Array(Generic[T]):
             raise ValueError("Values in 'id' must be unique and sorted")
         self.id = id
 
+        # fetch the scalar arguments
+        for name in self.scalars:
+            value = kwargs.pop(name, None)
+            if value is None:
+                raise TypeError(f"missing required keyword argument '{name}'")
+            setattr(self, name, value)
+
         # convert each field to an array and set it to self
         fields = typing.get_type_hints(self.data_class)
         for name, elem_type in fields.items():
@@ -205,6 +214,8 @@ class Array(Generic[T]):
             name: np.concatenate((getattr(self, name), getattr(other, name)))
             for name in typing.get_type_hints(self.data_class).keys()
         }
+        for scalar_arg in self.scalars:
+            new_fields[scalar_arg] = getattr(self, scalar_arg)
         return self.__class__(**new_fields)
 
     def id_to_index(self, id, check_exists: bool = False):
@@ -253,6 +264,8 @@ class Array(Generic[T]):
         args = {}
         for field in typing.get_type_hints(self.data_class):
             args[field] = getattr(self, field)[idx]
+        for scalar_arg in self.scalars:
+            args[scalar_arg] = getattr(self, scalar_arg)
         return self.__class__(**args)
 
     def reorder(self, idx) -> None:

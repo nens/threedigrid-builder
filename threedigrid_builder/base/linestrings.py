@@ -1,5 +1,3 @@
-import typing
-
 import numpy as np
 import pygeos
 
@@ -124,20 +122,11 @@ class LineStrings:
 
 
 class PointsOnLine(Array[PointOnLine]):
-    def __init__(self, linestrings: "LineStrings", **kwargs):
-        super().__init__(**kwargs)
-        self.linestrings = linestrings
-
-    def __getitem__(self, idx) -> "PointsOnLine":
-        """Create a masked copy of this arraay dataclass"""
-        args = {}
-        for field in typing.get_type_hints(self.data_class):
-            args[field] = getattr(self, field)[idx]
-        return self.__class__(linestrings=self.linestrings, **args)
+    scalars = ("linestrings",)
 
     @classmethod
     def empty(cls, linestrings: LineStrings):
-        return cls(linestrings, id=[])
+        return cls(linestrings=linestrings, id=[])
 
     @classmethod
     def from_geometries(
@@ -151,7 +140,7 @@ class PointsOnLine(Array[PointOnLine]):
         if np.any(~np.isfinite(s1d)):
             raise ValueError("NaN values encountered in s1d")
         result = cls(
-            linestrings,
+            linestrings=linestrings,
             id=np.arange(len(linestring_idx)),
             s1d=s1d,
             linestring_idx=linestring_idx,
@@ -181,14 +170,13 @@ class PointsOnLine(Array[PointOnLine]):
     def merge_with(self, other: "PointsOnLine"):
         if len(other) == 0:
             return self
-        fields = list(typing.get_type_hints(self.data_class).keys())
-        fields.remove("id")
-        new_fields = {
-            name: np.concatenate((getattr(self, name), getattr(other, name)))
-            for name in fields
-        }
-        new_fields["id"] = np.arange(len(self) + len(other))
-        result = self.__class__(linestrings=self.linestrings, **new_fields)
+        if len(self) == 0:
+            first_i = 1
+        else:
+            first_i = self.id[-1] + 1
+        other = other[:]
+        other.id[:] = np.arange(first_i, first_i + len(other))
+        result = self + other
         result.reorder(np.argsort(result.s1d_cum))
         return result
 

@@ -36,7 +36,10 @@ def test_segmentize_one(
     linestrings, s1d, expected_idx, expected_idx_s1d_start, expected_s1d_end
 ):
     points_on_line = PointsOnLine(
-        linestrings, id=range(len(s1d)), s1d=s1d, linestring_idx=[0] * len(s1d)
+        linestrings=linestrings,
+        id=range(len(s1d)),
+        s1d=s1d,
+        linestring_idx=[0] * len(s1d),
     )
     lines = linestrings.segmentize(points_on_line)
 
@@ -48,7 +51,10 @@ def test_segmentize_one(
 
 def test_segmentize_multiple(two_linestrings):
     points_on_line = PointsOnLine(
-        two_linestrings, id=[1, 2, 3], s1d=[5.0, 2.0, 8.0], linestring_idx=[0, 1, 1]
+        linestrings=two_linestrings,
+        id=[1, 2, 3],
+        s1d=[5.0, 2.0, 8.0],
+        linestring_idx=[0, 1, 1],
     )
     lines = two_linestrings.segmentize(points_on_line)
 
@@ -82,7 +88,7 @@ def test_sanitize(geom, expected):
 
 def test_point_on_line_the_geom_multiple(two_linestrings):
     points_on_line = PointsOnLine(
-        two_linestrings, id=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
+        linestrings=two_linestrings, id=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
     )
     actual = points_on_line.the_geom
 
@@ -94,10 +100,18 @@ def test_point_on_line_the_geom_multiple(two_linestrings):
 
 def test_point_on_line_merge_with(linestrings):
     a = PointsOnLine(
-        linestrings, id=[0, 1], content_pk=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
+        linestrings=linestrings,
+        id=[0, 1],
+        content_pk=[1, 2],
+        s1d=[3.0, 4.0],
+        linestring_idx=[0, 1],
     )
     b = PointsOnLine(
-        linestrings, id=[0, 1], content_pk=[5, 6], s1d=[1.0, 2.0], linestring_idx=[0, 1]
+        linestrings=linestrings,
+        id=[0, 1],
+        content_pk=[5, 6],
+        s1d=[1.0, 2.0],
+        linestring_idx=[0, 1],
     )
     actual = a.merge_with(b)
 
@@ -108,7 +122,7 @@ def test_point_on_line_merge_with(linestrings):
 
 def test_point_on_line_at_start_at_end(two_linestrings):
     points_on_line = PointsOnLine(
-        two_linestrings,
+        linestrings=two_linestrings,
         id=range(4),
         s1d=[0.0, 10.0, 0.0, 12.0],
         linestring_idx=[0, 0, 1, 1],

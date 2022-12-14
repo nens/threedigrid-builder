@@ -106,7 +106,7 @@ def test_as_line_endpoints(lines: Lines):
     endpoints = lines.as_endpoints()
     assert isinstance(endpoints, Endpoints)
     assert_equal(endpoints.node_id, [1, 1, 2, 2, 3, 3])
-    assert_equal(endpoints.line_id, [0, 2, 0, 1, 1, 2])
+    assert_equal(endpoints.line_idx, [0, 2, 0, 1, 1, 2])
     assert_equal(endpoints.is_start, [1, 1, 0, 1, 0, 0])
 
 
@@ -116,5 +116,11 @@ def test_as_line_endpoints_where_bool(lines: Lines, where):
     assert isinstance(endpoints, Endpoints)
 
     assert_equal(endpoints.node_id, [2, 3])
-    assert_equal(endpoints.line_id, [1, 1])
+    assert_equal(endpoints.line_idx, [1, 1])
     assert_equal(endpoints.is_start, [1, 0])
+
+
+def test_line_endpoints_getattr(lines: Lines):
+    endpoints = Endpoints(lines=lines, id=[0, 1, 2], line_idx=[1, 2, 1])
+
+    assert_equal(endpoints.ds1d, lines.ds1d[[1, 2, 1]])

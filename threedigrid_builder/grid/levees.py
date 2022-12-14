@@ -76,7 +76,7 @@ class PotentialBreachPoint(PointsOnLine):
 
         # get the second one of a too close pair
         return PointsOnLine(
-            self.linestrings,
+            linestrings=self.linestrings,
             id=np.delete(self.id, to_delete),
             content_pk=np.delete(self.content_pk, to_delete),
             secondary_content_pk=np.delete(secondary_content_pk, to_delete),
@@ -88,47 +88,30 @@ class PotentialBreachPoint(PointsOnLine):
         self, nodes: Nodes, lines: Lines, channels: Channels
     ):
         """Per connection node, assign max two potential breach ids"""
-
-        # disassemble lines into endpoints (each line has 2 endpoints)
+        # disassemble lines into Channel - Connection Node endpoints
         endpoints = lines.as_endpoints(
             where=lines.content_type == ContentType.TYPE_V2_CHANNEL
+        ).filter_by_node_id(
+            nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES]
         )
-
-        # only keep connection node endpoints (TODO)
-        # endpoints = endpoints.filter_by_node_id(nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES])
 
         # per endpoint, assemble first and second breach points
-        start_channel_idx = channels.id_to_index(
-            lines.content_pk[lines.id_to_index(endpoints.line_id[endpoints.is_start])]
+        channel_idx = channels.id_to_index(endpoints.content_pk)
+        breach_point_idx = np.full_like(channel_idx, fill_value=-9999)
+        breach_point_idx[endpoints.is_start] = search(
+            self.linestring_idx,
+            channel_idx[endpoints.is_start],
+            mask=self.at_start,
+            check_exists=False,
         )
-        end_channel_idx = channels.id_to_index(
-            lines.content_pk[lines.id_to_index(endpoints.line_id[~endpoints.is_start])]
-        )
-        node_ids = np.concatenate(
-            [
-                endpoints.node_id[endpoints.is_start],
-                endpoints.node_id[~endpoints.is_start],
-            ]
-        )
-        breach_point_idx = np.concatenate(
-            [
-                search(
-                    self.linestring_idx,
-                    start_channel_idx,
-                    mask=self.at_start,
-                    check_exists=False,
-                ),
-                search(
-                    self.linestring_idx,
-                    end_channel_idx,
-                    mask=self.at_end,
-                    check_exists=False,
-                ),
-            ]
+        breach_point_idx[endpoints.is_end] = search(
+            self.linestring_idx,
+            channel_idx[endpoints.is_end],
+            mask=self.at_end,
+            check_exists=False,
         )
         mask = breach_point_idx != -9999
-        node_ids = node_ids[mask]
-        node_idx = nodes.id_to_index(node_ids)
+        node_idx = nodes.id_to_index(endpoints.node_id[mask])
         breach_point_idx = breach_point_idx[mask]
 
         for node_i in np.unique(node_idx):
