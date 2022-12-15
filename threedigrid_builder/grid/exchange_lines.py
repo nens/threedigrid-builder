@@ -126,13 +126,19 @@ class Lines1D2D(Lines):
         """
         node_idx = self.get_1d_node_idx(nodes)
         breach_counts = np.count_nonzero(nodes.breach_ids[node_idx, :] != -9999, axis=1)
+        line_idx_with_breaches = np.where(breach_counts > 0)[0]
+
+        if len(line_idx_with_breaches) == 0:
+            return PotentialBreachesOut(id=[])
+
+        # define a function that computes the distance between breach and line 2D sides
         breach_2d_side = potential_breaches.side_2d
         line_2d_side = self.side_2d
 
         def dist(breach_idx, line_idx):
-            """Compute the distance between the 2D sides of a breach and a 1D2D line"""
             return pygeos.distance(breach_2d_side[breach_idx], line_2d_side[line_idx])
 
+        # a mapping with a breach_id for each line
         line_to_breach = {}
 
         # loop over lines with breaches (i is a line index)
@@ -149,7 +155,7 @@ class Lines1D2D(Lines):
             b1, b2 = potential_breaches.id_to_index(nodes.breach_ids[node_idx[i], :])
 
             if l2 == -9999 and b2 == -9999:
-                # easy! one line, one breach
+                # 1 line, 1 breach
                 line_to_breach[l1] = b1
             elif l2 == -9999 and b2 != -9999:
                 # 1 line, 2 breaches; find closest breach

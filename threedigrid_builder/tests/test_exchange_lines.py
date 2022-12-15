@@ -222,29 +222,87 @@ def test_assign_dpumax_from_obstacles(assign_dpumax):
     assert_array_equal(actual_dpumax, [1.2, np.nan])
 
 
-def test_assign_breaches():
-    nodes = Nodes(
-        id=[1, 2, 3],
-        # coordinates=[(2, 5), (4, 5), (6, 5)],  not relevant
-        breach_ids=[(1, 2), (-9999, -9999), (3, -9999)],
+@pytest.mark.parametrize(
+    "breach_ids,breach_2d_coords,content_pk,line_id",
+    [
+        ([-9999, -9999], [(10, 0)], [], []),
+        ([1, -9999], [(10, 0)], [1], [1]),
+        ([1, 2], [(10, 0), (10, 1)], [1], [1]),
+        ([1, 2], [(10, 1), (10, 0)], [2], [1]),
+        ([1, 2], [(10, 1), (10, -1)], [1], [1]),
+    ],
+)
+def test_assign_breaches_single_connected(
+    breach_ids, breach_2d_coords, content_pk, line_id
+):
+    nodes = Nodes(id=[1], breach_ids=[breach_ids])
+    lines = Lines1D2D(id=[1], line=[(-9999, 1)], line_coords=[(10, 0, 0, 0)])
+    potential_breaches = PotentialBreaches(
+        id=range(1, len(breach_2d_coords) + 1),
+        the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
+    )
+    actual = lines.assign_breaches(nodes, potential_breaches)
+
+    assert isinstance(actual, PotentialBreachesOut)
+    assert_array_equal(actual.content_pk, content_pk)
+    assert_array_equal(actual.line_id, line_id)
+
+
+@pytest.mark.parametrize(
+    "breach_ids,breach_2d_coords,content_pk,line_id",
+    [
+        ([-9999, -9999], [(10, 0)], [], []),
+        ([1, -9999], [(10, 0)], [1], [1]),
+        ([1, -9999], [(10, 10)], [1], [2]),
+        ([1, -9999], [(10, 5)], [1], [1]),
+        ([1, 2], [(10, 0), (10, 10)], [1, 2], [1, 2]),
+        ([1, 2], [(10, 10), (10, 0)], [2, 1], [1, 2]),
+        ([1, 2], [(10, 1), (10, 9)], [1, 2], [1, 2]),
+        ([1, 2], [(10, 9), (10, 1)], [2, 1], [1, 2]),
+        ([1, 2], [(10, 5), (10, 5)], [1, 2], [1, 2]),
+    ],
+)
+def test_assign_breaches_double_connected(
+    breach_ids, breach_2d_coords, content_pk, line_id
+):
+    nodes = Nodes(id=[1], breach_ids=[breach_ids])
+    lines = Lines1D2D(
+        id=[1, 2],
+        line=[(-9999, 1), (-9999, 1)],
+        line_coords=[(10, 0, 0, 0), (10, 10, 0, 0)],
     )
     potential_breaches = PotentialBreaches(
+        id=range(1, len(breach_2d_coords) + 1),
+        the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
+    )
+    actual = lines.assign_breaches(nodes, potential_breaches)
+
+    assert isinstance(actual, PotentialBreachesOut)
+    assert_array_equal(actual.content_pk, content_pk)
+    assert_array_equal(actual.line_id, line_id)
+
+
+def test_assign_breaches_multiple():
+    nodes = Nodes(
         id=[1, 2, 3],
-        code=["a", "b", "c"],
-        the_geom=pygeos.linestrings(
-            [[(2, 5), (2, 9)], [(2, 5), (2, 1)], [(6, 5), (6, 9)]]
-        ),
+        coordinates=[(2, 5), (4, 5), (6, 5)],
+        breach_ids=[(1, 2), (-9999, -9999), (4, -9999)],
     )
     lines = Lines1D2D(
         id=range(4),
         line=[[-9999, 1], [-9999, 1], [-9999, 2], [-9999, 3]],
-        line_coords=[x + [np.nan, np.nan] for x in [[2, 0], [2, 10], [4, 0], [6, 5]]],
+        line_coords=[x + [0, 0] for x in [[2, 0], [2, 10], [4, 0], [6, 5]]],
     )
-
+    potential_breaches = PotentialBreaches(
+        id=[1, 2, 3, 4],
+        the_geom=pygeos.linestrings(
+            [[(0, 0), x] for x in [(2, 9), (2, 1), (6, 10), (6, 1)]]
+        ),
+        code=["a", "b", "c", "d"],
+    )
     actual = lines.assign_breaches(nodes, potential_breaches)
 
     assert isinstance(actual, PotentialBreachesOut)
-    assert_array_equal(actual.content_pk, [2, 1, 3])
+    assert_array_equal(actual.content_pk, [2, 1, 4])
     assert_array_equal(actual.line_id, [0, 1, 3])
-    assert_array_equal(actual.code, ["b", "a", "c"])
-    assert_array_equal(lines.line_coords[:, :2], [[2, 1], [2, 9], [4, 0], [6, 9]])
+    assert_array_equal(actual.code, ["b", "a", "d"])
