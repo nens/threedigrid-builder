@@ -7,6 +7,11 @@ Changelog of threedigrid-builder
 - Set 1D-2D line dpumax based on 1. v2_exchange_line.exchange_level, 2. intersected
   obstacles/levees, or 3. (existing logic) manhole/channel/pipe/culvert details.
 
+- Associate breaches with 1D-2D lines: adapt the 2D side to the 2D side of the breach line.
+  This overrides a possible exchange line.
+
+- Output breaches based on new breach lines.
+
 
 1.6.1 (2022-12-08)
 ------------------
