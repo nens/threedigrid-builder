@@ -221,19 +221,3 @@ def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
     )
     breach_points.assign_to_connection_nodes(nodes, lines)
     assert_equal(nodes.breach_ids[0], expected)
-
-
-def test_assign_to_lines():
-    nodes = Nodes(id=range(10, 13), breach_ids=[(1, -9999), (2, 3), (-9999, -9999)])
-    potential_breaches = PotentialBreaches(
-        id=range(1, 4),
-        code=["a", "b", "c"],
-        levee_material=[Material.SAND, Material.SAND, Material.CLAY],
-    )
-    lines = Lines(id=range(4), line=[(1, 10), (2, 11), (3, 11), (4, 12)])
-    actual = potential_breaches.assign_to_lines(lines, nodes)
-    assert isinstance(actual, PotentialBreachesOut)
-    assert_equal(actual.content_pk, [1, 2, 3])
-    assert_equal(actual.line_id, [0, 1, 2])
-    assert_equal(actual.code, ["a", "b", "c"])
-    assert_equal(actual.levee_material, [Material.SAND, Material.SAND, Material.CLAY])

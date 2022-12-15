@@ -28,12 +28,7 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import (
-    Levees,
-    PotentialBreaches,
-    PotentialBreachesOut,
-    PotentialBreachPoints,
-)
+from .levees import Levees, PotentialBreachesOut, PotentialBreachPoints
 from .linear import BaseLinear
 from .obstacles import Obstacles
 
@@ -664,7 +659,7 @@ class Grid:
             line_id_counter,
         )
 
-    def compute_1d2d_lines(
+    def add_1d2d_lines(
         self,
         exchange_lines,
         connection_nodes,
@@ -673,6 +668,7 @@ class Grid:
         locations,
         culverts,
         obstacles,
+        potential_breaches,
         line_id_counter,
     ) -> Lines1D2D:
         """Connect 1D and 2D elements by computing 1D-2D lines.
@@ -682,13 +678,14 @@ class Grid:
 
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
+
+        Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
         lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
-        lines_1d2d.assign_2d_node(
-            lines_1d2d.compute_2d_side(self.nodes, exchange_lines),
-            self.cell_tree,
-        )
+        lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
+        self.breaches = lines_1d2d.assign_breaches(self.nodes, potential_breaches)
+        lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_dpumax_from_obstacles(obstacles)
@@ -707,14 +704,10 @@ class Grid:
             lines_1d2d.assign_dpumax(mask, dpumax)
 
         lines_1d2d.assign_ds1d(self.nodes)
-        return lines_1d2d
+        self.lines += lines_1d2d
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
         breach_points.assign_to_connection_nodes(self.nodes, self.lines)
-
-    def add_1d2d(self, lines_1d2d: Lines1D2D, potential_breaches: PotentialBreaches):
-        self.lines += lines_1d2d
-        self.breaches = potential_breaches.assign_to_lines(lines_1d2d, self.nodes)
 
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """

@@ -8,7 +8,12 @@ from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
-from threedigrid_builder.grid import ExchangeLines, Lines1D2D
+from threedigrid_builder.grid import (
+    ExchangeLines,
+    Lines1D2D,
+    PotentialBreaches,
+    PotentialBreachesOut,
+)
 
 ISO = CalculationType.ISOLATED
 C1 = CalculationType.CONNECTED
@@ -68,7 +73,7 @@ def test_assign_exchange_lines(
     assert_array_equal(lines.content_type, expected_content_type)
 
 
-def test_compute_2d_side():
+def test_assign_2d_side():
     nodes = Nodes(
         id=[1, 2, 3],
         coordinates=[(2, 5), (4, 5), (6, 5)],
@@ -83,11 +88,9 @@ def test_compute_2d_side():
         content_pk=[1, 2, 1, -9999],
         content_type=[EXC, EXC, EXC, -9999],
     )
-    actual = lines.compute_2d_side(nodes, exchange_lines)
+    lines.assign_2d_side(nodes, exchange_lines)
 
-    assert_array_equal(
-        pygeos.get_coordinates(actual), [[2, 0], [2, 10], [4, 0], [6, 5]]
-    )
+    assert_array_equal(lines.line_coords[:, :2], [[2, 0], [2, 10], [4, 0], [6, 5]])
 
 
 @pytest.fixture
@@ -121,11 +124,13 @@ def cell_tree():
 def test_assign_2d_node(side_2d_coordinates, expected_2d_node_id, cell_tree):
     lines = Lines1D2D(
         id=range(len(side_2d_coordinates)),
+        line_coords=[x + (np.nan, np.nan) for x in side_2d_coordinates],
     )
 
-    lines.assign_2d_node(pygeos.points(side_2d_coordinates), cell_tree)
+    lines.assign_2d_node(cell_tree)
 
     assert_array_equal(lines.line[:, 0], expected_2d_node_id)
+    assert_array_equal(lines.line_coords, np.nan)  # is cleared
 
 
 def test_assign_kcu():
@@ -215,3 +220,31 @@ def test_assign_dpumax_from_obstacles(assign_dpumax):
 
     assert_array_equal(actual_mask, [1, 0, 1])
     assert_array_equal(actual_dpumax, [1.2, np.nan])
+
+
+def test_assign_breaches():
+    nodes = Nodes(
+        id=[1, 2, 3],
+        # coordinates=[(2, 5), (4, 5), (6, 5)],  not relevant
+        breach_ids=[(1, 2), (-9999, -9999), (3, -9999)],
+    )
+    potential_breaches = PotentialBreaches(
+        id=[1, 2, 3],
+        code=["a", "b", "c"],
+        the_geom=pygeos.linestrings(
+            [[(2, 5), (2, 9)], [(2, 5), (2, 1)], [(6, 5), (6, 9)]]
+        ),
+    )
+    lines = Lines1D2D(
+        id=range(4),
+        line=[[-9999, 1], [-9999, 1], [-9999, 2], [-9999, 3]],
+        line_coords=[x + [np.nan, np.nan] for x in [[2, 0], [2, 10], [4, 0], [6, 5]]],
+    )
+
+    actual = lines.assign_breaches(nodes, potential_breaches)
+
+    assert isinstance(actual, PotentialBreachesOut)
+    assert_array_equal(actual.content_pk, [2, 1, 3])
+    assert_array_equal(actual.line_id, [0, 1, 3])
+    assert_array_equal(actual.code, ["b", "a", "c"])
+    assert_array_equal(lines.line_coords[:, :2], [[2, 1], [2, 9], [4, 0], [6, 9]])

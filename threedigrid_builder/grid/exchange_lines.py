@@ -7,6 +7,7 @@ import pygeos
 from threedigrid_builder.base import Array, Lines, Nodes, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
+from .levees import PotentialBreaches, PotentialBreachesOut
 from .obstacles import Obstacles
 
 __all__ = ["ExchangeLines", "Lines1D2D"]
@@ -38,6 +39,14 @@ class Lines1D2D(Lines):
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
         return Lines1D2D(id=itertools.islice(line_id_counter, len(node_idx)), line=line)
+
+    @property
+    def side_2d(self):
+        return pygeos.points(self.line_coords[:, :2])
+
+    @property
+    def side_1d(self):
+        return pygeos.points(self.line_coords[:, 2:])
 
     def assign_exchange_lines(
         self, nodes: Nodes, exchange_lines: ExchangeLines
@@ -73,7 +82,7 @@ class Lines1D2D(Lines):
         """Get the 1D node index based on line[:, 1]"""
         return nodes.id_to_index(self.line[:, 1])
 
-    def compute_2d_side(self, nodes: Nodes, exchange_lines: ExchangeLines):
+    def assign_2d_side(self, nodes: Nodes, exchange_lines: ExchangeLines):
         """Compute a Point on the (user-requested) 2D side for each line
 
         If there is no exchange line this is the 1D node location. If there is
@@ -81,7 +90,7 @@ class Lines1D2D(Lines):
 
         Returns an array of pygeos Point geometries
         Requires: line[:, 1], content_pk, content_type
-        Sets: nothing
+        Sets: line_coords[:, :2] (the 2D side)
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
@@ -96,23 +105,101 @@ class Lines1D2D(Lines):
         pygeos.prepare(exc_geoms)
         line_geom = pygeos.shortest_line(exc_geoms, pygeos.points(coords_1d[has_exc]))
 
-        result = np.empty(len(self), dtype=object)
-        result[~has_exc] = pygeos.points(coords_1d[~has_exc])
-        result[has_exc] = pygeos.get_point(line_geom, 0)
-        return result
+        self.line_coords[~has_exc, :2] = coords_1d[~has_exc]
+        self.line_coords[has_exc, :2] = pygeos.get_coordinates(
+            pygeos.get_point(line_geom, 0)
+        )
 
-    def assign_2d_node(self, points_2d_side, cell_tree: pygeos.STRtree) -> None:
+    def assign_breaches(
+        self, nodes: Nodes, potential_breaches: PotentialBreaches
+    ) -> PotentialBreachesOut:
+        """Assign breaches to the 1D-2D lines (by returning PotentialBreachesOut).
+
+        This method will update the 2D side (line_coords[:, :2]) (it overrides the
+        2D line set by a possible exchange line)
+
+        For double connected nodes, we need the 2D side to determine which potential
+        breach belongs to which line.
+
+        Requires: line_coords[:, :2]
+        Sets: line_coords[:, :2]
+        """
+        node_idx = self.get_1d_node_idx(nodes)
+        breach_counts = np.count_nonzero(nodes.breach_ids[node_idx, :] != -9999, axis=1)
+        breach_2d_side = potential_breaches.side_2d
+        line_2d_side = self.side_2d
+
+        def dist(breach_idx, line_idx):
+            """Compute the distance between the 2D sides of a breach and a 1D2D line"""
+            return pygeos.distance(breach_2d_side[breach_idx], line_2d_side[line_idx])
+
+        line_to_breach = {}
+
+        # loop over lines with breaches (i is a line index)
+        for i in np.where(breach_counts > 0)[0]:
+            if i in line_to_breach:
+                continue  # happens for double connected nodes
+
+            # find all lines that are connected to the node
+            line_idx = np.where(self.line[:, 1] == self.line[i, 1])[0]
+            if len(line_idx) == 1:
+                l1, l2 = line_idx[0], -9999
+            else:
+                l1, l2 = line_idx
+            b1, b2 = potential_breaches.id_to_index(nodes.breach_ids[node_idx[i], :])
+
+            if l2 == -9999 and b2 == -9999:
+                # easy! one line, one breach
+                line_to_breach[l1] = b1
+            elif l2 == -9999 and b2 != -9999:
+                # 1 line, 2 breaches; find closest breach
+                if dist(b1, l1) <= dist(b2, l1):
+                    line_to_breach[l1] = b1
+                else:
+                    line_to_breach[l1] = b2
+            elif b2 == -9999:
+                # 2 lines, 1 breach; find closest line
+                if dist(b1, l1) <= dist(b1, l2):
+                    line_to_breach[l1] = b1
+                else:
+                    line_to_breach[l2] = b1
+            elif b2 != -9999:
+                # 2 lines, 2 breach; find the combination that minimizes total distance
+                if (dist(b1, l1) + dist(b2, l2)) <= (dist(b1, l2) + dist(b2, l1)):
+                    line_to_breach[l1], line_to_breach[l2] = b1, b2
+                else:
+                    line_to_breach[l1], line_to_breach[l2] = b2, b1
+
+        line_idx, breach_idx = np.array(list(line_to_breach.items()), dtype=np.int32).T
+
+        self.line_coords[line_idx, :2] = pygeos.get_coordinates(
+            breach_2d_side[breach_idx]
+        )
+        return PotentialBreachesOut(
+            id=range(len(line_idx)),
+            # coordinates,  TODO
+            code=potential_breaches.code[breach_idx],
+            display_name=potential_breaches.display_name[breach_idx],
+            levee_material=potential_breaches.levee_material[breach_idx],
+            maximum_breach_depth=potential_breaches.maximum_breach_depth[breach_idx],
+            line_id=self.id[line_idx],
+            content_pk=potential_breaches.id[breach_idx],
+        )
+
+    def assign_2d_node(self, cell_tree: pygeos.STRtree) -> None:
         """Assigns the 2D node id based on the line_coords
 
-        Sets: line[:, 0]
+        Requires: line_coords[:, :2] (the 2D side)
+        Sets: line[:, 0], line_coords[:, :2] (clears)
         """
         # The query_bulk returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
-        idx = cell_tree.query_bulk(points_2d_side)
+        idx = cell_tree.query_bulk(self.side_2d)
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, unique_matches = np.unique(idx[0], return_index=True)
         line_idx, cell_idx = idx[:, unique_matches]
         self.line[line_idx, 0] = cell_idx
+        self.line_coords[:, :2] = np.nan
 
     def assign_kcu(self, mask, is_closed) -> None:
         node_id = self.line[mask, 1]
