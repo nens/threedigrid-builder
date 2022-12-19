@@ -153,3 +153,11 @@ def test_line_endpoints_invert_level(lines: Lines):
     )
 
     assert_almost_equal(endpoints.invert_level, [4, 3, 5])
+
+
+def test_line_get_velocity_points(lines: Lines):
+    lines.ds1d_half[1] = np.sqrt(2) * 0.5
+
+    actual = lines.get_velocity_points([1])
+    assert len(actual) == 1
+    assert pygeos.to_wkt(actual[0]) == "POINT (5.5 5.5)"

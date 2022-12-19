@@ -21,19 +21,15 @@ class Obstacles(Array[Obstacle]):
         Returns:
             dpumax for each line (length equals length of 'where' array)
         """
+        obstacle_idx = np.full(len(where), -9999, dtype=np.int32)
         exchange_level = np.full(len(where), np.nan)
         if len(self) == 0:
-            return exchange_level
-        coordinates = lines.line_coords[where]
-        if not np.isfinite(coordinates).all():
-            raise ValueError(
-                f"{lines.__class__.__name__} object has inclomplete line_coords."
-            )
-        lines_tree = pygeos.STRtree(pygeos.linestrings(coordinates.reshape(-1, 2, 2)))
+            return exchange_level, obstacle_idx
+        lines_tree = pygeos.STRtree(lines.get_linestrings(where))
         inscts = lines_tree.query_bulk(self.the_geom, predicate="intersects")
         for i in range(len(self)):
-            indices = inscts[1, np.where(inscts[0, :] == i)]
-            exchange_level[indices] = np.fmax(
-                exchange_level[indices], self.crest_level[i]
-            )
-        return exchange_level
+            line_idx = inscts[1, np.where(inscts[0, :] == i)[0]]
+            is_greater = ~(self.crest_level[i] <= exchange_level[line_idx])
+            exchange_level[line_idx[is_greater]] = self.crest_level[i]
+            obstacle_idx[line_idx[is_greater]] = i
+        return exchange_level, obstacle_idx

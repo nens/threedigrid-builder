@@ -239,7 +239,7 @@ class Lines1D2D(Lines):
         """
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
         self.assign_dpumax(
-            has_exc, obstacles.compute_dpumax(self, where=np.where(has_exc)[0])
+            has_exc, obstacles.compute_dpumax(self, where=np.where(has_exc)[0])[0]
         )
 
     def assign_dpumax(self, mask, dpumax) -> None:

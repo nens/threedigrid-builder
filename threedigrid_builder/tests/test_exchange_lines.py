@@ -215,7 +215,7 @@ def test_assign_dpumax_from_breaches(assign_dpumax):
 @mock.patch.object(Lines1D2D, "assign_dpumax")
 def test_assign_dpumax_from_obstacles(assign_dpumax):
     obstacles = mock.Mock()
-    obstacles.compute_dpumax.return_value = np.array([1.2, np.nan])
+    obstacles.compute_dpumax.return_value = (np.array([1.2, np.nan]), None)
 
     lines = Lines1D2D(id=range(3), content_type=[EXC, -9999, EXC])
 
