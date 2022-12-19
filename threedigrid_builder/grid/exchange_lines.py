@@ -199,6 +199,7 @@ class Lines1D2D(Lines):
         self.line_coords[:, :2] = np.nan
 
     def assign_kcu(self, mask, is_closed) -> None:
+        """Set kcu where it is not set already"""
         node_id = self.line[mask, 1]
         node_id_unique, counts = np.unique(node_id, return_counts=True)
         line_is_double = np.isin(self.line[mask, 1], node_id_unique[counts == 2])
@@ -211,6 +212,9 @@ class Lines1D2D(Lines):
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             ],
         )
+        self.kcu[
+            mask & (self.content_type == ContentType.TYPE_V2_BREACH)
+        ] = LineType.LINE_1D2D_POSSIBLE_BREACH
 
     def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):
         """Set the dpumax based exchange_lines.exchange_level"""
@@ -247,9 +251,13 @@ class Lines1D2D(Lines):
         )
         self.assign_dpumax(is_displaced, obstacle_crest_levels)
         mask = obstacle_idx != -9999
-        self.assign_ds1d_half(obstacles, is_displaced_idx[mask], obstacle_idx[mask])
+        self.assign_ds1d_half_from_obstacles(
+            obstacles, is_displaced_idx[mask], obstacle_idx[mask]
+        )
 
-    def assign_ds1d_half(self, obstacles: Obstacles, line_idx, obstacle_idx):
+    def assign_ds1d_half_from_obstacles(
+        self, obstacles: Obstacles, line_idx, obstacle_idx
+    ):
         if len(line_idx) == 0:
             return
         line_geoms = self.get_linestrings(line_idx)
@@ -267,11 +275,20 @@ class Lines1D2D(Lines):
         self.dpumax[mask & is_nan] = dpumax[is_nan[mask]]
 
     def assign_ds1d(self, nodes: Nodes) -> None:
-        """Sets the length (ds1d) based on the 2D cell with
+        """Sets the length (ds1d) based on the 2D cell with, where not yet set.
 
         Requires: line[:, 0]
-        Sets: ds1d, ds1d_half
+        Sets: ds1d
         """
-        cell_idx = nodes.id_to_index(self.line[:, 0])
-        self.ds1d[:] = nodes.bounds[cell_idx, 2] - nodes.bounds[cell_idx, 0]
-        self.ds1d_half[:] = 0.5 * self.ds1d
+        has_no_ds1d = np.isnan(self.ds1d)
+        cell_idx = nodes.id_to_index(self.line[has_no_ds1d, 0])
+        self.ds1d[has_no_ds1d] = nodes.bounds[cell_idx, 2] - nodes.bounds[cell_idx, 0]
+
+    def assign_ds1d_half(self) -> None:
+        """Sets the velocity point location on the line (ds1d_half), where not yet set.
+
+        Requires: ds1d
+        Sets: ds1d_half
+        """
+        has_no_ds1d_half = np.isnan(self.ds1d_half)
+        self.ds1d_half[has_no_ds1d_half] = self.ds1d[has_no_ds1d_half] / 2

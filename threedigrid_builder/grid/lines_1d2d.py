@@ -501,7 +501,6 @@ class ConnectedPoints(Array[ConnectedPoint]):
             maximum_breach_depth=levees.max_breach_depth[levee_idx],
         )
         lines.content_type[line_idx] = ContentType.TYPE_V2_BREACH
-        lines.levee_id[line_idx] = levees.index_to_id(levee_idx)
         lines.ds1d_half[line_idx] = pygeos.line_locate_point(
             lines.line_geometries[line_idx], points
         )

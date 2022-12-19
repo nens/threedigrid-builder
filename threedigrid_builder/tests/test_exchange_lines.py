@@ -136,16 +136,17 @@ def test_assign_2d_node(side_2d_coordinates, expected_2d_node_id, cell_tree):
 
 def test_assign_kcu():
     lines = Lines1D2D(id=range(7), line=[[-9999] + [x] for x in [1, 1, 2, 2, 3, 4, 5]])
+    lines.content_type[0] = ContentType.TYPE_V2_BREACH
 
     lines.assign_kcu(
-        np.array([1, 1, 1, 1, 0, 1, 1], dtype=bool),
-        np.array([0, 0, 1, 1, 0, 1], dtype=bool),
+        mask=np.array([1, 1, 1, 1, 0, 1, 1], dtype=bool),
+        is_closed=np.array([0, 0, 1, 1, 0, 1], dtype=bool),
     )
 
     assert_array_equal(
         lines.kcu,
         [
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_POSSIBLE_BREACH,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
@@ -218,9 +219,9 @@ def test_assign_dpumax_from_breaches(assign_dpumax):
 
 
 @mock.patch.object(Lines1D2D, "assign_dpumax")
-@mock.patch.object(Lines1D2D, "assign_ds1d_half")
+@mock.patch.object(Lines1D2D, "assign_ds1d_half_from_obstacles")
 def test_assign_dpumax_from_obstacles(
-    assign_ds1d_half,
+    assign_ds1d_half_from_obstacles,
     assign_dpumax,
 ):
     obstacles = mock.Mock()
@@ -244,11 +245,11 @@ def test_assign_dpumax_from_obstacles(
     assert_array_equal(actual_mask, [1, 0, 1])
     assert_array_equal(actual_dpumax, [1.2, np.nan])
 
-    (actual_obstacles, line_idx, obstacle_idx), _ = assign_ds1d_half.call_args
+    args, _ = assign_ds1d_half_from_obstacles.call_args
 
-    assert obstacles is actual_obstacles
-    assert_array_equal(line_idx, [0])
-    assert_array_equal(obstacle_idx, [1])
+    assert args[0] is obstacles
+    assert_array_equal(args[1], [0])
+    assert_array_equal(args[2], [1])
 
 
 @pytest.mark.parametrize(
@@ -347,13 +348,32 @@ def test_assign_breaches_multiple():
         ([[5, 3], [5, 10]], [5, 0, 5, 10], 3.0),
     ],
 )
-def test_assign_ds1d_half(obstacle_geom, line_coords, expected):
+def test_assign_ds1d_half_from_obstacles(obstacle_geom, line_coords, expected):
     obstacles = Obstacles(id=[1], the_geom=[pygeos.linestrings(obstacle_geom)])
     lines = Lines1D2D(
         id=range(1),
         line_coords=[line_coords],
     )
 
-    lines.assign_ds1d_half(obstacles, np.array([0]), np.array(([0])))
+    lines.assign_ds1d_half_from_obstacles(obstacles, np.array([0]), np.array(([0])))
 
     assert_almost_equal(lines.ds1d_half, [expected])
+
+
+def test_assign_ds1d():
+    nodes = Nodes(id=[1, 2, 3], bounds=[(0, 0, 8, 8), (8, 0, 10, 2), (8, 2, 10, 4)])
+    lines = Lines1D2D(
+        id=range(4),
+        line=[[1, -9999], [1, -9999], [2, -9999], [3, -9999]],
+        ds1d=[np.nan, np.nan, np.nan, 5.2],
+    )
+    lines.assign_ds1d(nodes)
+
+    assert_array_equal(lines.ds1d, [8.0, 8.0, 2.0, 5.2])
+
+
+def test_assign_ds1d_half():
+    lines = Lines1D2D(id=range(2), ds1d=[10.0, 8.0], ds1d_half=[np.nan, 5.0])
+    lines.assign_ds1d_half()
+
+    assert_array_equal(lines.ds1d_half, [5.0, 5.0])

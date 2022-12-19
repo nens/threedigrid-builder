@@ -47,6 +47,7 @@ LINE_FIELDS = (
     "node_1",  # node id
     "node_2",  # node id
     "ds1d",  # arclength
+    "ds1d_half",
     "content_type",
     "content_pk",
     "dpumax",  # bottom_level at the velocity point

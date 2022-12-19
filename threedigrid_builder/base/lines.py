@@ -52,7 +52,6 @@ class Line:
     sewerage: int
     sewerage_type: int
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
-    levee_id: int  # for internal usage (breaches)
 
 
 class Lines(Array[Line]):

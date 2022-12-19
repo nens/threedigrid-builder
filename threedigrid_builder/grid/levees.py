@@ -126,13 +126,19 @@ class PotentialBreachPoints(PointsOnLine):
         # iterate over nodes with a breach point and assign (if present)
         # the first double breach point
         for node_i in np.unique(node_idx):
-            mask = np.where(node_idx == node_i)[0]
-            mask = mask[np.argsort(self.linestring_id[mask])]
-            breach_id_1 = self.content_pk[mask]
-            breach_id_2 = self.secondary_content_pk[mask]
+            options = breach_point_idx[node_idx == node_i]
+            # sort by linestring (channel) id for reproducibility:
+            options = options[np.argsort(self.linestring_id[options])]
+            breach_id_1 = self.content_pk[options]
+            breach_id_2 = self.secondary_content_pk[options]
             is_double = np.where(breach_id_2 != -9999)[0]
-            idx = is_double[0] if len(is_double) > 0 else 0
-            nodes.breach_ids[node_i] = [breach_id_1[idx], breach_id_2[idx]]
+            if len(is_double) > 0:
+                nodes.breach_ids[node_i] = [
+                    breach_id_1[is_double[0]],
+                    breach_id_2[is_double[0]],
+                ]
+            else:
+                nodes.breach_ids[node_i, 0] = breach_id_1[0]
 
 
 class PotentialBreaches(Array[PotentialBreach]):

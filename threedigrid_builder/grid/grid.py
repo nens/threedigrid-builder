@@ -684,10 +684,10 @@ class Grid:
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
         lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
         lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
-        self.breaches = lines_1d2d.assign_breaches(self.nodes, potential_breaches)
+        lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
-        lines_1d2d.assign_dpumax_from_breaches(self.breaches)
+        lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_dpumax_from_obstacles(obstacles)
         # Go through objects and dispatch to get_1d2d_properties
@@ -705,6 +705,7 @@ class Grid:
             lines_1d2d.assign_dpumax(mask, dpumax)
 
         lines_1d2d.assign_ds1d(self.nodes)
+        lines_1d2d.assign_ds1d_half()
         self.lines += lines_1d2d
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
@@ -716,6 +717,9 @@ class Grid:
         """
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
+
+    def add_breaches(self, potential_breaches: PotentialBreaches):
+        self.breaches = potential_breaches
 
     def add_breaches_legacy(self, connected_points, levees):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint

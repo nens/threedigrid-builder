@@ -67,7 +67,6 @@ def test_get_breaches(connected_points, lines, levees):
 
     assert_equal(lines.content_type, [CH, -9999, BREACH, BREACH, BREACH, CP])
     assert_equal(lines.content_pk, [1, -9999, 0, 1, 2, 3])
-    assert_equal(lines.levee_id, [-9999, -9999, 1, 1, 2, -9999])
     assert_almost_equal(
         lines.ds1d_half, [np.nan, np.nan, 5.0, 1.4142, 0.0, np.nan], decimal=4
     )
