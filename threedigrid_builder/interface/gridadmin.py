@@ -723,7 +723,6 @@ class GridAdminOut(OutputInterface):
             group, "id", np.arange(1, len(breach_idx) + 1, dtype=np.int32)
         )
         self.write_dataset(group, "levl", lines.id[line_idx] + 1)
-        self.write_dataset(group, "levee_id", lines.levee_id[line_idx])
         self.write_dataset(group, "content_pk", breaches.id[breach_idx])
         self.write_dataset(group, "levbr", breaches.maximum_breach_depth[breach_idx])
         self.write_dataset(group, "levmat", breaches.levee_material[breach_idx])

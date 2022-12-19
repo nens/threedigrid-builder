@@ -302,7 +302,6 @@ class DictOut(OutputInterface):
         return {
             "id": np.arange(1, len(breach_idx) + 1),
             "line_id": increase(lines.id[line_idx]),
-            "levee_id": lines.levee_id[line_idx],
             "content_pk": breaches.id[breach_idx],
             "maximum_breach_depth": breaches.maximum_breach_depth[breach_idx],
             "levee_material": _enum_to_str(

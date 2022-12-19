@@ -104,14 +104,15 @@ class PotentialBreachPoints(PointsOnLine):
             nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES]
         )
 
-        # per endpoint, look for a breach point
+        # per (is_start) endpoint, look for a breach point (at start)
         breach_point_idx = np.full(len(endpoints), fill_value=-9999, dtype=np.int32)
         breach_point_idx[endpoints.is_start] = search(
-            self.linestring_id,
-            endpoints.content_pk[endpoints.is_start],
+            self.linestring_id,  # channel id
+            endpoints.content_pk[endpoints.is_start],  # lines.content_pk
             mask=self.at_start,
             check_exists=False,
         )
+        # per (is_end) endpoint, look for a breach point (at end)
         breach_point_idx[endpoints.is_end] = search(
             self.linestring_id,
             endpoints.content_pk[endpoints.is_end],

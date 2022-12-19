@@ -53,7 +53,6 @@ def test_meta(dict_out):
         ("lines", "cross_id1", 4),  # reference to cross section def id, not increased
         ("breaches", "id", 1),
         ("breaches", "line_id", 5),  # reference to line
-        ("breaches", "levee_id", 1),  # reference to levee, not increased
     ],
 )
 def test_not_off_by_one(dict_out, group, dataset, expected):
