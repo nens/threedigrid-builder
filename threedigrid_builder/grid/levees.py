@@ -14,7 +14,6 @@ __all__ = [
     "Breaches",
     "PotentialBreaches",
     "PotentialBreachPoints",
-    "PotentialBreachesOut",
 ]
 
 
@@ -38,6 +37,7 @@ class PotentialBreach:
     the_geom: pygeos.Geometry
     code: str
     display_name: str
+    exchange_level: float
     levee_material: Material
     maximum_breach_depth: float
     channel_id: int
@@ -181,19 +181,3 @@ class Levees(Array[Levee]):
             the_geom=self.the_geom,
             crest_level=self.crest_level,
         )
-
-
-class PotentialBreachOut:
-    id: int
-    coordinates: Tuple[float, float]  # where it crosses a levee
-    code: str
-    display_name: str
-    levee_material: Material  # levmat
-    maximum_breach_depth: float  # levbr
-    line_id: int  # levl
-    content_pk: int  # refers to v2_potential_breach
-    levee_id: int
-
-
-class PotentialBreachesOut(Array[PotentialBreachOut]):
-    pass

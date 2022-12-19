@@ -93,7 +93,8 @@ def test_integration(tmp_path, filename):
             b"v2_culvert": 92,
             b"v2_pipe": 42,
             b"v2_weir": 56,
-            b"v2_added_c": 1931,
+            b"v2_added_c": 1930,
+            b"v2_breach": 1,
         }
 
         ## PUMPS

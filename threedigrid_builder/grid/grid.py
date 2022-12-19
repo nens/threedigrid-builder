@@ -28,7 +28,7 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import Levees, PotentialBreachesOut, PotentialBreachPoints
+from .levees import Levees, PotentialBreaches, PotentialBreachPoints
 from .linear import BaseLinear
 from .obstacles import Obstacles
 
@@ -198,7 +198,7 @@ class Grid:
 
         if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
-        if breaches is not None and not isinstance(breaches, PotentialBreachesOut):
+        if breaches is not None and not isinstance(breaches, PotentialBreaches):
             raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
         self.lines = lines
@@ -687,6 +687,7 @@ class Grid:
         self.breaches = lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
+        lines_1d2d.assign_dpumax_from_breaches(self.breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_dpumax_from_obstacles(obstacles)
         # Go through objects and dispatch to get_1d2d_properties
@@ -819,8 +820,6 @@ class Grid:
             self.nodes_embedded.embedded_in[:] = np.take(
                 new_node_ids, self.nodes_embedded.embedded_in
             )
-        if self.breaches is not None:
-            self.breaches.line_id[:] = np.take(new_line_ids, self.breaches.line_id)
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 

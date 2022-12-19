@@ -12,7 +12,7 @@ from threedigrid_builder.constants import (
     Material,
     NodeType,
 )
-from threedigrid_builder.grid import Breaches, Grid, GridMeta
+from threedigrid_builder.grid import Grid, GridMeta, PotentialBreaches
 
 __all__ = ["DictOut"]
 
@@ -70,15 +70,6 @@ EMBEDDED_NODE_FIELDS = (
     "content_type",
     "content_pk",
     "embedded_in",
-)
-
-BREACH_FIELDS = (
-    "id",
-    "line_id",
-    "content_pk",
-    "levee_id",
-    "levee_material",
-    "maximum_breach_depth",
 )
 
 
@@ -158,7 +149,7 @@ class DictOut(OutputInterface):
         nodes, cells = self.get_nodes_cells(grid.nodes)
         nodes_emb = self.get_embedded(grid.nodes_embedded)
         lines = self.get_lines(grid.lines)
-        breaches = self.get_breaches(grid.breaches)
+        breaches = self.get_breaches(grid.lines, grid.breaches)
         meta = self.get_meta(grid.meta)
         result = {
             "nodes": nodes,
@@ -289,37 +280,38 @@ class DictOut(OutputInterface):
         line_data["geometry"] = geometries
         return line_data
 
-    def get_breaches(self, breaches: Breaches):
+    def get_breaches(self, lines: Lines, breaches: PotentialBreaches):
         """Get "breaches" dictionary
 
         Args:
+            lines (Lines)
             breaches (Breaches)
 
         Returns:
             breaches dict of 1D ndarrays
         """
-        if breaches is None or len(breaches) == 0:
+        line_idx = np.where(lines.content_type == ContentType.TYPE_V2_BREACH)[0]
+        if len(line_idx) == 0:
             return
-        breach_data = breaches.to_dict()
+        breach_idx = breaches.id_to_index(lines.content_pk[line_idx])
 
-        # construct points from breaches.coordinates
-        geometries = np.empty(len(breaches), dtype=object)
-        coordinates = breach_data.pop("coordinates")
-        has_coord = np.isfinite(coordinates).all(axis=1)
-        geometries[has_coord] = pygeos.points(coordinates[has_coord])
-
-        # convert enums to strings
-        breach_data["levee_material"] = _enum_to_str(
-            breach_data["levee_material"], Material
-        )
-
-        # go from 0-based to 1-based indexing
-        for field in ("id", "line_id"):
-            breach_data[field] = increase(breach_data[field])
-
-        breach_data = {field: breach_data[field] for field in BREACH_FIELDS}
-        breach_data["geometry"] = geometries
-        return breach_data
+        # sort by id
+        sorter = np.argsort(breach_idx)
+        line_idx = line_idx[sorter]
+        breach_idx = breach_idx[sorter]
+        return {
+            "id": np.arange(1, len(breach_idx) + 1),
+            "line_id": increase(lines.id[line_idx]),
+            "levee_id": lines.levee_id[line_idx],
+            "content_pk": breaches.id[breach_idx],
+            "maximum_breach_depth": breaches.maximum_breach_depth[breach_idx],
+            "levee_material": _enum_to_str(
+                breaches.levee_material[breach_idx], Material
+            ),
+            "geometry": lines.get_velocity_points(line_idx),
+            "code": breaches.code[breach_idx],
+            "display_name": breaches.display_name[breach_idx],
+        }
 
     def get_meta(self, meta: GridMeta):
         meta_data = dataclasses.asdict(meta)

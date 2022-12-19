@@ -29,7 +29,7 @@ def test_cells(dict_out):
 
 def test_breaches(dict_out):
     assert dict_out["breaches"]["id"].shape == (2,)
-    assert dict_out["breaches"]["geometry"][0] == "POINT (0 0)"
+    assert dict_out["breaches"]["geometry"][0] == "POINT (0 2)"
 
 
 def test_nodes_embedded(dict_out):

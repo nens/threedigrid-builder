@@ -867,6 +867,7 @@ class SQLite:
 
         if self.get_version() >= 212:
             cols += [
+                models.PotentialBreach.exchange_level,
                 models.PotentialBreach.maximum_breach_depth,
                 models.PotentialBreach.levee_material,
             ]

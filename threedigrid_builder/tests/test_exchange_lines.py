@@ -8,17 +8,13 @@ from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
-from threedigrid_builder.grid import (
-    ExchangeLines,
-    Lines1D2D,
-    PotentialBreaches,
-    PotentialBreachesOut,
-)
+from threedigrid_builder.grid import ExchangeLines, Lines1D2D, PotentialBreaches
 
 ISO = CalculationType.ISOLATED
 C1 = CalculationType.CONNECTED
 C2 = CalculationType.DOUBLE_CONNECTED
 EXC = ContentType.TYPE_V2_EXCHANGE_LINE
+BREACH = ContentType.TYPE_V2_BREACH
 
 
 @pytest.mark.parametrize(
@@ -202,6 +198,21 @@ def test_assign_dpumax_from_exchange_lines(assign_dpumax):
 
 
 @mock.patch.object(Lines1D2D, "assign_dpumax")
+def test_assign_dpumax_from_breaches(assign_dpumax):
+    lines = Lines1D2D(
+        id=range(3), content_pk=[1, 2, 3], content_type=[BREACH, -9999, BREACH]
+    )
+    breaches = PotentialBreaches(id=[1, 2, 3], exchange_level=[1.2, 2.3, np.nan])
+
+    lines.assign_dpumax_from_breaches(breaches)
+
+    (actual_mask, actual_dpumax), _ = assign_dpumax.call_args
+
+    assert_array_equal(actual_mask, [1, 0, 1])
+    assert_array_equal(actual_dpumax, [1.2, np.nan])
+
+
+@mock.patch.object(Lines1D2D, "assign_dpumax")
 def test_assign_dpumax_from_obstacles(assign_dpumax):
     obstacles = mock.Mock()
     obstacles.compute_dpumax.return_value = np.array([1.2, np.nan])
@@ -223,48 +234,45 @@ def test_assign_dpumax_from_obstacles(assign_dpumax):
 
 
 @pytest.mark.parametrize(
-    "breach_ids,breach_2d_coords,content_pk,line_id",
+    "breach_ids,breach_2d_coords,content_pk",
     [
-        ([-9999, -9999], [(10, 0)], [], []),
-        ([1, -9999], [(10, 0)], [1], [1]),
-        ([1, 2], [(10, 0), (10, 1)], [1], [1]),
-        ([1, 2], [(10, 1), (10, 0)], [2], [1]),
-        ([1, 2], [(10, 1), (10, -1)], [1], [1]),
+        ([-9999, -9999], [(10, 0)], [-9999]),
+        ([1, -9999], [(10, 0)], [1]),
+        ([1, 2], [(10, 0), (10, 1)], [1]),
+        ([1, 2], [(10, 1), (10, 0)], [2]),
+        ([1, 2], [(10, 1), (10, -1)], [1]),
     ],
 )
-def test_assign_breaches_single_connected(
-    breach_ids, breach_2d_coords, content_pk, line_id
-):
+def test_assign_breaches_single_connected(breach_ids, breach_2d_coords, content_pk):
     nodes = Nodes(id=[1], breach_ids=[breach_ids])
     lines = Lines1D2D(id=[1], line=[(-9999, 1)], line_coords=[(10, 0, 0, 0)])
     potential_breaches = PotentialBreaches(
         id=range(1, len(breach_2d_coords) + 1),
         the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
     )
-    actual = lines.assign_breaches(nodes, potential_breaches)
+    lines.assign_breaches(nodes, potential_breaches)
 
-    assert isinstance(actual, PotentialBreachesOut)
-    assert_array_equal(actual.content_pk, content_pk)
-    assert_array_equal(actual.line_id, line_id)
+    assert_array_equal(
+        lines.content_type, np.where(np.array(content_pk) != -9999, BREACH, -9999)
+    )
+    assert_array_equal(lines.content_pk, content_pk)
 
 
 @pytest.mark.parametrize(
-    "breach_ids,breach_2d_coords,content_pk,line_id",
+    "breach_ids,breach_2d_coords,content_pk",
     [
-        ([-9999, -9999], [(10, 0)], [], []),
-        ([1, -9999], [(10, 0)], [1], [1]),
-        ([1, -9999], [(10, 10)], [1], [2]),
-        ([1, -9999], [(10, 5)], [1], [1]),
-        ([1, 2], [(10, 0), (10, 10)], [1, 2], [1, 2]),
-        ([1, 2], [(10, 10), (10, 0)], [2, 1], [1, 2]),
-        ([1, 2], [(10, 1), (10, 9)], [1, 2], [1, 2]),
-        ([1, 2], [(10, 9), (10, 1)], [2, 1], [1, 2]),
-        ([1, 2], [(10, 5), (10, 5)], [1, 2], [1, 2]),
+        ([-9999, -9999], [(10, 0)], [-9999, -9999]),
+        ([1, -9999], [(10, 0)], [1, -9999]),
+        ([1, -9999], [(10, 10)], [-9999, 1]),
+        ([1, -9999], [(10, 5)], [1, -9999]),
+        ([1, 2], [(10, 0), (10, 10)], [1, 2]),
+        ([1, 2], [(10, 10), (10, 0)], [2, 1]),
+        ([1, 2], [(10, 1), (10, 9)], [1, 2]),
+        ([1, 2], [(10, 9), (10, 1)], [2, 1]),
+        ([1, 2], [(10, 5), (10, 5)], [1, 2]),
     ],
 )
-def test_assign_breaches_double_connected(
-    breach_ids, breach_2d_coords, content_pk, line_id
-):
+def test_assign_breaches_double_connected(breach_ids, breach_2d_coords, content_pk):
     nodes = Nodes(id=[1], breach_ids=[breach_ids])
     lines = Lines1D2D(
         id=[1, 2],
@@ -275,11 +283,12 @@ def test_assign_breaches_double_connected(
         id=range(1, len(breach_2d_coords) + 1),
         the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
     )
-    actual = lines.assign_breaches(nodes, potential_breaches)
+    lines.assign_breaches(nodes, potential_breaches)
 
-    assert isinstance(actual, PotentialBreachesOut)
-    assert_array_equal(actual.content_pk, content_pk)
-    assert_array_equal(actual.line_id, line_id)
+    assert_array_equal(
+        lines.content_type, np.where(np.array(content_pk) != -9999, BREACH, -9999)
+    )
+    assert_array_equal(lines.content_pk, content_pk)
 
 
 def test_assign_breaches_multiple():
@@ -292,6 +301,8 @@ def test_assign_breaches_multiple():
         id=range(4),
         line=[[-9999, 1], [-9999, 1], [-9999, 2], [-9999, 3]],
         line_coords=[x + [0, 0] for x in [[2, 0], [2, 10], [4, 0], [6, 5]]],
+        content_type=[EXC, EXC, EXC, -9999],
+        content_pk=[0, 1, 2, 3],
     )
     potential_breaches = PotentialBreaches(
         id=[1, 2, 3, 4],
@@ -300,9 +311,9 @@ def test_assign_breaches_multiple():
         ),
         code=["a", "b", "c", "d"],
     )
-    actual = lines.assign_breaches(nodes, potential_breaches)
+    lines.assign_breaches(nodes, potential_breaches)
 
-    assert isinstance(actual, PotentialBreachesOut)
-    assert_array_equal(actual.content_pk, [2, 1, 4])
-    assert_array_equal(actual.line_id, [0, 1, 3])
-    assert_array_equal(actual.code, ["b", "a", "d"])
+    # also check the other fields that are set by assign_breaches
+    assert_array_equal(lines.line_coords[:, :2], [(2, 1), (2, 9), (4, 0), (6, 1)])
+    assert_array_equal(lines.content_type, [BREACH, BREACH, EXC, BREACH])
+    assert_array_equal(lines.content_pk, [2, 1, 2, 4])

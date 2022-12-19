@@ -16,13 +16,13 @@ from threedigrid_builder.base import (
     TablesSettings,
 )
 from threedigrid_builder.base.surfaces import SurfaceMaps
-from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import ContentType, NodeType
 from threedigrid_builder.grid import (
     CrossSections,
     Grid,
     GridMeta,
     Levees,
-    PotentialBreachesOut,
+    PotentialBreaches,
     QuadtreeStats,
 )
 from threedigrid_builder.interface.db import SQLite
@@ -84,11 +84,21 @@ def grid_all():
             pygeos.linestrings([[1, 1], [2, 2]]),
             pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
             None,
-            None,
-            None,
+            pygeos.linestrings([[0, 0], [10, 0]]),
+            pygeos.linestrings([[0, 10], [0, 0]]),
         ],
         cross_id1=[4, -9999, 3, 3, 4],
         cross_id2=[-9999, -9999, -9999, -9999, 6],
+        content_type=[
+            -9999,
+            -9999,
+            -9999,
+            ContentType.TYPE_V2_BREACH,
+            ContentType.TYPE_V2_BREACH,
+        ],
+        content_pk=[-9999, -9999, -9999, 1, 0],
+        ds1d_half=[0.5, 1.0, 1.0, 5.0, 8.0],
+        levee_id=[-9999, -9999, -9999, 0, 1],
     )
     pumps = Pumps(
         id=[0, 1, 2],
@@ -145,11 +155,8 @@ def grid_all():
             pygeos.linestrings([[1, 1], [2, 2], [3, 3]]),
         ],
     )
-    breaches = PotentialBreachesOut(
+    breaches = PotentialBreaches(
         id=[0, 1],
-        coordinates=[[0, 0], [1, 1]],
-        line_id=[4, 3],
-        levee_id=[1, 0],
     )
     surfaces = Surfaces(
         id=[0, 1],

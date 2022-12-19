@@ -7,7 +7,7 @@ import pygeos
 from threedigrid_builder.base import Array, Lines, Nodes, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
-from .levees import PotentialBreaches, PotentialBreachesOut
+from .levees import PotentialBreaches
 from .obstacles import Obstacles
 
 __all__ = ["ExchangeLines", "Lines1D2D"]
@@ -110,26 +110,25 @@ class Lines1D2D(Lines):
             pygeos.get_point(line_geom, 0)
         )
 
-    def assign_breaches(
-        self, nodes: Nodes, potential_breaches: PotentialBreaches
-    ) -> PotentialBreachesOut:
-        """Assign breaches to the 1D-2D lines (by returning PotentialBreachesOut).
+    def assign_breaches(self, nodes: Nodes, potential_breaches: PotentialBreaches):
+        """Assign breaches to the 1D-2D lines.
 
-        This method will update the 2D side (line_coords[:, :2]) (it overrides the
-        2D line set by a possible exchange line)
+        Nodes may have 0, 1, or 2 'breach_ids' assigned, but this assignment did not
+        take into account the calculation type (isolated/connected/double connected).
+        Here, the nodes.breach_ids are matched against the actually present 1D-2D lines.
 
-        For double connected nodes, we need the 2D side to determine which potential
-        breach belongs to which line.
+        The matching minimizes the total distance of the 2D ends of the potential breach
+        to the 2D end of the 1D-2D line (which is possibly derived from an exchange line).
 
-        Requires: line_coords[:, :2]
-        Sets: line_coords[:, :2]
+        Requires: line_coords[:, :2]  (from the exchange line or 1D node location)
+        Sets: line_coords[:, :2], content_pk, content_type  (updated from the potential breach)
         """
         node_idx = self.get_1d_node_idx(nodes)
         breach_counts = np.count_nonzero(nodes.breach_ids[node_idx, :] != -9999, axis=1)
         line_idx_with_breaches = np.where(breach_counts > 0)[0]
 
         if len(line_idx_with_breaches) == 0:
-            return PotentialBreachesOut(id=[])
+            return
 
         # define a function that computes the distance between breach and line 2D sides
         breach_2d_side = potential_breaches.side_2d
@@ -181,16 +180,8 @@ class Lines1D2D(Lines):
         self.line_coords[line_idx, :2] = pygeos.get_coordinates(
             breach_2d_side[breach_idx]
         )
-        return PotentialBreachesOut(
-            id=range(len(line_idx)),
-            # coordinates,  TODO
-            code=potential_breaches.code[breach_idx],
-            display_name=potential_breaches.display_name[breach_idx],
-            levee_material=potential_breaches.levee_material[breach_idx],
-            maximum_breach_depth=potential_breaches.maximum_breach_depth[breach_idx],
-            line_id=self.id[line_idx],
-            content_pk=potential_breaches.id[breach_idx],
-        )
+        self.content_type[line_idx] = ContentType.TYPE_V2_BREACH
+        self.content_pk[line_idx] = potential_breaches.id[breach_idx]
 
     def assign_2d_node(self, cell_tree: pygeos.STRtree) -> None:
         """Assigns the 2D node id based on the line_coords
@@ -218,6 +209,16 @@ class Lines1D2D(Lines):
                 LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+            ],
+        )
+
+    def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):
+        """Set the dpumax based exchange_lines.exchange_level"""
+        has_breach = self.content_type == ContentType.TYPE_V2_BREACH
+        self.assign_dpumax(
+            has_breach,
+            potential_breaches.exchange_level[
+                potential_breaches.id_to_index(self.content_pk[has_breach])
             ],
         )
 

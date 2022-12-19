@@ -52,10 +52,20 @@ class Line:
     sewerage: int
     sewerage_type: int
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
+    levee_id: int  # for internal usage (breaches)
 
 
 class Lines(Array[Line]):
     """Line between two calculation nodes (a.k.a. velocity point)."""
+
+    def get_velocity_points(self, mask):
+        if np.any(pygeos.is_missing(self.line_geometries[mask])):
+            raise ValueError("No line geometries available")
+        if np.any(~np.isfinite(self.ds1d_half[mask])):
+            raise ValueError("No ds1d_half available")
+        return pygeos.line_interpolate_point(
+            self.line_geometries[mask], self.ds1d_half[mask]
+        )
 
     def set_discharge_coefficients(self):
         """Set discharge coefficients to 1.0 where unset."""

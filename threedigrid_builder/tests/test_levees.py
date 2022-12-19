@@ -11,9 +11,12 @@ from threedigrid_builder.grid import (
     Levees,
     Obstacles,
     PotentialBreaches,
-    PotentialBreachesOut,
     PotentialBreachPoints,
 )
+
+CH = ContentType.TYPE_V2_CHANNEL
+CP = ContentType.TYPE_V2_ADDED_CALCULATION_POINT
+BREACH = ContentType.TYPE_V2_BREACH
 
 
 @pytest.fixture
@@ -41,8 +44,6 @@ def connected_points():
 
 @pytest.fixture
 def lines():
-    CH = ContentType.TYPE_V2_CHANNEL
-    CP = ContentType.TYPE_V2_ADDED_CALCULATION_POINT
     return Lines(
         id=[0, 1, 2, 3, 4, 5],
         line_geometries=[
@@ -61,14 +62,17 @@ def lines():
 def test_get_breaches(connected_points, lines, levees):
     breaches = connected_points.get_breaches(lines, levees)
 
-    assert isinstance(breaches, PotentialBreachesOut)
+    assert isinstance(breaches, PotentialBreaches)
     assert len(breaches) == 3
 
+    assert_equal(lines.content_type, [CH, -9999, BREACH, BREACH, BREACH, CP])
+    assert_equal(lines.content_pk, [1, -9999, 0, 1, 2, 3])
+    assert_equal(lines.levee_id, [-9999, -9999, 1, 1, 2, -9999])
+    assert_almost_equal(
+        lines.ds1d_half, [np.nan, np.nan, 5.0, 1.4142, 0.0, np.nan], decimal=4
+    )
+
     assert_equal(breaches.id, [0, 1, 2])
-    assert_equal(breaches.content_pk, [0, 1, 2])
-    assert_almost_equal(breaches.coordinates, [[10, 5], [4, 0], [6, 5]])
-    assert_equal(breaches.levee_id, [1, 1, 2])
-    assert_equal(breaches.line_id, [2, 3, 4])
     assert_almost_equal(breaches.maximum_breach_depth, [4, 4, 2])
     assert_equal(breaches.levee_material, [Material.CLAY, Material.CLAY, Material.SAND])
 
@@ -77,7 +81,7 @@ def test_no_breaches(connected_points, lines, levees):
     connected_points.levee_id[:] = -9999
     breaches = connected_points.get_breaches(lines, levees)
 
-    assert isinstance(breaches, PotentialBreachesOut)
+    assert isinstance(breaches, PotentialBreaches)
     assert len(breaches) == 0
 
 
