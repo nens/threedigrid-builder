@@ -4,11 +4,16 @@ from unittest import mock
 import numpy as np
 import pygeos
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_almost_equal, assert_array_equal
 
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
-from threedigrid_builder.grid import ExchangeLines, Lines1D2D, PotentialBreaches
+from threedigrid_builder.grid import (
+    ExchangeLines,
+    Lines1D2D,
+    Obstacles,
+    PotentialBreaches,
+)
 
 ISO = CalculationType.ISOLATED
 C1 = CalculationType.CONNECTED
@@ -213,9 +218,16 @@ def test_assign_dpumax_from_breaches(assign_dpumax):
 
 
 @mock.patch.object(Lines1D2D, "assign_dpumax")
-def test_assign_dpumax_from_obstacles(assign_dpumax):
+@mock.patch.object(Lines1D2D, "assign_ds1d_half")
+def test_assign_dpumax_from_obstacles(
+    assign_ds1d_half,
+    assign_dpumax,
+):
     obstacles = mock.Mock()
-    obstacles.compute_dpumax.return_value = (np.array([1.2, np.nan]), None)
+    obstacles.compute_dpumax.return_value = (
+        np.array([1.2, np.nan]),
+        np.array([1, -9999]),
+    )
 
     lines = Lines1D2D(id=range(3), content_type=[EXC, -9999, EXC])
 
@@ -231,6 +243,12 @@ def test_assign_dpumax_from_obstacles(assign_dpumax):
 
     assert_array_equal(actual_mask, [1, 0, 1])
     assert_array_equal(actual_dpumax, [1.2, np.nan])
+
+    (actual_obstacles, line_idx, obstacle_idx), _ = assign_ds1d_half.call_args
+
+    assert obstacles is actual_obstacles
+    assert_array_equal(line_idx, [0])
+    assert_array_equal(obstacle_idx, [1])
 
 
 @pytest.mark.parametrize(
@@ -317,3 +335,25 @@ def test_assign_breaches_multiple():
     assert_array_equal(lines.line_coords[:, :2], [(2, 1), (2, 9), (4, 0), (6, 1)])
     assert_array_equal(lines.content_type, [BREACH, BREACH, EXC, BREACH])
     assert_array_equal(lines.content_pk, [2, 1, 2, 4])
+
+
+@pytest.mark.parametrize(
+    "obstacle_geom,line_coords,expected",
+    [
+        ([[5, 0], [5, 10]], [0, 5, 10, 5], 5.0),
+        ([[5, 0], [5, 10]], [2, 5, 10, 5], 3.0),
+        ([[5, 0], [5, 10]], [0, 0, 10, 0], 5.0),
+        ([[5, 1], [5, 10]], [0, 0, 10, 0], 5.0),
+        ([[5, 3], [5, 10]], [5, 0, 5, 10], 3.0),
+    ],
+)
+def test_assign_ds1d_half(obstacle_geom, line_coords, expected):
+    obstacles = Obstacles(id=[1], the_geom=[pygeos.linestrings(obstacle_geom)])
+    lines = Lines1D2D(
+        id=range(1),
+        line_coords=[line_coords],
+    )
+
+    lines.assign_ds1d_half(obstacles, np.array([0]), np.array(([0])))
+
+    assert_almost_equal(lines.ds1d_half, [expected])

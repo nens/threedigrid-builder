@@ -235,12 +235,31 @@ class Lines1D2D(Lines):
     def assign_dpumax_from_obstacles(self, obstacles: Obstacles):
         """Set the dpumax based on intersected obstacles
 
-        Only for (open) connections that are computed via an exchange line.
+        Only for (open) connections that are computed via an exchange line or breach.
         """
-        has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
-        self.assign_dpumax(
-            has_exc, obstacles.compute_dpumax(self, where=np.where(has_exc)[0])[0]
+        is_displaced = np.isin(
+            self.content_type,
+            [ContentType.TYPE_V2_EXCHANGE_LINE, ContentType.TYPE_V2_BREACH],
         )
+        is_displaced_idx = np.where(is_displaced)[0]
+        obstacle_crest_levels, obstacle_idx = obstacles.compute_dpumax(
+            self, where=is_displaced_idx
+        )
+        self.assign_dpumax(is_displaced, obstacle_crest_levels)
+        mask = obstacle_idx != -9999
+        self.assign_ds1d_half(obstacles, is_displaced_idx[mask], obstacle_idx[mask])
+
+    def assign_ds1d_half(self, obstacles: Obstacles, line_idx, obstacle_idx):
+        if len(line_idx) == 0:
+            return
+        line_geoms = self.get_linestrings(line_idx)
+        # compute the intersections (use shortest_line and not intersects to
+        # account for the case that the levee and the line intersect multiple times)
+        points = pygeos.get_point(
+            pygeos.shortest_line(obstacles.the_geom[obstacle_idx], line_geoms), 0
+        )
+        # compute the distance to the start of the line
+        self.ds1d_half[line_idx] = pygeos.line_locate_point(line_geoms, points)
 
     def assign_dpumax(self, mask, dpumax) -> None:
         """Assign dpumax only where it is not set already"""
