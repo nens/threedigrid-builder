@@ -3,7 +3,14 @@ from typing import Tuple
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Lines, Nodes, PointsOnLine, search
+from threedigrid_builder.base import (
+    Array,
+    Endpoints,
+    Lines,
+    Nodes,
+    PointsOnLine,
+    search,
+)
 from threedigrid_builder.constants import ContentType, Material
 
 from .channels import Channels
@@ -88,6 +95,31 @@ class PotentialBreachPoints(PointsOnLine):
             s1d=np.delete(s1d, to_delete),
         )
 
+    def find_for_endpoints(self, endpoints: Endpoints):
+        """Return a breach for each endpoint by matching against channel id.
+
+        It is assumed there is exactly 1 breach per endpoint. This is ensured
+        by PotentialBreachPoints.merge().
+        """
+        # per (is_start) endpoint, look for a breach point (at start)
+        idx = np.full(len(endpoints), fill_value=-9999, dtype=np.int32)
+        idx[endpoints.is_start] = search(
+            self.linestring_id,  # channel id
+            endpoints.content_pk[endpoints.is_start],  # lines.content_pk
+            mask=self.at_start,
+            check_exists=False,
+        )
+        # per (is_end) endpoint, look for a breach point (at end)
+        idx[endpoints.is_end] = search(
+            self.linestring_id,
+            endpoints.content_pk[endpoints.is_end],
+            mask=self.at_end,
+            check_exists=False,
+        )
+        has_breach_point = idx != -9999
+        idx = idx[has_breach_point]
+        return endpoints.node_id[has_breach_point], idx
+
     def assign_to_connection_nodes(self, nodes: Nodes, lines: Lines):
         """Per connection node, assign max two potential breach ids.
 
@@ -104,41 +136,26 @@ class PotentialBreachPoints(PointsOnLine):
             nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES]
         )
 
-        # per (is_start) endpoint, look for a breach point (at start)
-        breach_point_idx = np.full(len(endpoints), fill_value=-9999, dtype=np.int32)
-        breach_point_idx[endpoints.is_start] = search(
-            self.linestring_id,  # channel id
-            endpoints.content_pk[endpoints.is_start],  # lines.content_pk
-            mask=self.at_start,
-            check_exists=False,
-        )
-        # per (is_end) endpoint, look for a breach point (at end)
-        breach_point_idx[endpoints.is_end] = search(
-            self.linestring_id,
-            endpoints.content_pk[endpoints.is_end],
-            mask=self.at_end,
-            check_exists=False,
-        )
-        mask = breach_point_idx != -9999
-        node_idx = nodes.id_to_index(endpoints.node_id[mask])
-        breach_point_idx = breach_point_idx[mask]
+        # per endpoint, match a breach point by their channel ids
+        node_ids, breach_point_idx = self.find_for_endpoints(endpoints)
+        node_idx = nodes.id_to_index(node_ids)
 
         # iterate over nodes with a breach point and assign (if present)
         # the first double breach point
-        for node_i in np.unique(node_idx):
-            options = breach_point_idx[node_idx == node_i]
+        for node_idx_ in np.unique(node_idx):
+            options = breach_point_idx[node_idx == node_idx_]
             # sort by linestring (channel) id for reproducibility:
             options = options[np.argsort(self.linestring_id[options])]
             breach_id_1 = self.content_pk[options]
             breach_id_2 = self.secondary_content_pk[options]
             is_double = np.where(breach_id_2 != -9999)[0]
             if len(is_double) > 0:
-                nodes.breach_ids[node_i] = [
+                nodes.breach_ids[node_idx_] = [
                     breach_id_1[is_double[0]],
                     breach_id_2[is_double[0]],
                 ]
             else:
-                nodes.breach_ids[node_i, 0] = breach_id_1[0]
+                nodes.breach_ids[node_idx_, 0] = breach_id_1[0]
 
 
 class PotentialBreaches(Array[PotentialBreach]):
