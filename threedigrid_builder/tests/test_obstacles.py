@@ -81,29 +81,35 @@ def test_set_obstacles_no_intersect(grid, obstacles_no_intersect):
 
 def test_compute_dpumax(lines: Lines, obstacles: Obstacles):
     expected = [-0.1, -0.3, -0.3, -0.1, np.nan, np.nan, -0.1, np.nan, np.nan, -0.1]
-    actual = obstacles.compute_dpumax(lines, where=np.arange(len(lines)))
+    actual, idx = obstacles.compute_dpumax(lines, where=np.arange(len(lines)))
 
+    assert_equal(idx, [0, 1, 1, 0, -9999, -9999, 0, -9999, -9999, 0])
     assert_almost_equal(actual, expected)
 
 
 def test_compute_dpumax_no_intersections(
     lines: Lines, obstacles_no_intersect: Obstacles
 ):
-    actual = obstacles_no_intersect.compute_dpumax(lines, where=np.arange(len(lines)))
+    actual, idx = obstacles_no_intersect.compute_dpumax(
+        lines, where=np.arange(len(lines))
+    )
 
     assert len(actual) == len(lines)
+    assert_equal(idx, -9999)
     assert_almost_equal(actual, np.nan)
 
 
 def test_compute_dpumax_no_obstacles(lines: Lines):
-    actual = Obstacles(id=[]).compute_dpumax(lines, where=np.arange(len(lines)))
+    actual, idx = Obstacles(id=[]).compute_dpumax(lines, where=np.arange(len(lines)))
 
     assert len(actual) == len(lines)
+    assert_equal(idx, -9999)
     assert_almost_equal(actual, np.nan)
 
 
 def test_compute_dpumax_where(lines: Lines, obstacles: Obstacles):
     expected = [-0.1, -0.1, np.nan, -0.1]
-    actual = obstacles.compute_dpumax(lines, where=[0, 3, 4, 6])
+    actual, idx = obstacles.compute_dpumax(lines, where=[0, 3, 4, 6])
 
+    assert_equal(idx, [0, 0, -9999, 0])
     assert_almost_equal(actual, expected)

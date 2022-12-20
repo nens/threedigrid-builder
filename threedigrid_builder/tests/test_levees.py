@@ -3,15 +3,20 @@ import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
-from threedigrid_builder.base import Lines, LineStrings, PointsOnLine
+from threedigrid_builder.base import Lines, LineStrings, Nodes
 from threedigrid_builder.constants import ContentType, Material
 from threedigrid_builder.grid import (
-    Breaches,
+    Channels,
     ConnectedPoints,
     Levees,
     Obstacles,
     PotentialBreaches,
+    PotentialBreachPoints,
 )
+
+CH = ContentType.TYPE_V2_CHANNEL
+CP = ContentType.TYPE_V2_ADDED_CALCULATION_POINT
+BREACH = ContentType.TYPE_V2_BREACH
 
 
 @pytest.fixture
@@ -39,8 +44,6 @@ def connected_points():
 
 @pytest.fixture
 def lines():
-    CH = ContentType.TYPE_V2_CHANNEL
-    CP = ContentType.TYPE_V2_ADDED_CALCULATION_POINT
     return Lines(
         id=[0, 1, 2, 3, 4, 5],
         line_geometries=[
@@ -59,23 +62,25 @@ def lines():
 def test_get_breaches(connected_points, lines, levees):
     breaches = connected_points.get_breaches(lines, levees)
 
-    assert isinstance(breaches, Breaches)
+    assert isinstance(breaches, PotentialBreaches)
     assert len(breaches) == 3
 
+    assert_equal(lines.content_type, [CH, -9999, BREACH, BREACH, BREACH, CP])
+    assert_equal(lines.content_pk, [1, -9999, 0, 1, 2, 3])
+    assert_almost_equal(
+        lines.ds1d_half, [np.nan, np.nan, 5.0, 1.4142, 0.0, np.nan], decimal=4
+    )
+
     assert_equal(breaches.id, [0, 1, 2])
-    assert_equal(breaches.content_pk, [0, 1, 2])
-    assert_almost_equal(breaches.coordinates, [[10, 5], [4, 0], [6, 5]])
-    assert_equal(breaches.levee_id, [1, 1, 2])
-    assert_equal(breaches.levl, [2, 3, 4])
-    assert_almost_equal(breaches.levbr, [4, 4, 2])
-    assert_equal(breaches.levmat, [Material.CLAY, Material.CLAY, Material.SAND])
+    assert_almost_equal(breaches.maximum_breach_depth, [4, 4, 2])
+    assert_equal(breaches.levee_material, [Material.CLAY, Material.CLAY, Material.SAND])
 
 
 def test_no_breaches(connected_points, lines, levees):
     connected_points.levee_id[:] = -9999
     breaches = connected_points.get_breaches(lines, levees)
 
-    assert isinstance(breaches, Breaches)
+    assert isinstance(breaches, PotentialBreaches)
     assert len(breaches) == 0
 
 
@@ -90,16 +95,32 @@ def test_potential_breach_sides():
 
 
 def test_potential_breach_merge():
-    before = PointsOnLine(
-        linestrings=LineStrings(pygeos.linestrings([[[0, 0], [10, 0]]])),
-        id=[0, 1, 2, 3, 4, 5],
-        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0],
-        linestring_idx=[0, 0, 0, 0, 0, 0],
-    )
-    after = PotentialBreaches.merge(before, tolerance=2.0)
+    actual = PotentialBreachPoints(
+        linestrings=LineStrings(
+            id=[0, 1],
+            the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
+        ),
+        id=range(8),
+        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0, 4, 5],
+        linestring_idx=[0, 0, 0, 0, 0, 0, 1, 1],
+        content_pk=range(1, 9),
+    ).merge(tolerance=2.0)
 
-    assert_almost_equal(after.s1d, [0.0, 2.0, 5.5, 10.0])
-    assert_almost_equal(after.linestring_idx, [0, 0, 0, 0])
+    assert_almost_equal(actual.s1d, [0.0, 2.0, 5.5, 10.0, 4.5])
+    assert_almost_equal(actual.linestring_idx, [0, 0, 0, 0, 1])
+    assert_almost_equal(actual.content_pk, [1, 2, 3, 6, 7])
+    assert_almost_equal(actual.secondary_content_pk, [-9999, -9999, 4, -9999, 8])
+
+
+def test_potential_breach_merge_empty():
+    actual = PotentialBreachPoints.empty(
+        linestrings=LineStrings(
+            id=[0, 1],
+            the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
+        )
+    ).merge(tolerance=2.0)
+
+    assert len(actual) == 0
 
 
 def test_levees_merge_into_obstacles(levees):
@@ -123,3 +144,83 @@ def test_levees_merge_into_obstacles_no_obstacles(levees):
 
     assert_equal(actual.id, [1, 2, 3])
     assert_equal(actual.crest_level, [2.0, 4.0, np.nan])
+
+
+@pytest.fixture
+def threeway_junction():
+    nodes = Nodes(
+        id=range(1, 5),
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        content_pk=[1, 2, 3, 4],
+    )
+    linestrings = Channels(
+        id=[11, 12, 13],
+        the_geom=pygeos.linestrings([[[0, 0], [0, 1]]] * 3),
+    ).linestrings
+    lines = Lines(
+        id=range(3),
+        line=[(1, 2), (1, 3), (4, 1)],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=[11, 12, 13],
+    )
+    return nodes, lines, linestrings
+
+
+@pytest.mark.parametrize(
+    "breach_points,expected",
+    [
+        (  # no breach points: nothing assigned
+            {"id_1": [], "id_2": [], "s1d": [], "ch_idx": []},
+            (-9999, -9999),
+        ),
+        (  # breach point at start, single connected
+            {"id_1": [5], "id_2": [-9999], "s1d": [0.0], "ch_idx": [0]},
+            (5, -9999),
+        ),
+        (  # breach point at end, single connected (linestring 2 is swapped)
+            {"id_1": [7], "id_2": [-9999], "s1d": [1.0], "ch_idx": [2]},
+            (7, -9999),
+        ),
+        (  # breach point at start, far side
+            {"id_1": [5], "id_2": [-9999], "s1d": [1.0], "ch_idx": [0]},
+            (-9999, -9999),
+        ),
+        (  # breach point at end, far side (linestring 2 is swapped)
+            {"id_1": [7], "id_2": [-9999], "s1d": [0.0], "ch_idx": [2]},
+            (-9999, -9999),
+        ),
+        (  # breach point at start, double connected
+            {"id_1": [5], "id_2": [6], "s1d": [0.0], "ch_idx": [0]},
+            (5, 6),
+        ),
+        (  # breach point at end, double connected (linestring 2 is swapped)
+            {"id_1": [7], "id_2": [8], "s1d": [1.0], "ch_idx": [2]},
+            (7, 8),
+        ),
+        (  # two breach points, single connected
+            {"id_1": [5, 6], "id_2": -9999, "s1d": [0.0, 0.0], "ch_idx": [0, 1]},
+            (5, -9999),
+        ),
+        (  # two breach points, single connected (orders by ch_idx)
+            {"id_1": [5, 6], "id_2": -9999, "s1d": [0.0, 0.0], "ch_idx": [1, 0]},
+            (6, -9999),
+        ),
+        (  # two breach points, one double connected (gets priority)
+            {"id_1": [5, 6], "id_2": [-9999, 8], "s1d": [0.0, 0.0], "ch_idx": [0, 1]},
+            (6, 8),
+        ),
+    ],
+)
+def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
+    """Set the breach ids on a connection node with 3 channels"""
+    nodes, lines, linestrings = threeway_junction
+    breach_points = PotentialBreachPoints(
+        linestrings=linestrings,
+        id=range(len(breach_points["id_1"])),
+        content_pk=breach_points["id_1"],
+        secondary_content_pk=breach_points["id_2"],
+        s1d=breach_points["s1d"],
+        linestring_idx=breach_points["ch_idx"],
+    )
+    breach_points.assign_to_connection_nodes(nodes, lines)
+    assert_equal(nodes.breach_ids[0], expected)

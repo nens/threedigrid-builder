@@ -34,6 +34,7 @@ class Node:
     storage_area: float
     embedded_in: int  # the id of the node in which this node is embedded
     boundary_id: int  # referring to the id of the boundary condition
+    breach_ids: Tuple[int, int]  # referring to 1 or 2 ids of potential breaches
     has_dem_averaged: int  # Boolean attribute to tell if dem is averaged for node.
     boundary_type: BoundaryType
     manhole_id: int  # referring to the id of a manhole

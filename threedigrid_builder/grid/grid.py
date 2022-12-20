@@ -28,7 +28,7 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import Breaches, Levees
+from .levees import Levees, PotentialBreaches, PotentialBreachPoints
 from .linear import BaseLinear
 from .obstacles import Obstacles
 
@@ -198,7 +198,7 @@ class Grid:
 
         if levees is not None and not isinstance(levees, Levees):
             raise TypeError(f"Expected Levees instance, got {type(levees)}")
-        if breaches is not None and not isinstance(breaches, Breaches):
+        if breaches is not None and not isinstance(breaches, PotentialBreaches):
             raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
         self.lines = lines
@@ -571,7 +571,7 @@ class Grid:
         """
         line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
         selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
-        crest_level = obstacles.compute_dpumax(self.lines, where=selection)
+        crest_level = obstacles.compute_dpumax(self.lines, where=selection)[0]
         self.lines.set_2d_crest_levels(crest_level, where=selection)
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
@@ -659,7 +659,7 @@ class Grid:
             line_id_counter,
         )
 
-    def add_1d2d(
+    def add_1d2d_lines(
         self,
         exchange_lines,
         connection_nodes,
@@ -668,23 +668,26 @@ class Grid:
         locations,
         culverts,
         obstacles,
+        potential_breaches,
         line_id_counter,
-    ):
-        """Connect 1D and 2D elements by adding 1D-2D lines.
+    ) -> Lines1D2D:
+        """Connect 1D and 2D elements by computing 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
         is located. Double connected gives two lines to the same node.
 
         In addition to id and line attributes, also the kcu (line type) and dpumax
         (bottom level) are computed.
+
+        Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
         lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
-        lines_1d2d.assign_2d_node(
-            lines_1d2d.compute_2d_side(self.nodes, exchange_lines),
-            self.cell_tree,
-        )
+        lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
+        lines_1d2d.assign_breaches(self.nodes, potential_breaches)
+        lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
+        lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_dpumax_from_obstacles(obstacles)
         # Go through objects and dispatch to get_1d2d_properties
@@ -702,7 +705,11 @@ class Grid:
             lines_1d2d.assign_dpumax(mask, dpumax)
 
         lines_1d2d.assign_ds1d(self.nodes)
+        lines_1d2d.assign_ds1d_half()
         self.lines += lines_1d2d
+
+    def set_breach_ids(self, breach_points: PotentialBreachPoints):
+        breach_points.assign_to_connection_nodes(self.nodes, self.lines)
 
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """
@@ -711,7 +718,10 @@ class Grid:
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
 
-    def add_breaches(self, connected_points, levees):
+    def add_breaches(self, potential_breaches: PotentialBreaches):
+        self.breaches = potential_breaches
+
+    def add_breaches_legacy(self, connected_points, levees):
         """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
         references a Levee, it will result in a Breach. The Breach gets the properties
         from the Levee (max_breach_depth, material) but these may be unset.
@@ -814,8 +824,6 @@ class Grid:
             self.nodes_embedded.embedded_in[:] = np.take(
                 new_node_ids, self.nodes_embedded.embedded_in
             )
-        if self.breaches is not None:
-            self.breaches.levl[:] = np.take(new_line_ids, self.breaches.levl)
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 

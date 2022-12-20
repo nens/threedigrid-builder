@@ -51,7 +51,7 @@ def get_version():
 
 
 install_requires = [
-    "numpy>=1.15",
+    "numpy>=1.15,<1.24",
     "threedi-modelchecker>=0.28",
     "pygeos>=0.11.1",
     "pyproj>=3",

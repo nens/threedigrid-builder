@@ -12,7 +12,7 @@ from threedigrid_builder.constants import (
 )
 from threedigrid_builder.exceptions import SchematisationError
 
-from .levees import Breaches
+from .levees import PotentialBreaches
 
 __all__ = ["ConnectedPoints"]
 
@@ -471,7 +471,7 @@ class ConnectedPoints(Array[ConnectedPoint]):
         conn_pnt_idx = self.id_to_index(lines.content_pk[line_idx])
         has_levee = self.levee_id[conn_pnt_idx] != -9999
         if not np.any(has_levee):
-            return Breaches(id=[])
+            return PotentialBreaches(id=[])
         line_idx = line_idx[has_levee]
         conn_pnt_idx = conn_pnt_idx[has_levee]
         levee_idx = levees.id_to_index(self.levee_id[conn_pnt_idx])
@@ -481,7 +481,7 @@ class ConnectedPoints(Array[ConnectedPoint]):
             levee_idx
         ]
         if not np.any(mask):
-            return Breaches(id=[])
+            return PotentialBreaches(id=[])
         line_idx = line_idx[mask]
         levee_idx = levee_idx[mask]
 
@@ -494,15 +494,17 @@ class ConnectedPoints(Array[ConnectedPoint]):
             0,
         )
 
-        return Breaches(
-            id=range(len(line_idx)),
-            levl=lines.index_to_id(line_idx),
-            levee_id=levees.index_to_id(levee_idx),
-            levmat=levees.material[levee_idx],
-            levbr=levees.max_breach_depth[levee_idx],
-            content_pk=lines.content_pk[line_idx],
-            coordinates=np.array([pygeos.get_x(points), pygeos.get_y(points)]).T,
+        line_idx = line_idx[np.argsort(lines.content_pk[line_idx])]
+        breaches = PotentialBreaches(
+            id=lines.content_pk[line_idx],
+            levee_material=levees.material[levee_idx],
+            maximum_breach_depth=levees.max_breach_depth[levee_idx],
         )
+        lines.content_type[line_idx] = ContentType.TYPE_V2_BREACH
+        lines.ds1d_half[line_idx] = pygeos.line_locate_point(
+            lines.line_geometries[line_idx], points
+        )
+        return breaches
 
 
 def _get_pk_content_type(nodes, out_of_bounds):

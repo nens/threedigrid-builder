@@ -16,9 +16,7 @@ class BaseLinear:
 
     @property
     def linestrings(self):
-        if not hasattr(self, "_linestrings"):
-            self._linestrings = LineStrings(self.the_geom)
-        return self._linestrings
+        return LineStrings(id=self.id, the_geom=self.the_geom)
 
     def set_geometries(self, connection_nodes):
         """Set the_geom from connection nodes where necessary.
@@ -92,6 +90,8 @@ class BaseLinear:
 
         if fixed_nodes is None:
             fixed_nodes = PointsOnLine.empty(self.linestrings)
+        else:
+            fixed_nodes = fixed_nodes[~(fixed_nodes.at_start | fixed_nodes.at_end)]
 
         # insert default dist_calc_points where necessary
         dists = self.dist_calc_points.copy()
@@ -116,6 +116,7 @@ class BaseLinear:
             node_type=NodeType.NODE_1D_NO_STORAGE,
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
+            breach_ids=np.array([points.content_pk, points.secondary_content_pk]).T,
         )
 
     def get_embedded(

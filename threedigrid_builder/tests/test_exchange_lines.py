@@ -4,16 +4,22 @@ from unittest import mock
 import numpy as np
 import pygeos
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_almost_equal, assert_array_equal
 
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
-from threedigrid_builder.grid import ExchangeLines, Lines1D2D
+from threedigrid_builder.grid import (
+    ExchangeLines,
+    Lines1D2D,
+    Obstacles,
+    PotentialBreaches,
+)
 
 ISO = CalculationType.ISOLATED
 C1 = CalculationType.CONNECTED
 C2 = CalculationType.DOUBLE_CONNECTED
 EXC = ContentType.TYPE_V2_EXCHANGE_LINE
+BREACH = ContentType.TYPE_V2_BREACH
 
 
 @pytest.mark.parametrize(
@@ -68,7 +74,7 @@ def test_assign_exchange_lines(
     assert_array_equal(lines.content_type, expected_content_type)
 
 
-def test_compute_2d_side():
+def test_assign_2d_side():
     nodes = Nodes(
         id=[1, 2, 3],
         coordinates=[(2, 5), (4, 5), (6, 5)],
@@ -83,11 +89,9 @@ def test_compute_2d_side():
         content_pk=[1, 2, 1, -9999],
         content_type=[EXC, EXC, EXC, -9999],
     )
-    actual = lines.compute_2d_side(nodes, exchange_lines)
+    lines.assign_2d_side(nodes, exchange_lines)
 
-    assert_array_equal(
-        pygeos.get_coordinates(actual), [[2, 0], [2, 10], [4, 0], [6, 5]]
-    )
+    assert_array_equal(lines.line_coords[:, :2], [[2, 0], [2, 10], [4, 0], [6, 5]])
 
 
 @pytest.fixture
@@ -121,25 +125,28 @@ def cell_tree():
 def test_assign_2d_node(side_2d_coordinates, expected_2d_node_id, cell_tree):
     lines = Lines1D2D(
         id=range(len(side_2d_coordinates)),
+        line_coords=[x + (np.nan, np.nan) for x in side_2d_coordinates],
     )
 
-    lines.assign_2d_node(pygeos.points(side_2d_coordinates), cell_tree)
+    lines.assign_2d_node(cell_tree)
 
     assert_array_equal(lines.line[:, 0], expected_2d_node_id)
+    assert_array_equal(lines.line_coords, np.nan)  # is cleared
 
 
 def test_assign_kcu():
     lines = Lines1D2D(id=range(7), line=[[-9999] + [x] for x in [1, 1, 2, 2, 3, 4, 5]])
+    lines.content_type[0] = ContentType.TYPE_V2_BREACH
 
     lines.assign_kcu(
-        np.array([1, 1, 1, 1, 0, 1, 1], dtype=bool),
-        np.array([0, 0, 1, 1, 0, 1], dtype=bool),
+        mask=np.array([1, 1, 1, 1, 0, 1, 1], dtype=bool),
+        is_closed=np.array([0, 0, 1, 1, 0, 1], dtype=bool),
     )
 
     assert_array_equal(
         lines.kcu,
         [
-            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_POSSIBLE_BREACH,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
@@ -197,9 +204,31 @@ def test_assign_dpumax_from_exchange_lines(assign_dpumax):
 
 
 @mock.patch.object(Lines1D2D, "assign_dpumax")
-def test_assign_dpumax_from_obstacles(assign_dpumax):
+def test_assign_dpumax_from_breaches(assign_dpumax):
+    lines = Lines1D2D(
+        id=range(3), content_pk=[1, 2, 3], content_type=[BREACH, -9999, BREACH]
+    )
+    breaches = PotentialBreaches(id=[1, 2, 3], exchange_level=[1.2, 2.3, np.nan])
+
+    lines.assign_dpumax_from_breaches(breaches)
+
+    (actual_mask, actual_dpumax), _ = assign_dpumax.call_args
+
+    assert_array_equal(actual_mask, [1, 0, 1])
+    assert_array_equal(actual_dpumax, [1.2, np.nan])
+
+
+@mock.patch.object(Lines1D2D, "assign_dpumax")
+@mock.patch.object(Lines1D2D, "assign_ds1d_half_from_obstacles")
+def test_assign_dpumax_from_obstacles(
+    assign_ds1d_half_from_obstacles,
+    assign_dpumax,
+):
     obstacles = mock.Mock()
-    obstacles.compute_dpumax.return_value = np.array([1.2, np.nan])
+    obstacles.compute_dpumax.return_value = (
+        np.array([1.2, np.nan]),
+        np.array([1, -9999]),
+    )
 
     lines = Lines1D2D(id=range(3), content_type=[EXC, -9999, EXC])
 
@@ -215,3 +244,136 @@ def test_assign_dpumax_from_obstacles(assign_dpumax):
 
     assert_array_equal(actual_mask, [1, 0, 1])
     assert_array_equal(actual_dpumax, [1.2, np.nan])
+
+    args, _ = assign_ds1d_half_from_obstacles.call_args
+
+    assert args[0] is obstacles
+    assert_array_equal(args[1], [0])
+    assert_array_equal(args[2], [1])
+
+
+@pytest.mark.parametrize(
+    "breach_ids,breach_2d_coords,content_pk",
+    [
+        ([-9999, -9999], [(10, 0)], [-9999]),
+        ([1, -9999], [(10, 0)], [1]),
+        ([1, 2], [(10, 0), (10, 1)], [1]),
+        ([1, 2], [(10, 1), (10, 0)], [2]),
+        ([1, 2], [(10, 1), (10, -1)], [1]),
+    ],
+)
+def test_assign_breaches_single_connected(breach_ids, breach_2d_coords, content_pk):
+    nodes = Nodes(id=[1], breach_ids=[breach_ids])
+    lines = Lines1D2D(id=[1], line=[(-9999, 1)], line_coords=[(10, 0, 0, 0)])
+    potential_breaches = PotentialBreaches(
+        id=range(1, len(breach_2d_coords) + 1),
+        the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
+    )
+    lines.assign_breaches(nodes, potential_breaches)
+
+    assert_array_equal(
+        lines.content_type, np.where(np.array(content_pk) != -9999, BREACH, -9999)
+    )
+    assert_array_equal(lines.content_pk, content_pk)
+
+
+@pytest.mark.parametrize(
+    "breach_ids,breach_2d_coords,content_pk",
+    [
+        ([-9999, -9999], [(10, 0)], [-9999, -9999]),
+        ([1, -9999], [(10, 0)], [1, -9999]),
+        ([1, -9999], [(10, 10)], [-9999, 1]),
+        ([1, -9999], [(10, 5)], [1, -9999]),
+        ([1, 2], [(10, 0), (10, 10)], [1, 2]),
+        ([1, 2], [(10, 10), (10, 0)], [2, 1]),
+        ([1, 2], [(10, 1), (10, 9)], [1, 2]),
+        ([1, 2], [(10, 9), (10, 1)], [2, 1]),
+        ([1, 2], [(10, 5), (10, 5)], [1, 2]),
+    ],
+)
+def test_assign_breaches_double_connected(breach_ids, breach_2d_coords, content_pk):
+    nodes = Nodes(id=[1], breach_ids=[breach_ids])
+    lines = Lines1D2D(
+        id=[1, 2],
+        line=[(-9999, 1), (-9999, 1)],
+        line_coords=[(10, 0, 0, 0), (10, 10, 0, 0)],
+    )
+    potential_breaches = PotentialBreaches(
+        id=range(1, len(breach_2d_coords) + 1),
+        the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
+    )
+    lines.assign_breaches(nodes, potential_breaches)
+
+    assert_array_equal(
+        lines.content_type, np.where(np.array(content_pk) != -9999, BREACH, -9999)
+    )
+    assert_array_equal(lines.content_pk, content_pk)
+
+
+def test_assign_breaches_multiple():
+    nodes = Nodes(
+        id=[1, 2, 3],
+        coordinates=[(2, 5), (4, 5), (6, 5)],
+        breach_ids=[(1, 2), (-9999, -9999), (4, -9999)],
+    )
+    lines = Lines1D2D(
+        id=range(4),
+        line=[[-9999, 1], [-9999, 1], [-9999, 2], [-9999, 3]],
+        line_coords=[x + [0, 0] for x in [[2, 0], [2, 10], [4, 0], [6, 5]]],
+        content_type=[EXC, EXC, EXC, -9999],
+        content_pk=[0, 1, 2, 3],
+    )
+    potential_breaches = PotentialBreaches(
+        id=[1, 2, 3, 4],
+        the_geom=pygeos.linestrings(
+            [[(0, 0), x] for x in [(2, 9), (2, 1), (6, 10), (6, 1)]]
+        ),
+        code=["a", "b", "c", "d"],
+    )
+    lines.assign_breaches(nodes, potential_breaches)
+
+    # also check the other fields that are set by assign_breaches
+    assert_array_equal(lines.line_coords[:, :2], [(2, 1), (2, 9), (4, 0), (6, 1)])
+    assert_array_equal(lines.content_type, [BREACH, BREACH, EXC, BREACH])
+    assert_array_equal(lines.content_pk, [2, 1, 2, 4])
+
+
+@pytest.mark.parametrize(
+    "obstacle_geom,line_coords,expected",
+    [
+        ([[5, 0], [5, 10]], [0, 5, 10, 5], 5.0),
+        ([[5, 0], [5, 10]], [2, 5, 10, 5], 3.0),
+        ([[5, 0], [5, 10]], [0, 0, 10, 0], 5.0),
+        ([[5, 1], [5, 10]], [0, 0, 10, 0], 5.0),
+        ([[5, 3], [5, 10]], [5, 0, 5, 10], 3.0),
+    ],
+)
+def test_assign_ds1d_half_from_obstacles(obstacle_geom, line_coords, expected):
+    obstacles = Obstacles(id=[1], the_geom=[pygeos.linestrings(obstacle_geom)])
+    lines = Lines1D2D(
+        id=range(1),
+        line_coords=[line_coords],
+    )
+
+    lines.assign_ds1d_half_from_obstacles(obstacles, np.array([0]), np.array(([0])))
+
+    assert_almost_equal(lines.ds1d_half, [expected])
+
+
+def test_assign_ds1d():
+    nodes = Nodes(id=[1, 2, 3], bounds=[(0, 0, 8, 8), (8, 0, 10, 2), (8, 2, 10, 4)])
+    lines = Lines1D2D(
+        id=range(4),
+        line=[[1, -9999], [1, -9999], [2, -9999], [3, -9999]],
+        ds1d=[np.nan, np.nan, np.nan, 5.2],
+    )
+    lines.assign_ds1d(nodes)
+
+    assert_array_equal(lines.ds1d, [8.0, 8.0, 2.0, 5.2])
+
+
+def test_assign_ds1d_half():
+    lines = Lines1D2D(id=range(2), ds1d=[10.0, 8.0], ds1d_half=[np.nan, 5.0])
+    lines.assign_ds1d_half()
+
+    assert_array_equal(lines.ds1d_half, [5.0, 5.0])

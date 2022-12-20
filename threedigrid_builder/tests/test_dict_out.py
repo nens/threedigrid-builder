@@ -29,7 +29,7 @@ def test_cells(dict_out):
 
 def test_breaches(dict_out):
     assert dict_out["breaches"]["id"].shape == (2,)
-    assert dict_out["breaches"]["geometry"][0] == "POINT (0 0)"
+    assert dict_out["breaches"]["geometry"][0] == "POINT (0 2)"
 
 
 def test_nodes_embedded(dict_out):
@@ -52,8 +52,7 @@ def test_meta(dict_out):
         ("lines", "node_2", 2),  # reference to node
         ("lines", "cross_id1", 4),  # reference to cross section def id, not increased
         ("breaches", "id", 1),
-        ("breaches", "levl", 5),  # reference to line
-        ("breaches", "levee_id", 1),  # reference to levee, not increased
+        ("breaches", "line_id", 5),  # reference to line
     ],
 )
 def test_not_off_by_one(dict_out, group, dataset, expected):

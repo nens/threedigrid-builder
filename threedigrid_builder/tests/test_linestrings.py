@@ -9,18 +9,19 @@ from threedigrid_builder.base import LinesOnLine, LineStrings, PointsOnLine
 
 @pytest.fixture
 def linestrings():
-    return LineStrings(pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
+    return LineStrings(id=[0], the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
 
 
 @pytest.fixture
 def two_linestrings():
     return LineStrings(
-        np.array(
+        id=[1, 3],
+        the_geom=np.array(
             [
                 pygeos.linestrings([(0, 10), (10, 10)]),
                 pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
             ]
-        )
+        ),
     )
 
 
@@ -36,7 +37,10 @@ def test_segmentize_one(
     linestrings, s1d, expected_idx, expected_idx_s1d_start, expected_s1d_end
 ):
     points_on_line = PointsOnLine(
-        linestrings, id=range(len(s1d)), s1d=s1d, linestring_idx=[0] * len(s1d)
+        linestrings=linestrings,
+        id=range(len(s1d)),
+        s1d=s1d,
+        linestring_idx=[0] * len(s1d),
     )
     lines = linestrings.segmentize(points_on_line)
 
@@ -48,7 +52,10 @@ def test_segmentize_one(
 
 def test_segmentize_multiple(two_linestrings):
     points_on_line = PointsOnLine(
-        two_linestrings, id=[1, 2, 3], s1d=[5.0, 2.0, 8.0], linestring_idx=[0, 1, 1]
+        linestrings=two_linestrings,
+        id=[1, 2, 3],
+        s1d=[5.0, 2.0, 8.0],
+        linestring_idx=[0, 1, 1],
     )
     lines = two_linestrings.segmentize(points_on_line)
 
@@ -71,7 +78,9 @@ def test_segmentize_multiple(two_linestrings):
     ],
 )
 def test_sanitize(geom, expected):
-    linestrings = LineStrings(np.array([pygeos.linestrings(geom) if geom else None]))
+    linestrings = LineStrings(
+        id=[0], the_geom=[pygeos.linestrings(geom) if geom else None]
+    )
     linestrings.sanitize(
         points_1=pygeos.points([(0, 21)]), points_2=pygeos.points([(3, 42)])
     )
@@ -82,7 +91,7 @@ def test_sanitize(geom, expected):
 
 def test_point_on_line_the_geom_multiple(two_linestrings):
     points_on_line = PointsOnLine(
-        two_linestrings, id=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
+        linestrings=two_linestrings, id=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
     )
     actual = points_on_line.the_geom
 
@@ -94,16 +103,46 @@ def test_point_on_line_the_geom_multiple(two_linestrings):
 
 def test_point_on_line_merge_with(linestrings):
     a = PointsOnLine(
-        linestrings, id=[0, 1], content_pk=[1, 2], s1d=[3.0, 4.0], linestring_idx=[0, 1]
+        linestrings=linestrings,
+        id=[0, 1],
+        content_pk=[1, 2],
+        s1d=[3.0, 4.0],
+        linestring_idx=[0, 1],
     )
     b = PointsOnLine(
-        linestrings, id=[0, 1], content_pk=[5, 6], s1d=[1.0, 2.0], linestring_idx=[0, 1]
+        linestrings=linestrings,
+        id=[0, 1],
+        content_pk=[5, 6],
+        s1d=[1.0, 2.0],
+        linestring_idx=[0, 1],
     )
     actual = a.merge_with(b)
 
     assert_array_equal(actual.s1d, [1.0, 3.0, 2.0, 4.0])
     assert_array_equal(actual.content_pk, [5, 1, 6, 2])
     assert_array_equal(actual.linestring_idx, [0, 0, 1, 1])
+
+
+def test_point_on_line_at_start_at_end(two_linestrings):
+    points_on_line = PointsOnLine(
+        linestrings=two_linestrings,
+        id=range(4),
+        s1d=[0.0, 10.0, 0.0, 12.0],
+        linestring_idx=[0, 0, 1, 1],
+    )
+
+    assert_array_equal(points_on_line.at_start, [True, False, True, False])
+    assert_array_equal(points_on_line.at_end, [False, True, False, True])
+
+
+def test_point_on_line_linestring_id(two_linestrings):
+    points_on_line = PointsOnLine(
+        linestrings=two_linestrings,
+        id=range(3),
+        linestring_idx=[0, 1, 0],
+    )
+
+    assert_array_equal(points_on_line.linestring_id, [1, 3, 1])
 
 
 @pytest.mark.parametrize(
@@ -124,7 +163,11 @@ def test_point_on_line_merge_with(linestrings):
 )
 def test_line_on_line_the_geom(linestrings, start, end, expected_coords):
     lines_on_line = LinesOnLine(
-        linestrings, id=[1], s1d_start=[start], s1d_end=[end], linestring_idx=[0]
+        linestrings=linestrings,
+        id=[1],
+        s1d_start=[start],
+        s1d_end=[end],
+        linestring_idx=[0],
     )
     geometries = lines_on_line.the_geom
     assert geometries.shape == (1,)
@@ -133,7 +176,7 @@ def test_line_on_line_the_geom(linestrings, start, end, expected_coords):
 
 def test_line_on_line_the_geom_multiple(two_linestrings):
     lines_on_line = LinesOnLine(
-        two_linestrings,
+        linestrings=two_linestrings,
         id=[1, 2],
         s1d_start=[3.0, 4.0],
         s1d_end=[9.0, 10.0],
@@ -165,7 +208,7 @@ def test_line_on_line_interpolate_points_one(
     linestrings, segment_size, expected_size, expected_count
 ):
     lines_on_line = LinesOnLine(
-        linestrings,
+        linestrings=linestrings,
         id=[1],
         s1d_start=[0.0],
         s1d_end=linestrings.length,
@@ -191,7 +234,7 @@ def test_line_on_line_interpolate_points_partial(
     linestrings, s1d_start, s1d_end, expected_s1d
 ):
     lines_on_line = LinesOnLine(
-        linestrings,
+        linestrings=linestrings,
         id=[1],
         s1d_start=[s1d_start],
         s1d_end=[s1d_end],
@@ -207,7 +250,7 @@ def test_line_on_line_interpolate_points_partial(
 
 def test_line_on_line_interpolate_points_two(two_linestrings):
     lines_on_line = LinesOnLine(
-        two_linestrings,
+        linestrings=two_linestrings,
         id=[1, 2],
         s1d_start=[0.0, 0.0],
         s1d_end=two_linestrings.length,
@@ -223,7 +266,7 @@ def test_line_on_line_interpolate_points_two(two_linestrings):
 
 def test_line_on_line_interpolate_points_two_partial(linestrings):
     lines_on_line = LinesOnLine(
-        linestrings,
+        linestrings=linestrings,
         id=[1, 2],
         s1d_start=[0.0, 5.0],
         s1d_end=[5.0, 12.0],

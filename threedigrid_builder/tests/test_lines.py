@@ -4,7 +4,7 @@ import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 from pygeos.testing import assert_geometries_equal
 
-from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.base import Endpoints, Lines, Nodes
 from threedigrid_builder.constants import LineType
 
 
@@ -100,3 +100,64 @@ def test_set_2d_crest_levels(
     assert_equal(lines.kcu, expected_kcu)
     assert_equal(lines.flod, expected_flod)
     assert_equal(lines.flou, expected_flod)
+
+
+def test_as_line_endpoints(lines: Lines):
+    endpoints = lines.as_endpoints()
+    assert isinstance(endpoints, Endpoints)
+    assert_equal(endpoints.node_id, [1, 1, 2, 2, 3, 3])
+    assert_equal(endpoints.line_idx, [0, 2, 0, 1, 1, 2])
+    assert_equal(endpoints.is_start, [1, 1, 0, 1, 0, 0])
+
+
+@pytest.mark.parametrize("where", [np.array([False, True, False]), np.array([1])])
+def test_as_line_endpoints_where_bool(lines: Lines, where):
+    endpoints = lines.as_endpoints(where=where)
+    assert isinstance(endpoints, Endpoints)
+
+    assert_equal(endpoints.node_id, [2, 3])
+    assert_equal(endpoints.line_idx, [1, 1])
+    assert_equal(endpoints.is_start, [1, 0])
+
+
+def test_line_endpoints_getattr(lines: Lines):
+    endpoints = Endpoints(lines=lines, id=[0, 1, 2], line_idx=[1, 2, 1])
+
+    assert_equal(endpoints.ds1d, lines.ds1d[[1, 2, 1]])
+
+
+@pytest.mark.parametrize(
+    "ufunc,expected",
+    [
+        (np.fmax, [16.0, 16.0]),
+        (np.fmin, [2.0, 16.0]),
+        (np.add, [18.0, np.nan]),
+    ],
+)
+def test_line_endpoints_reduce_per_node(lines: Lines, ufunc, expected):
+    endpoints = Endpoints(
+        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
+    )
+    node_ids, maximums = endpoints.reduce_per_node(ufunc, endpoints.ds1d)
+
+    assert_equal(node_ids, [1, 5])
+    assert_almost_equal(maximums, expected)
+
+
+def test_line_endpoints_invert_level(lines: Lines):
+    lines.invert_level_start_point[:] = [1, 2, 3]
+    lines.invert_level_end_point[:] = [4, 5, 6]
+
+    endpoints = Endpoints(
+        lines=lines, id=range(3), line_idx=[0, 2, 1], is_start=[False, True, False]
+    )
+
+    assert_almost_equal(endpoints.invert_level, [4, 3, 5])
+
+
+def test_line_get_velocity_points(lines: Lines):
+    lines.ds1d_half[1] = np.sqrt(2) * 0.5
+
+    actual = lines.get_velocity_points([1])
+    assert len(actual) == 1
+    assert pygeos.to_wkt(actual[0]) == "POINT (5.5 5.5)"

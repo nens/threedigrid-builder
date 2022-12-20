@@ -1,5 +1,3 @@
-import typing
-
 import numpy as np
 import pygeos
 
@@ -18,6 +16,7 @@ class PointOnLine:
     content_pk: int  # externally determined id
     s1d: float  # the position along the linestring
     linestring_idx: int
+    secondary_content_pk: int  # for double connected points
 
 
 class LineOnLine:
@@ -30,15 +29,16 @@ class LineOnLine:
     linestring_idx: int
 
 
-class LineStrings:
-    def __init__(self, geometries):
-        assert isinstance(geometries, np.ndarray)
-        geom_types = pygeos.get_type_id(geometries)
-        assert np.all((geom_types == -1) | (geom_types == 1))
-        self.the_geom = geometries
+class LineString:
+    id: int
+    the_geom: pygeos.Geometry
 
-    def __len__(self):
-        return len(self.the_geom)
+
+class LineStrings(Array[LineString]):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        geom_types = pygeos.get_type_id(self.the_geom)
+        assert np.all((geom_types == -1) | (geom_types == 1))
 
     @property
     def length(self):
@@ -52,8 +52,6 @@ class LineStrings:
 
     def segmentize(self, points: "PointsOnLine") -> "LinesOnLine":
         """Return lines that result from splitting self at 'points'"""
-        assert points.linestrings is self
-
         segment_counts = np.bincount(points.linestring_idx, minlength=len(self)) + 1
 
         # cut the channel geometries into segment geometries
@@ -61,7 +59,7 @@ class LineStrings:
             self.the_geom, segment_counts, points.s1d
         )
         return LinesOnLine(
-            self,
+            linestrings=self,
             id=range(len(segment_idx)),
             s1d_start=start_s,
             s1d_end=end_s,
@@ -123,13 +121,15 @@ class LineStrings:
 
 
 class PointsOnLine(Array[PointOnLine]):
-    def __init__(self, linestrings: "LineStrings", **kwargs):
-        super().__init__(**kwargs)
-        self.linestrings = linestrings
+    scalars = ("linestrings",)
+
+    @property
+    def linestring_id(self):
+        return self.linestrings.index_to_id(self.linestring_idx)
 
     @classmethod
     def empty(cls, linestrings: LineStrings):
-        return cls(linestrings, id=[])
+        return cls(linestrings=linestrings, id=[])
 
     @classmethod
     def from_geometries(
@@ -143,7 +143,7 @@ class PointsOnLine(Array[PointOnLine]):
         if np.any(~np.isfinite(s1d)):
             raise ValueError("NaN values encountered in s1d")
         result = cls(
-            linestrings,
+            linestrings=linestrings,
             id=np.arange(len(linestring_idx)),
             s1d=s1d,
             linestring_idx=linestring_idx,
@@ -162,17 +162,24 @@ class PointsOnLine(Array[PointOnLine]):
             self.linestrings.the_geom[self.linestring_idx], self.s1d
         )
 
+    @property
+    def at_start(self):
+        return self.s1d == 0.0
+
+    @property
+    def at_end(self):
+        return self.s1d == self.linestrings.length[self.linestring_idx]
+
     def merge_with(self, other: "PointsOnLine"):
         if len(other) == 0:
             return self
-        fields = list(typing.get_type_hints(self.data_class).keys())
-        fields.remove("id")
-        new_fields = {
-            name: np.concatenate((getattr(self, name), getattr(other, name)))
-            for name in fields
-        }
-        new_fields["id"] = np.arange(len(self) + len(other))
-        result = self.__class__(linestrings=self.linestrings, **new_fields)
+        if len(self) == 0:
+            first_i = 1
+        else:
+            first_i = self.id[-1] + 1
+        other = other[:]
+        other.id[:] = np.arange(first_i, first_i + len(other))
+        result = self + other
         result.reorder(np.argsort(result.s1d_cum))
         return result
 
@@ -190,8 +197,6 @@ class PointsOnLine(Array[PointOnLine]):
 
         If there there is only 1 point on a linestring, the neighbours will be equal.
         """
-        assert self.linestrings is other.linestrings
-
         idx_2 = np.searchsorted(self.s1d_cum, other.s1d_cum)
         idx_1 = idx_2 - 1
         out_of_bounds_1 = idx_1 < 0
@@ -221,9 +226,7 @@ class PointsOnLine(Array[PointOnLine]):
 
 
 class LinesOnLine(Array[LineOnLine]):
-    def __init__(self, linestrings: "LineStrings", **kwargs):
-        super().__init__(**kwargs)
-        self.linestrings = linestrings
+    scalars = ("linestrings",)
 
     @property
     def s1d(self):
