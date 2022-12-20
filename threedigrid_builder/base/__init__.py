@@ -1,4 +1,5 @@
 from .array import *  # NOQA
+from .endpoints import *  # NOQA
 from .interfaces import *  # NOQA
 from .lines import *  # NOQA
 from .linestrings import *  # NOQA

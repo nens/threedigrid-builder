@@ -130,10 +130,8 @@ class PotentialBreachPoints(PointsOnLine):
           the first channel.
         """
         # disassemble lines into Channel - Connection Node endpoints
-        endpoints = lines.as_endpoints(
-            where=lines.content_type == ContentType.TYPE_V2_CHANNEL
-        ).filter_by_node_id(
-            nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES]
+        endpoints = Endpoints.for_connection_nodes(
+            nodes, lines, line_types=[ContentType.TYPE_V2_CHANNEL]
         )
 
         # per endpoint, match a breach point by their channel ids

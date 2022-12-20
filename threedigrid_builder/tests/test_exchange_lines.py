@@ -54,7 +54,7 @@ def test_create_lines_1d2d(calculation_type, expected_line):
         ([2, 2], [12, 12], [1, 2], [EXC, EXC]),
     ],
 )
-def test_assign_exchange_lines(
+def test_assign_exchange_lines_channels(
     line_node_id, exc_line_channel_id, expected_content_pk, expected_content_type
 ):
     nodes = Nodes(
@@ -68,7 +68,7 @@ def test_assign_exchange_lines(
     exchange_lines = ExchangeLines(
         id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
     )
-    lines.assign_exchange_lines(nodes, exchange_lines)
+    lines.assign_exchange_lines_channels(nodes, exchange_lines)
 
     assert_array_equal(lines.content_pk, expected_content_pk)
     assert_array_equal(lines.content_type, expected_content_type)
@@ -377,3 +377,35 @@ def test_assign_ds1d_half():
     lines.assign_ds1d_half()
 
     assert_array_equal(lines.ds1d_half, [5.0, 5.0])
+
+
+@pytest.mark.parametrize(
+    "line_node_id,exc_line_channel_id,expected_content_pk,expected_content_type",
+    [
+        ([], [], [], []),
+        ([2], [], [-9999], [-9999]),
+        ([2], [11], [-9999], [-9999]),
+        ([2], [12], [1], [EXC]),
+        ([2, 2], [12], [1, -9999], [EXC, -9999]),
+        ([2, 2], [12, 11], [1, -9999], [EXC, -9999]),
+        ([2, 2], [12, 12], [1, 2], [EXC, EXC]),
+    ],
+)
+def test_assign_exchange_lines_connection_nodes(
+    line_node_id, exc_line_channel_id, expected_content_pk, expected_content_type
+):
+    nodes = Nodes(
+        id=[2],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=[12],
+    )
+    line = np.full((len(line_node_id), 2), -9999, dtype=np.int32)
+    line[:, 1] = line_node_id
+    lines = Lines1D2D(id=range(len(line_node_id)), line=line)
+    exchange_lines = ExchangeLines(
+        id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
+    )
+    lines.assign_exchange_lines_channels(nodes, exchange_lines)
+
+    assert_array_equal(lines.content_pk, expected_content_pk)
+    assert_array_equal(lines.content_type, expected_content_type)

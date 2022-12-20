@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Lines, Nodes, replace
+from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace
 from threedigrid_builder.constants import (
     CalculationType,
     ContentType,
@@ -170,16 +170,15 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     node_mask = (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES) & (
         nodes.calculation_type == -9999
     )
-    endpoints = lines.as_endpoints(
-        where=np.isin(
-            lines.content_type,
-            [
-                ContentType.TYPE_V2_CHANNEL,
-                ContentType.TYPE_V2_PIPE,
-                ContentType.TYPE_V2_CULVERT,
-            ],
-        )
-    ).filter_by_node_id(nodes.id[node_mask])
+    endpoints = Endpoints.for_connection_nodes(
+        nodes,
+        lines,
+        line_types=[
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_PIPE,
+            ContentType.TYPE_V2_CULVERT,
+        ],
+    )
 
     priority = replace(endpoints.kcu, mapping)
     node_id, priority_per_node = endpoints.nanmin_per_node(priority)
@@ -227,17 +226,17 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
         lines (Lines): the lines, including channels, pipes, weirs, and culverts
     """
     # Compute the lowest invert level for each node connection node dmax will be the lowest of these object types:
-    OBJECT_TYPES = [
-        ContentType.TYPE_V2_CHANNEL,
-        ContentType.TYPE_V2_PIPE,
-        ContentType.TYPE_V2_CULVERT,
-        ContentType.TYPE_V2_WEIR,
-        ContentType.TYPE_V2_ORIFICE,
-    ]
-    is_connection_node = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-    endpoints = lines.as_endpoints(
-        where=np.isin(lines.content_type, OBJECT_TYPES)
-    ).filter_by_node_id(nodes.id[is_connection_node])
+    endpoints = Endpoints.for_connection_nodes(
+        nodes,
+        lines,
+        line_types=[
+            ContentType.TYPE_V2_CHANNEL,
+            ContentType.TYPE_V2_PIPE,
+            ContentType.TYPE_V2_CULVERT,
+            ContentType.TYPE_V2_WEIR,
+            ContentType.TYPE_V2_ORIFICE,
+        ],
+    )
     node_id, dmax = endpoints.nanmin_per_node(endpoints.invert_level)
     node_idx = nodes.id_to_index(node_id)
 

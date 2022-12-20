@@ -48,10 +48,40 @@ class Lines1D2D(Lines):
     def side_1d(self):
         return pygeos.points(self.line_coords[:, 2:])
 
-    def assign_exchange_lines(
+    def assign_exchange_lines_channels(
         self, nodes: Nodes, exchange_lines: ExchangeLines
     ) -> None:
         """Assign exchange lines to the 1D-2D lines.
+
+        Requires: line[:, 1]
+        Sets: content_pk, content_type
+        """
+        for (line_idx, exchange_lines_idx) in zip(
+            self.split_in_two(self.line[:, 1]),
+            exchange_lines.split_in_two(exchange_lines.channel_id),
+        ):
+            if len(line_idx) == 0 or len(exchange_lines_idx) == 0:
+                continue
+
+            node_idx = nodes.id_to_index(self.line[line_idx, 1])
+
+            is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
+            idx = search(
+                exchange_lines.channel_id,
+                nodes.content_pk[node_idx[is_channel]],
+                assume_ordered=True,  # split_in_two orders
+                check_exists=False,
+                mask=exchange_lines_idx,
+            )
+            self.content_pk[line_idx[is_channel]] = exchange_lines.index_to_id(idx)
+            self.content_type[line_idx[is_channel]] = np.where(
+                idx != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
+            )
+
+    def assign_exchange_lines_connection_nodes(
+        self, nodes: Nodes, exchange_lines: ExchangeLines
+    ) -> None:
+        """Assign exchange lines to the 1D-2D lines of connection nodes.
 
         Requires: line[:, 1]
         Sets: content_pk, content_type
