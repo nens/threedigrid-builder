@@ -685,11 +685,11 @@ class Grid:
         lines_1d2d.assign_exchange_lines_channels(
             self.nodes, exchange_lines=exchange_lines
         )
-        lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
-        lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_exchange_lines_connection_nodes(
             self.nodes, self.lines, exchange_lines=exchange_lines
         )
+        lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
+        lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)

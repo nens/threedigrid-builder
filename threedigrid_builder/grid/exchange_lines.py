@@ -21,6 +21,47 @@ class ExchangeLine:
 
 
 class ExchangeLines(Array[ExchangeLine]):
+    @property
+    def channel_mapping(self) -> "ExchangeLineChannels":
+        """Return 2 exchange lines ids for each channel id"""
+        if not hasattr(self, "_channel_mapping"):
+            channel_ids = np.unique(self.channel_id)
+            result = np.full((len(channel_ids), 2), fill_value=-9999, dtype=np.int32)
+            for i, mask in enumerate(self.split_in_two(self.channel_id)):
+                result[:, i] = self.index_to_id(
+                    search(
+                        self.channel_id,
+                        channel_ids,
+                        mask=mask,
+                        assume_ordered=False,
+                        check_exists=False,
+                    )
+                )
+            self._channel_mapping = ExchangeLineChannels(
+                id=channel_ids,
+                exchange_line_id=result[:, 0],
+                secondary_exchange_line_id=result[:, 1],
+            )
+        return self._channel_mapping
+
+    def get_for_channel_id(self, channel_id, is_primary):
+        if len(self) == 0:
+            return np.full_like(channel_id, fill_value=-9999)
+        index = self.channel_mapping.id_to_index(channel_id)
+        if is_primary:
+            ids = self.channel_mapping.exchange_line_id
+        else:
+            ids = self.channel_mapping.secondary_exchange_line_id
+        return np.where(index != -9999, np.take(ids, index, mode="clip"), -9999)
+
+
+class ExchangeLineChannel:
+    id: int
+    exchange_line_id: int
+    secondary_exchange_line_id: int
+
+
+class ExchangeLineChannels(Array[ExchangeLineChannel]):
     pass
 
 
@@ -48,70 +89,63 @@ class Lines1D2D(Lines):
     def side_1d(self):
         return pygeos.points(self.line_coords[:, 2:])
 
-    def assign_exchange_lines_channels(
-        self, nodes: Nodes, exchange_lines: ExchangeLines
+    def assign_content_pk(
+        self, nodes: Nodes, lines: Lines, potential_breaches: PotentialBreaches
     ) -> None:
-        """Assign exchange lines to the 1D-2D lines.
+        """Assign a temporary content pk & content_type to the 1D-2D lines.
 
         Requires: line[:, 1]
         Sets: content_pk, content_type
         """
-        for (line_idx, exchange_lines_idx) in zip(
-            self.split_in_two(self.line[:, 1]),
-            exchange_lines.split_in_two(exchange_lines.channel_id),
-        ):
-            if len(line_idx) == 0 or len(exchange_lines_idx) == 0:
-                continue
+        node_idx = nodes.id_to_index(self.line[:, 1])
+        is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
+        self.content_type[is_channel] = ContentType.TYPE_V2_CHANNEL
+        self.content_pk[is_channel] = nodes.content_pk[node_idx[is_channel]]
 
-            node_idx = nodes.id_to_index(self.line[line_idx, 1])
+        is_connection_node = np.where(
+            nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+        )[0]
+        breach_id = nodes.breach_ids[is_connection_node, 0]
+        has_breach = breach_id != -9999
+        breach_idx = potential_breaches.id_to_index(breach_id[has_breach])
+        self.content_type[
+            is_connection_node[has_breach]
+        ] = potential_breaches.channel_id[breach_idx]
+        self.content_type[is_connection_node[has_breach]] = ContentType.TYPE_V2_CHANNEL
 
-            is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
-            idx = search(
-                exchange_lines.channel_id,
-                nodes.content_pk[node_idx[is_channel]],
-                assume_ordered=True,  # split_in_two orders
-                check_exists=False,
-                mask=exchange_lines_idx,
-            )
-            self.content_pk[line_idx[is_channel]] = exchange_lines.index_to_id(idx)
-            self.content_type[line_idx[is_channel]] = np.where(
-                idx != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
-            )
-
-    def assign_exchange_lines_connection_nodes(
-        self, nodes: Nodes, lines: Lines, exchange_lines: ExchangeLines
-    ) -> None:
-        """Assign exchange lines to the 1D-2D lines of connection nodes.
-
-        Requires: line[:, 1]
-        Sets: content_pk, content_type
-        """
+        is_connection_node_no_breach = is_connection_node[~has_breach]
         endpoints = Endpoints.for_connection_nodes(
             nodes, lines, line_types=[ContentType.TYPE_V2_CHANNEL]
         )
-        # find exchange lines per endpoint
-        exchange_line_idx = []
-        for idx in exchange_lines.split_in_two(exchange_lines.channel_id):
-            if len(idx) == 0:
-                continue
+        endpoints = endpoints[
+            np.isin(endpoints.node_id, self.line[is_connection_node_no_breach, 1])
+        ]
+        node_ids, channel_ids = endpoints.nanmin_per_node(endpoints.content_pk)
 
-            endpoints.content_pk  # channel id
+    def assign_exchange_lines(self, exchange_lines: ExchangeLines) -> None:
+        """Assign exchange lines to the 1D-2D lines.
 
-            exchange_line_idx.append(
-                search(
-                    endpoints.content_pk,
-                    exchange_lines.channel_id,
-                    assume_ordered=True,  # split_in_two orders
-                    check_exists=False,
-                    mask=idx,
-                )
-            )
-        mask = exchange_line_idx[0] != -9999
-        idx_1, idx_2 = [x[mask] for x in exchange_line_idx]
-        endpoints = endpoints[mask]
+        Requires: content_pk, content_type
+        Sets: content_pk, content_type
+        """
+        line_idx_1, line_idx_2 = self.split_in_two(self.line[:, 1])
+        self._assign_exchange_lines(line_idx_1, exchange_lines, is_primary=True)
+        self._assign_exchange_lines(line_idx_2, exchange_lines, is_primary=False)
 
-        for node_id in np.unique(endpoints.node_id):
-            node_idx = nodes.id_to_index(node_id)
+    def _assign_exchange_lines(
+        self, idx, exchange_lines: ExchangeLines, is_primary: bool
+    ) -> None:
+        if len(idx) == 0:
+            return
+        is_channel = self.content_type[idx] == ContentType.TYPE_V2_CHANNEL
+        channel_id = self.content_pk[idx[is_channel]]
+        content_pk = exchange_lines.get_for_channel_id(
+            channel_id, is_primary=is_primary
+        )
+        self.content_pk[idx[is_channel]] = content_pk
+        self.content_type[idx[is_channel]] = np.where(
+            content_pk != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
+        )
 
     def get_1d_node_idx(self, nodes: Nodes):
         """Get the 1D node index based on line[:, 1]"""

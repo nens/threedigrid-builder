@@ -6,7 +6,7 @@ import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
 
-from threedigrid_builder.base import Nodes
+from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 from threedigrid_builder.grid import (
     ExchangeLines,
@@ -18,6 +18,8 @@ from threedigrid_builder.grid import (
 ISO = CalculationType.ISOLATED
 C1 = CalculationType.CONNECTED
 C2 = CalculationType.DOUBLE_CONNECTED
+CN = ContentType.TYPE_V2_CONNECTION_NODES
+CH = ContentType.TYPE_V2_CHANNEL
 EXC = ContentType.TYPE_V2_EXCHANGE_LINE
 BREACH = ContentType.TYPE_V2_BREACH
 
@@ -43,32 +45,55 @@ def test_create_lines_1d2d(calculation_type, expected_line):
 
 
 @pytest.mark.parametrize(
-    "line_node_id,exc_line_channel_id,expected_content_pk,expected_content_type",
+    "line_node_id,expected_content_pk,expected_content_type",
     [
-        ([], [], [], []),
-        ([2], [], [-9999], [-9999]),
-        ([2], [11], [-9999], [-9999]),
-        ([2], [12], [1], [EXC]),
-        ([2, 2], [12], [1, -9999], [EXC, -9999]),
-        ([2, 2], [12, 11], [1, -9999], [EXC, -9999]),
-        ([2, 2], [12, 12], [1, 2], [EXC, EXC]),
+        ([], [], []),
+        ([2], [12], [CH]),
+        ([1], [-9999], [-9999]),
+        ([2, 2], [12, 12], [CH, CH]),
+        ([1, 2], [-9999, 12], [-9999, CH]),
     ],
 )
-def test_assign_exchange_lines_channels(
-    line_node_id, exc_line_channel_id, expected_content_pk, expected_content_type
-):
+def test_assign_content_pk(line_node_id, expected_content_pk, expected_content_type):
     nodes = Nodes(
-        id=[2],
-        content_type=ContentType.TYPE_V2_CHANNEL,
-        content_pk=[12],
+        id=[1, 2],
+        content_type=[CN, CH],
+        content_pk=[1, 12],
     )
     line = np.full((len(line_node_id), 2), -9999, dtype=np.int32)
     line[:, 1] = line_node_id
     lines = Lines1D2D(id=range(len(line_node_id)), line=line)
+
+    lines.assign_content_pk(nodes)
+
+    assert_array_equal(lines.content_pk, expected_content_pk)
+    assert_array_equal(lines.content_type, expected_content_type)
+
+
+@pytest.mark.parametrize(
+    "content_pk,exc_line_channel_id,expected_content_pk,expected_content_type",
+    [
+        ([], [], [], []),
+        ([11], [], [-9999], [-9999]),
+        ([12], [11], [-9999], [-9999]),
+        ([12], [12], [1], [EXC]),
+        ([12, 12], [12], [1, -9999], [EXC, -9999]),
+        ([12, 12], [12, 11], [1, -9999], [EXC, -9999]),
+        ([12, 12], [12, 12], [1, 2], [EXC, EXC]),
+    ],
+)
+def test_assign_exchange_lines(
+    content_pk, exc_line_channel_id, expected_content_pk, expected_content_type
+):
+    lines = Lines1D2D(
+        id=range(len(content_pk)),
+        content_pk=content_pk,
+        content_type=np.where(np.array(content_pk) != -9999, CH, -9999),
+    )
     exchange_lines = ExchangeLines(
         id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
     )
-    lines.assign_exchange_lines_channels(nodes, exchange_lines)
+    lines.assign_exchange_lines(exchange_lines)
 
     assert_array_equal(lines.content_pk, expected_content_pk)
     assert_array_equal(lines.content_type, expected_content_type)
@@ -386,33 +411,96 @@ def test_assign_ds1d_half():
     assert_array_equal(lines.ds1d_half, [5.0, 5.0])
 
 
+@pytest.fixture
+def threeway_junction():
+    nodes = Nodes(
+        id=range(1, 5),
+        content_type=ContentType.TYPE_V2_CONNECTION_NODES,
+        content_pk=[1, 2, 3, 4],
+    )
+    lines = Lines(
+        id=range(3),
+        line=[(1, 2), (1, 3), (4, 1)],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=[11, 12, 13],
+    )
+    return nodes, lines
+
+
+@pytest.fixture
+def potential_breaches():
+    return PotentialBreaches(
+        id=[5, 6, 7],
+        channel_id=[11, 12, 13],
+    )
+
+
 @pytest.mark.parametrize(
-    "line_node_id,exc_line_channel_id,expected_content_pk,expected_content_type",
+    "breach_ids, exc_line_channel_id, expected_content_pk, expected_content_type",
     [
-        ([], [], [], []),
-        ([2], [], [-9999], [-9999]),
-        ([2], [11], [-9999], [-9999]),
-        ([2], [12], [1], [EXC]),
-        ([2, 2], [12], [1, -9999], [EXC, -9999]),
-        ([2, 2], [12, 11], [1, -9999], [EXC, -9999]),
-        ([2, 2], [12, 12], [1, 2], [EXC, EXC]),
+        ([-9999, -9999], [11, 12, 12, 13], 12, EXC),
     ],
 )
-def test_assign_exchange_lines_connection_nodes(
-    line_node_id, exc_line_channel_id, expected_content_pk, expected_content_type
+def test_assign_exchange_lines_connection_nodes_single_connected(
+    threeway_junction,
+    potential_breaches,
+    breach_ids,
+    exc_line_channel_id,
+    expected_content_pk,
+    expected_content_type,
 ):
-    nodes = Nodes(
-        id=[2],
-        content_type=ContentType.TYPE_V2_CHANNEL,
-        content_pk=[12],
+    nodes, lines = threeway_junction
+    nodes.breach_ids = breach_ids
+
+    # the central connection node is single connected
+    lines_1d2d = Lines1D2D(
+        id=range(1),
+        line=[(-9999, 1)],
     )
-    line = np.full((len(line_node_id), 2), -9999, dtype=np.int32)
-    line[:, 1] = line_node_id
-    lines = Lines1D2D(id=range(len(line_node_id)), line=line)
+
+    # varying exchange lines
     exchange_lines = ExchangeLines(
         id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
     )
-    lines.assign_exchange_lines_channels(nodes, exchange_lines)
 
-    assert_array_equal(lines.content_pk, expected_content_pk)
-    assert_array_equal(lines.content_type, expected_content_type)
+    lines_1d2d.assign_exchange_lines_connection_nodes(
+        nodes, lines, exchange_lines, potential_breaches
+    )
+
+    assert_array_equal(lines_1d2d.content_pk[0], expected_content_pk)
+    assert_array_equal(lines_1d2d.content_type[0], expected_content_type)
+
+
+@pytest.fixture
+def exchange_lines():
+    return PotentialBreaches(
+        id=[5, 6, 7],
+        channel_id=[11, 12, 13],
+    )
+
+
+def test_channel_mapping():
+    exchange_lines = ExchangeLines(id=range(1, 6), channel_id=[15, 2, 3, 15, 3])
+    actual = exchange_lines.channel_mapping
+
+    assert_array_equal(actual.id, [2, 3, 15])
+    assert_array_equal(actual.exchange_line_idx, [1, 2, 0])
+    assert_array_equal(actual.secondary_exchange_line_idx, [-9999, 4, 3])
+
+
+@pytest.mark.parametrize(
+    "channel_id,expected,is_primary",
+    [
+        (np.array([]), [], True),
+        (np.array([1]), [-9999], True),
+        (np.array([2]), [2], True),
+        (np.array([2]), [-9999], False),
+        (np.array([3]), [3], True),
+        (np.array([3]), [5], False),
+    ],
+)
+def test_get_for_channel_id(channel_id, expected, is_primary):
+    exchange_lines = ExchangeLines(id=range(1, 6), channel_id=[15, 2, 3, 15, 3])
+    actual = exchange_lines.get_for_channel_id(channel_id, is_primary)
+
+    assert_array_equal(actual, expected)
