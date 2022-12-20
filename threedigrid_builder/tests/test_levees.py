@@ -1,10 +1,12 @@
+import logging
+
 import numpy as np
 import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Lines, Nodes
-from threedigrid_builder.constants import ContentType, Material
+from threedigrid_builder.constants import CalculationType, ContentType, Material
 from threedigrid_builder.grid import (
     Channels,
     ConnectedPoints,
@@ -223,4 +225,58 @@ def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
         linestring_idx=breach_points["ch_idx"],
     )
     breach_points.assign_to_connection_nodes(nodes, lines)
+    assert_equal(nodes.breach_ids[0], expected)
+
+
+@pytest.mark.parametrize(
+    "calculation_type,breach_ids,expected,messages",
+    [
+        (CalculationType.ISOLATED, [-9999, -9999], [-9999, -9999], []),
+        (CalculationType.CONNECTED, [1, -9999], [1, -9999], []),
+        (CalculationType.DOUBLE_CONNECTED, [1, 2], [1, 2], []),
+        (
+            CalculationType.ISOLATED,
+            [1, -9999],
+            [-9999, -9999],
+            [
+                "The following objects have potential breaches, but are not (double) connected: channels [11].",
+                "The following potential breaches will be ignored: [1].",
+            ],
+        ),
+        (
+            CalculationType.ISOLATED,
+            [1, 2],
+            [-9999, -9999],
+            [
+                "The following objects have potential breaches, but are not (double) connected: channels [11].",
+                "The following potential breaches will be ignored: [1, 2].",
+            ],
+        ),
+        (
+            CalculationType.CONNECTED,
+            [1, 2],
+            [1, -9999],
+            [
+                "The following objects have two potential breaches at the same position, but are not double connected: channels [11].",
+                "The following potential breaches will be ignored: [2].",
+            ],
+        ),
+    ],
+)
+def test_match_breach_ids_with_calculation_types(
+    caplog, calculation_type, breach_ids, expected, messages
+):
+    nodes = Nodes(
+        id=[1],
+        calculation_type=calculation_type,
+        breach_ids=[breach_ids],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=[11],
+    )
+    nodes.breach_ids[0, :] = breach_ids
+
+    with caplog.at_level(logging.WARNING):
+        PotentialBreachPoints.match_breach_ids_with_calculation_types(nodes)
+
+    assert caplog.messages == messages
     assert_equal(nodes.breach_ids[0], expected)

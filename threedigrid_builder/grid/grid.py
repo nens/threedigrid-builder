@@ -682,9 +682,14 @@ class Grid:
         Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
-        lines_1d2d.assign_exchange_lines(self.nodes, exchange_lines=exchange_lines)
+        lines_1d2d.assign_exchange_lines_channels(
+            self.nodes, exchange_lines=exchange_lines
+        )
         lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
+        lines_1d2d.assign_exchange_lines_connection_nodes(
+            self.nodes, self.lines, exchange_lines=exchange_lines
+        )
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
@@ -710,6 +715,7 @@ class Grid:
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
         breach_points.assign_to_connection_nodes(self.nodes, self.lines)
+        breach_points.match_breach_ids_with_calculation_types(self.nodes)
 
     def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
         """
