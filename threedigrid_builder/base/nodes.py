@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Tuple
 
 import numpy as np
@@ -12,6 +13,16 @@ from threedigrid_builder.constants import (
 from .array import Array
 
 __all__ = ["Nodes"]
+
+
+PRETTY_NAMES = OrderedDict(
+    [
+        (ContentType.TYPE_V2_CONNECTION_NODES, "connection nodes"),
+        (ContentType.TYPE_V2_CHANNEL, "channels"),
+        (ContentType.TYPE_V2_PIPE, "pipes"),
+        (ContentType.TYPE_V2_CULVERT, "culverts"),
+    ]
+)
 
 
 class Node:
@@ -82,3 +93,17 @@ class Nodes(Array[Node]):
         if any(np.isnan(val) for val in extent):
             raise ValueError("Not all 2D nodes have coordinates.")
         return extent
+
+    def format_message(self, where) -> str:
+        """Create a message that describes the selected nodes."""
+        if len(where) == 0:
+            return []
+        types = self.content_type[where]
+        pks = self.content_pk[where]
+        return ", ".join(
+            [
+                f"{pretty_name} {sorted(set(pks[types == content_type]))}"
+                for content_type, pretty_name in PRETTY_NAMES.items()
+                if np.any(types == content_type)
+            ]
+        )
