@@ -4,7 +4,7 @@ from typing import Iterator
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Lines, Nodes, search
+from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .levees import PotentialBreaches
@@ -79,34 +79,39 @@ class Lines1D2D(Lines):
             )
 
     def assign_exchange_lines_connection_nodes(
-        self, nodes: Nodes, exchange_lines: ExchangeLines
+        self, nodes: Nodes, lines: Lines, exchange_lines: ExchangeLines
     ) -> None:
         """Assign exchange lines to the 1D-2D lines of connection nodes.
 
         Requires: line[:, 1]
         Sets: content_pk, content_type
         """
-        for (line_idx, exchange_lines_idx) in zip(
-            self.split_in_two(self.line[:, 1]),
-            exchange_lines.split_in_two(exchange_lines.channel_id),
-        ):
-            if len(line_idx) == 0 or len(exchange_lines_idx) == 0:
+        endpoints = Endpoints.for_connection_nodes(
+            nodes, lines, line_types=[ContentType.TYPE_V2_CHANNEL]
+        )
+        # find exchange lines per endpoint
+        exchange_line_idx = []
+        for idx in exchange_lines.split_in_two(exchange_lines.channel_id):
+            if len(idx) == 0:
                 continue
 
-            node_idx = nodes.id_to_index(self.line[line_idx, 1])
+            endpoints.content_pk  # channel id
 
-            is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
-            idx = search(
-                exchange_lines.channel_id,
-                nodes.content_pk[node_idx[is_channel]],
-                assume_ordered=True,  # split_in_two orders
-                check_exists=False,
-                mask=exchange_lines_idx,
+            exchange_line_idx.append(
+                search(
+                    endpoints.content_pk,
+                    exchange_lines.channel_id,
+                    assume_ordered=True,  # split_in_two orders
+                    check_exists=False,
+                    mask=idx,
+                )
             )
-            self.content_pk[line_idx[is_channel]] = exchange_lines.index_to_id(idx)
-            self.content_type[line_idx[is_channel]] = np.where(
-                idx != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
-            )
+        mask = exchange_line_idx[0] != -9999
+        idx_1, idx_2 = [x[mask] for x in exchange_line_idx]
+        endpoints = endpoints[mask]
+
+        for node_id in np.unique(endpoints.node_id):
+            node_idx = nodes.id_to_index(node_id)
 
     def get_1d_node_idx(self, nodes: Nodes):
         """Get the 1D node index based on line[:, 1]"""
@@ -143,12 +148,13 @@ class Lines1D2D(Lines):
     def assign_breaches(self, nodes: Nodes, potential_breaches: PotentialBreaches):
         """Assign breaches to the 1D-2D lines.
 
-        Nodes may have 0, 1, or 2 'breach_ids' assigned, but this assignment did not
-        take into account the calculation type (isolated/connected/double connected).
-        Here, the nodes.breach_ids are matched against the actually present 1D-2D lines.
+        It is assumed that the breach ids match the calculation type of the nodes.
+        This is done in PotentialBreachPoints.match_breach_ids_with_calculation_types.
 
-        The matching minimizes the total distance of the 2D ends of the potential breach
-        to the 2D end of the 1D-2D line (which is possibly derived from an exchange line).
+        If a node is double connected, the 1 or 2 breaches that are present need to be
+        matched against existing lines. The matching minimizes the total distance of
+        the 2D ends of the potential breach to the 2D end of the 1D-2D line (which
+        is possibly derived from an exchange line).
 
         Requires: line_coords[:, :2]  (from the exchange line or 1D node location)
         Sets: line_coords[:, :2], content_pk, content_type  (updated from the potential breach)
@@ -187,11 +193,9 @@ class Lines1D2D(Lines):
                 # 1 line, 1 breach
                 line_to_breach[l1] = b1
             elif l2 == -9999 and b2 != -9999:
-                # 1 line, 2 breaches; find closest breach
-                if dist(b1, l1) <= dist(b2, l1):
-                    line_to_breach[l1] = b1
-                else:
-                    line_to_breach[l1] = b2
+                raise ValueError(
+                    f"Node {nodes.id[node_idx[i]]} has two breaches assigned while it is not double connected"
+                )
             elif b2 == -9999:
                 # 2 lines, 1 breach; find closest line
                 if dist(b1, l1) <= dist(b1, l2):

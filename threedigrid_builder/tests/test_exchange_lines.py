@@ -257,9 +257,6 @@ def test_assign_dpumax_from_obstacles(
     [
         ([-9999, -9999], [(10, 0)], [-9999]),
         ([1, -9999], [(10, 0)], [1]),
-        ([1, 2], [(10, 0), (10, 1)], [1]),
-        ([1, 2], [(10, 1), (10, 0)], [2]),
-        ([1, 2], [(10, 1), (10, -1)], [1]),
     ],
 )
 def test_assign_breaches_single_connected(breach_ids, breach_2d_coords, content_pk):
@@ -275,6 +272,16 @@ def test_assign_breaches_single_connected(breach_ids, breach_2d_coords, content_
         lines.content_type, np.where(np.array(content_pk) != -9999, BREACH, -9999)
     )
     assert_array_equal(lines.content_pk, content_pk)
+
+
+def test_assign_breaches_single_connected_err():
+    nodes = Nodes(id=[1], breach_ids=[[1, 2]])
+    lines = Lines1D2D(id=[1], line=[(-9999, 1)], line_coords=[(10, 0, 0, 0)])
+    potential_breaches = PotentialBreaches(
+        id=range(1, 3),
+    )
+    with pytest.raises(ValueError):
+        lines.assign_breaches(nodes, potential_breaches)
 
 
 @pytest.mark.parametrize(
