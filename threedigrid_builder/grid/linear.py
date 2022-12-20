@@ -16,7 +16,7 @@ class BaseLinear:
 
     @property
     def linestrings(self):
-        return LineStrings(id=self.id, the_geom=self.the_geom)
+        return LineStrings(objects=self)
 
     def set_geometries(self, connection_nodes):
         """Set the_geom from connection nodes where necessary.

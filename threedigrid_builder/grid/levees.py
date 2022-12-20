@@ -147,13 +147,8 @@ class PotentialBreachPoints(PointsOnLine):
             breach_id_1 = self.content_pk[options]
             breach_id_2 = self.secondary_content_pk[options]
             is_double = np.where(breach_id_2 != -9999)[0]
-            if len(is_double) > 0:
-                nodes.breach_ids[node_idx_] = [
-                    breach_id_1[is_double[0]],
-                    breach_id_2[is_double[0]],
-                ]
-            else:
-                nodes.breach_ids[node_idx_, 0] = breach_id_1[0]
+            idx = is_double[0] if len(is_double) > 0 else 0
+            nodes.breach_ids[node_idx_] = [breach_id_1[idx], breach_id_2[idx]]
 
 
 class PotentialBreaches(Array[PotentialBreach]):

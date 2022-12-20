@@ -4,24 +4,37 @@ import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
 from pygeos.testing import assert_geometries_equal
 
-from threedigrid_builder.base import LinesOnLine, LineStrings, PointsOnLine
+from threedigrid_builder.base import Array, LinesOnLine, LineStrings, PointsOnLine
+
+
+class LinearObject:
+    id: int
+    the_geom: pygeos.Geometry
+
+
+class LinearObjects(Array[LinearObject]):
+    pass
 
 
 @pytest.fixture
 def linestrings():
-    return LineStrings(id=[0], the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
+    return LineStrings(
+        LinearObjects(id=[0], the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]))
+    )
 
 
 @pytest.fixture
 def two_linestrings():
     return LineStrings(
-        id=[1, 3],
-        the_geom=np.array(
-            [
-                pygeos.linestrings([(0, 10), (10, 10)]),
-                pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
-            ]
-        ),
+        LinearObjects(
+            id=[1, 3],
+            the_geom=np.array(
+                [
+                    pygeos.linestrings([(0, 10), (10, 10)]),
+                    pygeos.linestrings([(0, 0), (6, 0), (6, 6)]),
+                ]
+            ),
+        )
     )
 
 
@@ -79,7 +92,7 @@ def test_segmentize_multiple(two_linestrings):
 )
 def test_sanitize(geom, expected):
     linestrings = LineStrings(
-        id=[0], the_geom=[pygeos.linestrings(geom) if geom else None]
+        LinearObjects(id=[0], the_geom=[pygeos.linestrings(geom) if geom else None])
     )
     linestrings.sanitize(
         points_1=pygeos.points([(0, 21)]), points_2=pygeos.points([(3, 42)])
