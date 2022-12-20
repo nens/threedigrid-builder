@@ -8,9 +8,15 @@ Changelog of threedigrid-builder
   obstacles/levees, or 3. (existing logic) manhole/channel/pipe/culvert details.
 
 - Associate breaches with 1D-2D lines: adapt the 2D side to the 2D side of the breach line.
-  This overrides a possible exchange line.
+  This overrides a possible exchange line. The content type is changed to v2_breach.
 
 - Output breaches based on new breach lines.
+
+- Adapt ds1d_half of 1D-2D lines to the spot where they cross a levee.
+
+- Refactored connection node dpumax and calculation type assignment.
+
+
 
 
 1.6.1 (2022-12-08)
