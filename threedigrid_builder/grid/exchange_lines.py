@@ -122,9 +122,11 @@ class Lines1D2D(Lines):
     def assign_connection_nodes_to_channels_from_lines(
         self, nodes: Nodes, lines: Lines
     ):
-        """Replace the content_pk of connection nodes based on attached channels.
+        """Replace the content_pk of connection nodes on connected objects.
 
-        The logic is that the
+        The connection node will be assigned to the first 'connected' channel
+        that is attached to it. Double connected channels get priority.
+
         This is required for exchange line assignment.
 
         Requires: content_type, line[:, 1]
@@ -140,12 +142,13 @@ class Lines1D2D(Lines):
         endpoints = Endpoints.for_connection_nodes(
             nodes,
             lines,
-            line_mask=(lines.content_type == ContentType.TYPE_V2_CHANNEL)
-            & (np.isin(lines.kcu, list(PRIORITY.keys()))),
+            line_mask=(
+                (lines.content_type == ContentType.TYPE_V2_CHANNEL)
+                & (np.isin(lines.kcu, list(PRIORITY.keys())))
+            ),
             node_mask=np.isin(nodes.id, node_ids),
         )
-        # per node, order the connected channels by kcu (double conn. first) and then
-        # by content_pk
+        # Order the endpoints by (channel_id, calc type) and pick the first
         endpoints.reorder(
             np.lexsort(
                 [
@@ -156,6 +159,7 @@ class Lines1D2D(Lines):
             )
         )
         channel_id_per_node = endpoints.first_per_node(endpoints.content_pk)
+        # Use the node_id -> channel_id map to set channel_id on self
         idx = search(
             channel_id_per_node.id, node_ids, check_exists=False, assume_ordered=True
         )
