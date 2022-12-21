@@ -36,11 +36,21 @@ def test_for_connection_nodes(nodes: Nodes, lines: Lines):
     assert_equal(endpoints.is_start, [1, 1, 0, 1])
 
 
-def test_for_connection_nodes_with_line_type_filter(nodes: Nodes, lines: Lines):
-    endpoints = Endpoints.for_connection_nodes(nodes, lines, line_types=[CH])
+def test_for_connection_nodes_with_line_mask(nodes: Nodes, lines: Lines):
+    endpoints = Endpoints.for_connection_nodes(
+        nodes, lines, line_mask=lines.content_type == CH
+    )
     assert isinstance(endpoints, Endpoints)
     assert_equal(endpoints.node_id, [1, 2])
     assert_equal(endpoints.line_idx, [2, 1])
+    assert_equal(endpoints.is_start, [1, 1])
+
+
+def test_for_connection_nodes_with_node_mask(nodes: Nodes, lines: Lines):
+    endpoints = Endpoints.for_connection_nodes(nodes, lines, node_mask=nodes.id != 2)
+    assert isinstance(endpoints, Endpoints)
+    assert_equal(endpoints.node_id, [1, 1])
+    assert_equal(endpoints.line_idx, [0, 2])
     assert_equal(endpoints.is_start, [1, 1])
 
 
@@ -53,9 +63,10 @@ def test_getattr(lines: Lines):
 @pytest.mark.parametrize(
     "ufunc,expected",
     [
-        (np.fmax, [16.0, 16.0]),
-        (np.fmin, [2.0, 16.0]),
-        (np.add, [18.0, np.nan]),
+        (np.fmax.reduceat, [16.0, 16.0]),
+        (np.fmin.reduceat, [2.0, 16.0]),
+        (np.add.reduceat, [18.0, np.nan]),
+        (lambda x, y: y, [0.0, 2.0]),
     ],
 )
 def test_reduce_per_node(lines: Lines, ufunc, expected):
@@ -66,6 +77,26 @@ def test_reduce_per_node(lines: Lines, ufunc, expected):
 
     assert_equal(node_ids, [1, 5])
     assert_almost_equal(maximums, expected)
+
+
+def test_nanmin_per_node(lines: Lines):
+    endpoints = Endpoints(
+        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
+    )
+    node_ids, maximums = endpoints.nanmin_per_node(endpoints.ds1d)
+
+    assert_equal(node_ids, [1, 5])
+    assert_almost_equal(maximums, [2.0, 16.0])
+
+
+def test_first_per_node(lines: Lines):
+    endpoints = Endpoints(
+        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 0, 1]
+    )
+    node_ids, maximums = endpoints.first_per_node(endpoints.ds1d)
+
+    assert_equal(node_ids, [1, 5])
+    assert_almost_equal(maximums, [16.0, np.nan])
 
 
 def test_invert_level(lines: Lines):

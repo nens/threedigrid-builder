@@ -134,7 +134,7 @@ class PotentialBreachPoints(PointsOnLine):
         """
         # disassemble lines into Channel - Connection Node endpoints
         endpoints = Endpoints.for_connection_nodes(
-            nodes, lines, line_types=[ContentType.TYPE_V2_CHANNEL]
+            nodes, lines, line_mask=lines.content_type == ContentType.TYPE_V2_CHANNEL
         )
 
         # per endpoint, match a breach point by their channel ids

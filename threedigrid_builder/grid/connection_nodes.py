@@ -173,11 +173,14 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     endpoints = Endpoints.for_connection_nodes(
         nodes,
         lines,
-        line_types=[
-            ContentType.TYPE_V2_CHANNEL,
-            ContentType.TYPE_V2_PIPE,
-            ContentType.TYPE_V2_CULVERT,
-        ],
+        line_mask=np.isin(
+            lines.content_type,
+            [
+                ContentType.TYPE_V2_CHANNEL,
+                ContentType.TYPE_V2_PIPE,
+                ContentType.TYPE_V2_CULVERT,
+            ],
+        ),
     )
 
     priority = replace(endpoints.kcu, mapping)
@@ -229,13 +232,16 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
     endpoints = Endpoints.for_connection_nodes(
         nodes,
         lines,
-        line_types=[
-            ContentType.TYPE_V2_CHANNEL,
-            ContentType.TYPE_V2_PIPE,
-            ContentType.TYPE_V2_CULVERT,
-            ContentType.TYPE_V2_WEIR,
-            ContentType.TYPE_V2_ORIFICE,
-        ],
+        line_mask=np.isin(
+            lines.content_type,
+            [
+                ContentType.TYPE_V2_CHANNEL,
+                ContentType.TYPE_V2_PIPE,
+                ContentType.TYPE_V2_CULVERT,
+                ContentType.TYPE_V2_WEIR,
+                ContentType.TYPE_V2_ORIFICE,
+            ],
+        ),
     )
     node_id, dmax = endpoints.nanmin_per_node(endpoints.invert_level)
     node_idx = nodes.id_to_index(node_id)

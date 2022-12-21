@@ -37,58 +37,65 @@ BREACH = ContentType.TYPE_V2_BREACH
 )
 def test_create_lines_1d2d(calculation_type, expected_line):
     nodes = Nodes(
-        id=range(1, len(calculation_type) + 1), calculation_type=calculation_type
+        id=range(1, len(calculation_type) + 1),
+        calculation_type=calculation_type,
+        content_pk=3,
+        content_type=ContentType.TYPE_V2_CHANNEL,
     )
     actual = Lines1D2D.create(nodes, itertools.count())
     assert_array_equal(actual.line[:, 0], -9999)
     assert_array_equal(actual.line[:, 1], expected_line)
+    assert_array_equal(actual.content_pk, 3)
+    assert_array_equal(actual.content_type, ContentType.TYPE_V2_CHANNEL)
 
 
 @pytest.mark.parametrize(
-    "line_node_id,expected_content_pk,expected_content_type",
+    "breach_ids,content_type,expected_content_pk,expected_content_type",
     [
-        ([], [], []),
-        ([2], [12], [CH]),
-        ([1], [-9999], [-9999]),
-        ([2, 2], [12, 12], [CH, CH]),
-        ([1, 2], [-9999, 12], [-9999, CH]),
+        ((-9999, -9999), CN, 33, CN),
+        ((5, -9999), CN, 11, CH),
+        ((5, 6), CN, 11, CH),
+        ((5, 6), CH, 33, CH),
     ],
 )
-def test_assign_content_pk(line_node_id, expected_content_pk, expected_content_type):
-    nodes = Nodes(
-        id=[1, 2],
-        content_type=[CN, CH],
-        content_pk=[1, 12],
+def test_assign_connection_nodes_to_channels_from_breaches(
+    breach_ids, content_type, expected_content_pk, expected_content_type
+):
+    nodes = Nodes(id=[1], breach_ids=[breach_ids])
+    lines = Lines1D2D(
+        id=[1], content_type=[content_type], content_pk=[33], line=[(-9999, 1)]
     )
-    line = np.full((len(line_node_id), 2), -9999, dtype=np.int32)
-    line[:, 1] = line_node_id
-    lines = Lines1D2D(id=range(len(line_node_id)), line=line)
+    potential_breaches = PotentialBreaches(id=[5, 6], channel_id=[11, 11])
+    lines.assign_connection_nodes_to_channels_from_breaches(nodes, potential_breaches)
 
-    lines.assign_content_pk(nodes)
-
-    assert_array_equal(lines.content_pk, expected_content_pk)
-    assert_array_equal(lines.content_type, expected_content_type)
+    assert_array_equal(lines.content_pk, [expected_content_pk])
+    assert_array_equal(lines.content_type, [expected_content_type])
 
 
 @pytest.mark.parametrize(
-    "content_pk,exc_line_channel_id,expected_content_pk,expected_content_type",
+    "content_pk,content_type,exc_line_channel_id,expected_content_pk,expected_content_type",
     [
-        ([], [], [], []),
-        ([11], [], [-9999], [-9999]),
-        ([12], [11], [-9999], [-9999]),
-        ([12], [12], [1], [EXC]),
-        ([12, 12], [12], [1, -9999], [EXC, -9999]),
-        ([12, 12], [12, 11], [1, -9999], [EXC, -9999]),
-        ([12, 12], [12, 12], [1, 2], [EXC, EXC]),
+        ([], CH, [], [], []),
+        ([11], CH, [], [-9999], [-9999]),
+        ([12], CH, [11], [-9999], [-9999]),
+        ([12], CH, [12], [1], [EXC]),
+        ([12, 12], CH, [12], [1, -9999], [EXC, -9999]),
+        ([12, 12], CH, [12, 11], [1, -9999], [EXC, -9999]),
+        ([12, 12], CH, [12, 12], [1, 2], [EXC, EXC]),
+        ([12], CN, [12], [-9999], [-9999]),
     ],
 )
 def test_assign_exchange_lines(
-    content_pk, exc_line_channel_id, expected_content_pk, expected_content_type
+    content_pk,
+    content_type,
+    exc_line_channel_id,
+    expected_content_pk,
+    expected_content_type,
 ):
     lines = Lines1D2D(
         id=range(len(content_pk)),
         content_pk=content_pk,
-        content_type=np.where(np.array(content_pk) != -9999, CH, -9999),
+        content_type=content_type,
     )
     exchange_lines = ExchangeLines(
         id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
@@ -435,57 +442,13 @@ def potential_breaches():
     )
 
 
-@pytest.mark.parametrize(
-    "breach_ids, exc_line_channel_id, expected_content_pk, expected_content_type",
-    [
-        ([-9999, -9999], [11, 12, 12, 13], 12, EXC),
-    ],
-)
-def test_assign_exchange_lines_connection_nodes_single_connected(
-    threeway_junction,
-    potential_breaches,
-    breach_ids,
-    exc_line_channel_id,
-    expected_content_pk,
-    expected_content_type,
-):
-    nodes, lines = threeway_junction
-    nodes.breach_ids = breach_ids
-
-    # the central connection node is single connected
-    lines_1d2d = Lines1D2D(
-        id=range(1),
-        line=[(-9999, 1)],
-    )
-
-    # varying exchange lines
-    exchange_lines = ExchangeLines(
-        id=range(1, len(exc_line_channel_id) + 1), channel_id=exc_line_channel_id
-    )
-
-    lines_1d2d.assign_exchange_lines_connection_nodes(
-        nodes, lines, exchange_lines, potential_breaches
-    )
-
-    assert_array_equal(lines_1d2d.content_pk[0], expected_content_pk)
-    assert_array_equal(lines_1d2d.content_type[0], expected_content_type)
-
-
-@pytest.fixture
-def exchange_lines():
-    return PotentialBreaches(
-        id=[5, 6, 7],
-        channel_id=[11, 12, 13],
-    )
-
-
 def test_channel_mapping():
     exchange_lines = ExchangeLines(id=range(1, 6), channel_id=[15, 2, 3, 15, 3])
     actual = exchange_lines.channel_mapping
 
     assert_array_equal(actual.id, [2, 3, 15])
-    assert_array_equal(actual.exchange_line_idx, [1, 2, 0])
-    assert_array_equal(actual.secondary_exchange_line_idx, [-9999, 4, 3])
+    assert_array_equal(actual.exchange_line_id, [2, 3, 1])
+    assert_array_equal(actual.secondary_exchange_line_id, [-9999, 5, 4])
 
 
 @pytest.mark.parametrize(
@@ -504,3 +467,29 @@ def test_get_for_channel_id(channel_id, expected, is_primary):
     actual = exchange_lines.get_for_channel_id(channel_id, is_primary)
 
     assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "kcu,expected",
+    [
+        ([ISO, ISO, ISO], 33),
+        ([C1, ISO, ISO], 11),
+        ([ISO, ISO, C1], 13),
+        ([ISO, C1, C1], 12),
+        ([C2, ISO, ISO], 11),
+        ([ISO, ISO, C2], 13),
+        ([ISO, C2, C2], 12),
+        ([C1, C2, C2], 12),
+    ],
+)
+def test_assign_connection_nodes_to_channels_from_lines(
+    threeway_junction, kcu, expected
+):
+    threeway_junction[1].kcu[:] = kcu
+    lines_1d2d = Lines1D2D(
+        id=[1], content_type=[CN], content_pk=[33], line=[(-9999, 1)]
+    )
+    lines_1d2d.assign_connection_nodes_to_channels_from_lines(*threeway_junction)
+
+    assert_array_equal(lines_1d2d.content_pk, [expected])
+    assert_array_equal(lines_1d2d.content_type, [CN if expected == 33 else CH])

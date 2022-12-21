@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import numpy as np
 
 from threedigrid_builder.constants import ContentType
@@ -28,16 +26,20 @@ class Endpoints(Array[Endpoint]):
 
     @classmethod
     def for_connection_nodes(
-        cls, nodes: Nodes, lines: Lines, line_types: Optional[List[ContentType]] = None
+        cls,
+        nodes: Nodes,
+        lines: Lines,
+        line_mask=None,
+        node_mask=None,
     ) -> "Endpoints":
         """Return the endpoints for connection nodes
 
         Optionally filter by the content type of the lines.
         """
-        if line_types is None:
+        if line_mask is None:
             where = np.arange(len(lines), dtype=int)
         else:
-            where = np.where(np.isin(lines.content_type, line_types))[0]
+            where = np.where(line_mask)[0]
         n = len(where)
         result = cls(
             lines=lines,
@@ -46,12 +48,9 @@ class Endpoints(Array[Endpoint]):
             node_id=lines.line[where].ravel(),
             is_start=np.tile([True, False], n),
         )
-        result = result[
-            np.isin(
-                result.node_id,
-                nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES],
-            )
-        ]
+        is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        node_mask = is_cn if node_mask is None else is_cn & node_mask
+        result = result[np.isin(result.node_id, nodes.id[node_mask])]
         result.reorder_by("node_id")
         return result
 
@@ -65,13 +64,28 @@ class Endpoints(Array[Endpoint]):
             self.is_start, self.invert_level_start_point, self.invert_level_end_point
         )
 
+    @property
+    def is_ordered_by_node(self):
+        if len(self) <= 1:
+            return True
+        return np.all(np.diff(self.node_id) >= 0)
+
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]
 
-    def reduce_per_node(self, ufunc, values):
-        """Compute the per-node ufunc reduction of 'values'
+    def reduce_per_node(self, reduceat, values):
+        """Compute the per-node reduction of 'values'
 
-        For computing the maximum, use 'np.fmax'. For computing the sum, use 'np.add'.
+        The 'reduceat' function is normally a numpy ufunc.reduceat. This function
+        is expected to reduce 'values' on index ranges contained in 'indices'. The length
+        of 'indices' must equal the length of the returned value.
+
+        For instance:
+
+         - self.node_id = [1, 1, 5, 5, 5]
+         - values = [1., 3., 5., 7., 9.]
+         - gives: indices = [0, 2]
+         - and reduceat is expected to act on indices [0, 2) and [2, <end>)
 
         Returns node ids and corresponding maximum values.
         """
@@ -81,10 +95,13 @@ class Endpoints(Array[Endpoint]):
             return np.empty(0, dtype=int), np.empty(0, dtype=float)
         diff = np.diff(self.node_id)
         if np.any(diff < 0):
-            raise ValueError("node_id must be sorted")
+            raise ValueError("endpoints must be ordered by node_id")
         indices = np.concatenate([[0], np.where(diff > 0)[0] + 1])
-        result = ufunc.reduceat(values, indices)
+        result = reduceat(values, indices)
         return self.node_id[indices], result
 
     def nanmin_per_node(self, values):
-        return self.reduce_per_node(np.fmin, values)
+        return self.reduce_per_node(np.fmin.reduceat, values)
+
+    def first_per_node(self, values):
+        return self.reduce_per_node(lambda x, y: x[y], values)

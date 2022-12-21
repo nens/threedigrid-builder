@@ -4,7 +4,7 @@ from typing import Iterator
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, search
+from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .levees import PotentialBreaches
@@ -68,7 +68,10 @@ class ExchangeLineChannels(Array[ExchangeLineChannel]):
 class Lines1D2D(Lines):
     @classmethod
     def create(cls, nodes: Nodes, line_id_counter: Iterator[int]) -> "Lines1D2D":
-        """Create the 1D-2D lines, having only the 1D node index"""
+        """Create the 1D-2D lines
+
+        Sets: id, line[:, 1], content_type, content_pk
+        """
         is_single = nodes.calculation_type == CalculationType.CONNECTED
         is_double = nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
         node_idx = np.concatenate(
@@ -79,7 +82,12 @@ class Lines1D2D(Lines):
         # Merge the arrays
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
-        return Lines1D2D(id=itertools.islice(line_id_counter, len(node_idx)), line=line)
+        return Lines1D2D(
+            id=itertools.islice(line_id_counter, len(node_idx)),
+            line=line,
+            content_type=nodes.content_type[node_idx],
+            content_pk=nodes.content_pk[node_idx],
+        )
 
     @property
     def side_2d(self):
@@ -89,41 +97,75 @@ class Lines1D2D(Lines):
     def side_1d(self):
         return pygeos.points(self.line_coords[:, 2:])
 
-    def assign_content_pk(
-        self, nodes: Nodes, lines: Lines, potential_breaches: PotentialBreaches
+    def assign_connection_nodes_to_channels_from_breaches(
+        self, nodes: Nodes, potential_breaches: PotentialBreaches
     ) -> None:
-        """Assign a temporary content pk & content_type to the 1D-2D lines.
+        """Replace the content_pk of connection nodes using the nodes.breach_ids.
 
-        Requires: line[:, 1]
+        This is required for exchange line assignment.
+
+        Requires: content_type, line[:, 1]
         Sets: content_pk, content_type
         """
-        node_idx = nodes.id_to_index(self.line[:, 1])
-        is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
-        self.content_type[is_channel] = ContentType.TYPE_V2_CHANNEL
-        self.content_pk[is_channel] = nodes.content_pk[node_idx[is_channel]]
-
         is_connection_node = np.where(
-            nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+            self.content_type == ContentType.TYPE_V2_CONNECTION_NODES
         )[0]
-        breach_id = nodes.breach_ids[is_connection_node, 0]
+        node_ids = self.line[is_connection_node, 1]
+        breach_id = nodes.breach_ids[nodes.id_to_index(node_ids), 0]
         has_breach = breach_id != -9999
-        breach_idx = potential_breaches.id_to_index(breach_id[has_breach])
-        self.content_type[
-            is_connection_node[has_breach]
-        ] = potential_breaches.channel_id[breach_idx]
+        channel_id = potential_breaches.channel_id[
+            potential_breaches.id_to_index(breach_id[has_breach])
+        ]
+        self.content_pk[is_connection_node[has_breach]] = channel_id
         self.content_type[is_connection_node[has_breach]] = ContentType.TYPE_V2_CHANNEL
 
-        is_connection_node_no_breach = is_connection_node[~has_breach]
+    def assign_connection_nodes_to_channels_from_lines(
+        self, nodes: Nodes, lines: Lines
+    ):
+        """Replace the content_pk of connection nodes based on attached channels.
+
+        The logic is that the
+        This is required for exchange line assignment.
+
+        Requires: content_type, line[:, 1]
+        Sets: content_pk, content_type
+        """
+        PRIORITY = {LineType.LINE_1D_DOUBLE_CONNECTED: 0, LineType.LINE_1D_CONNECTED: 1}
+
+        is_connection_node = np.where(
+            self.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        )[0]
+        node_ids = self.line[is_connection_node, 1]
+
         endpoints = Endpoints.for_connection_nodes(
-            nodes, lines, line_types=[ContentType.TYPE_V2_CHANNEL]
+            nodes,
+            lines,
+            line_mask=(lines.content_type == ContentType.TYPE_V2_CHANNEL)
+            & (np.isin(lines.kcu, list(PRIORITY.keys()))),
+            node_mask=np.isin(nodes.id, node_ids),
         )
-        endpoints = endpoints[
-            np.isin(endpoints.node_id, self.line[is_connection_node_no_breach, 1])
+        # per node, order the connected channels by kcu (double conn. first) and then
+        # by content_pk
+        endpoints.reorder(
+            np.lexsort(
+                [
+                    endpoints.content_pk,
+                    replace(endpoints.kcu, PRIORITY),
+                    endpoints.node_id,
+                ]
+            )
+        )
+        node_ids_has_ch, channel_ids = endpoints.first_per_node(endpoints.content_pk)
+        line_idx_has_ch = is_connection_node[
+            search(node_ids, node_ids_has_ch, check_exists=False, assume_ordered=True)
         ]
-        node_ids, channel_ids = endpoints.nanmin_per_node(endpoints.content_pk)
+        self.content_pk[line_idx_has_ch] = channel_ids
+        self.content_type[line_idx_has_ch] = ContentType.TYPE_V2_CHANNEL
 
     def assign_exchange_lines(self, exchange_lines: ExchangeLines) -> None:
         """Assign exchange lines to the 1D-2D lines.
+
+        Resets all content_type / content_pk.
 
         Requires: content_pk, content_type
         Sets: content_pk, content_type
@@ -131,6 +173,11 @@ class Lines1D2D(Lines):
         line_idx_1, line_idx_2 = self.split_in_two(self.line[:, 1])
         self._assign_exchange_lines(line_idx_1, exchange_lines, is_primary=True)
         self._assign_exchange_lines(line_idx_2, exchange_lines, is_primary=False)
+
+        # reset content_pk / content_type where not set to exchange line
+        has_no_exc = self.content_type != ContentType.TYPE_V2_EXCHANGE_LINE
+        self.content_type[has_no_exc] = -9999
+        self.content_pk[has_no_exc] = -9999
 
     def _assign_exchange_lines(
         self, idx, exchange_lines: ExchangeLines, is_primary: bool

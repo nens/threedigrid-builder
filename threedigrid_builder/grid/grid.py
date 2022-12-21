@@ -682,10 +682,13 @@ class Grid:
         Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
-        lines_1d2d.assign_exchange_lines_channels(
-            self.nodes, exchange_lines=exchange_lines
+        lines_1d2d.assign_connection_nodes_to_channels_from_breaches(
+            self.nodes, potential_breaches=potential_breaches
         )
-        lines_1d2d.assign_exchange_lines_connection_nodes(
+        lines_1d2d.assign_connection_nodes_to_channels_from_lines(
+            self.nodes, lines=self.lines
+        )
+        lines_1d2d.assign_exchange_lines(
             self.nodes, self.lines, exchange_lines=exchange_lines
         )
         lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
