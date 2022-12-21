@@ -401,12 +401,3 @@ class Lines1D2D(Lines):
         has_no_ds1d = np.isnan(self.ds1d)
         cell_idx = nodes.id_to_index(self.line[has_no_ds1d, 0])
         self.ds1d[has_no_ds1d] = nodes.bounds[cell_idx, 2] - nodes.bounds[cell_idx, 0]
-
-    def assign_ds1d_half(self) -> None:
-        """Sets the velocity point location on the line (ds1d_half), where not yet set.
-
-        Requires: ds1d
-        Sets: ds1d_half
-        """
-        has_no_ds1d_half = np.isnan(self.ds1d_half)
-        self.ds1d_half[has_no_ds1d_half] = self.ds1d[has_no_ds1d_half] / 2

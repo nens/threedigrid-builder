@@ -411,13 +411,6 @@ def test_assign_ds1d():
     assert_array_equal(lines.ds1d, [8.0, 8.0, 2.0, 5.2])
 
 
-def test_assign_ds1d_half():
-    lines = Lines1D2D(id=range(2), ds1d=[10.0, 8.0], ds1d_half=[np.nan, 5.0])
-    lines.assign_ds1d_half()
-
-    assert_array_equal(lines.ds1d_half, [5.0, 5.0])
-
-
 @pytest.fixture
 def threeway_junction():
     nodes = Nodes(

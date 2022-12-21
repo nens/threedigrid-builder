@@ -709,7 +709,6 @@ class Grid:
             lines_1d2d.assign_dpumax(mask, dpumax)
 
         lines_1d2d.assign_ds1d(self.nodes)
-        lines_1d2d.assign_ds1d_half()
         self.lines += lines_1d2d
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
