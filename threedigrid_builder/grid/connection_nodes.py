@@ -157,15 +157,12 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
           and without a calculation_type will get a new calculation_type
         lines (Lines): the lines, including channels and pipes
     """
-    mapping = {
+    PRIORITY = {
         LineType.LINE_1D_EMBEDDED: 0,
         LineType.LINE_1D_ISOLATED: 1,
         LineType.LINE_1D_DOUBLE_CONNECTED: 2,
         LineType.LINE_1D_CONNECTED: 3,
-        -9999: 4,
     }
-    inverse_mapping = {v: k for (k, v) in mapping.items()}
-    inverse_mapping[4] = LineType.LINE_1D_ISOLATED  # -9999 becomes isolated
 
     node_mask = (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES) & (
         nodes.calculation_type == -9999
@@ -180,12 +177,13 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
                 ContentType.TYPE_V2_PIPE,
                 ContentType.TYPE_V2_CULVERT,
             ],
-        ),
+        )
+        & (lines.kcu != -9999),
+        node_mask=node_mask,
     )
+    endpoints.reorder(np.lexsort([replace(endpoints.kcu, PRIORITY), endpoints.node_id]))
 
-    priority = replace(endpoints.kcu, mapping)
-    node_id, priority_per_node = endpoints.nanmin_per_node(priority)
-    calculation_type = replace(priority_per_node, inverse_mapping)
+    node_id, calculation_type = endpoints.first_per_node(endpoints.kcu)
 
     # start off with ISOLATED
     nodes.calculation_type[node_mask] = CalculationType.ISOLATED
