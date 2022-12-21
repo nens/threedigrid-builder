@@ -4,11 +4,13 @@ Changelog of threedigrid-builder
 1.6.2 (unreleased)
 ------------------
 
-- Set 1D-2D line dpumax based on 1. v2_exchange_line.exchange_level, 2. intersected
-  obstacles/levees, or 3. (existing logic) manhole/channel/pipe/culvert details.
+- Set 1D-2D line dpumax based on v2_potential_breach.exchange_level >
+  v2_exchange_line.exchange_level > highest intersected obstacle/levee
+  > (existing logic) manhole/channel/pipe/culvert details.
 
-- Associate breaches with 1D-2D lines: adapt the 2D side to the 2D side of the breach line.
-  This overrides a possible exchange line. The content type is changed to v2_breach.
+- Associate breaches with 1D-2D lines: adapt the 2D side to the 2D side of
+  the breach line. This overrides a possible exchange line. The content type
+  is changed to v2_breach.
 
 - Output breaches based on new breach lines.
 

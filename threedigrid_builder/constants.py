@@ -39,8 +39,8 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER = 52
     LINE_1D2D_DOUBLE_CONNECTED_CLOSED = 53
     LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER = 54
-    LINE_1D2D_POSSIBLE_BREACH = 55
-    LINE_1D2D_ACTIVE_BREACH = 56
+    LINE_1D2D_POSSIBLE_BREACH = 55  # not used in gridbuilder
+    LINE_1D2D_ACTIVE_BREACH = 56  # not used in gridbuilder
     LINE_1D2D_GROUNDWATER_OPEN_WATER = 57
     LINE_1D2D_GROUNDWATER_SEWER = 58  # diff to 57?
     LINE_2D_U = 98  # for internal use

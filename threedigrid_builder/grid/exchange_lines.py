@@ -327,9 +327,6 @@ class Lines1D2D(Lines):
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             ],
         )
-        self.kcu[
-            mask & (self.content_type == ContentType.TYPE_V2_BREACH)
-        ] = LineType.LINE_1D2D_POSSIBLE_BREACH
 
     def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):
         """Set the dpumax based exchange_lines.exchange_level"""

@@ -178,7 +178,7 @@ def test_assign_kcu():
     assert_array_equal(
         lines.kcu,
         [
-            LineType.LINE_1D2D_POSSIBLE_BREACH,
+            LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
