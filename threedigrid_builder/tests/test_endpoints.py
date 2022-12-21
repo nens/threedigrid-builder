@@ -73,30 +73,38 @@ def test_reduce_per_node(lines: Lines, ufunc, expected):
     endpoints = Endpoints(
         lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
     )
-    node_ids, maximums = endpoints.reduce_per_node(ufunc, endpoints.ds1d)
+    actual = endpoints.reduce_per_node(ufunc, endpoints.ds1d)
 
-    assert_equal(node_ids, [1, 5])
-    assert_almost_equal(maximums, expected)
+    assert_equal(actual.id, [1, 5])
+    assert_almost_equal(actual.value, expected)
+
+
+def test_reduce_per_node_empty(lines: Lines):
+    endpoints = Endpoints(lines=lines, id=[])
+    actual = endpoints.reduce_per_node(None, [])
+
+    assert_equal(actual.id, [])
+    assert_almost_equal(actual.value, [])
 
 
 def test_nanmin_per_node(lines: Lines):
     endpoints = Endpoints(
         lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
     )
-    node_ids, maximums = endpoints.nanmin_per_node(endpoints.ds1d)
+    actual = endpoints.nanmin_per_node(endpoints.ds1d)
 
-    assert_equal(node_ids, [1, 5])
-    assert_almost_equal(maximums, [2.0, 16.0])
+    assert_equal(actual.id, [1, 5])
+    assert_almost_equal(actual.value, [2.0, 16.0])
 
 
 def test_first_per_node(lines: Lines):
     endpoints = Endpoints(
         lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 0, 1]
     )
-    node_ids, maximums = endpoints.first_per_node(endpoints.ds1d)
+    actual = endpoints.first_per_node(endpoints.ds1d)
 
-    assert_equal(node_ids, [1, 5])
-    assert_almost_equal(maximums, [16.0, np.nan])
+    assert_equal(actual.id, [1, 5])
+    assert_almost_equal(actual.value, [16.0, np.nan])
 
 
 def test_invert_level(lines: Lines):

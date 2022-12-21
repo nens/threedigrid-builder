@@ -686,9 +686,7 @@ class Grid:
         lines_1d2d.assign_connection_nodes_to_channels_from_lines(
             self.nodes, lines=self.lines
         )
-        lines_1d2d.assign_exchange_lines(
-            self.nodes, self.lines, exchange_lines=exchange_lines
-        )
+        lines_1d2d.assign_exchange_lines(exchange_lines)
         lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)

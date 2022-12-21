@@ -73,7 +73,7 @@ class Endpoints(Array[Endpoint]):
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]
 
-    def reduce_per_node(self, reduceat, values):
+    def reduce_per_node(self, reduceat, values) -> "NodeValues":
         """Compute the per-node reduction of 'values'
 
         The 'reduceat' function is normally a numpy ufunc.reduceat. This function
@@ -92,16 +92,25 @@ class Endpoints(Array[Endpoint]):
         if len(values) != len(self):
             raise ValueError("values must have the same length as self")
         if len(values) == 0:
-            return np.empty(0, dtype=int), np.empty(0, dtype=float)
+            return NodeValues(id=[])
         diff = np.diff(self.node_id)
         if np.any(diff < 0):
             raise ValueError("endpoints must be ordered by node_id")
         indices = np.concatenate([[0], np.where(diff > 0)[0] + 1])
         result = reduceat(values, indices)
-        return self.node_id[indices], result
+        return NodeValues(id=self.node_id[indices], value=result)
 
-    def nanmin_per_node(self, values):
+    def nanmin_per_node(self, values) -> "NodeValues":
         return self.reduce_per_node(np.fmin.reduceat, values)
 
-    def first_per_node(self, values):
+    def first_per_node(self, values) -> "NodeValues":
         return self.reduce_per_node(lambda x, y: x[y], values)
+
+
+class NodeValue:
+    id: int
+    value: float
+
+
+class NodeValues(Array[NodeValue]):
+    pass

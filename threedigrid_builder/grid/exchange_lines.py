@@ -155,12 +155,14 @@ class Lines1D2D(Lines):
                 ]
             )
         )
-        node_ids_has_ch, channel_ids = endpoints.first_per_node(endpoints.content_pk)
-        line_idx_has_ch = is_connection_node[
-            search(node_ids, node_ids_has_ch, check_exists=False, assume_ordered=True)
-        ]
-        self.content_pk[line_idx_has_ch] = channel_ids
-        self.content_type[line_idx_has_ch] = ContentType.TYPE_V2_CHANNEL
+        channel_id_per_node = endpoints.first_per_node(endpoints.content_pk)
+        idx = search(
+            channel_id_per_node.id, node_ids, check_exists=False, assume_ordered=True
+        )
+        mask = idx != -9999
+
+        self.content_pk[is_connection_node[mask]] = channel_id_per_node.value[idx[mask]]
+        self.content_type[is_connection_node[mask]] = ContentType.TYPE_V2_CHANNEL
 
     def assign_exchange_lines(self, exchange_lines: ExchangeLines) -> None:
         """Assign exchange lines to the 1D-2D lines.

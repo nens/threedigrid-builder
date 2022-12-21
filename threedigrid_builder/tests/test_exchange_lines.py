@@ -482,14 +482,16 @@ def test_get_for_channel_id(channel_id, expected, is_primary):
         ([C1, C2, C2], 12),
     ],
 )
+@pytest.mark.parametrize("is_double_connected", [True, False])
 def test_assign_connection_nodes_to_channels_from_lines(
-    threeway_junction, kcu, expected
+    threeway_junction, kcu, expected, is_double_connected
 ):
     threeway_junction[1].kcu[:] = kcu
+    n = 2 if is_double_connected else 1
     lines_1d2d = Lines1D2D(
-        id=[1], content_type=[CN], content_pk=[33], line=[(-9999, 1)]
+        id=range(n), content_type=CN, content_pk=33, line=[(-9999, 1)] * n
     )
     lines_1d2d.assign_connection_nodes_to_channels_from_lines(*threeway_junction)
 
-    assert_array_equal(lines_1d2d.content_pk, [expected])
-    assert_array_equal(lines_1d2d.content_type, [CN if expected == 33 else CH])
+    assert_array_equal(lines_1d2d.content_pk, expected)
+    assert_array_equal(lines_1d2d.content_type, CN if expected == 33 else CH)
