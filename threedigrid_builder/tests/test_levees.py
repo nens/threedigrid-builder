@@ -96,22 +96,27 @@ def test_potential_breach_sides():
     assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_2d), [[0, 1]])
 
 
-def test_potential_breach_merge():
-    actual = PotentialBreachPoints(
+def test_potential_breach_merge(caplog):
+    breaches = PotentialBreachPoints(
         linestrings=Channels(
             id=[0, 1],
             the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
         ).linestrings,
-        id=range(8),
-        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0, 4, 5],
-        linestring_idx=[0, 0, 0, 0, 0, 0, 1, 1],
-        content_pk=range(1, 9),
-    ).merge(tolerance=2.0)
+        id=range(7),
+        s1d=[0.0, 2.0, 5.0, 6.0, 10.0, 4, 5],
+        linestring_idx=[0, 0, 0, 0, 0, 1, 1],
+        content_pk=range(1, 8),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        actual = breaches.merge(tolerance=2.0)
+
+    assert len(caplog.messages) == 0
 
     assert_almost_equal(actual.s1d, [0.0, 2.0, 5.5, 10.0, 4.5])
     assert_almost_equal(actual.linestring_idx, [0, 0, 0, 0, 1])
-    assert_almost_equal(actual.content_pk, [1, 2, 3, 6, 7])
-    assert_almost_equal(actual.secondary_content_pk, [-9999, -9999, 4, -9999, 8])
+    assert_almost_equal(actual.content_pk, [1, 2, 3, 5, 6])
+    assert_almost_equal(actual.secondary_content_pk, [-9999, -9999, 4, -9999, 7])
 
 
 def test_potential_breach_merge_empty():
@@ -123,6 +128,29 @@ def test_potential_breach_merge_empty():
     ).merge(tolerance=2.0)
 
     assert len(actual) == 0
+
+
+def test_potential_breach_merge_more_than_two_warns(caplog):
+    breaches = PotentialBreachPoints(
+        linestrings=Channels(
+            id=[0],
+            the_geom=pygeos.linestrings([[[0, 0], [10, 0]]]),
+        ).linestrings,
+        id=range(3),
+        s1d=[5.0, 6.0, 7.0],
+        linestring_idx=0,
+        content_pk=range(1, 4),
+    )
+    with caplog.at_level(logging.WARNING):
+        actual = breaches.merge(tolerance=2.0)
+
+    assert caplog.messages == ["The following potential breaches will be ignored: [3]."]
+    assert len(actual) == 1
+
+    assert_almost_equal(actual.s1d, [5.5])
+    assert_almost_equal(actual.linestring_idx, [0])
+    assert_almost_equal(actual.content_pk, [1])
+    assert_almost_equal(actual.secondary_content_pk, [2])
 
 
 def test_levees_merge_into_obstacles(levees):

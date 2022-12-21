@@ -78,12 +78,21 @@ class PotentialBreachPoints(PointsOnLine):
         too_close = np.where((dists < tolerance) & same_channel)[0]
         to_delete = too_close + 1  # deleting these leaves only 'primary points'
 
-        # for each primary point, compute a possible secondary one
+        # for each primary point, check the other once and keep track of the
+        # secondary one
+        dropped = []
         secondary_content_pk = np.full(len(self), fill_value=-9999, dtype=np.int32)
         for rng in np.split(too_close, np.where(np.diff(too_close) != 1)[0] + 1):
             if len(rng) == 0:
                 continue
+            if len(rng) > 1:
+                dropped.extend(self.content_pk[rng[1:] + 1].tolist())
             secondary_content_pk[rng[0]] = self.content_pk[rng[0] + 1]
+
+        if dropped:
+            logger.warning(
+                f"The following potential breaches will be ignored: " f"{dropped}."
+            )
 
         # adapt the s1d to be in the middle of a pair
         s1d[too_close] = (s1d[too_close] + s1d[too_close + 1]) / 2
@@ -136,6 +145,7 @@ class PotentialBreachPoints(PointsOnLine):
         endpoints = Endpoints.for_connection_nodes(
             nodes, lines, line_mask=lines.content_type == ContentType.TYPE_V2_CHANNEL
         )
+        endpoints.reorder_by("node_id")
 
         # per endpoint, match a breach point by their channel ids
         node_ids, breach_point_idx = self.find_for_endpoints(endpoints)

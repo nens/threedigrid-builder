@@ -50,9 +50,7 @@ class Endpoints(Array[Endpoint]):
         )
         is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
         node_mask = is_cn if node_mask is None else is_cn & node_mask
-        result = result[np.isin(result.node_id, nodes.id[node_mask])]
-        result.reorder_by("node_id")
-        return result
+        return result[np.isin(result.node_id, nodes.id[node_mask])]
 
     @property
     def is_end(self):
@@ -63,12 +61,6 @@ class Endpoints(Array[Endpoint]):
         return np.where(
             self.is_start, self.invert_level_start_point, self.invert_level_end_point
         )
-
-    @property
-    def is_ordered_by_node(self):
-        if len(self) <= 1:
-            return True
-        return np.all(np.diff(self.node_id) >= 0)
 
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]

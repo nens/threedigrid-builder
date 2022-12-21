@@ -30,6 +30,7 @@ def lines():
 
 def test_for_connection_nodes(nodes: Nodes, lines: Lines):
     endpoints = Endpoints.for_connection_nodes(nodes, lines)
+    endpoints.reorder_by("node_id")
     assert isinstance(endpoints, Endpoints)
     assert_equal(endpoints.node_id, [1, 1, 2, 2])
     assert_equal(endpoints.line_idx, [0, 2, 0, 1])
@@ -40,6 +41,7 @@ def test_for_connection_nodes_with_line_mask(nodes: Nodes, lines: Lines):
     endpoints = Endpoints.for_connection_nodes(
         nodes, lines, line_mask=lines.content_type == CH
     )
+    endpoints.reorder_by("node_id")
     assert isinstance(endpoints, Endpoints)
     assert_equal(endpoints.node_id, [1, 2])
     assert_equal(endpoints.line_idx, [2, 1])

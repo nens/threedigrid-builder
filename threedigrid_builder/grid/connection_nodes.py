@@ -243,6 +243,7 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
             ],
         ),
     )
+    endpoints.reorder_by("node_id")
     dmax_per_node = endpoints.nanmin_per_node(endpoints.invert_level)
     node_idx = nodes.id_to_index(dmax_per_node.id)
 
