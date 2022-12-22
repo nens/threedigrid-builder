@@ -192,12 +192,12 @@ class Lines1D2D(Lines):
             return
         is_channel = self.content_type[idx] == ContentType.TYPE_V2_CHANNEL
         channel_id = self.content_pk[idx[is_channel]]
-        content_pk = exchange_lines.get_for_channel_id(
+        exchange_line_id = exchange_lines.get_for_channel_id(
             channel_id, is_primary=is_primary
         )
-        self.content_pk[idx[is_channel]] = content_pk
+        self.content_pk[idx[is_channel]] = exchange_line_id
         self.content_type[idx[is_channel]] = np.where(
-            content_pk != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
+            exchange_line_id != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
         )
 
     def get_1d_node_idx(self, nodes: Nodes):
@@ -335,7 +335,7 @@ class Lines1D2D(Lines):
         )
 
     def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):
-        """Set the dpumax based exchange_lines.exchange_level"""
+        """Set the dpumax based potential_breaches.exchange_level"""
         has_breach = self.content_type == ContentType.TYPE_V2_BREACH
         self.assign_dpumax(
             has_breach,

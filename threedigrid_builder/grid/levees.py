@@ -91,7 +91,7 @@ class PotentialBreachPoints(PointsOnLine):
 
         if dropped:
             logger.warning(
-                f"The following potential breaches will be ignored: " f"{dropped}."
+                f"The following potential breaches will be ignored: {dropped}."
             )
 
         # adapt the s1d to be in the middle of a pair
