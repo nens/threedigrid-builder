@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Lines, Nodes, replace
+from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace
 from threedigrid_builder.constants import (
     CalculationType,
     ContentType,
@@ -157,21 +157,20 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
           and without a calculation_type will get a new calculation_type
         lines (Lines): the lines, including channels and pipes
     """
-    mapping = {
+    PRIORITY = {
         LineType.LINE_1D_EMBEDDED: 0,
         LineType.LINE_1D_ISOLATED: 1,
         LineType.LINE_1D_DOUBLE_CONNECTED: 2,
         LineType.LINE_1D_CONNECTED: 3,
-        -9999: 4,
     }
-    inverse_mapping = {v: k for (k, v) in mapping.items()}
-    inverse_mapping[4] = LineType.LINE_1D_ISOLATED  # -9999 becomes isolated
 
     node_mask = (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES) & (
         nodes.calculation_type == -9999
     )
-    endpoints = lines.as_endpoints(
-        where=np.isin(
+    endpoints = Endpoints.for_connection_nodes(
+        nodes,
+        lines,
+        line_mask=np.isin(
             lines.content_type,
             [
                 ContentType.TYPE_V2_CHANNEL,
@@ -179,16 +178,19 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
                 ContentType.TYPE_V2_CULVERT,
             ],
         )
-    ).filter_by_node_id(nodes.id[node_mask])
+        & (lines.kcu != -9999),
+        node_mask=node_mask,
+    )
+    endpoints.reorder(np.lexsort([replace(endpoints.kcu, PRIORITY), endpoints.node_id]))
 
-    priority = replace(endpoints.kcu, mapping)
-    node_id, priority_per_node = endpoints.nanmin_per_node(priority)
-    calculation_type = replace(priority_per_node, inverse_mapping)
+    calculation_type = endpoints.first_per_node(endpoints.kcu)
 
     # start off with ISOLATED
     nodes.calculation_type[node_mask] = CalculationType.ISOLATED
     # overwrite with the one derived from the line endpoints
-    nodes.calculation_type[nodes.id_to_index(node_id)] = calculation_type
+    nodes.calculation_type[
+        nodes.id_to_index(calculation_type.id)
+    ] = calculation_type.value
 
 
 def _put_if_less(a, ind, v):
@@ -227,22 +229,26 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
         lines (Lines): the lines, including channels, pipes, weirs, and culverts
     """
     # Compute the lowest invert level for each node connection node dmax will be the lowest of these object types:
-    OBJECT_TYPES = [
-        ContentType.TYPE_V2_CHANNEL,
-        ContentType.TYPE_V2_PIPE,
-        ContentType.TYPE_V2_CULVERT,
-        ContentType.TYPE_V2_WEIR,
-        ContentType.TYPE_V2_ORIFICE,
-    ]
-    is_connection_node = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-    endpoints = lines.as_endpoints(
-        where=np.isin(lines.content_type, OBJECT_TYPES)
-    ).filter_by_node_id(nodes.id[is_connection_node])
-    node_id, dmax = endpoints.nanmin_per_node(endpoints.invert_level)
-    node_idx = nodes.id_to_index(node_id)
+    endpoints = Endpoints.for_connection_nodes(
+        nodes,
+        lines,
+        line_mask=np.isin(
+            lines.content_type,
+            [
+                ContentType.TYPE_V2_CHANNEL,
+                ContentType.TYPE_V2_PIPE,
+                ContentType.TYPE_V2_CULVERT,
+                ContentType.TYPE_V2_WEIR,
+                ContentType.TYPE_V2_ORIFICE,
+            ],
+        ),
+    )
+    endpoints.reorder_by("node_id")
+    dmax_per_node = endpoints.nanmin_per_node(endpoints.invert_level)
+    node_idx = nodes.id_to_index(dmax_per_node.id)
 
     # The new dmax is the minimum of the existing one and the one from above computation
-    dmax = np.fmin(nodes.dmax[node_idx], dmax)
+    dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node.value)
 
     # Check if the new node dmax is below the original manhole dmax
     is_manhole = nodes.manhole_id[node_idx] != -9999

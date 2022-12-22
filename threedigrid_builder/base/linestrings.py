@@ -29,16 +29,17 @@ class LineOnLine:
     linestring_idx: int
 
 
-class LineString:
-    id: int
-    the_geom: pygeos.Geometry
-
-
-class LineStrings(Array[LineString]):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        geom_types = pygeos.get_type_id(self.the_geom)
+class LineStrings:
+    def __init__(self, objects):
+        geom_types = pygeos.get_type_id(objects.the_geom)
         assert np.all((geom_types == -1) | (geom_types == 1))
+        self.objects = objects
+
+    def __len__(self):
+        return len(self.objects)
+
+    def __getattr__(self, name):
+        return getattr(self.objects, name)
 
     @property
     def length(self):

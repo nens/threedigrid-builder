@@ -4,7 +4,7 @@ from typing import Iterator
 import numpy as np
 import pygeos
 
-from threedigrid_builder.base import Array, Lines, Nodes, search
+from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .levees import PotentialBreaches
@@ -21,13 +21,57 @@ class ExchangeLine:
 
 
 class ExchangeLines(Array[ExchangeLine]):
+    @property
+    def channel_mapping(self) -> "ExchangeLineChannels":
+        """Return 2 exchange lines ids for each channel id"""
+        if not hasattr(self, "_channel_mapping"):
+            channel_ids = np.unique(self.channel_id)
+            result = np.full((len(channel_ids), 2), fill_value=-9999, dtype=np.int32)
+            for i, mask in enumerate(self.split_in_two(self.channel_id)):
+                result[:, i] = self.index_to_id(
+                    search(
+                        self.channel_id,
+                        channel_ids,
+                        mask=mask,
+                        assume_ordered=False,
+                        check_exists=False,
+                    )
+                )
+            self._channel_mapping = ExchangeLineChannels(
+                id=channel_ids,
+                exchange_line_id=result[:, 0],
+                secondary_exchange_line_id=result[:, 1],
+            )
+        return self._channel_mapping
+
+    def get_for_channel_id(self, channel_id, is_primary):
+        if len(self) == 0:
+            return np.full_like(channel_id, fill_value=-9999)
+        index = self.channel_mapping.id_to_index(channel_id)
+        if is_primary:
+            ids = self.channel_mapping.exchange_line_id
+        else:
+            ids = self.channel_mapping.secondary_exchange_line_id
+        return np.where(index != -9999, np.take(ids, index, mode="clip"), -9999)
+
+
+class ExchangeLineChannel:
+    id: int
+    exchange_line_id: int
+    secondary_exchange_line_id: int
+
+
+class ExchangeLineChannels(Array[ExchangeLineChannel]):
     pass
 
 
 class Lines1D2D(Lines):
     @classmethod
     def create(cls, nodes: Nodes, line_id_counter: Iterator[int]) -> "Lines1D2D":
-        """Create the 1D-2D lines, having only the 1D node index"""
+        """Create the 1D-2D lines
+
+        Sets: id, line[:, 1], content_type, content_pk
+        """
         is_single = nodes.calculation_type == CalculationType.CONNECTED
         is_double = nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
         node_idx = np.concatenate(
@@ -38,7 +82,12 @@ class Lines1D2D(Lines):
         # Merge the arrays
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
-        return Lines1D2D(id=itertools.islice(line_id_counter, len(node_idx)), line=line)
+        return Lines1D2D(
+            id=itertools.islice(line_id_counter, len(node_idx)),
+            line=line,
+            content_type=nodes.content_type[node_idx],
+            content_pk=nodes.content_pk[node_idx],
+        )
 
     @property
     def side_2d(self):
@@ -48,35 +97,108 @@ class Lines1D2D(Lines):
     def side_1d(self):
         return pygeos.points(self.line_coords[:, 2:])
 
-    def assign_exchange_lines(
-        self, nodes: Nodes, exchange_lines: ExchangeLines
+    def assign_connection_nodes_to_channels_from_breaches(
+        self, nodes: Nodes, potential_breaches: PotentialBreaches
     ) -> None:
-        """Assign exchange lines to the 1D-2D lines.
+        """Replace the content_pk of connection nodes using the nodes.breach_ids.
 
-        Requires: line[:, 1]
+        This is required for exchange line assignment.
+
+        Requires: content_type, line[:, 1]
         Sets: content_pk, content_type
         """
-        for (line_idx, exchange_lines_idx) in zip(
-            self.split_in_two(self.line[:, 1]),
-            exchange_lines.split_in_two(exchange_lines.channel_id),
-        ):
-            if len(line_idx) == 0 or len(exchange_lines_idx) == 0:
-                continue
+        is_connection_node = np.where(
+            self.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        )[0]
+        node_ids = self.line[is_connection_node, 1]
+        breach_id = nodes.breach_ids[nodes.id_to_index(node_ids), 0]
+        has_breach = breach_id != -9999
+        channel_id = potential_breaches.channel_id[
+            potential_breaches.id_to_index(breach_id[has_breach])
+        ]
+        self.content_pk[is_connection_node[has_breach]] = channel_id
+        self.content_type[is_connection_node[has_breach]] = ContentType.TYPE_V2_CHANNEL
 
-            node_idx = nodes.id_to_index(self.line[line_idx, 1])
+    def assign_connection_nodes_to_channels_from_lines(
+        self, nodes: Nodes, lines: Lines
+    ):
+        """Replace the content_pk of connection nodes on connected objects.
 
-            is_channel = nodes.content_type[node_idx] == ContentType.TYPE_V2_CHANNEL
-            idx = search(
-                exchange_lines.channel_id,
-                nodes.content_pk[node_idx[is_channel]],
-                assume_ordered=True,  # split_in_two orders
-                check_exists=False,
-                mask=exchange_lines_idx,
+        The connection node will be assigned to the first 'connected' channel
+        that is attached to it. Double connected channels get priority.
+
+        This is required for exchange line assignment.
+
+        Requires: content_type, line[:, 1]
+        Sets: content_pk, content_type
+        """
+        PRIORITY = {LineType.LINE_1D_DOUBLE_CONNECTED: 0, LineType.LINE_1D_CONNECTED: 1}
+
+        is_connection_node = np.where(
+            self.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        )[0]
+        node_ids = self.line[is_connection_node, 1]
+
+        endpoints = Endpoints.for_connection_nodes(
+            nodes,
+            lines,
+            line_mask=(
+                (lines.content_type == ContentType.TYPE_V2_CHANNEL)
+                & (np.isin(lines.kcu, list(PRIORITY.keys())))
+            ),
+            node_mask=np.isin(nodes.id, node_ids),
+        )
+        # Order the endpoints by (channel_id, calc type) and pick the first
+        endpoints.reorder(
+            np.lexsort(
+                [
+                    endpoints.content_pk,
+                    replace(endpoints.kcu, PRIORITY),
+                    endpoints.node_id,
+                ]
             )
-            self.content_pk[line_idx[is_channel]] = exchange_lines.index_to_id(idx)
-            self.content_type[line_idx[is_channel]] = np.where(
-                idx != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
-            )
+        )
+        channel_id_per_node = endpoints.first_per_node(endpoints.content_pk)
+        # Use the node_id -> channel_id map to set channel_id on self
+        idx = search(
+            channel_id_per_node.id, node_ids, check_exists=False, assume_ordered=True
+        )
+        mask = idx != -9999
+
+        self.content_pk[is_connection_node[mask]] = channel_id_per_node.value[idx[mask]]
+        self.content_type[is_connection_node[mask]] = ContentType.TYPE_V2_CHANNEL
+
+    def assign_exchange_lines(self, exchange_lines: ExchangeLines) -> None:
+        """Assign exchange lines to the 1D-2D lines.
+
+        Resets all content_type / content_pk.
+
+        Requires: content_pk, content_type
+        Sets: content_pk, content_type
+        """
+        line_idx_1, line_idx_2 = self.split_in_two(self.line[:, 1])
+        self._assign_exchange_lines(line_idx_1, exchange_lines, is_primary=True)
+        self._assign_exchange_lines(line_idx_2, exchange_lines, is_primary=False)
+
+        # reset content_pk / content_type where not set to exchange line
+        has_no_exc = self.content_type != ContentType.TYPE_V2_EXCHANGE_LINE
+        self.content_type[has_no_exc] = -9999
+        self.content_pk[has_no_exc] = -9999
+
+    def _assign_exchange_lines(
+        self, idx, exchange_lines: ExchangeLines, is_primary: bool
+    ) -> None:
+        if len(idx) == 0:
+            return
+        is_channel = self.content_type[idx] == ContentType.TYPE_V2_CHANNEL
+        channel_id = self.content_pk[idx[is_channel]]
+        content_pk = exchange_lines.get_for_channel_id(
+            channel_id, is_primary=is_primary
+        )
+        self.content_pk[idx[is_channel]] = content_pk
+        self.content_type[idx[is_channel]] = np.where(
+            content_pk != -9999, ContentType.TYPE_V2_EXCHANGE_LINE, -9999
+        )
 
     def get_1d_node_idx(self, nodes: Nodes):
         """Get the 1D node index based on line[:, 1]"""
@@ -113,12 +235,13 @@ class Lines1D2D(Lines):
     def assign_breaches(self, nodes: Nodes, potential_breaches: PotentialBreaches):
         """Assign breaches to the 1D-2D lines.
 
-        Nodes may have 0, 1, or 2 'breach_ids' assigned, but this assignment did not
-        take into account the calculation type (isolated/connected/double connected).
-        Here, the nodes.breach_ids are matched against the actually present 1D-2D lines.
+        It is assumed that the breach ids match the calculation type of the nodes.
+        This is done in PotentialBreachPoints.match_breach_ids_with_calculation_types.
 
-        The matching minimizes the total distance of the 2D ends of the potential breach
-        to the 2D end of the 1D-2D line (which is possibly derived from an exchange line).
+        If a node is double connected, the 1 or 2 breaches that are present need to be
+        matched against existing lines. The matching minimizes the total distance of
+        the 2D ends of the potential breach to the 2D end of the 1D-2D line (which
+        is possibly derived from an exchange line).
 
         Requires: line_coords[:, :2]  (from the exchange line or 1D node location)
         Sets: line_coords[:, :2], content_pk, content_type  (updated from the potential breach)
@@ -157,11 +280,9 @@ class Lines1D2D(Lines):
                 # 1 line, 1 breach
                 line_to_breach[l1] = b1
             elif l2 == -9999 and b2 != -9999:
-                # 1 line, 2 breaches; find closest breach
-                if dist(b1, l1) <= dist(b2, l1):
-                    line_to_breach[l1] = b1
-                else:
-                    line_to_breach[l1] = b2
+                raise ValueError(
+                    f"Node {nodes.id[node_idx[i]]} has two breaches assigned while it is not double connected"
+                )
             elif b2 == -9999:
                 # 2 lines, 1 breach; find closest line
                 if dist(b1, l1) <= dist(b1, l2):
@@ -212,9 +333,6 @@ class Lines1D2D(Lines):
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             ],
         )
-        self.kcu[
-            mask & (self.content_type == ContentType.TYPE_V2_BREACH)
-        ] = LineType.LINE_1D2D_POSSIBLE_BREACH
 
     def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):
         """Set the dpumax based exchange_lines.exchange_level"""

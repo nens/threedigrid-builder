@@ -7,7 +7,7 @@ from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .array import Array
 
-__all__ = ["Lines", "Endpoints"]
+__all__ = ["Lines"]
 
 
 class Line:
@@ -135,74 +135,3 @@ class Lines(Array[Line]):
         self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
         self.flod[where] = crest_levels
         self.flou[where] = crest_levels
-
-    def as_endpoints(self, where=None) -> "Endpoints":
-        if where is None:
-            where = np.arange(len(self), dtype=int)
-        elif where.dtype == bool:
-            where = np.where(where)[0]
-
-        n = len(where)
-
-        result = Endpoints(
-            lines=self,
-            id=range(n * 2),
-            line_idx=np.repeat(where, 2),
-            node_id=self.line[where].ravel(),
-            is_start=np.tile([True, False], n),
-        )
-        result.reorder_by("node_id")
-        return result
-
-
-class Endpoint:
-    id: int
-    line_idx: int
-    is_start: bool
-    node_id: int
-
-
-class Endpoints(Array[Endpoint]):
-    """Each line has 2 endpoints.
-
-    This class makes it easier to reason about all the objects on a node.
-    """
-
-    scalars = ("lines",)
-
-    @property
-    def is_end(self):
-        return ~self.is_start
-
-    @property
-    def invert_level(self):
-        return np.where(
-            self.is_start, self.invert_level_start_point, self.invert_level_end_point
-        )
-
-    def __getattr__(self, name):
-        return getattr(self.lines, name)[self.line_idx]
-
-    def filter_by_node_id(self, node_ids) -> "Endpoints":
-        return self[np.isin(self.node_id, node_ids)]
-
-    def reduce_per_node(self, ufunc, values):
-        """Compute the per-node ufunc reduction of 'values'
-
-        For computing the maximum, use 'np.fmax'. For computing the sum, use 'np.add'.
-
-        Returns node ids and corresponding maximum values.
-        """
-        if len(values) != len(self):
-            raise ValueError("values must have the same length as self")
-        if len(values) == 0:
-            return np.empty(0, dtype=int), np.empty(0, dtype=float)
-        diff = np.diff(self.node_id)
-        if np.any(diff < 0):
-            raise ValueError("node_id must be sorted")
-        indices = np.concatenate([[0], np.where(diff > 0)[0] + 1])
-        result = ufunc.reduceat(values, indices)
-        return self.node_id[indices], result
-
-    def nanmin_per_node(self, values):
-        return self.reduce_per_node(np.fmin, values)

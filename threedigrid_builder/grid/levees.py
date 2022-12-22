@@ -1,3 +1,4 @@
+import logging
 from typing import Tuple
 
 import numpy as np
@@ -11,7 +12,7 @@ from threedigrid_builder.base import (
     PointsOnLine,
     search,
 )
-from threedigrid_builder.constants import ContentType, Material
+from threedigrid_builder.constants import CalculationType, ContentType, Material
 
 from .channels import Channels
 from .obstacles import Obstacles
@@ -22,6 +23,8 @@ __all__ = [
     "PotentialBreaches",
     "PotentialBreachPoints",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class Breach:
@@ -75,12 +78,21 @@ class PotentialBreachPoints(PointsOnLine):
         too_close = np.where((dists < tolerance) & same_channel)[0]
         to_delete = too_close + 1  # deleting these leaves only 'primary points'
 
-        # for each primary point, compute a possible secondary one
+        # for each primary point, check the other once and keep track of the
+        # secondary one
+        dropped = []
         secondary_content_pk = np.full(len(self), fill_value=-9999, dtype=np.int32)
         for rng in np.split(too_close, np.where(np.diff(too_close) != 1)[0] + 1):
             if len(rng) == 0:
                 continue
+            if len(rng) > 1:
+                dropped.extend(self.content_pk[rng[1:] + 1].tolist())
             secondary_content_pk[rng[0]] = self.content_pk[rng[0] + 1]
+
+        if dropped:
+            logger.warning(
+                f"The following potential breaches will be ignored: " f"{dropped}."
+            )
 
         # adapt the s1d to be in the middle of a pair
         s1d[too_close] = (s1d[too_close] + s1d[too_close + 1]) / 2
@@ -130,11 +142,10 @@ class PotentialBreachPoints(PointsOnLine):
           the first channel.
         """
         # disassemble lines into Channel - Connection Node endpoints
-        endpoints = lines.as_endpoints(
-            where=lines.content_type == ContentType.TYPE_V2_CHANNEL
-        ).filter_by_node_id(
-            nodes.id[nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES]
+        endpoints = Endpoints.for_connection_nodes(
+            nodes, lines, line_mask=lines.content_type == ContentType.TYPE_V2_CHANNEL
         )
+        endpoints.reorder_by("node_id")
 
         # per endpoint, match a breach point by their channel ids
         node_ids, breach_point_idx = self.find_for_endpoints(endpoints)
@@ -149,13 +160,58 @@ class PotentialBreachPoints(PointsOnLine):
             breach_id_1 = self.content_pk[options]
             breach_id_2 = self.secondary_content_pk[options]
             is_double = np.where(breach_id_2 != -9999)[0]
-            if len(is_double) > 0:
-                nodes.breach_ids[node_idx_] = [
-                    breach_id_1[is_double[0]],
-                    breach_id_2[is_double[0]],
-                ]
-            else:
-                nodes.breach_ids[node_idx_, 0] = breach_id_1[0]
+            idx = is_double[0] if len(is_double) > 0 else 0
+            nodes.breach_ids[node_idx_] = [breach_id_1[idx], breach_id_2[idx]]
+
+    @staticmethod
+    def match_breach_ids_with_calculation_types(nodes: Nodes):
+        """Make sure that the number of breach ids on a node matches its type.
+
+        - max 1 breach for CONNECTED
+        - max 2 breaches for DOUBLE_CONNECTED
+        - no breaches otherwise
+
+        Emits warnings through the logger.
+        """
+        has_a_breach = nodes.breach_ids[:, 0] != -9999
+        has_2_breach = nodes.breach_ids[:, 1] != -9999
+        is_double_connected = nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
+        is_single_connected = nodes.calculation_type == CalculationType.CONNECTED
+
+        one_is_too_much_mask = has_a_breach & ~(
+            is_single_connected | is_double_connected
+        )
+        one_is_too_much = np.where(one_is_too_much_mask)[0]
+        if len(one_is_too_much) > 0:
+            logger.warning(
+                f"The following objects have potential breaches, but are not "
+                f"(double) connected: {nodes.format_message(one_is_too_much)}."
+            )
+        two_is_too_much = np.where(
+            has_2_breach & ~is_double_connected & ~one_is_too_much_mask
+        )[0]
+        if len(two_is_too_much) > 0:
+            logger.warning(
+                f"The following objects have two potential breaches at the "
+                f"same position, but are not double connected: "
+                f"{nodes.format_message(two_is_too_much)}."
+            )
+        ignored_breaches = np.concatenate(
+            [
+                nodes.breach_ids[one_is_too_much, :].ravel(),
+                nodes.breach_ids[two_is_too_much, 1],
+            ]
+        )
+        if len(ignored_breaches) > 0:
+            ignored_breaches = np.unique(ignored_breaches)
+            if ignored_breaches[0] == -9999:
+                ignored_breaches = ignored_breaches[1:]
+            logger.warning(
+                f"The following potential breaches will be ignored: "
+                f"{ignored_breaches.tolist()}."
+            )
+            nodes.breach_ids[one_is_too_much, :] = -9999
+            nodes.breach_ids[two_is_too_much, 1] = -9999
 
 
 class PotentialBreaches(Array[PotentialBreach]):

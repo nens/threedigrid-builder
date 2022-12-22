@@ -364,15 +364,15 @@ class ConnectedPoints(Array[ConnectedPoint]):
             # The code in this if clause is only for pretty error formatting.
             out_of_bounds = np.delete(line_node_idx, idx[0])
             out_of_bounds_cp = np.delete(line_cp_idx, idx[0])
-            object_pk_list = _get_pk_content_type(
-                nodes, out_of_bounds[out_of_bounds_cp == -9999]
+            object_pk_msg = nodes.format_message(
+                out_of_bounds[out_of_bounds_cp == -9999]
             )
             msg = ""
-            if len(object_pk_list) > 0:
+            if len(object_pk_msg) > 0:
                 msg += (
                     f"The following object(s) have a connected calculation type but are "
                     f"(partially) outside of the 2D calculation cells: "
-                    f"{', '.join(object_pk_list)}. "
+                    f"{object_pk_msg}. "
                 )
             if (out_of_bounds_cp != -9999).any():
                 mask = out_of_bounds_cp != -9999
@@ -505,27 +505,3 @@ class ConnectedPoints(Array[ConnectedPoint]):
             lines.line_geometries[line_idx], points
         )
         return breaches
-
-
-def _get_pk_content_type(nodes, out_of_bounds):
-    """Determine the object pk and object type of calculation points for pretty
-    printing.
-
-    Args:
-      nodes (Nodes):
-      out_of_bounds (ndarray): Array with node idx of nodes that are out of bounds.
-
-    Returns:
-      List of content types (their pretty name) and pks of objects with nodes
-      out of bounds.
-    """
-    if len(out_of_bounds) == 0:
-        return []
-    types = nodes.content_type[out_of_bounds]
-    pks = nodes.content_pk[out_of_bounds]
-    pretty_names = ("connection nodes", "channels", "pipes", "culverts")
-    return [
-        f"{pretty_name} {sorted(set(pks[types == content_type]))}"
-        for content_type, pretty_name in zip(HAS_1D2D_CONTENT_TYPES, pretty_names)
-        if np.any(types == content_type)
-    ]

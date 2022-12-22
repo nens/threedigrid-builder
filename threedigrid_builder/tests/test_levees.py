@@ -1,10 +1,12 @@
+import logging
+
 import numpy as np
 import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
-from threedigrid_builder.base import Lines, LineStrings, Nodes
-from threedigrid_builder.constants import ContentType, Material
+from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.constants import CalculationType, ContentType, Material
 from threedigrid_builder.grid import (
     Channels,
     ConnectedPoints,
@@ -94,33 +96,61 @@ def test_potential_breach_sides():
     assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_2d), [[0, 1]])
 
 
-def test_potential_breach_merge():
-    actual = PotentialBreachPoints(
-        linestrings=LineStrings(
+def test_potential_breach_merge(caplog):
+    breaches = PotentialBreachPoints(
+        linestrings=Channels(
             id=[0, 1],
             the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
-        ),
-        id=range(8),
-        s1d=[0.0, 2.0, 5.0, 6.0, 7.0, 10.0, 4, 5],
-        linestring_idx=[0, 0, 0, 0, 0, 0, 1, 1],
-        content_pk=range(1, 9),
-    ).merge(tolerance=2.0)
+        ).linestrings,
+        id=range(7),
+        s1d=[0.0, 2.0, 5.0, 6.0, 10.0, 4, 5],
+        linestring_idx=[0, 0, 0, 0, 0, 1, 1],
+        content_pk=range(1, 8),
+    )
+
+    with caplog.at_level(logging.WARNING):
+        actual = breaches.merge(tolerance=2.0)
+
+    assert len(caplog.messages) == 0
 
     assert_almost_equal(actual.s1d, [0.0, 2.0, 5.5, 10.0, 4.5])
     assert_almost_equal(actual.linestring_idx, [0, 0, 0, 0, 1])
-    assert_almost_equal(actual.content_pk, [1, 2, 3, 6, 7])
-    assert_almost_equal(actual.secondary_content_pk, [-9999, -9999, 4, -9999, 8])
+    assert_almost_equal(actual.content_pk, [1, 2, 3, 5, 6])
+    assert_almost_equal(actual.secondary_content_pk, [-9999, -9999, 4, -9999, 7])
 
 
 def test_potential_breach_merge_empty():
     actual = PotentialBreachPoints.empty(
-        linestrings=LineStrings(
+        linestrings=Channels(
             id=[0, 1],
             the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
-        )
+        ).linestrings
     ).merge(tolerance=2.0)
 
     assert len(actual) == 0
+
+
+def test_potential_breach_merge_more_than_two_warns(caplog):
+    breaches = PotentialBreachPoints(
+        linestrings=Channels(
+            id=[0],
+            the_geom=pygeos.linestrings([[[0, 0], [10, 0]]]),
+        ).linestrings,
+        id=range(3),
+        s1d=[5.0, 6.0, 7.0],
+        linestring_idx=0,
+        content_pk=range(1, 4),
+    )
+    with caplog.at_level(logging.WARNING):
+        actual = breaches.merge(tolerance=2.0)
+
+    assert caplog.messages == ["The following potential breaches will be ignored: [3]."]
+    assert len(actual) == 1
+
+    assert_almost_equal(actual.s1d, [5.5])
+    assert_almost_equal(actual.linestring_idx, [0])
+    assert_almost_equal(actual.content_pk, [1])
+    assert_almost_equal(actual.secondary_content_pk, [2])
 
 
 def test_levees_merge_into_obstacles(levees):
@@ -223,4 +253,58 @@ def test_assign_to_connection_nodes(threeway_junction, breach_points, expected):
         linestring_idx=breach_points["ch_idx"],
     )
     breach_points.assign_to_connection_nodes(nodes, lines)
+    assert_equal(nodes.breach_ids[0], expected)
+
+
+@pytest.mark.parametrize(
+    "calculation_type,breach_ids,expected,messages",
+    [
+        (CalculationType.ISOLATED, [-9999, -9999], [-9999, -9999], []),
+        (CalculationType.CONNECTED, [1, -9999], [1, -9999], []),
+        (CalculationType.DOUBLE_CONNECTED, [1, 2], [1, 2], []),
+        (
+            CalculationType.ISOLATED,
+            [1, -9999],
+            [-9999, -9999],
+            [
+                "The following objects have potential breaches, but are not (double) connected: channels [11].",
+                "The following potential breaches will be ignored: [1].",
+            ],
+        ),
+        (
+            CalculationType.ISOLATED,
+            [1, 2],
+            [-9999, -9999],
+            [
+                "The following objects have potential breaches, but are not (double) connected: channels [11].",
+                "The following potential breaches will be ignored: [1, 2].",
+            ],
+        ),
+        (
+            CalculationType.CONNECTED,
+            [1, 2],
+            [1, -9999],
+            [
+                "The following objects have two potential breaches at the same position, but are not double connected: channels [11].",
+                "The following potential breaches will be ignored: [2].",
+            ],
+        ),
+    ],
+)
+def test_match_breach_ids_with_calculation_types(
+    caplog, calculation_type, breach_ids, expected, messages
+):
+    nodes = Nodes(
+        id=[1],
+        calculation_type=calculation_type,
+        breach_ids=[breach_ids],
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        content_pk=[11],
+    )
+    nodes.breach_ids[0, :] = breach_ids
+
+    with caplog.at_level(logging.WARNING):
+        PotentialBreachPoints.match_breach_ids_with_calculation_types(nodes)
+
+    assert caplog.messages == messages
     assert_equal(nodes.breach_ids[0], expected)

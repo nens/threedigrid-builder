@@ -1,7 +1,7 @@
 import pytest
 
 from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import NodeType
+from threedigrid_builder.constants import ContentType, NodeType
 
 
 @pytest.fixture
@@ -43,3 +43,27 @@ def test_get_extent_none(nodes):
     nodes = Nodes(id=range(3))
     assert nodes.get_extent_1d() is None
     assert nodes.get_extent_2d() is None
+
+
+CH = ContentType.TYPE_V2_CHANNEL
+PI = ContentType.TYPE_V2_PIPE
+CV = ContentType.TYPE_V2_CULVERT
+CN = ContentType.TYPE_V2_CONNECTION_NODES
+
+
+@pytest.mark.parametrize(
+    "content_type,expected",
+    [
+        ([CH, CH, CN], "connection nodes [3], channels [1, 2]"),
+        ([PI, CV], "pipes [1], culverts [2]"),
+    ],
+)
+def test_format_message(content_type, expected):
+    nodes = Nodes(
+        id=range(len(content_type)),
+        content_type=content_type,
+        content_pk=range(1, len(content_type) + 1),
+    )
+    actual = nodes.format_message(nodes.id)
+
+    assert actual == expected

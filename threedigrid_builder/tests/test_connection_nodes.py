@@ -119,9 +119,14 @@ def test_set_calculation_types_single_node(kcu, expected, content_type):
 )
 def test_set_calculation_types_multiple_nodes(content_type):
     nodes = Nodes(
-        id=[1, 2, 3],
+        id=[1, 2, 3, 4],
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
-        calculation_type=[-9999, -9999, CalculationType.EMBEDDED],
+        calculation_type=[
+            -9999,
+            -9999,
+            CalculationType.EMBEDDED,
+            CalculationType.CONNECTED,
+        ],
     )
     lines = Lines(
         id=[1, 2, 3],

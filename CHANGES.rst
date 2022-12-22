@@ -4,11 +4,13 @@ Changelog of threedigrid-builder
 1.6.2 (unreleased)
 ------------------
 
-- Set 1D-2D line dpumax based on 1. v2_exchange_line.exchange_level, 2. intersected
-  obstacles/levees, or 3. (existing logic) manhole/channel/pipe/culvert details.
+- Set 1D-2D line dpumax based on v2_potential_breach.exchange_level >
+  v2_exchange_line.exchange_level > highest intersected obstacle/levee
+  > (existing logic) manhole/channel/pipe/culvert details.
 
-- Associate breaches with 1D-2D lines: adapt the 2D side to the 2D side of the breach line.
-  This overrides a possible exchange line. The content type is changed to v2_breach.
+- Associate breaches with 1D-2D lines: adapt the 2D side to the 2D side of
+  the breach line. This overrides a possible exchange line. The content type
+  is changed to v2_breach.
 
 - Output breaches based on new breach lines.
 
@@ -16,7 +18,16 @@ Changelog of threedigrid-builder
 
 - Refactored connection node dpumax and calculation type assignment.
 
+- Assign breaches to connection nodes according to the following priority:
+  First, take the breach points of the first channel that has 2 breach.
+  If there are no double breach points: take the breach points of the 
+  irst channel.
 
+- Adapt 1D-2D lines generation for connection nodes to the exchange lines.
+  A connection node derives its exchange lines from a particular channel.
+  If the connection node has breaches assigned, take that channel. Else,
+  take the first double connected channel. Else, take the first single
+  connected channel.
 
 
 1.6.1 (2022-12-08)
