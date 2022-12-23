@@ -1,89 +1,12 @@
 import logging
 
-import numpy as np
 import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Lines, Nodes
-from threedigrid_builder.constants import CalculationType, ContentType, Material
-from threedigrid_builder.grid import (
-    Channels,
-    ConnectedPoints,
-    Levees,
-    Obstacles,
-    PotentialBreaches,
-    PotentialBreachPoints,
-)
-
-CH = ContentType.TYPE_V2_CHANNEL
-CP = ContentType.TYPE_V2_ADDED_CALCULATION_POINT
-BREACH = ContentType.TYPE_V2_BREACH
-
-
-@pytest.fixture
-def levees():
-    return Levees(
-        id=[1, 2, 3],
-        the_geom=[
-            pygeos.linestrings([[0, 0], [10, 0], [10, 10]]),
-            pygeos.linestrings([[5, 5], [8, 5]]),
-            pygeos.linestrings([[0, 0], [1, 1]]),
-        ],
-        crest_level=[2.0, 4.0, np.nan],
-        max_breach_depth=[4.0, 2.0, np.nan],
-        material=[Material.CLAY, Material.SAND, -9999],
-    )
-
-
-@pytest.fixture
-def connected_points():
-    return ConnectedPoints(
-        id=[0, 1, 2, 3],
-        levee_id=[1, 1, 2, 3],
-    )
-
-
-@pytest.fixture
-def lines():
-    return Lines(
-        id=[0, 1, 2, 3, 4, 5],
-        line_geometries=[
-            None,
-            None,
-            pygeos.linestrings([[5, 5], [15, 5]]),  # crosses levee 1 at [10, 5]
-            pygeos.linestrings([[3, 2], [4, 1], [5, 2]]),  # (closest on levee: [4, 0])
-            pygeos.linestrings([[6, 5], [10, 5]]),  # tangent to levee 2
-            None,
-        ],
-        content_type=[CH, -9999, CP, CP, CP, CP],
-        content_pk=[1, -9999, 0, 1, 2, 3],
-    )
-
-
-def test_get_breaches(connected_points, lines, levees):
-    breaches = connected_points.get_breaches(lines, levees)
-
-    assert isinstance(breaches, PotentialBreaches)
-    assert len(breaches) == 3
-
-    assert_equal(lines.content_type, [CH, -9999, BREACH, BREACH, BREACH, CP])
-    assert_equal(lines.content_pk, [1, -9999, 0, 1, 2, 3])
-    assert_almost_equal(
-        lines.ds1d_half, [np.nan, np.nan, 5.0, 1.4142, 0.0, np.nan], decimal=4
-    )
-
-    assert_equal(breaches.id, [0, 1, 2])
-    assert_almost_equal(breaches.maximum_breach_depth, [4, 4, 2])
-    assert_equal(breaches.levee_material, [Material.CLAY, Material.CLAY, Material.SAND])
-
-
-def test_no_breaches(connected_points, lines, levees):
-    connected_points.levee_id[:] = -9999
-    breaches = connected_points.get_breaches(lines, levees)
-
-    assert isinstance(breaches, PotentialBreaches)
-    assert len(breaches) == 0
+from threedigrid_builder.constants import CalculationType, ContentType
+from threedigrid_builder.grid import Channels, PotentialBreaches, PotentialBreachPoints
 
 
 def test_potential_breach_sides():
@@ -151,29 +74,6 @@ def test_potential_breach_merge_more_than_two_warns(caplog):
     assert_almost_equal(actual.linestring_idx, [0])
     assert_almost_equal(actual.content_pk, [1])
     assert_almost_equal(actual.secondary_content_pk, [2])
-
-
-def test_levees_merge_into_obstacles(levees):
-    obstacles = Obstacles(id=[2, 3], crest_level=[5.0, np.nan])
-    actual = levees.merge_into_obstacles(obstacles)
-
-    assert isinstance(actual, Obstacles)
-    assert actual is not obstacles
-
-    # levees are added, with other ids
-    assert_equal(actual.id, [2, 3, 4, 5, 6])
-    assert_equal(actual.crest_level, [5.0, np.nan, 2.0, 4.0, np.nan])
-
-
-def test_levees_merge_into_obstacles_no_obstacles(levees):
-    obstacles = Obstacles(id=[])
-    actual = levees.merge_into_obstacles(obstacles)
-
-    assert isinstance(actual, Obstacles)
-    assert actual is not obstacles
-
-    assert_equal(actual.id, [1, 2, 3])
-    assert_equal(actual.crest_level, [2.0, 4.0, np.nan])
 
 
 @pytest.fixture

@@ -9,23 +9,20 @@ from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import (
     BoundaryType,
     CalculationType,
-    ContentType,
     CrossSectionShape,
     FrictionType,
     InitializationType,
-    Material,
 )
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import (
     BoundaryConditions1D,
     BoundaryConditions2D,
     Channels,
-    ConnectedPoints,
     ConnectionNodes,
     CrossSectionDefinitions,
     CrossSectionLocations,
     Culverts,
-    Levees,
+    Obstacles,
     Orifices,
     Pipes,
     Weirs,
@@ -40,7 +37,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 211
+        get_version.return_value = 214
         sqlite = SQLite(path)
 
     db.assert_called_with(
@@ -71,7 +68,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 208
+    assert db.get_version() == 214
 
 
 def test_get_boundary_conditions_1d(db):
@@ -113,26 +110,6 @@ def test_get_channels(db):
     assert channels.connection_node_end_id[1163] == 1056
     assert channels.id[1174] == 666668899
     assert channels.display_name[33] == "801"
-
-
-def test_get_connected_points(db):
-    connected_points = db.get_connected_points()
-    assert isinstance(connected_points, ConnectedPoints)
-
-    assert len(connected_points) == 1931
-    assert connected_points.id[56] == 57
-    assert_geometries_equal(
-        connected_points.the_geom[1321],
-        pygeos.Geometry("POINT (109012 517295)"),
-        tolerance=1,
-    )
-    assert np.isnan(connected_points.exchange_level[0])
-    assert connected_points.exchange_level[1322] == 0.0  # copied from levee
-    assert connected_points.content_type[1320] == ContentType.TYPE_V2_CHANNEL
-    assert connected_points.content_pk[1321] == 206
-    assert connected_points.node_number[1322] == 2
-    assert connected_points.calculation_point_id[1322] == 1701
-    assert connected_points.levee_id[1322] == 3
 
 
 def test_get_connection_nodes(db):
@@ -219,25 +196,18 @@ def test_get_grid_refinements(db):
     assert grid_refinements.code[5] == "2"
 
 
-def test_get_levees(db):
-    levees = db.get_levees()
-    assert isinstance(levees, Levees)
+def test_get_obstacles(db):
+    obstacles = db.get_obstacles()
+    assert isinstance(obstacles, Obstacles)
 
-    assert len(levees) == 3
-    assert levees.id[1] == 2
+    assert len(obstacles) == 3
+    assert obstacles.id[1] == 2
     assert_geometries_equal(
-        pygeos.get_point(levees.the_geom[0], 0),
+        pygeos.get_point(obstacles.the_geom[0], 0),
         pygeos.Geometry("POINT (110241 519070)"),
         tolerance=1,
     )
-    assert levees.crest_level[1] == 0.0
-    assert levees.max_breach_depth[2] == 4.0
-    assert levees.material[0] == Material.SAND
-
-
-def test_get_obstacles(db):
-    obstacles = db.get_obstacles()
-    assert (len(obstacles)) == 0
+    assert obstacles.crest_level[1] == 0.0
 
 
 def test_get_pipes(db):
@@ -428,23 +398,10 @@ def test_get_windshieldings(db):
 
 def test_get_potential_breaches(db):
     potential_breaches = db.get_potential_breaches()
-    # No potential breaches table (schema version 208)
-    assert len(potential_breaches) == 0
-
-
-def test_get_potential_breaches_after_upgrade(db_upgraded):
-    potential_breaches = db_upgraded.get_potential_breaches()
-    # No potential breaches in test dataset
-    assert len(potential_breaches) == 0
+    assert len(potential_breaches) == 2
 
 
 def test_get_exchange_lines(db):
     exchange_lines = db.get_exchange_lines()
-    # No exchange lines table (schema version 208)
-    assert len(exchange_lines) == 0
-
-
-def test_get_exchange_lines_after_upgrade(db_upgraded):
-    exchange_lines = db_upgraded.get_exchange_lines()
     # No exchange lines in test dataset
     assert len(exchange_lines) == 0
