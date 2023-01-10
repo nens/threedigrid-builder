@@ -107,9 +107,7 @@ def _make_gridadmin(
 
         channels = db.get_channels()
         potential_breaches = db.get_potential_breaches()
-        breach_points = potential_breaches.project_on_channels(
-            channels, grid_settings.breach_merge_tolerance
-        )
+        breach_points = potential_breaches.project_on_channels(channels)
 
         channel_grid = Grid.from_linear_objects(
             connection_nodes=connection_nodes,

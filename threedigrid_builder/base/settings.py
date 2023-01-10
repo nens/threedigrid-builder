@@ -35,7 +35,6 @@ class GridSettings:
     kmax: int
     embedded_cutoff_threshold: float = 0.05
     max_angle_1d_advection: float = 0.4 * np.pi
-    breach_merge_tolerance: float = 2.
 
     @classmethod
     def from_dict(cls, dct):
