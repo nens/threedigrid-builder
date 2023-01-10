@@ -189,9 +189,7 @@ class PotentialBreaches(Array[PotentialBreach]):
     def side_2d(self):
         return pygeos.get_point(self.the_geom, -1)
 
-    def project_on_channels(
-        self, channels: Channels, merge_tolerance: float
-    ) -> PotentialBreachPoints:
+    def project_on_channels(self, channels: Channels) -> PotentialBreachPoints:
         """Project the potential breaches on channels, yielding points on channels.
 
         This method also calls the 'merge' logic.
@@ -201,7 +199,7 @@ class PotentialBreaches(Array[PotentialBreach]):
             points=self.side_1d,
             linestring_idx=channels.id_to_index(self.channel_id, check_exists=True),
             content_pk=self.id,
-        ).merge(merge_tolerance)
+        )
 
 
 class Levee:
