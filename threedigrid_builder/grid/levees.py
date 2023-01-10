@@ -13,6 +13,7 @@ from threedigrid_builder.base import (
     search,
 )
 from threedigrid_builder.constants import CalculationType, ContentType, Material
+from threedigrid_builder.exceptions import SchematisationError
 
 from .channels import Channels
 from .obstacles import Obstacles
@@ -151,53 +152,32 @@ class PotentialBreachPoints(PointsOnLine):
 
     @staticmethod
     def match_breach_ids_with_calculation_types(nodes: Nodes):
-        """Make sure that the number of breach ids on a node matches its type.
+        """Check if the number of breach ids on a point matches its calculation type.
 
         - max 1 breach for CONNECTED
         - max 2 breaches for DOUBLE_CONNECTED
         - no breaches otherwise
-
-        Emits warnings through the logger.
         """
         has_a_breach = nodes.breach_ids[:, 0] != -9999
         has_2_breach = nodes.breach_ids[:, 1] != -9999
         is_double_connected = nodes.calculation_type == CalculationType.DOUBLE_CONNECTED
         is_single_connected = nodes.calculation_type == CalculationType.CONNECTED
 
-        one_is_too_much_mask = has_a_breach & ~(
-            is_single_connected | is_double_connected
-        )
-        one_is_too_much = np.where(one_is_too_much_mask)[0]
+        one_is_too_much = np.where(
+            has_a_breach & ~(is_single_connected | is_double_connected)
+        )[0]
         if len(one_is_too_much) > 0:
-            logger.warning(
+            raise SchematisationError(
                 f"The following objects have potential breaches, but are not "
                 f"(double) connected: {nodes.format_message(one_is_too_much)}."
             )
-        two_is_too_much = np.where(
-            has_2_breach & ~is_double_connected & ~one_is_too_much_mask
-        )[0]
+        two_is_too_much = np.where(has_2_breach & ~is_double_connected)[0]
         if len(two_is_too_much) > 0:
-            logger.warning(
+            raise SchematisationError(
                 f"The following objects have two potential breaches at the "
                 f"same position, but are not double connected: "
                 f"{nodes.format_message(two_is_too_much)}."
             )
-        ignored_breaches = np.concatenate(
-            [
-                nodes.breach_ids[one_is_too_much, :].ravel(),
-                nodes.breach_ids[two_is_too_much, 1],
-            ]
-        )
-        if len(ignored_breaches) > 0:
-            ignored_breaches = np.unique(ignored_breaches)
-            if ignored_breaches[0] == -9999:
-                ignored_breaches = ignored_breaches[1:]
-            logger.warning(
-                f"The following potential breaches will be ignored: "
-                f"{ignored_breaches.tolist()}."
-            )
-            nodes.breach_ids[one_is_too_much, :] = -9999
-            nodes.breach_ids[two_is_too_much, 1] = -9999
 
 
 class PotentialBreaches(Array[PotentialBreach]):
