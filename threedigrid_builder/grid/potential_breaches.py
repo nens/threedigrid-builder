@@ -1,5 +1,4 @@
 import logging
-from typing import Tuple
 
 import numpy as np
 import pygeos
@@ -16,31 +15,13 @@ from threedigrid_builder.constants import CalculationType, ContentType, Material
 from threedigrid_builder.exceptions import SchematisationError
 
 from .channels import Channels
-from .obstacles import Obstacles
 
 __all__ = [
-    "Levees",
-    "Breaches",
     "PotentialBreaches",
     "PotentialBreachPoints",
 ]
 
 logger = logging.getLogger(__name__)
-
-
-class Breach:
-    # Deprecated
-    id: int
-    levl: int  # the line id
-    content_pk: int  # refers to v2_connected_pnt
-    coordinates: Tuple[float, float]
-    levee_id: int
-    levmat: Material  # levee.material
-    levbr: float  # levee.max_breach_depth
-
-
-class Breaches(Array[Breach]):
-    pass
 
 
 class PotentialBreach:
@@ -199,29 +180,4 @@ class PotentialBreaches(Array[PotentialBreach]):
             points=self.side_1d,
             linestring_idx=channels.id_to_index(self.channel_id, check_exists=True),
             content_pk=self.id,
-        )
-
-
-class Levee:
-    id: int
-    the_geom: pygeos.Geometry
-    crest_level: float
-    max_breach_depth: float
-    material: Material
-
-
-class Levees(Array[Levee]):
-    def merge_into_obstacles(self, obstacles: Obstacles) -> Obstacles:
-        """Merge the levees into obstacles.
-
-        This drops the 'id' column
-        """
-        if len(obstacles) == 0:
-            first_id = 1
-        else:
-            first_id = obstacles.id.max() + 1
-        return obstacles + Obstacles(
-            id=range(first_id, first_id + len(self)),
-            the_geom=self.the_geom,
-            crest_level=self.crest_level,
         )

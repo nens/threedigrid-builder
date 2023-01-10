@@ -46,9 +46,9 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_2D_U = 98  # for internal use
     LINE_2D_V = 99  # for internal use
     LINE_2D = 100
-    LINE_2D_OBSTACLE = 101  # levee
-    LINE_2D_OBSTACLE_U = 102  # levee
-    LINE_2D_OBSTACLE_V = 103  # levee
+    LINE_2D_OBSTACLE = 101
+    LINE_2D_OBSTACLE_U = 102
+    LINE_2D_OBSTACLE_V = 103
     LINE_2D_VERTICAL = 150
     LINE_2D_GROUNDWATER = -150
     LINE_2D_BOUNDARY_WEST = 200
@@ -66,7 +66,7 @@ class ContentType(IntEnum):
     TYPE_V2_WEIR = 5
     TYPE_V2_MANHOLE = 6
     TYPE_V2_PUMPSTATION = 7
-    TYPE_V2_LEVEE = 8
+    # TYPE_V2_LEVEE = 8
     TYPE_V2_1D_LATERAL = 9
     TYPE_V2_1D_BOUNDARY_CONDITIONS = 10
     TYPE_V2_2D_BOUNDARY_CONDITIONS = 11
@@ -74,7 +74,7 @@ class ContentType(IntEnum):
     TYPE_V2_BREACH = 13
     TYPE_V2_CROSS_SECTION_DEF = 14
     TYPE_V2_CROSS_SECTION_LOCATION = 15
-    TYPE_V2_ADDED_CALCULATION_POINT = 16
+    # TYPE_V2_ADDED_CALCULATION_POINT = 16
     TYPE_V2_WINDSHIELD = 17
     TYPE_V2_EXCHANGE_LINE = 18
 
