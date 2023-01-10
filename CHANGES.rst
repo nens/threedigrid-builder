@@ -4,6 +4,8 @@ Changelog of threedigrid-builder
 1.6.2 (unreleased)
 ------------------
 
+- Require schema version 214 (threedi-modelchecker >= 0.35).
+
 - Set 1D-2D line dpumax based on v2_potential_breach.exchange_level >
   v2_exchange_line.exchange_level > highest intersected obstacle/levee
   > (existing logic) manhole/channel/pipe/culvert details.
