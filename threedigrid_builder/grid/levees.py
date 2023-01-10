@@ -54,48 +54,34 @@ class PotentialBreach:
 
 
 class PotentialBreachPoints(PointsOnLine):
-    def merge(self, tolerance: float) -> "PotentialBreachPoints":
-        """Merge breach points with a certain tolerance.
+    def merge(self) -> "PotentialBreachPoints":
+        """Merge breach points that are on the same position.
 
-        - Breaches are merged into channel start / end if they are closer than
-          tolerance to it.
-        - Breaches are merged with one another if they are closer than tolerance
-          to one another.
-        - If there are more than 2 breaches too close to one another, the third
-          and so forth will be dropped.
+        - Breaches are merged into channel start / end if they are exactly on it.
+        - Breaches are merged with one another if they are exactly on the same place.
         """
         s1d = self.s1d[:]
 
-        # snap breaches to channel starts/ends
-        s1d[s1d < tolerance] = 0.0
+        eps = 1e-4
+
+        # snap breaches to channel starts/ends (to fix numerical imprecisions)
+        s1d[s1d < eps] = 0.0
         lengths = self.linestrings.length[self.linestring_idx]
-        mask = lengths - s1d < tolerance
+        mask = lengths - s1d < eps
         s1d[mask] = lengths[mask]
 
-        # compute interdistances and a list of points that are 'too close'
+        # compute interdistances and a list of points that are the same
         dists = np.diff(s1d)
         same_channel = np.diff(self.linestring_idx) == 0
-        too_close = np.where((dists < tolerance) & same_channel)[0]
-        to_delete = too_close + 1  # deleting these leaves only 'primary points'
+        same = np.where((dists < eps) & same_channel)[0]
+        to_delete = same + 1  # deleting these leaves only 'primary points'
 
-        # for each primary point, check the other once and keep track of the
-        # secondary one
-        dropped = []
+        # for each primary point keep track of the secondary one
         secondary_content_pk = np.full(len(self), fill_value=-9999, dtype=np.int32)
-        for rng in np.split(too_close, np.where(np.diff(too_close) != 1)[0] + 1):
+        for rng in np.split(same, np.where(np.diff(same) != 1)[0] + 1):
             if len(rng) == 0:
                 continue
-            if len(rng) > 1:
-                dropped.extend(self.content_pk[rng[1:] + 1].tolist())
             secondary_content_pk[rng[0]] = self.content_pk[rng[0] + 1]
-
-        if dropped:
-            logger.warning(
-                f"The following potential breaches will be ignored: " f"{dropped}."
-            )
-
-        # adapt the s1d to be in the middle of a pair
-        s1d[too_close] = (s1d[too_close] + s1d[too_close + 1]) / 2
 
         # get the second one of a too close pair
         return self.__class__(
