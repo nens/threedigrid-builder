@@ -28,9 +28,9 @@ from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .exchange_lines import Lines1D2D
-from .levees import Levees, PotentialBreaches, PotentialBreachPoints
 from .linear import BaseLinear
 from .obstacles import Obstacles
+from .potential_breaches import PotentialBreaches, PotentialBreachPoints
 
 osr.UseExceptions()
 
@@ -160,7 +160,7 @@ class Grid:
         surfaces: Optional[Surfaces] = None,
         surface_maps: Optional[SurfaceMaps] = None,
         nodes_embedded=None,
-        levees=None,
+        obstacles=None,
         breaches=None,
         meta=None,
         quadtree_stats=None,
@@ -194,8 +194,8 @@ class Grid:
         elif not isinstance(surface_maps, SurfaceMaps):
             raise TypeError(f"Expected SurfaceMaps instance, got {type(surface_maps)}")
 
-        if levees is not None and not isinstance(levees, Levees):
-            raise TypeError(f"Expected Levees instance, got {type(levees)}")
+        if obstacles is not None and not isinstance(obstacles, Obstacles):
+            raise TypeError(f"Expected Obstacles instance, got {type(obstacles)}")
         if breaches is not None and not isinstance(breaches, PotentialBreaches):
             raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
         self.nodes = nodes
@@ -207,7 +207,7 @@ class Grid:
         self.pumps = pumps
         self.cross_sections = cross_sections
         self.nodes_embedded = nodes_embedded
-        self.levees = levees
+        self.obstacles = obstacles
         self.breaches = breaches
         self._cell_tree = None
 
@@ -226,7 +226,7 @@ class Grid:
             "quadtree_stats",
             "pumps",
             "cross_sections",
-            "levees",
+            "obstacles",
             "breaches",
         ):
             if getattr(other, name) is None:
@@ -565,12 +565,13 @@ class Grid:
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Args:
-            obstacles (Obstacles), including levees (see Levees.merge_into_obstacles)
+            obstacles (Obstacles)
         """
         line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
         selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
         crest_level = obstacles.compute_dpumax(self.lines, where=selection)[0]
         self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.obstacles = obstacles
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
         boundary_conditions_1d.apply(self)
@@ -665,7 +666,6 @@ class Grid:
         pipes,
         locations,
         culverts,
-        obstacles,
         potential_breaches,
         line_id_counter,
     ) -> Lines1D2D:
@@ -693,7 +693,7 @@ class Grid:
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
-        lines_1d2d.assign_dpumax_from_obstacles(obstacles)
+        lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
         # Go through objects and dispatch to get_1d2d_properties
         node_idx = lines_1d2d.get_1d_node_idx(self.nodes)
         for objects in (channels, connection_nodes, pipes, culverts):
@@ -725,16 +725,6 @@ class Grid:
 
     def add_breaches(self, potential_breaches: PotentialBreaches):
         self.breaches = potential_breaches
-
-    def add_breaches_legacy(self, connected_points, levees):
-        """The breaches are derived from the ConnectedPoints: if a ConnectedPoint
-        references a Levee, it will result in a Breach. The Breach gets the properties
-        from the Levee (max_breach_depth, material) but these may be unset.
-        """
-        self.lines.set_line_coords(self.nodes)
-        self.lines.fix_line_geometries()
-        self.lines.fix_ds1d()
-        self.breaches = connected_points.get_breaches(self.lines, levees)
 
     def add_groundwater(self, has_groundwater_flow, node_id_counter, line_id_counter):
         """Add groundwater nodes and lines.

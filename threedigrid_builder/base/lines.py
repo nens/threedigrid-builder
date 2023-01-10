@@ -124,7 +124,7 @@ class Lines(Array[Line]):
         self.reorder(new_line_idx)
 
     def set_2d_crest_levels(self, crest_levels, where):
-        """Set obstacle/levee crest levels to 2D lines
+        """Set obstacle crest levels to 2D lines
 
         Sets: flod, flou, kcu inplace (for 2D lines)
         """

@@ -7,8 +7,8 @@ import pygeos
 from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
-from .levees import PotentialBreaches
 from .obstacles import Obstacles
+from .potential_breaches import PotentialBreaches
 
 __all__ = ["ExchangeLines", "Lines1D2D"]
 
@@ -380,7 +380,7 @@ class Lines1D2D(Lines):
             return
         line_geoms = self.get_linestrings(line_idx)
         # compute the intersections (use shortest_line and not intersects to
-        # account for the case that the levee and the line intersect multiple times)
+        # account for the case that the obstacle and the line intersect multiple times)
         points = pygeos.get_point(
             pygeos.shortest_line(obstacles.the_geom[obstacle_idx], line_geoms), 0
         )

@@ -16,7 +16,7 @@ from threedigrid_builder.constants import ContentType, LineType, NodeType
 from threedigrid_builder.grid import (
     Grid,
     GridMeta,
-    Levees,
+    Obstacles,
     PotentialBreaches,
     QuadtreeStats,
 )
@@ -178,7 +178,7 @@ class GridAdminOut(OutputInterface):
         self.write_lines(grid.lines, grid.cross_sections)
         self.write_pumps(grid.pumps)
         self.write_cross_sections(grid.cross_sections)
-        self.write_levees(grid.levees)
+        self.write_obstacles(grid.obstacles)
         self.write_breaches(grid.lines, grid.breaches)
         if grid.meta.has_0d:
             self.write_surfaces(grid.surfaces, grid.surface_maps)
@@ -688,19 +688,24 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "count", cross_sections.count)
         self.write_dataset(group, "tables", cross_sections.tables.T, insert_dummy=False)
 
-    def write_levees(self, levees: Levees):
-        if levees is None:
+    def write_obstacles(self, obstacles: Obstacles):
+        """For backwards compat, the group is named 'levees'"""
+        if obstacles is None:
             return
         group = self._file.create_group("levees")
 
-        # Datasets that match directly to a levees attribute:
-        self.write_dataset(group, "id", levees.id, insert_dummy=False)
-        self.write_dataset(group, "crest_level", levees.crest_level, insert_dummy=False)
+        self.write_dataset(group, "id", obstacles.id, insert_dummy=False)
         self.write_dataset(
-            group, "max_breach_depth", levees.max_breach_depth, insert_dummy=False
+            group, "crest_level", obstacles.crest_level, insert_dummy=False
+        )
+        self.write_dataset(
+            group,
+            "max_breach_depth",
+            np.full(len(obstacles), fill_value=np.nan),
+            insert_dummy=False,
         )
         self.write_line_geometry_dataset(
-            group, "coords", levees.the_geom, insert_dummy=False
+            group, "coords", obstacles.the_geom, insert_dummy=False
         )
 
     def write_breaches(self, lines: Lines, breaches: PotentialBreaches):
@@ -716,7 +721,6 @@ class GridAdminOut(OutputInterface):
         line_idx = line_idx[sorter]
         breach_idx = breach_idx[sorter]
 
-        # Datasets that match directly to a levees attribute:
         self.write_dataset(
             group, "id", np.arange(1, len(breach_idx) + 1, dtype=np.int32)
         )

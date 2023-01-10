@@ -83,9 +83,7 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        grid.levees = db.get_levees()
-        obstacles_and_levees = grid.levees.merge_into_obstacles(db.get_obstacles())
-        grid.set_obstacles(obstacles_and_levees)
+        grid.set_obstacles(db.get_obstacles())
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -185,33 +183,17 @@ def _make_gridadmin(
         progress_callback(0.9, "Connecting 1D and 2D domains...")
         grid.embed_nodes(embedded_node_id_counter)
 
-        exchange_lines = db.get_exchange_lines()
-        if len(exchange_lines) == 0 and len(potential_breaches) == 0:
-            # legacy impl
-            connected_points = db.get_connected_points()
-            grid.add_1d2d_legacy(
-                connected_points,
-                connection_nodes=connection_nodes,
-                channels=channels,
-                pipes=pipes,
-                locations=locations,
-                culverts=culverts,
-                line_id_counter=line_id_counter,
-            )
-            grid.add_breaches_legacy(connected_points, grid.levees)
-        else:
-            grid.add_1d2d_lines(
-                exchange_lines,
-                connection_nodes=connection_nodes,
-                channels=channels,
-                pipes=pipes,
-                locations=locations,
-                culverts=culverts,
-                obstacles=obstacles_and_levees,
-                potential_breaches=potential_breaches,
-                line_id_counter=line_id_counter,
-            )
-            grid.add_breaches(potential_breaches)
+        grid.add_1d2d_lines(
+            exchange_lines=db.get_exchange_lines(),
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            locations=locations,
+            culverts=culverts,
+            potential_breaches=potential_breaches,
+            line_id_counter=line_id_counter,
+        )
+        grid.add_breaches(potential_breaches)
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,

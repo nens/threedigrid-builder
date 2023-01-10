@@ -4,7 +4,7 @@ import pathlib
 from contextlib import contextmanager
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, ContextManager, Tuple
+from typing import Callable, ContextManager
 
 import numpy as np
 import pygeos
@@ -19,13 +19,12 @@ from threedi_modelchecker.threedi_model import models
 from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
 
 from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
-from threedigrid_builder.constants import ContentType, InitializationType, LineType
+from threedigrid_builder.constants import InitializationType, LineType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import (
     BoundaryConditions1D,
     BoundaryConditions2D,
     Channels,
-    ConnectedPoints,
     ConnectionNodes,
     CrossSectionDefinitions,
     CrossSectionLocations,
@@ -34,7 +33,6 @@ from threedigrid_builder.grid import (
     ExchangeLines,
     GridRefinements,
     ImperviousSurfaces,
-    Levees,
     Obstacles,
     Orifices,
     Pipes,
@@ -49,7 +47,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 208
+MIN_SQLITE_VERSION = 214
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -57,29 +55,6 @@ NumpyQuery.default_numpy_settings[IntegerEnum] = {
     **NumpyQuery.default_numpy_settings[Integer],
     "sql_cast": lambda x: cast(x, Integer),
 }
-
-# To parse CalculationPoint.user_ref
-CALCULATION_POINT_CONTENT_TYPE_MAP = {
-    "v2_channel": ContentType.TYPE_V2_CHANNEL,
-    "v2_pipe": ContentType.TYPE_V2_PIPE,
-    "v2_culvert": ContentType.TYPE_V2_CULVERT,
-    "v2_manhole": ContentType.TYPE_V2_MANHOLE,
-    "v2_1d_boundary_conditions": ContentType.TYPE_V2_1D_BOUNDARY_CONDITIONS,
-}
-
-
-def parse_connected_point_user_ref(user_ref: str) -> Tuple[ContentType, int, int]:
-    """Return content_type, content_id, node_number from a user_ref.
-
-    Raises Exception for various parse errors.
-
-    Example
-    -------
-    >>> parse_connected_point_user_ref("201#123#v2_channels#4)
-    ContentType.TYPE_V2_CHANNEL, 123, 4
-    """
-    _, id_str, type_str, node_str = user_ref.split("#")
-    return CALCULATION_POINT_CONTENT_TYPE_MAP[type_str], int(id_str), int(node_str)
 
 
 def _object_as_dict(obj) -> dict:
@@ -392,86 +367,6 @@ class SQLite:
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
-    def get_connected_points(self) -> ConnectedPoints:
-        """Load connected points, join them directly with calculation points.
-
-        Automatically ignores calculation points without connected points.
-        """
-        with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.ConnectedPoint.the_geom,
-                    models.ConnectedPoint.id,
-                    models.ConnectedPoint.exchange_level,
-                    models.ConnectedPoint.levee_id,
-                    models.CalculationPoint.user_ref,
-                    models.CalculationPoint.id.label("calculation_point_id"),
-                    models.Levee.crest_level,
-                )
-                .join(models.CalculationPoint)
-                .outerjoin(models.Levee)
-                .order_by(models.ConnectedPoint.id)
-                .as_structarray()
-            )
-
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
-        # replace -9999.0 with NaN in exchange_level
-        arr["exchange_level"][arr["exchange_level"] == -9999.0] = np.nan
-
-        # convert to columnar dict
-        dct = {name: arr[name] for name in arr.dtype.names}
-
-        # overwrite exchange_level with crest_level where no exchange_level supplied
-        mask = np.isnan(arr["exchange_level"])
-        dct["exchange_level"][mask] = dct.pop("crest_level")[mask]
-
-        # parse user_ref
-        content_type = np.empty_like(dct["id"])
-        content_pk = np.empty_like(dct["id"])
-        node_number = np.empty_like(dct["id"])
-        for i, user_ref in enumerate(dct.pop("user_ref")):
-            try:
-                parsed = parse_connected_point_user_ref(user_ref)
-            except Exception:
-                raise SchematisationError(
-                    f'Invalid user_ref in connected point {dct["id"][i]}: "{user_ref}".'
-                )
-            content_type[i], content_pk[i], node_number[i] = parsed
-
-        # transform to a ConnectedPoints object
-        return ConnectedPoints(
-            content_type=content_type,
-            content_pk=content_pk,
-            node_number=node_number,
-            **dct,
-        )
-
-    def get_levees(self) -> Levees:
-        with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.Levee.id,
-                    models.Levee.the_geom,
-                    models.Levee.material,
-                    models.Levee.crest_level,
-                    models.Levee.max_breach_depth,
-                )
-                .order_by(models.Levee.id)
-                .as_structarray()
-            )
-
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
-        # replace -9999.0 with NaN in crest_level and max_breach_depth
-        arr["crest_level"][arr["crest_level"] == -9999.0] = np.nan
-        arr["max_breach_depth"][arr["max_breach_depth"] == -9999.0] = np.nan
-
-        # transform to a Levees object
-        return Levees(**{name: arr[name] for name in arr.dtype.names})
-
     def get_channels(self) -> Channels:
         """Return Channels"""
         with self.get_session() as session:
@@ -623,20 +518,17 @@ class SQLite:
         return Culverts(**{name: arr[name] for name in arr.dtype.names})
 
     def get_exchange_lines(self) -> ExchangeLines:
-        # exchange lines are available from schema version 211
-        if self.get_version() < 211:
-            return ExchangeLines(id=[])
-
-        cols = [
-            models.ExchangeLine.id,
-            models.ExchangeLine.channel_id,
-            models.ExchangeLine.the_geom,
-        ]
-        if self.get_version() >= 212:
-            cols += [models.ExchangeLine.exchange_level]
-
         with self.get_session() as session:
-            arr = session.query(*cols).order_by(models.ExchangeLine.id).as_structarray()
+            arr = (
+                session.query(
+                    models.ExchangeLine.id,
+                    models.ExchangeLine.channel_id,
+                    models.ExchangeLine.the_geom,
+                    models.ExchangeLine.exchange_level,
+                )
+                .order_by(models.ExchangeLine.id)
+                .as_structarray()
+            )
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
 

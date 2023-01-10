@@ -21,7 +21,7 @@ from threedigrid_builder.grid import (
     CrossSections,
     Grid,
     GridMeta,
-    Levees,
+    Obstacles,
     PotentialBreaches,
     QuadtreeStats,
 )
@@ -39,23 +39,7 @@ def db(tmp_path_factory):
     shutil.copyfile(sqlite_path, fn)
     if not os.path.isfile(fn):
         pytest.skip("sample sqlite is not available", allow_module_level=True)
-    return SQLite(fn)
-
-
-@pytest.fixture(scope="session")
-def db_upgraded(tmp_path_factory):
-    """Yields a threedigrid_builder.interface.db.SQLite object with access
-    to the test v2_bergermeer.sqlite.
-
-    The sqlite is upgraded"""
-    fn = tmp_path_factory.mktemp("data") / "v2_bergermeer_upgraded.sqlite"
-    sqlite_path = data_path / "v2_bergermeer.sqlite"
-    shutil.copyfile(sqlite_path, fn)
-    if not os.path.isfile(fn):
-        pytest.skip("sample sqlite is not available", allow_module_level=True)
-    sqlite = SQLite(fn)
-    sqlite.upgrade()
-    return sqlite
+    return SQLite(fn, upgrade=True)
 
 
 @pytest.fixture
@@ -147,7 +131,7 @@ def grid_all():
         embedded_in=[1, 2],
         dmax=[2.3, 0.2],
     )
-    levees = Levees(
+    obstacles = Obstacles(
         id=[0, 1],
         the_geom=[
             pygeos.linestrings([[1, 1], [2, 2], [4, 4]]),
@@ -197,7 +181,7 @@ def grid_all():
         surfaces,
         surface_maps,
         nodes_embedded,
-        levees,
+        obstacles,
         breaches,
         meta,
         quadtree_stats,
