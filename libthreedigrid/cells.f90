@@ -1,6 +1,6 @@
 module m_cells
 
-    use iso_fortran_env, only: int16
+    implicit none
 
     contains
 
@@ -8,7 +8,6 @@ module m_cells
         lg, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords,&
         area_mask, line, cross_pix_coords, n_line_u, n_line_v)
         !!! Entry point for setting nodes and lines and there necessary attributes.
-        use iso_fortran_env, only: int16
         use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners, pad_area_mask
 
         double precision, intent(in) :: origin(2) ! Origin of Quadtree grid
@@ -86,7 +85,6 @@ module m_cells
 
     subroutine set_2d_computational_lines(l_u, l_v, k, m, n, mn, lg, lgrmin, area_mask, quad_idx, nod, line, cross_pix_coords)
 
-        use iso_fortran_env, only: int16
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster
 
         integer, intent(inout) :: l_u
