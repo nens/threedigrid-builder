@@ -119,7 +119,7 @@ def test_integration(tmp_path, filename):
         ## BREACHES
         assert f["breaches"]["id"][:].tolist() == [0, 1, 2]
         assert_almost_equal(
-            f["breaches"]["coordinates"][:, 1], [108990.32, 517277.12], decimal=2
+            f["breaches"]["coordinates"][:, 1], [108989.87, 517278.26], decimal=2
         )
 
         ## COUNTS

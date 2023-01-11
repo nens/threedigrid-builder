@@ -312,6 +312,8 @@ class Grid:
             - lines.lik: Grid refinement level of line (smallest at refinements.)
             - lines.lim: horizontal index of line at grid refimenent level lik
             - lines.lin: vertical index line at grid refimenent level lik
+            - lines.line_coords
+            - lines.line_geometries
         """
 
         nodes, lines = quadtree.get_nodes_lines(
@@ -331,6 +333,7 @@ class Grid:
         )
 
         lines.set_line_coords(nodes)
+        lines.fix_line_geometries()
         return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
 
     @classmethod
@@ -691,6 +694,7 @@ class Grid:
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
+        lines_1d2d.fix_line_geometries()
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
@@ -710,6 +714,8 @@ class Grid:
 
         lines_1d2d.assign_ds1d(self.nodes)
         lines_1d2d.assign_ds1d_half()
+
+        self.breaches = lines_1d2d.output_breaches(potential_breaches)
         self.lines += lines_1d2d
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
@@ -722,9 +728,6 @@ class Grid:
         """
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
-
-    def add_breaches(self, potential_breaches: PotentialBreaches):
-        self.breaches = potential_breaches
 
     def add_groundwater(self, has_groundwater_flow, node_id_counter, line_id_counter):
         """Add groundwater nodes and lines.

@@ -78,9 +78,9 @@ def grid_all():
             -9999,
             -9999,
             ContentType.TYPE_V2_BREACH,
-            ContentType.TYPE_V2_BREACH,
+            ContentType.TYPE_V2_EXCHANGE_LINE,
         ],
-        content_pk=[-9999, -9999, -9999, 1, 0],
+        content_pk=[-9999, -9999, -9999, 1, 15],
         ds1d_half=[0.5, 1.0, 1.0, 5.0, 8.0],
     )
     pumps = Pumps(
@@ -140,6 +140,13 @@ def grid_all():
     )
     breaches = PotentialBreaches(
         id=[0, 1],
+        content_pk=[1, -9999],
+        line_id=[3, 4],
+        the_geom=pygeos.points([[0, 2], [1, 1]]),
+        maximum_breach_depth=[1.2, np.nan],
+        levee_material=[1, -9999],
+        code=["a", None],
+        display_name=["aa", None],
     )
     surfaces = Surfaces(
         id=[0, 1],

@@ -400,6 +400,8 @@ def test_write_levees_coords(h5_out):
         ("levmat", (3,), "int32"),
         ("content_pk", (3,), "int32"),
         ("coordinates", (2, 3), "float64"),
+        ("code", (3,), "|S32"),  # added
+        ("display_name", (3,), "|S64"),  # added
         # ("llev", (1931,), "int32"),  dropped
         # ("kcu", (2,), "int32"),  dropped
         # ("seq_ids", (2,), "int32"),  dropped
@@ -430,7 +432,7 @@ def test_write_breaches(h5_out, dataset, shape, dtype):
         ("pumps", "node1_id", 1),  # reference to node
         ("pumps", "node2_id", 2),  # reference to node
         ("breaches", "id", 1),
-        ("breaches", "levl", 5),  # reference to line
+        ("breaches", "levl", 4),  # reference to line
     ],
 )
 def test_not_off_by_one(h5_out, group, dataset, expected):

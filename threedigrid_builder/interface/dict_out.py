@@ -150,7 +150,7 @@ class DictOut(OutputInterface):
         nodes, cells = self.get_nodes_cells(grid.nodes)
         nodes_emb = self.get_embedded(grid.nodes_embedded)
         lines = self.get_lines(grid.lines)
-        breaches = self.get_breaches(grid.lines, grid.breaches)
+        breaches = self.get_breaches(grid.breaches)
         meta = self.get_meta(grid.meta)
         result = {
             "nodes": nodes,
@@ -281,36 +281,28 @@ class DictOut(OutputInterface):
         line_data["geometry"] = geometries
         return line_data
 
-    def get_breaches(self, lines: Lines, breaches: PotentialBreaches):
+    def get_breaches(self, breaches: PotentialBreaches):
         """Get "breaches" dictionary
 
         Args:
-            lines (Lines)
             breaches (Breaches)
 
         Returns:
             breaches dict of 1D ndarrays
         """
-        line_idx = np.where(lines.content_type == ContentType.TYPE_V2_BREACH)[0]
-        if len(line_idx) == 0:
+        if len(breaches) == 0:
             return
-        breach_idx = breaches.id_to_index(lines.content_pk[line_idx])
 
         # sort by id
-        sorter = np.argsort(breach_idx)
-        line_idx = line_idx[sorter]
-        breach_idx = breach_idx[sorter]
         return {
-            "id": np.arange(1, len(breach_idx) + 1),
-            "line_id": increase(lines.id[line_idx]),
-            "content_pk": breaches.id[breach_idx],
-            "maximum_breach_depth": breaches.maximum_breach_depth[breach_idx],
-            "levee_material": _enum_to_str(
-                breaches.levee_material[breach_idx], Material
-            ),
-            "geometry": lines.get_velocity_points(line_idx),
-            "code": breaches.code[breach_idx],
-            "display_name": breaches.display_name[breach_idx],
+            "id": increase(breaches.id),
+            "line_id": increase(breaches.line_id),
+            "content_pk": breaches.content_pk,
+            "maximum_breach_depth": breaches.maximum_breach_depth,
+            "levee_material": _enum_to_str(breaches.levee_material, Material),
+            "geometry": breaches.the_geom,
+            "code": breaches.code,
+            "display_name": breaches.display_name,
         }
 
     def get_meta(self, meta: GridMeta):

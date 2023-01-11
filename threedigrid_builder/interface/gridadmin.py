@@ -179,7 +179,7 @@ class GridAdminOut(OutputInterface):
         self.write_pumps(grid.pumps)
         self.write_cross_sections(grid.cross_sections)
         self.write_obstacles(grid.obstacles)
-        self.write_breaches(grid.lines, grid.breaches)
+        self.write_breaches(grid.breaches)
         if grid.meta.has_0d:
             self.write_surfaces(grid.surfaces, grid.surface_maps)
 
@@ -708,34 +708,22 @@ class GridAdminOut(OutputInterface):
             group, "coords", obstacles.the_geom, insert_dummy=False
         )
 
-    def write_breaches(self, lines: Lines, breaches: PotentialBreaches):
+    def write_breaches(self, breaches: PotentialBreaches):
         if breaches is None:
             return
         group = self._file.create_group("breaches")
 
-        line_idx = np.where(lines.content_type == ContentType.TYPE_V2_BREACH)[0]
-        breach_idx = breaches.id_to_index(lines.content_pk[line_idx])
-
-        # Order by breach id
-        sorter = np.argsort(breach_idx)
-        line_idx = line_idx[sorter]
-        breach_idx = breach_idx[sorter]
-
+        self.write_dataset(group, "id", breaches.id + 1)
+        self.write_dataset(group, "levl", breaches.line_id + 1)
+        self.write_dataset(group, "content_pk", breaches.content_pk)
+        self.write_dataset(group, "levbr", breaches.maximum_breach_depth)
+        self.write_dataset(group, "levmat", breaches.levee_material)
         self.write_dataset(
-            group, "id", np.arange(1, len(breach_idx) + 1, dtype=np.int32)
+            group, "coordinates", pygeos.get_coordinates(breaches.the_geom).T
         )
-        self.write_dataset(group, "levl", lines.id[line_idx] + 1)
-        self.write_dataset(group, "content_pk", breaches.id[breach_idx])
-        self.write_dataset(group, "levbr", breaches.maximum_breach_depth[breach_idx])
-        self.write_dataset(group, "levmat", breaches.levee_material[breach_idx])
+        self.write_dataset(group, "code", to_bytes_array(breaches.code, 32))
         self.write_dataset(
-            group,
-            "coordinates",
-            pygeos.get_coordinates(lines.get_velocity_points(line_idx)).T,
-        )
-        self.write_dataset(group, "code", to_bytes_array(breaches.code[breach_idx], 32))
-        self.write_dataset(
-            group, "display_name", to_bytes_array(breaches.display_name[breach_idx], 64)
+            group, "display_name", to_bytes_array(breaches.display_name, 64)
         )
 
     def write_dataset(

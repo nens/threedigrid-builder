@@ -33,6 +33,8 @@ class PotentialBreach:
     levee_material: Material
     maximum_breach_depth: float
     channel_id: int
+    line_id: int  # only used for the output
+    content_pk: int  # only used for the output
 
 
 class PotentialBreachPoints(PointsOnLine):

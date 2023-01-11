@@ -25,7 +25,12 @@ class Obstacles(Array[Obstacle]):
         exchange_level = np.full(len(where), np.nan)
         if len(self) == 0:
             return exchange_level, obstacle_idx
-        lines_tree = pygeos.STRtree(lines.get_linestrings(where))
+        line_geometries = lines.line_geometries[where]
+        if pygeos.is_missing(line_geometries).any():
+            raise ValueError(
+                "Obstacles.compute_dpumax requires line_geometries to be set"
+            )
+        lines_tree = pygeos.STRtree(lines.line_geometries[where])
         inscts = lines_tree.query_bulk(self.the_geom, predicate="intersects")
         for i in range(len(self)):
             line_idx = inscts[1, np.where(inscts[0, :] == i)[0]]

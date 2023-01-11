@@ -212,7 +212,7 @@ class Lines1D2D(Lines):
 
         Returns an array of pygeos Point geometries
         Requires: line[:, 1], content_pk, content_type
-        Sets: line_coords[:, :2] (the 2D side)
+        Sets: line_coords[:, :2] (the 2D side), line_geometries
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
@@ -231,6 +231,7 @@ class Lines1D2D(Lines):
         self.line_coords[has_exc, :2] = pygeos.get_coordinates(
             pygeos.get_point(line_geom, 0)
         )
+        self.line_geometries[has_exc] = line_geom
 
     def assign_breaches(self, nodes: Nodes, potential_breaches: PotentialBreaches):
         """Assign breaches to the 1D-2D lines.
@@ -244,7 +245,7 @@ class Lines1D2D(Lines):
         is possibly derived from an exchange line).
 
         Requires: line_coords[:, :2]  (from the exchange line or 1D node location)
-        Sets: line_coords[:, :2], content_pk, content_type  (updated from the potential breach)
+        Sets: line_coords[:, :2], line_geometries, content_pk, content_type
         """
         node_idx = self.get_1d_node_idx(nodes)
         breach_counts = np.count_nonzero(nodes.breach_ids[node_idx, :] != -9999, axis=1)
@@ -301,6 +302,7 @@ class Lines1D2D(Lines):
         self.line_coords[line_idx, :2] = pygeos.get_coordinates(
             breach_2d_side[breach_idx]
         )
+        self.line_geometries[line_idx] = potential_breaches.the_geom[breach_idx]
         self.content_type[line_idx] = ContentType.TYPE_V2_BREACH
         self.content_pk[line_idx] = potential_breaches.id[breach_idx]
 
@@ -358,6 +360,8 @@ class Lines1D2D(Lines):
         """Set the dpumax based on intersected obstacles
 
         Only for (open) connections that are computed via an exchange line or breach.
+
+        Requires line_geometries.
         """
         is_displaced = np.isin(
             self.content_type,
@@ -378,7 +382,7 @@ class Lines1D2D(Lines):
     ):
         if len(line_idx) == 0:
             return
-        line_geoms = self.get_linestrings(line_idx)
+        line_geoms = self.line_geometries[line_idx]
         # compute the intersections (use shortest_line and not intersects to
         # account for the case that the obstacle and the line intersect multiple times)
         points = pygeos.get_point(
@@ -409,4 +413,42 @@ class Lines1D2D(Lines):
         Sets: ds1d_half
         """
         has_no_ds1d_half = np.isnan(self.ds1d_half)
-        self.ds1d_half[has_no_ds1d_half] = self.ds1d[has_no_ds1d_half] / 2
+        self.ds1d_half[has_no_ds1d_half] = (
+            pygeos.length(self.line_geometries[has_no_ds1d_half]) / 2
+        )
+
+    def output_breaches(self, breaches: PotentialBreaches) -> PotentialBreaches:
+        """Create the actual breaches based on the 1D-2D lines
+
+        This results in 'named' breaches (which are present in the input potential_breaches)
+        and 'anonymous' breaches (which come from exchane lines).
+        """
+        line_idx_pot_breach = np.where(self.content_type == ContentType.TYPE_V2_BREACH)[
+            0
+        ]
+        breach_idx = breaches.id_to_index(self.content_pk[line_idx_pot_breach])
+
+        # Order by breach id
+        sorter = np.argsort(breach_idx)
+        line_idx_pot_breach = line_idx_pot_breach[sorter]
+        breach_idx = breach_idx[sorter]
+
+        # Add the 'anonymous' breaches (from exchange lines)
+        line_idx_exc_line = np.where(
+            self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
+        )[0]
+        line_idx = np.concatenate([line_idx_pot_breach, line_idx_exc_line])
+        breach_idx = np.concatenate(
+            [breach_idx, np.full(len(line_idx_exc_line), -9999)]
+        )
+
+        return PotentialBreaches(
+            id=range(len(breach_idx)),
+            line_id=self.id[line_idx],
+            content_pk=breaches.take("id", breach_idx),
+            maximum_breach_depth=breaches.take("maximum_breach_depth", breach_idx),
+            levee_material=breaches.take("levee_material", breach_idx),
+            the_geom=self.get_velocity_points(line_idx),
+            code=breaches.take("code", breach_idx),
+            display_name=breaches.take("display_name", breach_idx),
+        )

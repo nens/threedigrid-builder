@@ -58,6 +58,22 @@ def unpack_optional_type(_type):
         return _type.__args__[0]
 
 
+def _get_dtype_and_null_value(elem_type):
+    if elem_type is int or is_int_enum(elem_type):
+        dtype = np.int32
+        null_value = -9999
+    elif elem_type is float:
+        dtype = np.float64
+        null_value = np.nan
+    elif elem_type is bool:
+        dtype = bool
+        null_value = False
+    else:
+        dtype = object
+        null_value = None
+    return dtype, null_value
+
+
 def _to_ndarray(value, elem_type, expected_length):
     """Cast value to numpy array, with some type mappings.
 
@@ -75,18 +91,7 @@ def _to_ndarray(value, elem_type, expected_length):
         expected_shape = (expected_length,)
 
     # cast python to numpy dtypes
-    if elem_type is int or is_int_enum(elem_type):
-        dtype = np.int32
-        null_value = -9999
-    elif elem_type is float:
-        dtype = np.float64
-        null_value = np.nan
-    elif elem_type is bool:
-        dtype = bool
-        null_value = False
-    else:
-        dtype = object
-        null_value = None
+    dtype, null_value = _get_dtype_and_null_value(elem_type)
 
     # return empty array if no value or None is supplied
     if value is None:
@@ -248,12 +253,27 @@ class Array(Generic[T]):
         Returns:
             int or array_like: the ids from self.id
         """
-        # some timings:
-        # len(id)    len(self.id)   timing (microseconds)
-        # 1000       2000           5.2
-        # 1000       10000          5.2
         index = np.asarray(index)
-        return np.where(index != -9999, np.take(self.id, index, mode="clip"), -9999)
+        return self.take("id", index)
+
+    def take(self, name, index, fill_value=None):
+        """Take values from a column, returing 'fill_value' where index == -9999.
+
+        Args:
+            name (str): the column name to take values from
+            index (int or array_like): The indices to return from self.id
+            fill_value: what to return for -9999 indices (defaults to -9999/NaN/None)
+
+        Returns:
+            scalar or array_like: the values from column 'name'
+        """
+        values = getattr(self, name)
+        if fill_value is None:
+            _, fill_value = _get_dtype_and_null_value(
+                typing.get_type_hints(self.data_class)[name]
+            )
+        index = np.asarray(index)
+        return np.where(index != -9999, np.take(values, index, mode="clip"), fill_value)
 
     def to_dict(self):
         fields = typing.get_type_hints(self.data_class)

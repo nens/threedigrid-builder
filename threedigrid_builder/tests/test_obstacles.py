@@ -11,7 +11,7 @@ from threedigrid_builder.grid.grid import Grid
 
 @pytest.fixture
 def lines():
-    return Lines(
+    lines = Lines(
         id=range(10),
         kcu=[98, 98, 98, 98, 98, 99, 99, 99, 99, 99],
         line_coords=[
@@ -27,6 +27,8 @@ def lines():
             [17.0, 15.0, 17.0, 17.0],
         ],
     )
+    lines.fix_line_geometries()
+    return lines
 
 
 @pytest.fixture
