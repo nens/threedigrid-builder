@@ -179,7 +179,7 @@ class GridAdminOut(OutputInterface):
         self.write_pumps(grid.pumps)
         self.write_cross_sections(grid.cross_sections)
         self.write_obstacles(grid.obstacles)
-        self.write_breaches(grid.lines, grid.breaches)
+        self.write_breaches(grid.breaches)
         if grid.meta.has_0d:
             self.write_surfaces(grid.surfaces, grid.surface_maps)
 
@@ -708,62 +708,22 @@ class GridAdminOut(OutputInterface):
             group, "coords", obstacles.the_geom, insert_dummy=False
         )
 
-    def write_breaches(self, lines: Lines, breaches: PotentialBreaches):
+    def write_breaches(self, breaches: PotentialBreaches):
         if breaches is None:
             return
         group = self._file.create_group("breaches")
 
-        line_idx_pot_breach = np.where(
-            lines.content_type == ContentType.TYPE_V2_BREACH
-        )[0]
-        breach_idx = breaches.id_to_index(lines.content_pk[line_idx_pot_breach])
-
-        # Order by breach id
-        sorter = np.argsort(breach_idx)
-        line_idx_pot_breach = line_idx_pot_breach[sorter]
-        breach_idx = breach_idx[sorter]
-
-        # Add the 'anonymous' breaches (from exchange lines)
-        line_idx_exc_line = np.where(
-            lines.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
-        )[0]
-        line_idx = np.concatenate([line_idx_pot_breach, line_idx_exc_line])
-        breach_idx = np.concatenate(
-            [breach_idx, np.full(len(line_idx_exc_line), -9999)]
-        )
-
-        def get_breach_field(arr, fill):
-            return np.where(
-                breach_idx != -9999, np.take(arr, breach_idx, mode="clip"), fill
-            )
-
+        self.write_dataset(group, "id", breaches.id + 1)
+        self.write_dataset(group, "levl", breaches.line_id + 1)
+        self.write_dataset(group, "content_pk", breaches.content_pk)
+        self.write_dataset(group, "levbr", breaches.maximum_breach_depth)
+        self.write_dataset(group, "levmat", breaches.levee_material)
         self.write_dataset(
-            group, "id", np.arange(1, len(breach_idx) + 1, dtype=np.int32)
+            group, "coordinates", pygeos.get_coordinates(breaches.the_geom).T
         )
-        self.write_dataset(group, "levl", lines.id[line_idx] + 1)
+        self.write_dataset(group, "code", to_bytes_array(breaches.code, 32))
         self.write_dataset(
-            group, "content_pk", get_breach_field(breaches.id, fill=-9999)
-        )
-        self.write_dataset(
-            group, "levbr", get_breach_field(breaches.maximum_breach_depth, fill=np.nan)
-        )
-        self.write_dataset(
-            group, "levmat", get_breach_field(breaches.levee_material, fill=-9999)
-        )
-        self.write_dataset(
-            group,
-            "coordinates",
-            pygeos.get_coordinates(lines.get_velocity_points(line_idx)).T,
-        )
-        self.write_dataset(
-            group,
-            "code",
-            to_bytes_array(get_breach_field(breaches.code, fill=""), 32),
-        )
-        self.write_dataset(
-            group,
-            "display_name",
-            to_bytes_array(get_breach_field(breaches.display_name, fill=""), 64),
+            group, "display_name", to_bytes_array(breaches.display_name, 64)
         )
 
     def write_dataset(

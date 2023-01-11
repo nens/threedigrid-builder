@@ -5,6 +5,7 @@ import numpy as np
 import pygeos
 import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
+from pygeos.testing import assert_geometries_equal
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
@@ -389,10 +390,8 @@ def test_assign_breaches_multiple():
 )
 def test_assign_ds1d_half_from_obstacles(obstacle_geom, line_coords, expected):
     obstacles = Obstacles(id=[1], the_geom=[pygeos.linestrings(obstacle_geom)])
-    lines = Lines1D2D(
-        id=range(1),
-        line_coords=[line_coords],
-    )
+    lines = Lines1D2D(id=range(1), line_coords=[line_coords])
+    lines.fix_line_geometries()
 
     lines.assign_ds1d_half_from_obstacles(obstacles, np.array([0]), np.array(([0])))
 
@@ -412,10 +411,14 @@ def test_assign_ds1d():
 
 
 def test_assign_ds1d_half():
-    lines = Lines1D2D(id=range(2), ds1d=[10.0, 8.0], ds1d_half=[np.nan, 5.0])
+    lines = Lines1D2D(
+        id=range(2),
+        ds1d_half=[np.nan, 5.0],
+        line_geometries=[pygeos.linestrings([[0, 0], [0, 9]]), None],
+    )
     lines.assign_ds1d_half()
 
-    assert_array_equal(lines.ds1d_half, [5.0, 5.0])
+    assert_array_equal(lines.ds1d_half, [4.5, 5.0])
 
 
 @pytest.fixture
@@ -495,3 +498,36 @@ def test_assign_connection_nodes_to_channels_from_lines(
 
     assert_array_equal(lines_1d2d.content_pk, expected)
     assert_array_equal(lines_1d2d.content_type, CN if expected == 33 else CH)
+
+
+@mock.patch.object(Lines1D2D, "get_velocity_points")
+def test_output_breaches(get_velocity_points):
+    lines = Lines1D2D(
+        id=range(1, 5),
+        content_type=[-9999, BREACH, EXC, BREACH],
+        content_pk=[-9999, 1, 2, 3],
+    )
+    potential_breaches = PotentialBreaches(
+        id=[1, 2, 3],
+        code=["a", "b", "c"],
+        display_name=["aa", "bb", "cc"],
+        levee_material=[1, 2, -9999],
+        maximum_breach_depth=[np.nan, 1.3, 1.4],
+    )
+
+    get_velocity_points.return_value = pygeos.points([[0, 0], [1, 1], [2, 2]])
+    actual = lines.output_breaches(potential_breaches)
+
+    assert_array_equal(actual.id, [0, 1, 2])
+    assert_array_equal(actual.line_id, [2, 4, 3])
+    assert_array_equal(actual.content_pk, [1, 3, -9999])
+
+    assert_array_equal(actual.maximum_breach_depth, [np.nan, 1.4, np.nan])
+    assert_array_equal(actual.levee_material, [1, -9999, -9999])
+
+    assert_geometries_equal(actual.the_geom, get_velocity_points.return_value)
+
+    assert_array_equal(actual.code, ["a", "c", None])
+    assert_array_equal(actual.display_name, ["aa", "cc", None])
+
+    get_velocity_points.assert_called_once()

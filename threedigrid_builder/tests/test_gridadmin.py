@@ -432,7 +432,7 @@ def test_write_breaches(h5_out, dataset, shape, dtype):
         ("pumps", "node1_id", 1),  # reference to node
         ("pumps", "node2_id", 2),  # reference to node
         ("breaches", "id", 1),
-        ("breaches", "levl", 5),  # reference to line
+        ("breaches", "levl", 4),  # reference to line
     ],
 )
 def test_not_off_by_one(h5_out, group, dataset, expected):

@@ -191,7 +191,6 @@ def _make_gridadmin(
             potential_breaches=potential_breaches,
             line_id_counter=line_id_counter,
         )
-        grid.add_breaches(potential_breaches)
 
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,

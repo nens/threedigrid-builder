@@ -474,3 +474,20 @@ def test_scalar_arg_add():
     actual = a + b
     assert len(actual) == 4
     assert actual.foo == "bar"
+
+
+@pytest.mark.parametrize(
+    "name,index,expected",
+    [
+        ("number", [1, 2, -9999], [2.3, 3.4, np.nan]),
+        ("name", [1, 2, -9999], ["b", "c", None]),
+        ("animal", [1, 2, -9999], [2, 3, -9999]),
+        ("number", 2, 3.4),
+    ],
+)
+def test_take(name, index, expected):
+    records = Records(
+        id=range(3), name=["a", "b", "c"], animal=[1, 2, 3], number=[1.2, 2.3, 3.4]
+    )
+
+    assert_equal(records.take(name, index), expected)

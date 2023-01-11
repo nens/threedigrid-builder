@@ -57,14 +57,6 @@ class Line:
 class Lines(Array[Line]):
     """Line between two calculation nodes (a.k.a. velocity point)."""
 
-    def get_linestrings(self, mask):
-        coordinates = self.line_coords[mask]
-        if not np.isfinite(coordinates).all():
-            raise ValueError(
-                f"{self.__class__.__name__} object has inclomplete line_coords."
-            )
-        return pygeos.linestrings(coordinates.reshape(-1, 2, 2))
-
     def get_velocity_points(self, mask):
         if np.any(pygeos.is_missing(self.line_geometries[mask])):
             raise ValueError("No line geometries available")

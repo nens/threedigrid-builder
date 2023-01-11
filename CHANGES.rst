@@ -34,6 +34,8 @@ Changelog of threedigrid-builder
 - 1D-2D lines derived from exchange lines are also converted to breaches.
   These breaches have no properties.
 
+- Draw breach points where the user-input linestring intersects the obstacle.
+
 
 1.6.1 (2022-12-08)
 ------------------
