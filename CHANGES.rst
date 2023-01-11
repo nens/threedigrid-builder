@@ -23,7 +23,7 @@ Changelog of threedigrid-builder
 - Assign breaches to connection nodes according to the following priority:
   First, take the breach points of the first channel that has 2 breach.
   If there are no double breach points: take the breach points of the 
-  irst channel.
+  first channel.
 
 - Adapt 1D-2D lines generation for connection nodes to the exchange lines.
   A connection node derives its exchange lines from a particular channel.
