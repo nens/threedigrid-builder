@@ -1,7 +1,5 @@
 module m_grid_utils
 
-    use iso_fortran_env, only : int16
-
     implicit none
 
     contains
@@ -80,8 +78,6 @@ module m_grid_utils
     end subroutine crop_pix_coords_to_raster
 
     function pad_area_mask(raster, i0, i1, j0, j1) result(padded_raster)
-        
-        use iso_fortran_env, only: int16
 
         integer*2, intent(in) :: raster(:,:)
         integer, intent(in) :: i0
@@ -90,10 +86,6 @@ module m_grid_utils
         integer, intent(in) :: j1
         integer*2, allocatable :: padded_raster(:, :)
         integer :: i_size, j_size, size_raster_i, size_raster_j
-        integer :: i0r, i1r
-        integer :: j0r, j1r
-        integer :: i0p, i1p
-        integer :: j0p, j1p
 
         size_raster_i = size(raster, 1)
         size_raster_j = size(raster, 2)
@@ -199,7 +191,7 @@ module m_grid_utils
         double precision, intent(out), optional :: xcross, ycross
         double precision :: aa0,aa1,bb0,bb1,cc0,cc1,ddi,ds0,ds1,ds2
         
-        !> @details First it finds the corresponding connection.
+        !> details First it finds the corresponding connection.
         !! Second, the orientation of levee with respect to grid is determined
         !! Third, It is determined which velocity points are connected and which flooding treshold it belongs.
         !> @param[in] x0, y0 coordinates of beginning of levee element
@@ -378,10 +370,10 @@ module m_grid_utils
 
     end function geom_in_polygon
 
-	subroutine point_in_polygon(p_x, p_y, poly_x, poly_y, in_polygon)
-	
-	    implicit none
-    
+    subroutine point_in_polygon(p_x, p_y, poly_x, poly_y, in_polygon)
+
+        implicit none
+
         double precision, intent(in) :: p_x
         double precision, intent(in) :: p_y
         double precision, intent(in) :: poly_x(:)
@@ -398,35 +390,35 @@ module m_grid_utils
         in_polygon = -1
         n_vertices = size(poly_x)
 	
-	    do i= 1, n_vertices
-	        xi = poly_x(i) - p_x
-	        yi = poly_y(i) - p_y
+        do i= 1, n_vertices
+            xi = poly_x(i) - p_x
+            yi = poly_y(i) - p_y
 	!CHECK WHETHER THE POINT IN QUESTION IS AT THIS VERTEX.
-	        if( xi==0.0d0.and.yi==0.0d0) then
-	            in_polygon = 0
-	            return
+            if( xi==0.0d0.and.yi==0.0d0) then
+                in_polygon = 0
+                return
             endif
 	!J IS NEXT VERTEX NUMBER OF POLYGON.
-	        j = 1 + mod(i,n_vertices)
-	        xj = poly_x(j) - p_x
-	        yj = poly_y(j) - p_y
+            j = 1 + mod(i,n_vertices)
+            xj = poly_x(j) - p_x
+            yj = poly_y(j) - p_y
 	!IS THIS LINE OF 0 LENGTH ?
             if(xi==xj.and.yi==yj ) then
                 cycle
             endif
-	        ix = xi>=0.0d0
-	        iy = yi>=0.0d0
-	        jx = xj>=0.0d0
-	        jy = yj>=0.0d0
+            ix = xi>=0.0d0
+            iy = yi>=0.0d0
+            jx = xj>=0.0d0
+            jy = yj>=0.0d0
 	!CHECK WHETHER (PX,PY) IS ON VERTICAL SIDE OF POLYGON.
-	        if(xi==0.0d0.and.xj==0.0d0.and.eor(iy,jy)) then
-	            in_polygon = 0
-	            return
+            if(xi==0.0d0.and.xj==0.0d0.and.eor(iy,jy)) then
+                in_polygon = 0
+                return
             endif
 	!CHECK WHETHER (PX,PY) IS ON HORIZONTAL SIDE OF POLYGON.
-	        if(yi==0.0d0.and.yj==0.0d0.and.eor(ix,jx)) then
-	            in_polygon = 0
-	            return
+            if(yi==0.0d0.and.yj==0.0d0.and.eor(ix,jx)) then
+                in_polygon = 0
+                return
             endif
 	!CHECK WHETHER BOTH ENDS OF THIS SIDE ARE COMPLETELY 1) TO RIGHT
 	!OF, 2) TO LEFT OF, OR 3) BELOW (PX,PY).
@@ -434,17 +426,17 @@ module m_grid_utils
                 cycle
             endif
 	!DOES THIS SIDE OBVIOUSLY CROSS LINE RISING VERTICALLY FROM (PX,PY)
-	        if(.not.(iy.and.jy.and.eor(ix,jx))) then
-	            if((yi*xj-xi*yj)/(xj-xi)<0.0d0) then
+            if(.not.(iy.and.jy.and.eor(ix,jx))) then
+                if((yi*xj-xi*yj)/(xj-xi)<0.0d0) then
                     cycle
                 elseif((yi*xj-xi*yj)/(xj-xi)==0.0d0) then
-	                in_polygon = 0
-	                return
-	            else
-	               in_polygon = -in_polygon
+                    in_polygon = 0
+                    return
+                else
+                    in_polygon = -in_polygon
                 endif
-	        else
-	            in_polygon = -in_polygon
+            else
+                in_polygon = -in_polygon
             endif
 	
         enddo

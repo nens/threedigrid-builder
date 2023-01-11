@@ -1,17 +1,15 @@
 module m_quadtree
 
     use parameters, only : NODATA
-    use iso_fortran_env, only : int16
 
     implicit none
 
     contains
 
     subroutine make_quadtree(kmax, mmax, nmax, lgrmin, use_2d_flow, area_mask, lg, quad_idx,&
-        n_cells, n_line_u, n_line_v) bind(c, name="make_quadtree")
+        n_cells, n_line_u, n_line_v)
     !!! Entry point for creating quadtree by setting lg array and then finding number of active cells and lines.
         use parameters, only : NODATA
-        use iso_fortran_env, only : int16
 
         integer, intent(in) :: kmax ! Maximum refinement levels
         integer, intent(in) :: mmax(:) ! X Dimension of each refinement level
@@ -45,7 +43,6 @@ module m_quadtree
     !!! Recursive subroutine to set correct refinement levels on lg refinement array.
         use m_grid_utils, only : get_lg_corners
         use parameters, only : NODATA
-        use iso_fortran_env, only : int16
 
         integer, intent(in) :: k
         integer, intent(in) :: m
@@ -117,7 +114,6 @@ module m_quadtree
         use m_grid_utils, only : get_lg_corners, get_pix_corners, crop_pix_coords_to_raster, pad_area_mask
         use m_cells, only : set_2d_computational_lines
         use parameters, only : NODATA
-        use iso_fortran_env, only : int16
 
         integer, intent(in) :: kmax
         integer, intent(in) :: mmax(:)

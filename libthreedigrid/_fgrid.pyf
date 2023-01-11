@@ -6,7 +6,6 @@ python module _fgrid ! in
         module m_quadtree ! in :_fgrid:quadtree.f90
             subroutine make_quadtree(kmax,mmax,nmax,lgrmin,use_2d_flow,area_mask,lg,quad_idx,n_cells,n_line_u,n_line_v) ! in :_fgrid:quadtree.f90:m_quadtree
                 use parameters, only : NODATA
-                use iso_fortran_env, only : int16
                 integer intent(in) :: kmax
                 integer dimension(:),intent(in) :: mmax
                 integer dimension(:),intent(in) :: nmax
@@ -21,9 +20,7 @@ python module _fgrid ! in
             end subroutine make_quadtree
         end module m_quadtree
         module m_cells ! in :_fgrid:cells.f90
-            use iso_fortran_env, only: int16
             subroutine set_2d_computational_nodes_lines(origin,lgrmin,kmax,mmax,nmax,dx,lg,nodk,nodm,nodn,quad_idx,bounds,coords,pixel_coords,area_mask,line,cross_pix_coords,n_line_u,n_line_v) ! in :_fgrid:cells.f90:m_cells
-                use iso_fortran_env, only: int16
                 use m_grid_utils, only: get_lg_corners,get_cell_bbox,get_pix_corners,pad_area_mask
                 double precision dimension(2),intent(in) :: origin
                 integer intent(in) :: lgrmin

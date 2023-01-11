@@ -12,19 +12,19 @@ module m_array_utils
     
     contains
 
-    function check_bounds_d_1d(array, i0, i1) result(check)
+    function check_bounds_d_1d(array, i0, i1) result(inbound)
 
         double precision, intent(in) :: array(:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
-        logical :: check
+        logical :: inbound
 
-        check = .FALSE.
+        inbound = .FALSE.
         if (i0 >= lbound(array, 1) .and. i1 <= ubound(array, 1)) then
             if(i0 <= i1) then
-                check = .TRUE.
+                inbound = .TRUE.
             else
-                check = .FALSE.
+                inbound = .FALSE.
             endif
         else
             write(*,*) '** WARNING: Array out of bounds'
@@ -32,14 +32,14 @@ module m_array_utils
 
     end function check_bounds_d_1d
 
-    function check_bounds_d_2d(array, i0, i1, axis_in) result(check)
+    function check_bounds_d_2d(array, i0, i1, axis_in) result(inbound)
 
         double precision, intent(in) :: array(:,:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
         integer, intent(in), optional :: axis_in
         integer :: axis
-        logical :: check
+        logical :: inbound
 
         if (present(axis_in)) then
             axis = axis_in
@@ -47,13 +47,13 @@ module m_array_utils
             axis = 1
         endif
 
-        check = .FALSE.
+        inbound = .FALSE.
         if (i0 >= lbound(array, axis) .and. i1 <= ubound(array, axis)) then
             if(i0 <= i1) then
-                check = .TRUE.
+                inbound = .TRUE.
             else
                 write(*,*) '** WARNING: Indices in incorrect order.'
-                check = .FALSE.
+                inbound = .FALSE.
             endif
         else
             write(*,*) '** WARNING: Array out of bounds'
@@ -61,19 +61,19 @@ module m_array_utils
 
     end function check_bounds_d_2d
 
-    function check_bounds_i_1d(array, i0, i1) result(check)
+    function check_bounds_i_1d(array, i0, i1) result(inbound)
 
         integer, intent(in) :: array(:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
-        logical :: check
+        logical :: inbound
 
-        check = .FALSE.
+        inbound = .FALSE.
         if (i0>=lbound(array, 1) .and. i1<=ubound(array, 1)) then
             if(i0 <= i1) then
-                check = .TRUE.
+                inbound = .TRUE.
             else
-                check = .FALSE.
+                inbound = .FALSE.
             endif
         else
             write(*,*) '** WARNING: Array out of bounds'
@@ -81,14 +81,14 @@ module m_array_utils
 
     end function check_bounds_i_1d
 
-    function check_bounds_i_2d(array, i0, i1, axis_in) result(check)
+    function check_bounds_i_2d(array, i0, i1, axis_in) result(inbound)
 
         integer, intent(in) :: array(:,:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
         integer, intent(in), optional :: axis_in
         integer :: axis
-        logical :: check
+        logical :: inbound
 
         if (present(axis_in)) then
             axis = axis_in
@@ -96,12 +96,12 @@ module m_array_utils
             axis = 1
         endif
 
-        check = .FALSE.
+        inbound = .FALSE.
         if (i0>=lbound(array, axis) .and. i1<=ubound(array, axis)) then
             if(i0 <= i1) then
-                check = .TRUE.
+                inbound = .TRUE.
             else
-                check = .FALSE.
+                inbound = .FALSE.
             endif
         else
             write(*,*) '** WARNING: Array out of bounds'
