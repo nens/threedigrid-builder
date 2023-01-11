@@ -78,7 +78,7 @@ def grid_all():
             -9999,
             -9999,
             ContentType.TYPE_V2_BREACH,
-            ContentType.TYPE_V2_BREACH,
+            ContentType.TYPE_V2_EXCHANGE_LINE,
         ],
         content_pk=[-9999, -9999, -9999, 1, 0],
         ds1d_half=[0.5, 1.0, 1.0, 5.0, 8.0],

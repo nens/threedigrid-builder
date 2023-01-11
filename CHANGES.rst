@@ -31,6 +31,9 @@ Changelog of threedigrid-builder
   take the first double connected channel. Else, take the first single
   connected channel.
 
+- 1D-2D lines derived from exchange lines are also converted to breaches.
+  These breaches have no properties.
+
 
 1.6.1 (2022-12-08)
 ------------------

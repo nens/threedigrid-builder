@@ -400,6 +400,8 @@ def test_write_levees_coords(h5_out):
         ("levmat", (3,), "int32"),
         ("content_pk", (3,), "int32"),
         ("coordinates", (2, 3), "float64"),
+        ("code", (3,), "|S32"),  # added
+        ("display_name", (3,), "|S64"),  # added
         # ("llev", (1931,), "int32"),  dropped
         # ("kcu", (2,), "int32"),  dropped
         # ("seq_ids", (2,), "int32"),  dropped
