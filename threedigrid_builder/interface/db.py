@@ -13,10 +13,7 @@ from pyproj import Transformer
 from pyproj.crs import CRS
 from sqlalchemy import cast, inspect, Integer
 from sqlalchemy.orm import Session
-from threedi_modelchecker.schema import ModelSchema
-from threedi_modelchecker.threedi_database import ThreediDatabase
-from threedi_modelchecker.threedi_model import models
-from threedi_modelchecker.threedi_model.custom_types import IntegerEnum
+from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
 
 from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import InitializationType, LineType
@@ -51,7 +48,7 @@ MIN_SQLITE_VERSION = 214
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
-NumpyQuery.default_numpy_settings[IntegerEnum] = {
+NumpyQuery.default_numpy_settings[custom_types.IntegerEnum] = {
     **NumpyQuery.default_numpy_settings[Integer],
     "sql_cast": lambda x: cast(x, Integer),
 }
