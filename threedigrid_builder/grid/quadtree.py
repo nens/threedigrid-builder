@@ -122,6 +122,11 @@ class QuadTree:
             self.n_lines_v,
         )
 
+        if self.n_cells.sum() == 0:
+            raise SchematisationError(
+                "There are no 2D cells because the raster contains no active pixels"
+            )
+
     def __repr__(self):
         return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>"  # NOQA
 

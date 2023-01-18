@@ -368,3 +368,15 @@ def test_reduce_refinement_levels(
 @pytest.mark.parametrize("refinements", [None, GridRefinements(id=[])])
 def test_reduce_refinement_levels_no_refinements(refinements):
     assert reduce_refinement_levels(refinements, 3) == 1
+
+
+def test_quadtree_no_active_pixels(subgrid_meta):
+    subgrid_meta["area_mask"][:] = 0
+    with pytest.raises(SchematisationError):
+        QuadTree(
+            subgrid_meta=subgrid_meta,
+            num_refine_levels=3,
+            min_gridsize=1.0,
+            use_2d_flow=True,
+            refinements=None,
+        )
