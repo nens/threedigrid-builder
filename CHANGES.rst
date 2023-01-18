@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.7.1 (unreleased)
+1.7.1 (2023-01-18)
 ------------------
 
 - Fixed breaches.line_id when there are boundary conditions in the model.
