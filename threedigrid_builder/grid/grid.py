@@ -818,6 +818,8 @@ class Grid:
         if self.pumps is not None:
             mask = self.pumps.line != -9999
             self.pumps.line[mask] = np.take(new_node_ids, self.pumps.line[mask])
+        if self.breaches is not None:
+            self.breaches.line_id[:] = np.take(new_line_ids, self.breaches.line_id)
         if self.nodes_embedded is not None:
             self.nodes_embedded.embedded_in[:] = np.take(
                 new_node_ids, self.nodes_embedded.embedded_in
