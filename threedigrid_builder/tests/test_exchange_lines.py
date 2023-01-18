@@ -504,7 +504,7 @@ def test_assign_connection_nodes_to_channels_from_lines(
 def test_output_breaches(get_velocity_points):
     lines = Lines1D2D(
         id=range(1, 5),
-        content_type=[-9999, BREACH, EXC, BREACH],
+        content_type=[-9999, BREACH, BREACH, BREACH],
         content_pk=[-9999, 1, 2, 3],
     )
     potential_breaches = PotentialBreaches(
@@ -515,19 +515,19 @@ def test_output_breaches(get_velocity_points):
         maximum_breach_depth=[np.nan, 1.3, 1.4],
     )
 
-    get_velocity_points.return_value = pygeos.points([[0, 0], [1, 1], [2, 2]])
+    get_velocity_points.return_value = pygeos.points([[0, 0]])
     actual = lines.output_breaches(potential_breaches)
 
-    assert_array_equal(actual.id, [0, 1, 2])
-    assert_array_equal(actual.line_id, [2, 4, 3])
-    assert_array_equal(actual.content_pk, [1, 3, -9999])
+    assert_array_equal(actual.id, [0])
+    assert_array_equal(actual.line_id, [3])
+    assert_array_equal(actual.content_pk, [2])
 
-    assert_array_equal(actual.maximum_breach_depth, [np.nan, 1.4, np.nan])
-    assert_array_equal(actual.levee_material, [1, -9999, -9999])
+    assert_array_equal(actual.maximum_breach_depth, [1.3])
+    assert_array_equal(actual.levee_material, [2])
 
     assert_geometries_equal(actual.the_geom, get_velocity_points.return_value)
 
-    assert_array_equal(actual.code, ["a", "c", None])
-    assert_array_equal(actual.display_name, ["aa", "cc", None])
+    assert_array_equal(actual.code, ["b"])
+    assert_array_equal(actual.display_name, ["bb"])
 
     get_velocity_points.assert_called_once()

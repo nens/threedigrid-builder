@@ -420,35 +420,31 @@ class Lines1D2D(Lines):
     def output_breaches(self, breaches: PotentialBreaches) -> PotentialBreaches:
         """Create the actual breaches based on the 1D-2D lines
 
-        This results in 'named' breaches (which are present in the input potential_breaches)
-        and 'anonymous' breaches (which come from exchane lines).
+        This results in 'named' breaches (which are present in the input potential_breaches).
+        Other 1D-2D lines may be breached as well, but they have no metadata.
         """
-        line_idx_pot_breach = np.where(self.content_type == ContentType.TYPE_V2_BREACH)[
-            0
-        ]
-        breach_idx = breaches.id_to_index(self.content_pk[line_idx_pot_breach])
+        line_idx = np.where(self.content_type == ContentType.TYPE_V2_BREACH)[0]
+        breach_idx = breaches.id_to_index(self.content_pk[line_idx])
 
         # Order by breach id
         sorter = np.argsort(breach_idx)
-        line_idx_pot_breach = line_idx_pot_breach[sorter]
+        line_idx = line_idx[sorter]
         breach_idx = breach_idx[sorter]
 
-        # Add the 'anonymous' breaches (from exchange lines)
-        line_idx_exc_line = np.where(
-            self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
-        )[0]
-        line_idx = np.concatenate([line_idx_pot_breach, line_idx_exc_line])
-        breach_idx = np.concatenate(
-            [breach_idx, np.full(len(line_idx_exc_line), -9999)]
+        # Filter by breaches that miss metadata
+        mask = (breaches.levee_material[breach_idx] != -9999) & np.isfinite(
+            breaches.maximum_breach_depth[breach_idx]
         )
+        line_idx = line_idx[mask]
+        breach_idx = breach_idx[mask]
 
         return PotentialBreaches(
             id=range(len(breach_idx)),
             line_id=self.id[line_idx],
-            content_pk=breaches.take("id", breach_idx),
-            maximum_breach_depth=breaches.take("maximum_breach_depth", breach_idx),
-            levee_material=breaches.take("levee_material", breach_idx),
+            content_pk=breaches.id[breach_idx],
+            maximum_breach_depth=breaches.maximum_breach_depth[breach_idx],
+            levee_material=breaches.levee_material[breach_idx],
             the_geom=self.get_velocity_points(line_idx),
-            code=breaches.take("code", breach_idx),
-            display_name=breaches.take("display_name", breach_idx),
+            code=breaches.code[breach_idx],
+            display_name=breaches.display_name[breach_idx],
         )
