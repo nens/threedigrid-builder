@@ -117,9 +117,9 @@ def test_integration(tmp_path, filename):
         assert f["levees"]["id"][:].tolist() == [1, 2, 3]
 
         ## BREACHES
-        assert f["breaches"]["id"][:].tolist() == [0, 1, 2]
+        assert f["breaches"]["id"][:].tolist() == [0, 1]
         assert_almost_equal(
-            f["breaches"]["coordinates"][:, 1], [108989.87, 517278.26], decimal=2
+            f["breaches"]["coordinates"][:, 1], [108988.84, 517280.88], decimal=2
         )
 
         ## COUNTS

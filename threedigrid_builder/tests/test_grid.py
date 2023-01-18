@@ -12,7 +12,13 @@ from threedigrid_builder.constants import (
     LineType,
     NodeType,
 )
-from threedigrid_builder.grid import ConnectionNodes, Grid, GridMeta, QuadtreeStats
+from threedigrid_builder.grid import (
+    ConnectionNodes,
+    Grid,
+    GridMeta,
+    PotentialBreaches,
+    QuadtreeStats,
+)
 
 
 @pytest.fixture
@@ -256,6 +262,7 @@ def grid_for_sorting():
         ),
         pumps=Pumps(id=[0], line=[(4, 5)]),
         nodes_embedded=Nodes(id=[0], embedded_in=[1]),
+        breaches=PotentialBreaches(id=[2], line_id=[6]),
     )
 
 
@@ -270,11 +277,13 @@ def test_sort(grid_for_sorting):
     assert_array_equal(grid.lines.line, [(3, 4), (4, 0), (5, 3)])
     assert_array_equal(grid.pumps.line, [(3, 4)])
     assert_array_equal(grid.nodes_embedded.embedded_in, [0])
+    assert_array_equal(grid.breaches.line_id, [1])
 
 
 def test_sort_no_lines(grid_for_sorting):
     grid_for_sorting.lines = grid_for_sorting.lines[:0]
     grid_for_sorting.pumps = grid_for_sorting.pumps[:0]
+    grid_for_sorting.breaches = grid_for_sorting.breaches[:0]
 
     grid_for_sorting.sort()
 

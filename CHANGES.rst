@@ -4,7 +4,10 @@ Changelog of threedigrid-builder
 1.7.1 (unreleased)
 ------------------
 
-- Handle the situation of an empty DEM.
+- Fixed breaches.line_id when there are boundary conditions in the model.
+
+- Revert "1D-2D lines derived from exchange lines are also converted to breaches"
+  from version 1.7.0.
 
 
 1.7.0 (2023-01-11)
