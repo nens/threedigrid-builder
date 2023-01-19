@@ -90,9 +90,9 @@ jobs:
       - name: Run unittests
         shell: bash
         run: |
-          pytest threedigrid_builder
+          pytest
 
       - name: Run integration tests
         shell: bash
         run: |
-          pytest integration_tests
+          pytest -c /dev/null integration_tests
