@@ -59,7 +59,7 @@ install_requires = [
     "sqlalchemy>=1.3.12",
 ]
 
-test_requires = ["pytest"]
+test_requires = ["pytest", "pytest-cov"]
 
 setup(
     name="threedigrid-builder",
