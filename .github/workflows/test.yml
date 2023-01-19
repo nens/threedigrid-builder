@@ -51,7 +51,7 @@ jobs:
             pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
             extras: "[test,gridadmin]"
           # current
-          - python: '3.11'
+          - python: '3.10'  # h5py has no wheels for 3.11 (yet) https://github.com/h5py/h5py/issues/2146
             os: ubuntu-latest
             numpy: numpy
             pins: "git+https://github.com/nens/threedi-modelchecker@master#egg=threedi-modelchecker"
