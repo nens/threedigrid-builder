@@ -2,10 +2,10 @@ import itertools
 from unittest import mock
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
-from pygeos.testing import assert_geometries_equal
+from shapely.testing import assert_geometries_equal
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
@@ -114,7 +114,7 @@ def test_assign_2d_side():
     )
     exchange_lines = ExchangeLines(
         id=[1, 2],
-        the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 10], [10, 10]]]),
+        the_geom=shapely.linestrings([[[0, 0], [10, 0]], [[0, 10], [10, 10]]]),
     )
     lines = Lines1D2D(
         id=range(4),
@@ -129,7 +129,7 @@ def test_assign_2d_side():
 
 @pytest.fixture
 def cell_tree():
-    return pygeos.STRtree([pygeos.box(0, 0, 1, 1), pygeos.box(1, 0, 3, 2)])
+    return shapely.STRtree([shapely.box(0, 0, 1, 1), shapely.box(1, 0, 3, 2)])
 
 
 @pytest.mark.parametrize(
@@ -297,7 +297,7 @@ def test_assign_breaches_single_connected(breach_ids, breach_2d_coords, content_
     lines = Lines1D2D(id=[1], line=[(-9999, 1)], line_coords=[(10, 0, 0, 0)])
     potential_breaches = PotentialBreaches(
         id=range(1, len(breach_2d_coords) + 1),
-        the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
+        the_geom=shapely.linestrings([[(0, 0), x] for x in breach_2d_coords]),
     )
     lines.assign_breaches(nodes, potential_breaches)
 
@@ -340,7 +340,7 @@ def test_assign_breaches_double_connected(breach_ids, breach_2d_coords, content_
     )
     potential_breaches = PotentialBreaches(
         id=range(1, len(breach_2d_coords) + 1),
-        the_geom=pygeos.linestrings([[(0, 0), x] for x in breach_2d_coords]),
+        the_geom=shapely.linestrings([[(0, 0), x] for x in breach_2d_coords]),
     )
     lines.assign_breaches(nodes, potential_breaches)
 
@@ -365,7 +365,7 @@ def test_assign_breaches_multiple():
     )
     potential_breaches = PotentialBreaches(
         id=[1, 2, 3, 4],
-        the_geom=pygeos.linestrings(
+        the_geom=shapely.linestrings(
             [[(0, 0), x] for x in [(2, 9), (2, 1), (6, 10), (6, 1)]]
         ),
         code=["a", "b", "c", "d"],
@@ -389,7 +389,7 @@ def test_assign_breaches_multiple():
     ],
 )
 def test_assign_ds1d_half_from_obstacles(obstacle_geom, line_coords, expected):
-    obstacles = Obstacles(id=[1], the_geom=[pygeos.linestrings(obstacle_geom)])
+    obstacles = Obstacles(id=[1], the_geom=[shapely.linestrings(obstacle_geom)])
     lines = Lines1D2D(id=range(1), line_coords=[line_coords])
     lines.fix_line_geometries()
 
@@ -414,7 +414,7 @@ def test_assign_ds1d_half():
     lines = Lines1D2D(
         id=range(2),
         ds1d_half=[np.nan, 5.0],
-        line_geometries=[pygeos.linestrings([[0, 0], [0, 9]]), None],
+        line_geometries=[shapely.linestrings([[0, 0], [0, 9]]), None],
     )
     lines.assign_ds1d_half()
 
@@ -515,7 +515,7 @@ def test_output_breaches(get_velocity_points):
         maximum_breach_depth=[np.nan, 1.3, 1.4],
     )
 
-    get_velocity_points.return_value = pygeos.points([[0, 0]])
+    get_velocity_points.return_value = shapely.points([[0, 0]])
     actual = lines.output_breaches(potential_breaches)
 
     assert_array_equal(actual.id, [0])

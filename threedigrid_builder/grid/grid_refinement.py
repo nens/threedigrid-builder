@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 from osgeo import gdal, gdal_array, ogr
 
 from threedigrid_builder.base import Array
@@ -10,7 +10,7 @@ class GridRefinement:
     display_name: str
     code: str
     refinement_level: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
 
 
 class GridRefinements(Array[GridRefinement]):
@@ -30,7 +30,7 @@ def rasterize(geoms, values, origin, width, height, cell_size, no_data_value):
     geometries intersect.
 
     Args:
-        arr (array of pygeos.Geometry)
+        arr (array of shapely.Geometry)
         values (array of int)
         origin (tuple of 2 floats): x, y order
         width (int)
@@ -51,7 +51,7 @@ def rasterize(geoms, values, origin, width, height, cell_size, no_data_value):
     array = np.full((1, height, width), no_data_value, dtype=dtype)
 
     # drop empty geometries
-    mask = pygeos.is_geometry(geoms)
+    mask = shapely.is_geometry(geoms)
     geoms = geoms[mask]
     values = values[mask]
 
@@ -72,7 +72,7 @@ def rasterize(geoms, values, origin, width, height, cell_size, no_data_value):
 
     for geometry, value in zip(geoms, values):
         feature = ogr.Feature(layer_definition)
-        feature.SetGeometry(ogr.CreateGeometryFromWkb(pygeos.to_wkb(geometry)))
+        feature.SetGeometry(ogr.CreateGeometryFromWkb(shapely.to_wkb(geometry)))
         if ogr_dtype is not None:
             feature[burn_attr] = value
         layer.CreateFeature(feature)

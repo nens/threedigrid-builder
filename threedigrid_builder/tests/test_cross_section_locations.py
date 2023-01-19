@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Lines, Nodes
@@ -21,10 +21,10 @@ def channels():
     return Channels(
         id=[51, 52, 53, 54],
         the_geom=[
-            pygeos.linestrings([(0, 0), (3, 0)]),  # 1 segment of size 3
-            pygeos.linestrings([(55, 3), (60, 3)]),  # 1 segment of size 5
-            pygeos.linestrings([(3, 1), (36, 1)]),  # 3 segments of size 11
-            pygeos.linestrings([(40, 2), (54, 2)]),  # 2 segments of size 7
+            shapely.linestrings([(0, 0), (3, 0)]),  # 1 segment of size 3
+            shapely.linestrings([(55, 3), (60, 3)]),  # 1 segment of size 5
+            shapely.linestrings([(3, 1), (36, 1)]),  # 3 segments of size 11
+            shapely.linestrings([(40, 2), (54, 2)]),  # 2 segments of size 7
         ],
     )
 
@@ -58,7 +58,7 @@ def channel_lines():
 def locations():
     return CrossSectionLocations(
         id=[1, 2, 3, 5, 6],
-        the_geom=pygeos.points([(1, 0), (26, 1), (16, 1), (58, 3), (49, 2)]),
+        the_geom=shapely.points([(1, 0), (26, 1), (16, 1), (58, 3), (49, 2)]),
         channel_id=[51, 53, 53, 52, 54],
         friction_type=[1, 1, 1, 2, 2],
         friction_value=[30, 35, 40, 0.02, 0.03],
@@ -114,7 +114,7 @@ def test_compute_weights(locations, channels, channel_lines, extrapolate):
 def test_compute_weights_edge_effects(channels):
     locations = CrossSectionLocations(
         id=range(3),
-        the_geom=pygeos.points([(0, 0), (55, 3), (3, 0)]),
+        the_geom=shapely.points([(0, 0), (55, 3), (3, 0)]),
         channel_id=[51, 52, 51],
     )
     expected_cross_loc1 = [0, 0, 1, 1]
@@ -196,8 +196,8 @@ def test_apply_to_lines_project_locations(channels, channel_lines, locations):
     # CrossSectionLocations are not on the channels
     # - channel 51 (cs index 0): displaced 1 (should be projected on the line)
     # - channel 52 (cs index 3): displaced far away (should be projected to line end)
-    locations.the_geom[0] = pygeos.points((1, 1))  # id = 1
-    locations.the_geom[3] = pygeos.points((1000, 3))  # id = 5
+    locations.the_geom[0] = shapely.points((1, 1))  # id = 1
+    locations.the_geom[3] = shapely.points((1000, 3))  # id = 5
     locations.apply_to_lines(channel_lines, channels, extrapolate=False)
 
     assert_equal(channel_lines.cross_id1, [3, 4, 4, 4, 4, 5, 5])

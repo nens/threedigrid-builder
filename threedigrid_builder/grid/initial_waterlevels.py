@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import search
 from threedigrid_builder.constants import ContentType
@@ -24,12 +24,12 @@ def _compute_for_interpolated_nodes(nodes, cn_idx, objects):
     is_type = nodes.content_type == objects.content_type
     if not is_type.any():
         return is_type, None
-    if pygeos.is_missing(objects.the_geom).any():
+    if shapely.is_missing(objects.the_geom).any():
         raise ValueError(
             f"{objects.__class__.__name__} found without a geometry. Call "
             f"set_geometries first."
         )
-    lengths = pygeos.length(objects.the_geom)
+    lengths = shapely.length(objects.the_geom)
 
     idx = objects.id_to_index(nodes.content_pk[is_type])
     weights = nodes.s1d[is_type] / lengths[idx]

@@ -2,7 +2,7 @@ from dataclasses import dataclass, fields
 from typing import Optional, Tuple, Union
 
 import numpy as np
-import pygeos
+import shapely
 from osgeo import osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
@@ -240,15 +240,15 @@ class Grid:
 
     @property
     def cell_tree(self):
-        """A pygeos STRtree of the cells in this grid
+        """A shapely STRtree of the cells in this grid
 
         The indices in the tree equal the node indices.
         """
         if self._cell_tree is None:
             is_2d_open = self.nodes.node_type == NodeType.NODE_2D_OPEN_WATER
             geoms = np.empty(len(self.nodes), dtype=object)
-            geoms[is_2d_open] = pygeos.box(*self.nodes.bounds[is_2d_open].T)
-            self._cell_tree = pygeos.STRtree(geoms)
+            geoms[is_2d_open] = shapely.box(*self.nodes.bounds[is_2d_open].T)
+            self._cell_tree = shapely.STRtree(geoms)
         return self._cell_tree
 
     @classmethod
@@ -361,7 +361,7 @@ class Grid:
         connection_nodes: connection_nodes_module.ConnectionNodes,
         objects: BaseLinear,
         fixed_nodes: PointsOnLine,
-        cell_tree: pygeos.STRtree,
+        cell_tree: shapely.STRtree,
         global_dist_calc_points: float,
         embedded_cutoff_threshold: float,
         node_id_counter,
@@ -375,7 +375,7 @@ class Grid:
             connection_nodes (ConnectionNodes): used to map ids to indices
             objects (Channels, Pipes, Culverts)
             fixed_nodes (PointsOnLine): to optionally fix interpolated node positions
-            cell_tree (pygeos.STRtree): strtree of the 2D cells (for embedded channels)
+            cell_tree (shapely.STRtree): strtree of the 2D cells (for embedded channels)
             global_dist_calc_points (float): Default node interdistance.
             embedded_cutoff_threshold (float): The min length of an embedded line.
             node_id_counter (iterable): an iterable yielding integers

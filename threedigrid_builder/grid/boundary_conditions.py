@@ -1,7 +1,7 @@
 import itertools
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, Lines, Nodes
 from threedigrid_builder.constants import (
@@ -92,7 +92,7 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
 class BoundaryCondition2D:
     id: int
     boundary_type: BoundaryType
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
 
 
 class BoundaryConditions2D(Array[BoundaryCondition2D]):
@@ -108,7 +108,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         for bc_idx in range(len(self)):
             bc_geom = self.the_geom[bc_idx]
 
-            x1, y1, x2, y2 = pygeos.bounds(bc_geom)
+            x1, y1, x2, y2 = shapely.bounds(bc_geom)
             is_horizontal = (x2 - x1) > (y2 - y1)
 
             node_idx = np.sort(cell_tree.query(bc_geom))
@@ -117,16 +117,16 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
                 # can be right outside the cells.
 
                 # Start by getting the closest point inside the model area (all cells)
-                nearest_cell = cell_tree.geometries[cell_tree.nearest(bc_geom)[1][0]]
-                shortest_line = pygeos.shortest_line(nearest_cell, bc_geom)
-                x1, _, x2, _ = pygeos.bounds(nearest_cell)
-                if pygeos.length(shortest_line) < (x2 - x1):
-                    cell_coords, _ = pygeos.get_coordinates(shortest_line)
+                nearest_cell = cell_tree.geometries[cell_tree.nearest(bc_geom)]
+                shortest_line = shapely.shortest_line(nearest_cell, bc_geom)
+                x1, _, x2, _ = shapely.bounds(nearest_cell)
+                if shapely.length(shortest_line) < (x2 - x1):
+                    cell_coords, _ = shapely.get_coordinates(shortest_line)
 
                     # Adjust the x / y coordinate to the x / y coordinate of the point
-                    bc_coords = pygeos.get_coordinates(bc_geom)
+                    bc_coords = shapely.get_coordinates(bc_geom)
                     bc_coords[:, int(is_horizontal)] = cell_coords[int(is_horizontal)]
-                    bc_geom = pygeos.set_coordinates(bc_geom, bc_coords)
+                    bc_geom = shapely.set_coordinates(bc_geom, bc_coords)
 
                     # Query again for intersecting cells
                     node_idx = np.sort(cell_tree.query(bc_geom))

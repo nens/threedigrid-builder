@@ -1,7 +1,7 @@
 import logging
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import (
     Array,
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class PotentialBreach:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     code: str
     display_name: str
     exchange_level: float
@@ -166,11 +166,11 @@ class PotentialBreachPoints(PointsOnLine):
 class PotentialBreaches(Array[PotentialBreach]):
     @property
     def side_1d(self):
-        return pygeos.get_point(self.the_geom, 0)
+        return shapely.get_point(self.the_geom, 0)
 
     @property
     def side_2d(self):
-        return pygeos.get_point(self.the_geom, -1)
+        return shapely.get_point(self.the_geom, -1)
 
     def project_on_channels(self, channels: Channels) -> PotentialBreachPoints:
         """Project the potential breaches on channels, yielding points on channels.

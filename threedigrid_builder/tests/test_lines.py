@@ -1,8 +1,8 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_equal
-from pygeos.testing import assert_geometries_equal
+from shapely.testing import assert_geometries_equal
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import LineType
@@ -18,7 +18,7 @@ def lines():
     return Lines(
         id=[0, 1, 2],
         line=[(1, 2), (2, 3), (1, 3)],
-        line_geometries=[None, pygeos.linestrings([(5, 5), (6, 6)]), None],
+        line_geometries=[None, shapely.linestrings([(5, 5), (6, 6)]), None],
         ds1d=[np.nan, 16.0, 2.0],
     )
 
@@ -44,14 +44,14 @@ def test_fix_line_geometries(lines):
 
     lines.fix_line_geometries()
 
-    expected = pygeos.linestrings(
+    expected = shapely.linestrings(
         [[(1, 1), (2, 2)], [(5, 5), (6, 6)], [(1, 1), (3, 3)]]
     )
     assert_geometries_equal(lines.line_geometries, expected)
 
 
 def test_fix_ds1d(lines):
-    lines.line_geometries = pygeos.linestrings(
+    lines.line_geometries = shapely.linestrings(
         [[(1, 1), (2, 2)], [(5, 5), (6, 6)], [(1, 1), (3, 3)]]
     )
     lines.fix_ds1d()
@@ -107,4 +107,4 @@ def test_line_get_velocity_points(lines: Lines):
 
     actual = lines.get_velocity_points([1])
     assert len(actual) == 1
-    assert pygeos.to_wkt(actual[0]) == "POINT (5.5 5.5)"
+    assert shapely.to_wkt(actual[0]) == "POINT (5.5 5.5)"

@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
@@ -23,7 +23,7 @@ class Line:
     s1d: float  # position (arclength) along a 1D element
     ds1d_half: float  # position (arclength) along a single line (between two calc nodes.)
     ds1d: float  # arclength
-    line_geometries: pygeos.Geometry
+    line_geometries: shapely.Geometry
     line_coords: Tuple[float, float, float, float]
     content_type: ContentType
     content_pk: int
@@ -58,11 +58,11 @@ class Lines(Array[Line]):
     """Line between two calculation nodes (a.k.a. velocity point)."""
 
     def get_velocity_points(self, mask):
-        if np.any(pygeos.is_missing(self.line_geometries[mask])):
+        if np.any(shapely.is_missing(self.line_geometries[mask])):
             raise ValueError("No line geometries available")
         if np.any(~np.isfinite(self.ds1d_half[mask])):
             raise ValueError("No ds1d_half available")
-        return pygeos.line_interpolate_point(
+        return shapely.line_interpolate_point(
             self.line_geometries[mask], self.ds1d_half[mask]
         )
 
@@ -84,12 +84,12 @@ class Lines(Array[Line]):
 
     def fix_line_geometries(self):
         """Construct line_geometries from line_coords, where necessary"""
-        to_fix = pygeos.is_missing(self.line_geometries)
+        to_fix = shapely.is_missing(self.line_geometries)
         if not to_fix.any():
             return
         if np.any(~np.isfinite(self.line_coords[to_fix])):
             raise ValueError("No line coords available")
-        self.line_geometries[to_fix] = pygeos.linestrings(
+        self.line_geometries[to_fix] = shapely.linestrings(
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
 
@@ -98,9 +98,9 @@ class Lines(Array[Line]):
         to_fix = np.isnan(self.ds1d)
         if not to_fix.any():
             return
-        if np.any(pygeos.is_missing(self.line_geometries[to_fix])):
+        if np.any(shapely.is_missing(self.line_geometries[to_fix])):
             raise ValueError("No line geometries available")
-        self.ds1d[to_fix] = pygeos.length(self.line_geometries[to_fix])
+        self.ds1d[to_fix] = shapely.length(self.line_geometries[to_fix])
         self.ds1d_half[to_fix] = 0.5 * self.ds1d[to_fix]
 
     def sort_by_nodes(self, node_ids):

@@ -1,7 +1,7 @@
 from itertools import count
 
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
 
 from threedigrid_builder.base import Array, Lines, Nodes
@@ -23,7 +23,7 @@ ISOLATED = CalculationType.ISOLATED
 
 class LinearObject:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     calculation_type: CalculationType
     connection_node_start_id: int
     connection_node_end_id: int
@@ -107,7 +107,7 @@ def connection_nodes():
     # Used to map connection_node_start/end_id to an index (sequence id)
     return ConnectionNodes(
         id=[21, 25, 33, 42],
-        the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+        the_geom=shapely.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
     )
 
 
@@ -116,10 +116,10 @@ def test_embed_linear_objects_multiple(grid2d):
         id=[0, 1, 2, 3],
         calculation_type=EMBEDDED,
         the_geom=[
-            pygeos.linestrings([(1, 1), (15, 1)]),
-            pygeos.linestrings([(11, 1), (15, 1)]),
-            pygeos.linestrings([(6, 7), (10, 10), (15, 10), (15, 15), (10, 15)]),
-            pygeos.linestrings([(7, 2), (18, 2), (18, 9), (18, 18)]),
+            shapely.linestrings([(1, 1), (15, 1)]),
+            shapely.linestrings([(11, 1), (15, 1)]),
+            shapely.linestrings([(6, 7), (10, 10), (15, 10), (15, 15), (10, 15)]),
+            shapely.linestrings([(7, 2), (18, 2), (18, 9), (18, 18)]),
         ],
     )
 
@@ -188,12 +188,12 @@ def test_embed_linear_object(grid2d, geometry, lines_s1d, embedded_in, reverse):
         geometry = geometry[::-1]
         embedded_in = embedded_in[::-1]
         if lines_s1d is not None:
-            lines_s1d = pygeos.length(pygeos.linestrings(geometry)) - lines_s1d[::-1]
+            lines_s1d = shapely.length(shapely.linestrings(geometry)) - lines_s1d[::-1]
 
     linear_objects = LinearObjects(
         id=[0],
         calculation_type=EMBEDDED,
-        the_geom=[pygeos.linestrings(geometry)],
+        the_geom=[shapely.linestrings(geometry)],
     )
 
     nodes, actual_lines_s1d, line_ds1d_half = embed_linear_objects(
@@ -223,7 +223,7 @@ def test_embed_linear_object_outside_raise(grid2d, geometry, reverse):
     linear_objects = LinearObjects(
         id=[0],
         calculation_type=EMBEDDED,
-        the_geom=[pygeos.linestrings(geometry)],
+        the_geom=[shapely.linestrings(geometry)],
     )
 
     with pytest.raises(

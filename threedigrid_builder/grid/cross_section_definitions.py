@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CrossSectionShape
@@ -286,17 +286,17 @@ def tabulate_yz(shape, width, height):
         seen.add(x)
         zs[i] = x
 
-    # pygeos will automatically close an open profile
-    profile = pygeos.make_valid(pygeos.polygons(np.array([ys, zs]).T))
+    # shapely will automatically close an open profile
+    profile = shapely.make_valid(shapely.polygons(np.array([ys, zs]).T))
 
     # take the length of the intersection with a horizontal line at each Z
-    heights = np.unique(pygeos.get_coordinates(profile)[:, 1])
+    heights = np.unique(shapely.get_coordinates(profile)[:, 1])
     table = np.empty((len(heights), 2), dtype=float)
     y_min, y_max = ys.min(), ys.max()
     for i, height in enumerate(heights):
-        line = pygeos.linestrings([[y_min, height], [y_max, height]])
-        cross_section_line = pygeos.intersection(profile, line)
-        width = pygeos.length(cross_section_line)
+        line = shapely.linestrings([[y_min, height], [y_max, height]])
+        cross_section_line = shapely.intersection(profile, line)
+        width = shapely.length(cross_section_line)
         table[i, 0] = height
         table[i, 1] = width
 

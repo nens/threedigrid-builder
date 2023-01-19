@@ -2,7 +2,7 @@ import itertools
 import logging
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace
 from threedigrid_builder.constants import (
@@ -21,7 +21,7 @@ __all__ = ["ConnectionNodes"]
 
 class ConnectionNode:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     code: str
     storage_area: float
     manhole_id: int
@@ -68,7 +68,7 @@ class ConnectionNodes(Array[ConnectionNode]):
 
         nodes = Nodes(
             id=itertools.islice(node_id_counter, len(self)),
-            coordinates=pygeos.get_coordinates(self.the_geom),
+            coordinates=shapely.get_coordinates(self.the_geom),
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
             content_pk=self.id,
             node_type=node_type,
@@ -123,7 +123,7 @@ class ConnectionNodes(Array[ConnectionNode]):
             if name == "connection_node_start_id":
                 ds = 0.0
             else:
-                ds = pygeos.length(channels.the_geom[has_node])
+                ds = shapely.length(channels.the_geom[has_node])
             drain_level = compute_bottom_level(
                 channels.id[has_node],
                 ds,

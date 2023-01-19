@@ -1,4 +1,4 @@
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CalculationType, ContentType, FrictionType
@@ -20,7 +20,7 @@ class Pipe:
     sewerage_type: int
     friction_type: FrictionType
     friction_value: float
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     zoom_category: int
     display_name: str
     # profile_num

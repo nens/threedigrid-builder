@@ -1,7 +1,7 @@
 import logging
 
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Lines, Nodes
@@ -14,17 +14,17 @@ def test_potential_breach_sides():
     potential_breaches = PotentialBreaches(
         id=[1],
         channel_id=[1],
-        the_geom=[pygeos.linestrings([[0, 0], [0, 1]])],
+        the_geom=[shapely.linestrings([[0, 0], [0, 1]])],
     )
-    assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_1d), [[0, 0]])
-    assert_almost_equal(pygeos.get_coordinates(potential_breaches.side_2d), [[0, 1]])
+    assert_almost_equal(shapely.get_coordinates(potential_breaches.side_1d), [[0, 0]])
+    assert_almost_equal(shapely.get_coordinates(potential_breaches.side_2d), [[0, 1]])
 
 
 def test_potential_breach_merge(caplog):
     breaches = PotentialBreachPoints(
         linestrings=Channels(
             id=[0, 1],
-            the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
+            the_geom=shapely.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
         ).linestrings,
         id=range(7),
         s1d=[0.00001, 2.0, 5.0, 5.00001, 9.99999, 4, 4.00001],
@@ -47,7 +47,7 @@ def test_potential_breach_merge_empty():
     actual = PotentialBreachPoints.empty(
         linestrings=Channels(
             id=[0, 1],
-            the_geom=pygeos.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
+            the_geom=shapely.linestrings([[[0, 0], [10, 0]], [[0, 0], [0, 10]]]),
         ).linestrings
     ).merge()
 
@@ -63,7 +63,7 @@ def threeway_junction():
     )
     linestrings = Channels(
         id=[11, 12, 13],
-        the_geom=pygeos.linestrings([[[0, 0], [0, 1]]] * 3),
+        the_geom=shapely.linestrings([[[0, 0], [0, 1]]] * 3),
     ).linestrings
     lines = Lines(
         id=range(3),

@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid.zero_d import (
@@ -58,12 +58,12 @@ def test_surfaces(grid_all):
         nr_of_inhabitants=[1000.0, 2000.0, 2000.0],
         area=[100.0, 200.0, 200.0],
         dry_weather_flow=[1.0, 2.0, 2.0],
-        the_geom=[pygeos.points([1.0, 2.0]), None, None],
+        the_geom=[shapely.points([1.0, 2.0]), None, None],
         connection_node_id=[1, 2, 1],
         connection_node_the_geom=[
-            pygeos.points([1.0, 2.0]),
-            pygeos.points([2.0, 3.0]),
-            pygeos.points([1.0, 2.0]),
+            shapely.points([1.0, 2.0]),
+            shapely.points([2.0, 3.0]),
+            shapely.points([1.0, 2.0]),
         ],
         percentage=[100.0, 50.0, 50.0],
     )
@@ -132,12 +132,12 @@ def test_impervioussurfaces(grid_all):
         nr_of_inhabitants=[1000.0, 2000.0, 2000.0],
         area=[100.0, 200.0, 200.0],
         dry_weather_flow=[1.0, 2.0, 2.0],
-        the_geom=[pygeos.points([1.0, 2.0]), None, None],
+        the_geom=[shapely.points([1.0, 2.0]), None, None],
         connection_node_id=[1, 2, 1],
         connection_node_the_geom=[
-            pygeos.points([1.0, 2.0]),
-            pygeos.points([2.0, 3.0]),
-            pygeos.points([1.0, 2.0]),
+            shapely.points([1.0, 2.0]),
+            shapely.points([2.0, 3.0]),
+            shapely.points([1.0, 2.0]),
         ],
         percentage=[100.0, 50.0, 50.0],
     )

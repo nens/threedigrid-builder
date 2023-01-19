@@ -1,7 +1,7 @@
 from dataclasses import fields
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import (
     is_int_enum,
@@ -719,7 +719,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "levbr", breaches.maximum_breach_depth)
         self.write_dataset(group, "levmat", breaches.levee_material)
         self.write_dataset(
-            group, "coordinates", pygeos.get_coordinates(breaches.the_geom).T
+            group, "coordinates", shapely.get_coordinates(breaches.the_geom).T
         )
         self.write_dataset(group, "code", to_bytes_array(breaches.code, 32))
         self.write_dataset(
@@ -779,7 +779,7 @@ class GridAdminOut(OutputInterface):
 
     def write_line_geometry_dataset(self, group, name, data, insert_dummy=True):
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
-        line_geometries = [pygeos.get_coordinates(x).T.ravel() for x in data]
+        line_geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
         if insert_dummy:
             line_geometries.insert(0, np.array([np.nan, np.nan]))
         # The dataset has a special "variable length" dtype

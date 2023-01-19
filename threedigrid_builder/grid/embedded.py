@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict, deque
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import CalculationType, ContentType
@@ -39,9 +39,9 @@ def embed_nodes(grid, embedded_node_id_counter):
     if n_embedded == 0:
         return Nodes(id=[])
 
-    # The query_bulk returns 2 1D arrays: one with indices into the embedded nodes
+    # The query returns 2 1D arrays: one with indices into the embedded nodes
     # and one with indices into the cells.
-    idx = grid.cell_tree.query_bulk(pygeos.points(grid.nodes.coordinates[embedded_idx]))
+    idx = grid.cell_tree.query(shapely.points(grid.nodes.coordinates[embedded_idx]))
     # Address cases of no or multiple cells per embedded node
     unique_embedded_idx, first_unique_index = np.unique(idx[0], return_index=True)
     # multiple cells: just take the first one
@@ -176,23 +176,23 @@ class EmbeddedObjects:
     @classmethod
     def from_cell_tree(cls, objects, cell_tree):
         """Construct the velocity points in the embedded objects from a cell tree."""
-        # The query_bulk returns 2 1D arrays: one with indices into the objects
+        # The query returns 2 1D arrays: one with indices into the objects
         # and one with indices into the cells.
-        idx = cell_tree.query_bulk(objects.the_geom, "intersects")
+        idx = cell_tree.query(objects.the_geom, "intersects")
         # Get the intersections between objects and cell edges: these are the vpoints
-        _points = pygeos.intersection(
+        _points = shapely.intersection(
             objects.the_geom[idx[0]],
-            pygeos.get_exterior_ring(cell_tree.geometries[idx[1]]),
+            shapely.get_exterior_ring(cell_tree.geometries[idx[1]]),
         )
         # Get unique points per channel (there will be duplicates).
         # This also converts linestring intersections; every vertex becomes a point.
-        multipoints = pygeos.extract_unique_points(
-            pygeos.geometrycollections(_points, indices=idx[0])
+        multipoints = shapely.extract_unique_points(
+            shapely.geometrycollections(_points, indices=idx[0])
         )
         # Flatten into a 'ragged array' structure (points + indices into objects)
-        vpoints, vpoint_ch_idx = pygeos.get_parts(multipoints, return_index=True)
+        vpoints, vpoint_ch_idx = shapely.get_parts(multipoints, return_index=True)
         # Measure the location along the objects
-        vpoint_s = pygeos.line_locate_point(objects.the_geom[vpoint_ch_idx], vpoints)
+        vpoint_s = shapely.line_locate_point(objects.the_geom[vpoint_ch_idx], vpoints)
         return cls(objects, vpoint_s, vpoint_ch_idx)
 
     def get_nodes(self, node_id_counter):
@@ -205,13 +205,13 @@ class EmbeddedObjects:
         int_nodes = np.delete(np.arange(len(self.vpoint_line_s)), ch_start)
         self.vpoint_line_s[int_nodes] -= node_s
         node_ch_idx = np.delete(self.vpoint_ch_idx, ch_start)
-        node_point = pygeos.line_interpolate_point(
+        node_point = shapely.line_interpolate_point(
             self.objects.the_geom[node_ch_idx], node_s
         )
         node_cell_id = np.delete(self.vpoint_line[0], ch_start)
         return Nodes(
             id=itertools.islice(node_id_counter, len(node_ch_idx)),
-            coordinates=pygeos.get_coordinates(node_point),
+            coordinates=shapely.get_coordinates(node_point),
             content_type=self.objects.content_type,
             content_pk=self.objects.id[node_ch_idx],
             calculation_type=CalculationType.EMBEDDED,
@@ -229,7 +229,7 @@ class EmbeddedObjects:
         The EmbeddedObjects construction erroneously puts velocity points at channel
         endings if the ending is precisely at the cell edge. These are filtered out.
         """
-        ch_lengths = pygeos.length(self.objects.the_geom)
+        ch_lengths = shapely.length(self.objects.the_geom)
         return self[
             (self.vpoint_s > 0.0) & (self.vpoint_s < ch_lengths[self.vpoint_ch_idx])
         ]
@@ -244,14 +244,14 @@ class EmbeddedObjects:
         """
         # For each vpoint, see from which to which cell it goes. This is done by
         # going a bit before and after the vpoint and using the cell_tree.
-        pnt_a = pygeos.line_interpolate_point(
+        pnt_a = shapely.line_interpolate_point(
             self.objects.the_geom[self.vpoint_ch_idx], self.vpoint_s - VPOINT_EPSILON
         )
-        pnt_b = pygeos.line_interpolate_point(
+        pnt_b = shapely.line_interpolate_point(
             self.objects.the_geom[self.vpoint_ch_idx], self.vpoint_s + VPOINT_EPSILON
         )
-        vp_idx_a, cell_idx_a = cell_tree.query_bulk(pnt_a)
-        vp_idx_b, cell_idx_b = cell_tree.query_bulk(pnt_b)
+        vp_idx_a, cell_idx_a = cell_tree.query(pnt_a)
+        vp_idx_b, cell_idx_b = cell_tree.query(pnt_b)
 
         # List velocity points that are outside of the model.
         n_vpoints = len(self.vpoint_s)
@@ -307,7 +307,7 @@ class EmbeddedObjects:
         insert_where = np.searchsorted(self.vpoint_ch_idx, ch_no_lines)
         return self.insert(
             insert_where,
-            vpoint_s=0.5 * pygeos.length(self.objects.the_geom[ch_no_lines]),
+            vpoint_s=0.5 * shapely.length(self.objects.the_geom[ch_no_lines]),
             vpoint_ch_idx=ch_no_lines,
         )
 

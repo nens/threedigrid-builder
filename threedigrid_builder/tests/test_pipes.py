@@ -1,8 +1,8 @@
 from unittest import mock
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
 
 from threedigrid_builder.base import Nodes
@@ -14,7 +14,7 @@ def connection_nodes():
     # Used to map connection_node_start/end_id to an index (sequence id)
     return ConnectionNodes(
         id=[21, 25, 33, 42],
-        the_geom=pygeos.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
+        the_geom=shapely.points([(0, 21), (1, 25), (2, 33), (3, 42)]),
         drain_level=[0.0, 20.0, 30.0, 10.0],
     )
 
@@ -46,7 +46,7 @@ def pipes():
 def test_compute_bottom_level(pipe_ids, ds, pipes, expected):
     # set geometries with lengths 10 and 1 (resp. id 1 and 2)
     # invert levels are [3, 4] for id=1 and [5, 6] for id=2
-    pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
+    pipes.the_geom = shapely.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
 
     actual = pipes.compute_bottom_level(pipe_ids, ds)
 
@@ -66,7 +66,7 @@ def test_compute_bottom_level_raises_no_geom(pipes):
     ],
 )
 def test_compute_bottom_level_raises_out_of_bounds(pipe_ids, ds, pipes):
-    pipes.the_geom = pygeos.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
+    pipes.the_geom = shapely.linestrings([[(0, 0), (0, 10)], [(2, 2), (3, 2)]])
     with pytest.raises(ValueError, match=".*outside of the linear object bounds.*"):
         pipes.compute_bottom_level(pipe_ids, ds)
 
