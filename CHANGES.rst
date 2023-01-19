@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.7.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Replaced threedi-modelchecker dependency with threedi-schema==214.*.
 
 
 1.7.1 (2023-01-18)

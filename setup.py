@@ -52,14 +52,14 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15",
-    "threedi-modelchecker>=0.35",
+    "threedi-schema==0.214.*",
     "pygeos>=0.11.1",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
     "sqlalchemy>=1.3.12",
 ]
 
-test_requires = ["pytest"]
+test_requires = ["pytest", "pytest-cov"]
 
 setup(
     name="threedigrid-builder",

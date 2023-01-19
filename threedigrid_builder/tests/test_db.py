@@ -40,10 +40,7 @@ def test_init(tmp_path):
         get_version.return_value = 214
         sqlite = SQLite(path)
 
-    db.assert_called_with(
-        connection_settings={"db_path": str(path), "db_file": str(path)},
-        db_type="spatialite",
-    )
+    db.assert_called_with(path)
 
     assert sqlite.db is db.return_value
 
