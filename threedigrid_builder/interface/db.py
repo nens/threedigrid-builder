@@ -11,7 +11,7 @@ import pygeos
 from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import cast, inspect, Integer
+from sqlalchemy import cast, func, inspect, Integer
 from sqlalchemy.orm import Session
 from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
 
@@ -51,6 +51,11 @@ NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
 NumpyQuery.default_numpy_settings[custom_types.IntegerEnum] = {
     **NumpyQuery.default_numpy_settings[Integer],
     "sql_cast": lambda x: cast(x, Integer),
+}
+NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
+    "dtype": np.dtype("O"),
+    "sql_cast": func.ST_AsBinary,
+    "numpy_cast": pygeos.from_wkb,
 }
 
 
@@ -93,11 +98,7 @@ class SQLite:
     def __init__(self, path: pathlib.Path, upgrade=False):
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        path = str(path)
-        sqlite_settings = {"db_path": path, "db_file": path}
-        self.db = ThreediDatabase(
-            connection_settings=sqlite_settings, db_type="spatialite"
-        )
+        self.db = ThreediDatabase(path)
         self._epsg_code = None  # for reproject()
 
         version = self.get_version()
