@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, PointsOnLine
 from threedigrid_builder.constants import FrictionType
@@ -10,7 +10,7 @@ __all__ = ["CrossSectionLocations"]
 class CrossSectionLocation:
     id: int
     code: str
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     definition_id: id  # refers to CrossSectionDefinition
     channel_id: id  # refers to Channel
     reference_level: float

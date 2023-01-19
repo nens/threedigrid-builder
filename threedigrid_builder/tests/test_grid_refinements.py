@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_array_equal
 
 from threedigrid_builder.grid import GridRefinements
@@ -35,7 +35,7 @@ def test_rasterize_none_refinement(refinements):
 
 
 def test_rasterize_outside(refinements):
-    refinements.the_geom[0] = pygeos.linestrings([[130.1, 11.9], [130.9, 11.9]])
+    refinements.the_geom[0] = shapely.linestrings([[130.1, 11.9], [130.9, 11.9]])
     actual = refinements.rasterize(
         origin=(0, 0), height=4, width=3, cell_size=0.5, no_data_value=99
     )
@@ -45,7 +45,7 @@ def test_rasterize_outside(refinements):
 
 
 def test_rasterize_line_refinement(refinements):
-    refinements.the_geom[0] = pygeos.linestrings(
+    refinements.the_geom[0] = shapely.linestrings(
         [[15.0, 17.5], [17.5, 17.5], [17.5, 14.0]]
     )
     actual = refinements.rasterize(
@@ -71,7 +71,7 @@ def test_rasterize_line_refinement(refinements):
 
 
 def test_rasterize_line_refinement2(refinements):
-    refinements.the_geom[0] = pygeos.linestrings(
+    refinements.the_geom[0] = shapely.linestrings(
         [[15.0, 14.5], [12.5, 14.5], [12.5, 16.0]]
     )
     actual = refinements.rasterize(
@@ -97,7 +97,7 @@ def test_rasterize_line_refinement2(refinements):
 
 
 def test_rasterize_poly_refinement(refinements):
-    refinements.the_geom[0] = pygeos.box(13.0, 11.0, 14.0, 13.0)
+    refinements.the_geom[0] = shapely.box(13.0, 11.0, 14.0, 13.0)
     actual = refinements.rasterize(
         origin=(12.0, 10.0), height=8, width=6, cell_size=0.5, no_data_value=3
     )
@@ -124,7 +124,7 @@ def test_rasterize_poly_refinement(refinements):
 
 
 def test_quadtree_small_line_refinement(refinements):
-    refinements.the_geom[0] = pygeos.linestrings([[13.1, 11.9], [13.9, 11.9]])
+    refinements.the_geom[0] = shapely.linestrings([[13.1, 11.9], [13.9, 11.9]])
     actual = refinements.rasterize(
         origin=(12.0, 10.0), height=8, width=6, cell_size=1.0, no_data_value=3
     )
@@ -149,8 +149,8 @@ def test_rasterize_multiple_refinements(reverse):
         id=[5, 8],
         refinement_level=[1, 2],
         the_geom=[
-            pygeos.box(13.0, 11.0, 14.0, 13.0),
-            pygeos.box(12.5, 10.5, 13.5, 12.5),
+            shapely.box(13.0, 11.0, 14.0, 13.0),
+            shapely.box(12.5, 10.5, 13.5, 12.5),
         ],
     )
     if reverse:

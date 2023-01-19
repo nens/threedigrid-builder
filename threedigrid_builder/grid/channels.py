@@ -1,4 +1,4 @@
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CalculationType, ContentType
@@ -11,7 +11,7 @@ __all__ = ["Channels"]
 class Channel:
     id: int
     code: str
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     dist_calc_points: float
     connection_node_start_id: int
     connection_node_end_id: int

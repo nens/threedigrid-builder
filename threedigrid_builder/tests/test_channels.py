@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import Nodes
@@ -11,7 +11,7 @@ from threedigrid_builder.grid import Channels, CrossSectionLocations
 @pytest.fixture
 def channels():
     return Channels(
-        the_geom=pygeos.linestrings([[(0, 0), (6, 0), (6, 6)]]),
+        the_geom=shapely.linestrings([[(0, 0), (6, 0), (6, 6)]]),
         dist_calc_points=np.array([5.0]),
         id=np.array([1]),
         code=np.array(["one"]),
@@ -34,7 +34,7 @@ def test_1d2d_properties(channels):
     )
     locations = CrossSectionLocations(
         id=[2, 5],
-        the_geom=pygeos.points([(0, 0), [6, 6]]),
+        the_geom=shapely.points([(0, 0), [6, 6]]),
         bank_level=[1.0, 13.0],
         channel_id=[1, 1],
     )

@@ -1,7 +1,7 @@
 import itertools
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, Lines
 from threedigrid_builder.constants import CalculationType, ContentType, FrictionType
@@ -13,7 +13,7 @@ __all__ = ["Culverts", "Orifices", "Weirs"]
 class Culvert:  # NL: duiker
     id: int
     code: str
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     dist_calc_points: float
     connection_node_start_id: int
     connection_node_end_id: int

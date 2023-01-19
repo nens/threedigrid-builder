@@ -1,5 +1,5 @@
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, Lines
 
@@ -7,7 +7,7 @@ from threedigrid_builder.base import Array, Lines
 class Obstacle:
     id: int
     crest_level: float
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
 
 
 class Obstacles(Array[Obstacle]):
@@ -26,12 +26,12 @@ class Obstacles(Array[Obstacle]):
         if len(self) == 0:
             return exchange_level, obstacle_idx
         line_geometries = lines.line_geometries[where]
-        if pygeos.is_missing(line_geometries).any():
+        if shapely.is_missing(line_geometries).any():
             raise ValueError(
                 "Obstacles.compute_dpumax requires line_geometries to be set"
             )
-        lines_tree = pygeos.STRtree(lines.line_geometries[where])
-        inscts = lines_tree.query_bulk(self.the_geom, predicate="intersects")
+        lines_tree = shapely.STRtree(lines.line_geometries[where])
+        inscts = lines_tree.query(self.the_geom, predicate="intersects")
         for i in range(len(self)):
             line_idx = inscts[1, np.where(inscts[0, :] == i)[0]]
             is_greater = ~(self.crest_level[i] <= exchange_level[line_idx])

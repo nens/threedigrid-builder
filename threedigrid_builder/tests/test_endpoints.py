@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_almost_equal, assert_equal
 
 from threedigrid_builder.base import Endpoints, Lines, Nodes
@@ -22,7 +22,7 @@ def lines():
     return Lines(
         id=[0, 1, 2],
         line=[(1, 2), (2, 3), (1, 3)],
-        line_geometries=[None, pygeos.linestrings([(5, 5), (6, 6)]), None],
+        line_geometries=[None, shapely.linestrings([(5, 5), (6, 6)]), None],
         ds1d=[np.nan, 16.0, 2.0],
         content_type=[CN, CH, CH],
     )

@@ -2,8 +2,8 @@ import itertools
 from unittest import mock
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import Lines, Nodes
@@ -278,7 +278,7 @@ def test_2d_boundary_condition(
     boundary_conditions_2d = BoundaryConditions2D(
         id=range(len(bc_coords)),
         boundary_type=[3] * len(bc_coords),
-        the_geom=pygeos.linestrings(bc_coords),
+        the_geom=shapely.linestrings(bc_coords),
     )
 
     nodes, lines = boundary_conditions_2d.get_nodes_and_lines(
@@ -319,7 +319,7 @@ def test_2d_boundary_condition_err(grid2d, bc_coords, expected_message):
     boundary_conditions_2d = BoundaryConditions2D(
         id=range(len(bc_coords)),
         boundary_type=[3] * len(bc_coords),
-        the_geom=pygeos.linestrings(bc_coords),
+        the_geom=shapely.linestrings(bc_coords),
     )
 
     with pytest.raises(SchematisationError, match=expected_message):

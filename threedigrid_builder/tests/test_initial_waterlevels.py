@@ -1,7 +1,7 @@
 from unittest import mock
 
-import pygeos
 import pytest
+import shapely
 from numpy import nan
 from numpy.testing import assert_almost_equal
 
@@ -18,10 +18,10 @@ def channels():
         connection_node_start_id=[1, 1, 1, 1],
         connection_node_end_id=[2, 3, 4, 5],
         the_geom=[
-            pygeos.linestrings([(0, 0), (3, 0)]),  # 1 segment of size 3
-            pygeos.linestrings([(55, 3), (60, 3)]),  # 1 segment of size 5
-            pygeos.linestrings([(3, 1), (36, 1)]),  # 3 segments of size 11
-            pygeos.linestrings([(40, 2), (54, 2)]),  # 2 segments of size 7
+            shapely.linestrings([(0, 0), (3, 0)]),  # 1 segment of size 3
+            shapely.linestrings([(55, 3), (60, 3)]),  # 1 segment of size 5
+            shapely.linestrings([(3, 1), (36, 1)]),  # 3 segments of size 11
+            shapely.linestrings([(40, 2), (54, 2)]),  # 2 segments of size 7
         ],
     )
 

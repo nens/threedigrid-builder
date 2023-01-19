@@ -7,7 +7,7 @@ from functools import lru_cache
 from typing import Callable, ContextManager
 
 import numpy as np
-import pygeos
+import shapely
 from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
@@ -55,7 +55,7 @@ NumpyQuery.default_numpy_settings[custom_types.IntegerEnum] = {
 NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
     "dtype": np.dtype("O"),
     "sql_cast": func.ST_AsBinary,
-    "numpy_cast": pygeos.from_wkb,
+    "numpy_cast": shapely.from_wkb,
 }
 
 
@@ -232,14 +232,14 @@ class SQLite:
         """Reproject geometries from 4326 to the EPSG in the settings.
 
         Notes:
-          pygeos+pyproj is approx 2x faster than spatialite
+          shapely+pyproj is approx 2x faster than spatialite
 
         Args:
-          geometries (ndarray of pygeos.Geometry): geometries in EPSG 4326
+          geometries (ndarray of shapely.Geometry): geometries in EPSG 4326
         """
         target_epsg = self.epsg_code
         func = _get_reproject_func(SOURCE_EPSG, target_epsg)
-        return pygeos.apply(geometries, func)
+        return shapely.transform(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:

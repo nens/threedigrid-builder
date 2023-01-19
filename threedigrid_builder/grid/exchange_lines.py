@@ -2,7 +2,7 @@ import itertools
 from typing import Iterator
 
 import numpy as np
-import pygeos
+import shapely
 
 from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
@@ -15,7 +15,7 @@ __all__ = ["ExchangeLines", "Lines1D2D"]
 
 class ExchangeLine:
     id: int
-    the_geom: pygeos.Geometry
+    the_geom: shapely.Geometry
     channel_id: int
     exchange_level: float
 
@@ -91,11 +91,11 @@ class Lines1D2D(Lines):
 
     @property
     def side_2d(self):
-        return pygeos.points(self.line_coords[:, :2])
+        return shapely.points(self.line_coords[:, :2])
 
     @property
     def side_1d(self):
-        return pygeos.points(self.line_coords[:, 2:])
+        return shapely.points(self.line_coords[:, 2:])
 
     def assign_connection_nodes_to_channels_from_breaches(
         self, nodes: Nodes, potential_breaches: PotentialBreaches
@@ -210,7 +210,7 @@ class Lines1D2D(Lines):
         If there is no exchange line this is the 1D node location. If there is
         an exchange line, it is the closest point on the exchange line.
 
-        Returns an array of pygeos Point geometries
+        Returns an array of shapely Point geometries
         Requires: line[:, 1], content_pk, content_type
         Sets: line_coords[:, :2] (the 2D side), line_geometries
         """
@@ -224,12 +224,12 @@ class Lines1D2D(Lines):
         exc_geoms = exchange_lines.the_geom[
             exchange_lines.id_to_index(self.content_pk[has_exc])
         ]
-        pygeos.prepare(exc_geoms)
-        line_geom = pygeos.shortest_line(exc_geoms, pygeos.points(coords_1d[has_exc]))
+        shapely.prepare(exc_geoms)
+        line_geom = shapely.shortest_line(exc_geoms, shapely.points(coords_1d[has_exc]))
 
         self.line_coords[~has_exc, :2] = coords_1d[~has_exc]
-        self.line_coords[has_exc, :2] = pygeos.get_coordinates(
-            pygeos.get_point(line_geom, 0)
+        self.line_coords[has_exc, :2] = shapely.get_coordinates(
+            shapely.get_point(line_geom, 0)
         )
         self.line_geometries[has_exc] = line_geom
 
@@ -259,7 +259,7 @@ class Lines1D2D(Lines):
         line_2d_side = self.side_2d
 
         def dist(breach_idx, line_idx):
-            return pygeos.distance(breach_2d_side[breach_idx], line_2d_side[line_idx])
+            return shapely.distance(breach_2d_side[breach_idx], line_2d_side[line_idx])
 
         # a mapping with a breach_id for each line
         line_to_breach = {}
@@ -299,22 +299,22 @@ class Lines1D2D(Lines):
 
         line_idx, breach_idx = np.array(list(line_to_breach.items()), dtype=np.int32).T
 
-        self.line_coords[line_idx, :2] = pygeos.get_coordinates(
+        self.line_coords[line_idx, :2] = shapely.get_coordinates(
             breach_2d_side[breach_idx]
         )
         self.line_geometries[line_idx] = potential_breaches.the_geom[breach_idx]
         self.content_type[line_idx] = ContentType.TYPE_V2_BREACH
         self.content_pk[line_idx] = potential_breaches.id[breach_idx]
 
-    def assign_2d_node(self, cell_tree: pygeos.STRtree) -> None:
+    def assign_2d_node(self, cell_tree: shapely.STRtree) -> None:
         """Assigns the 2D node id based on the line_coords
 
         Requires: line_coords[:, :2] (the 2D side)
         Sets: line[:, 0], line_coords[:, :2] (clears)
         """
-        # The query_bulk returns 2 1D arrays: one with indices into the supplied node
+        # The query returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
-        idx = cell_tree.query_bulk(self.side_2d)
+        idx = cell_tree.query(self.side_2d)
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, unique_matches = np.unique(idx[0], return_index=True)
         line_idx, cell_idx = idx[:, unique_matches]
@@ -385,11 +385,11 @@ class Lines1D2D(Lines):
         line_geoms = self.line_geometries[line_idx]
         # compute the intersections (use shortest_line and not intersects to
         # account for the case that the obstacle and the line intersect multiple times)
-        points = pygeos.get_point(
-            pygeos.shortest_line(obstacles.the_geom[obstacle_idx], line_geoms), 0
+        points = shapely.get_point(
+            shapely.shortest_line(obstacles.the_geom[obstacle_idx], line_geoms), 0
         )
         # compute the distance to the start of the line
-        self.ds1d_half[line_idx] = pygeos.line_locate_point(line_geoms, points)
+        self.ds1d_half[line_idx] = shapely.line_locate_point(line_geoms, points)
 
     def assign_dpumax(self, mask, dpumax) -> None:
         """Assign dpumax only where it is not set already"""
@@ -414,7 +414,7 @@ class Lines1D2D(Lines):
         """
         has_no_ds1d_half = np.isnan(self.ds1d_half)
         self.ds1d_half[has_no_ds1d_half] = (
-            pygeos.length(self.line_geometries[has_no_ds1d_half]) / 2
+            shapely.length(self.line_geometries[has_no_ds1d_half]) / 2
         )
 
     def output_breaches(self, breaches: PotentialBreaches) -> PotentialBreaches:

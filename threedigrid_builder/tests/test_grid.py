@@ -1,8 +1,8 @@
 from unittest import mock
 
 import numpy as np
-import pygeos
 import pytest
+import shapely
 from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import GridSettings, Lines, Nodes, Pumps, TablesSettings
@@ -24,7 +24,7 @@ from threedigrid_builder.grid import (
 @pytest.fixture
 def connection_nodes():
     return ConnectionNodes(
-        the_geom=pygeos.points([(0, 0), (10, 0)]),
+        the_geom=shapely.points([(0, 0), (10, 0)]),
         id=np.array([1, 3]),
         code=np.array(["one", "two"]),
     )
