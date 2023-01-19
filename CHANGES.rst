@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Replaced threedi-modelchecker dependency with threedi-schema==214.*.
 
+- Replaced pygeos with shapely 2.*.
+
 
 1.7.1 (2023-01-18)
 ------------------
