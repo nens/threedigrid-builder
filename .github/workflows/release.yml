@@ -15,12 +15,12 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: "3.10"
 
       - name: Build a source tarball
         run: |
@@ -28,7 +28,7 @@ jobs:
           pip install setuptools
           python setup.py sdist
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: ./dist/*.tar.gz
           retention-days: 5
@@ -39,14 +39,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        os: [ubuntu-20.04, windows-2019, macos-11]
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout source
+        uses: actions/checkout@v3
+
       - uses: msys2/setup-msys2@v2
         if: matrix.os == 'windows-2019'
+
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.3.0
+        uses: pypa/cibuildwheel@v2.12.0
         # to supply options, put them in 'env', like:
         env:
           CIBW_SKIP: "pp* *musllinux*" # skips pypy and musllinux
@@ -61,7 +64,7 @@ jobs:
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_BUILD_VERBOSITY: 1
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
           retention-days: 5
@@ -69,16 +72,43 @@ jobs:
   upload_pypi:
     needs: [build_sdist, build_wheels]
     runs-on: ubuntu-latest
-    # Extra protection in case this github action is triggered on a PR (e.g. when
-    # debugging the wheelbuilder. Only upload to PyPI on an actual tag.
+    # release on every tag
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@master
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          user: __token__
-          password: ${{ secrets.pypi_token }}
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Get Asset name
+        run: |
+          export PKG=$(ls dist/ | grep tar)
+          set -- $PKG
+          echo "name=$1" >> $GITHUB_ENV
+
+      - name: Upload Release Asset (sdist) to GitHub
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/${{ env.name }}
+          asset_name: ${{ env.name }}
+          asset_content_type: application/zip
+
+      - name: Upload Release Assets to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
