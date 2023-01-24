@@ -16,6 +16,11 @@ from threedigrid_builder.exceptions import SchematisationError
 __all__ = ["BoundaryConditions1D", "BoundaryConditions2D"]
 
 
+GROUNDWATER_BOUNDARY_TYPES = frozenset(
+    {BoundaryType.GROUNDWATERLEVEL, BoundaryType.GROUNDWATERDISCHARGE}
+)
+
+
 class BoundaryCondition1D:
     id: int
     boundary_type: BoundaryType
@@ -96,6 +101,34 @@ class BoundaryCondition2D:
 
 
 class BoundaryConditions2D(Array[BoundaryCondition2D]):
+    def get_intersecting_node_idx(self, idx, cell_tree):
+        bc_geom = self.the_geom[idx]
+
+        x1, y1, x2, y2 = shapely.bounds(bc_geom)
+        is_horizontal = (x2 - x1) > (y2 - y1)
+
+        node_idx = np.sort(cell_tree.query(bc_geom))
+        if node_idx.size == 0:
+            # Pragmatic fix; because of reprojection issues, the boundary condition
+            # can be right outside the cells.
+
+            # Start by getting the closest point inside the model area (all cells)
+            nearest_cell = cell_tree.geometries[cell_tree.nearest(bc_geom)]
+            shortest_line = shapely.shortest_line(nearest_cell, bc_geom)
+            x1, _, x2, _ = shapely.bounds(nearest_cell)
+            if shapely.length(shortest_line) < (x2 - x1):
+                cell_coords, _ = shapely.get_coordinates(shortest_line)
+
+                # Adjust the x / y coordinate to the x / y coordinate of the point
+                bc_coords = shapely.get_coordinates(bc_geom)
+                bc_coords[:, int(is_horizontal)] = cell_coords[int(is_horizontal)]
+                bc_geom = shapely.set_coordinates(bc_geom, bc_coords)
+
+                # Query again for intersecting cells
+                node_idx = np.sort(cell_tree.query(bc_geom))
+
+        return node_idx, is_horizontal
+
     def get_nodes_and_lines(
         self, nodes, cell_tree, quadtree, node_id_counter, line_id_counter
     ):
@@ -106,30 +139,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         boundary_nodes = Nodes(id=[])
         boundary_lines = Lines(id=[])
         for bc_idx in range(len(self)):
-            bc_geom = self.the_geom[bc_idx]
-
-            x1, y1, x2, y2 = shapely.bounds(bc_geom)
-            is_horizontal = (x2 - x1) > (y2 - y1)
-
-            node_idx = np.sort(cell_tree.query(bc_geom))
-            if node_idx.size == 0:
-                # Pragmatic fix; because of reprojection issues, the boundary condition
-                # can be right outside the cells.
-
-                # Start by getting the closest point inside the model area (all cells)
-                nearest_cell = cell_tree.geometries[cell_tree.nearest(bc_geom)]
-                shortest_line = shapely.shortest_line(nearest_cell, bc_geom)
-                x1, _, x2, _ = shapely.bounds(nearest_cell)
-                if shapely.length(shortest_line) < (x2 - x1):
-                    cell_coords, _ = shapely.get_coordinates(shortest_line)
-
-                    # Adjust the x / y coordinate to the x / y coordinate of the point
-                    bc_coords = shapely.get_coordinates(bc_geom)
-                    bc_coords[:, int(is_horizontal)] = cell_coords[int(is_horizontal)]
-                    bc_geom = shapely.set_coordinates(bc_geom, bc_coords)
-
-                    # Query again for intersecting cells
-                    node_idx = np.sort(cell_tree.query(bc_geom))
+            node_idx, is_horizontal = self.get_intersecting_node_idx(bc_idx, cell_tree)
 
             nodk = nodes.nodk[node_idx]
             sz = 2 ** (nodk - 1)
@@ -173,6 +183,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
                     f"equal numbers of {s} edges."
                 )
             is_before = n_edges_before > n_edges_after  # is_upstream
+            # is_groundwater = self.boundary_type[bc_idx] in GROUNDWATER_BOUNDARY_TYPES
 
             # Filter the nodes to those that have edges
             if is_horizontal and is_before:
