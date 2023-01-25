@@ -730,7 +730,8 @@ class Grid:
         if len(lines_1d2d_gw) == 0:
             return
         lines_1d2d_gw.assign_line_coords(self.nodes)
-        lines_1d2d_gw.assign_2d_node(self.cell_tree, groundwater=True)
+        lines_1d2d_gw.assign_2d_node(self.cell_tree)
+        lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes)
         self.lines += lines_1d2d_gw
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
