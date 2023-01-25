@@ -107,11 +107,18 @@ def test_assign_exchange_lines(
     assert_array_equal(lines.content_type, expected_content_type)
 
 
-def test_assign_2d_side():
+def test_assign_line_coords():
     nodes = Nodes(
         id=[1, 2, 3],
         coordinates=[(2, 5), (4, 5), (6, 5)],
     )
+    lines = Lines1D2D(id=range(2), line=[[-9999, 1], [-9999, 3]])
+    lines.assign_line_coords(nodes)
+
+    assert_array_equal(lines.line_coords, [[2, 5, 2, 5], [6, 5, 6, 5]])
+
+
+def test_assign_2d_side_from_exchange_lines():
     exchange_lines = ExchangeLines(
         id=[1, 2],
         the_geom=shapely.linestrings([[[0, 0], [10, 0]], [[0, 10], [10, 10]]]),
@@ -119,10 +126,11 @@ def test_assign_2d_side():
     lines = Lines1D2D(
         id=range(4),
         line=[[-9999, 1], [-9999, 1], [-9999, 2], [-9999, 3]],
+        line_coords=[[2, 5, 2, 5], [2, 5, 2, 5], [4, 5, 4, 5], [6, 5, 6, 5]],
         content_pk=[1, 2, 1, -9999],
         content_type=[EXC, EXC, EXC, -9999],
     )
-    lines.assign_2d_side(nodes, exchange_lines)
+    lines.assign_2d_side_from_exchange_lines(exchange_lines)
 
     assert_array_equal(lines.line_coords[:, :2], [[2, 0], [2, 10], [4, 0], [6, 5]])
 

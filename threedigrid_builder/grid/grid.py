@@ -683,6 +683,7 @@ class Grid:
         Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
+        lines_1d2d.assign_line_coords(self.nodes)
         lines_1d2d.assign_connection_nodes_to_channels_from_breaches(
             self.nodes, potential_breaches=potential_breaches
         )
@@ -690,7 +691,7 @@ class Grid:
             self.nodes, lines=self.lines
         )
         lines_1d2d.assign_exchange_lines(exchange_lines)
-        lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
+        lines_1d2d.assign_2d_side_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
@@ -717,6 +718,16 @@ class Grid:
 
         self.breaches = lines_1d2d.output_breaches(potential_breaches)
         self.lines += lines_1d2d
+
+    def add_1d2d_groundwater_lines(self, line_id_counter) -> Lines1D2D:
+        """Connect 1D and 2D groundwater elements by computing 1D-2D lines.
+
+        Appends self.lines.
+        """
+        lines_1d2d_gw = Lines1D2D.create_groundwater(self.nodes, line_id_counter)
+        lines_1d2d_gw.assign_line_coords(self.nodes)
+        lines_1d2d_gw.assign_2d_node(self.cell_tree)
+        self.lines += lines_1d2d_gw
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
         breach_points.assign_to_connection_nodes(self.nodes, self.lines)

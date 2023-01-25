@@ -14,6 +14,44 @@ from .potential_breaches import PotentialBreaches
 __all__ = ["Lines1D2D"]
 
 
+class Lines1D2DGroundwater(Lines):
+    @classmethod
+    def create(
+        cls, nodes: Nodes, line_id_counter: Iterator[int]
+    ) -> "Lines1D2DGroundwater":
+        """Create the 1D-2D groundwater lines
+
+        Sets: id, line[:, 1], content_type, content_pk
+        """
+        node_idx = np.where(np.isfinite(nodes.groundwater_exchange[:, 0]))[0]
+        line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
+        line[:, 1] = nodes.index_to_id(node_idx)
+        return cls(
+            id=itertools.islice(line_id_counter, len(node_idx)),
+            line=line,
+            content_type=nodes.content_type[node_idx],
+            content_pk=nodes.content_pk[node_idx],
+            groundwater_exchange=nodes.groundwater_exchange[node_idx],
+        )
+
+    def assign_2d_node(self, nodes: Nodes, cell_tree: shapely.STRtree) -> None:
+        """Assigns the 2D node id based on the node coordinate.
+
+        Requires: line[:, 1]
+        Sets: line[:, 0]
+        """
+        node_idx = nodes.id_to_index(self.line[:, 1])
+        side_1d = shapely.points(nodes.coordinates[node_idx])
+
+        # The query returns 2 1D arrays: one with indices into the supplied node
+        # geometries and one with indices into the tree of cells.
+        idx = cell_tree.query(side_1d)
+        # Address edge cases of multiple 1D-2D lines per node: just take the one
+        _, unique_matches = np.unique(idx[0], return_index=True)
+        line_idx, cell_idx = idx[:, unique_matches]
+        self.line[line_idx, 0] = cell_idx + nodes.n_groundwater_cells
+
+
 class Lines1D2D(Lines):
     @classmethod
     def create(cls, nodes: Nodes, line_id_counter: Iterator[int]) -> "Lines1D2D":
@@ -31,11 +69,30 @@ class Lines1D2D(Lines):
         # Merge the arrays
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
-        return Lines1D2D(
+        return cls(
             id=itertools.islice(line_id_counter, len(node_idx)),
             line=line,
             content_type=nodes.content_type[node_idx],
             content_pk=nodes.content_pk[node_idx],
+        )
+
+    @classmethod
+    def create_groundwater(
+        cls, nodes: Nodes, line_id_counter: Iterator[int]
+    ) -> "Lines1D2D":
+        """Create the 1D-2D groundwater lines
+
+        Sets: id, line[:, 1], content_type, content_pk
+        """
+        node_idx = np.where(np.isfinite(nodes.groundwater_exchange[:, 0]))[0]
+        line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
+        line[:, 1] = nodes.index_to_id(node_idx)
+        return cls(
+            id=itertools.islice(line_id_counter, len(node_idx)),
+            line=line,
+            content_type=nodes.content_type[node_idx],
+            content_pk=nodes.content_pk[node_idx],
+            groundwater_exchange=nodes.groundwater_exchange[node_idx],
         )
 
     @property
@@ -153,30 +210,32 @@ class Lines1D2D(Lines):
         """Get the 1D node index based on line[:, 1]"""
         return nodes.id_to_index(self.line[:, 1])
 
-    def assign_2d_side(self, nodes: Nodes, exchange_lines: ExchangeLines):
-        """Compute a Point on the (user-requested) 2D side for each line
-
-        If there is no exchange line this is the 1D node location. If there is
-        an exchange line, it is the closest point on the exchange line.
+    def assign_line_coords(self, nodes: Nodes):
+        """Copy the 1D node location to the 2D side for non-exchange line lines.
 
         Returns an array of shapely Point geometries
         Requires: line[:, 1], content_pk, content_type
-        Sets: line_coords[:, :2] (the 2D side), line_geometries
+        Sets: line_coords (side_1d and side_2d)
+        """
+        self.line_coords[:, 2:] = nodes.coordinates[self.get_1d_node_idx(nodes)]
+        self.line_coords[:, :2] = self.line_coords[:, 2:]
+
+    def assign_2d_side_from_exchange_lines(self, exchange_lines: ExchangeLines):
+        """Compute the closest Point on exchange line for each 1D2D line
+
+        Requires: line_coords[:, 2:] (side_1d), content_pk, content_type
+        Sets: line_coords[:, :2] (side_2d), line_geometries
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
-
-        # Collect the 1D sides of the 1D2D line
-        coords_1d = nodes.coordinates[self.get_1d_node_idx(nodes)]
 
         # Find the closest points on the exchange lines
         exc_geoms = exchange_lines.the_geom[
             exchange_lines.id_to_index(self.content_pk[has_exc])
         ]
         shapely.prepare(exc_geoms)
-        line_geom = shapely.shortest_line(exc_geoms, shapely.points(coords_1d[has_exc]))
+        line_geom = shapely.shortest_line(exc_geoms, self.side_1d[has_exc])
 
-        self.line_coords[~has_exc, :2] = coords_1d[~has_exc]
         self.line_coords[has_exc, :2] = shapely.get_coordinates(
             shapely.get_point(line_geom, 0)
         )
@@ -259,7 +318,7 @@ class Lines1D2D(Lines):
         """Assigns the 2D node id based on the line_coords
 
         Requires: line_coords[:, :2] (the 2D side)
-        Sets: line[:, 0], line_coords[:, :2] (clears)
+        Sets: line[:, 0], line_coords[:] (clears)
         """
         # The query returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
@@ -268,7 +327,7 @@ class Lines1D2D(Lines):
         _, unique_matches = np.unique(idx[0], return_index=True)
         line_idx, cell_idx = idx[:, unique_matches]
         self.line[line_idx, 0] = cell_idx
-        self.line_coords[:, :2] = np.nan
+        self.line_coords[:] = np.nan
 
     def assign_kcu(self, mask, is_closed) -> None:
         """Set kcu where it is not set already"""
