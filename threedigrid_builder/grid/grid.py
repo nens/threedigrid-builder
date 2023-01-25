@@ -27,8 +27,8 @@ from . import embedded as embedded_module
 from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
-from .exchange_lines import Lines1D2D
 from .linear import BaseLinear
+from .lines_1d2d import Lines1D2D
 from .obstacles import Obstacles
 from .potential_breaches import PotentialBreaches, PotentialBreachPoints
 
