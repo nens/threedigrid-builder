@@ -295,7 +295,11 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         )
         boundary_cells.boundary_id[:] = self.id[idx]
         boundary_cells.boundary_type[:] = self.boundary_type[idx]
-        boundary_cells.node_type[:] = NodeType.NODE_2D_BOUNDARIES
+        boundary_cells.node_type[:] = (
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES
+            if self.is_groundwater(kcu)
+            else NodeType.NODE_2D_BOUNDARIES
+        )
         boundary_cells.pixel_coords[:] = -9999
 
         # the bounds and coordinates are shifted:
