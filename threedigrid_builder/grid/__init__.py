@@ -15,6 +15,7 @@ from .embedded import *  # NOQA
 from .exchange_lines import *  # NOQA
 from .grid import *  # NOQA
 from .grid_refinement import *  # NOQA
+from .lines_1d2d import *  # NOQA
 from .obstacles import *  # NOQA
 from .pipes import *  # NOQA
 from .potential_breaches import *  # NOQA
