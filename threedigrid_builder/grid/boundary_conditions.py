@@ -189,12 +189,16 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
     def adapt_node_idx_groundwater(self, idx, nodes, node_idx):
         is_groundwater = self.boundary_type_is_groundwater(self.boundary_type[idx])
         if is_groundwater:
-            node_idx += np.count_nonzero(nodes.node_type == NodeType.NODE_2D_OPEN_WATER)
-            if np.any(node_idx >= len(nodes)):
+            n_groundwater_cells = np.count_nonzero(
+                nodes.node_type == NodeType.NODE_2D_GROUNDWATER
+            )
+            if n_groundwater_cells == 0:
                 raise SchematisationError(
                     f"2D boundary condition {self.id[idx]} has groundwater type while "
                     f"there are no groundwater cells."
                 )
+
+            node_idx += n_groundwater_cells
         return is_groundwater
 
     @staticmethod

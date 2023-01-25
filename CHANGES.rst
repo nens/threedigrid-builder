@@ -7,7 +7,7 @@ Changelog of threedigrid-builder
 - Added 2D groundwater boundaries (boundary types 6: GROUNDWATERLEVEL
   and 7: GROUNDWATERDISCHARGE). These generate in boundary nodes connected
   to groundwater cells and lines having new kcu values
-  -200, -300, -400, -500.
+  600, 700, 800, 900.
 
 
 1.8.0 (2023-01-19)
