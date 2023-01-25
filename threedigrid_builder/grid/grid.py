@@ -683,6 +683,8 @@ class Grid:
         Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
+        if len(lines_1d2d) == 0:
+            return
         lines_1d2d.assign_line_coords(self.nodes)
         lines_1d2d.assign_connection_nodes_to_channels_from_breaches(
             self.nodes, potential_breaches=potential_breaches
@@ -725,8 +727,10 @@ class Grid:
         Appends self.lines.
         """
         lines_1d2d_gw = Lines1D2D.create_groundwater(self.nodes, line_id_counter)
+        if len(lines_1d2d_gw) == 0:
+            return
         lines_1d2d_gw.assign_line_coords(self.nodes)
-        lines_1d2d_gw.assign_2d_node(self.cell_tree)
+        lines_1d2d_gw.assign_2d_node(self.cell_tree, groundwater=True)
         self.lines += lines_1d2d_gw
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):

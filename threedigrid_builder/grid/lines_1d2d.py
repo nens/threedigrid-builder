@@ -34,7 +34,9 @@ class Lines1D2DGroundwater(Lines):
             groundwater_exchange=nodes.groundwater_exchange[node_idx],
         )
 
-    def assign_2d_node(self, nodes: Nodes, cell_tree: shapely.STRtree) -> None:
+    def assign_2d_node(
+        self, nodes: Nodes, cell_tree: shapely.STRtree, groundwater: bool = False
+    ) -> None:
         """Assigns the 2D node id based on the node coordinate.
 
         Requires: line[:, 1]
@@ -49,7 +51,9 @@ class Lines1D2DGroundwater(Lines):
         # Address edge cases of multiple 1D-2D lines per node: just take the one
         _, unique_matches = np.unique(idx[0], return_index=True)
         line_idx, cell_idx = idx[:, unique_matches]
-        self.line[line_idx, 0] = cell_idx + nodes.n_groundwater_cells
+        if groundwater and len(line_idx) > 0:
+            cell_idx += nodes.n_groundwater_cells
+        self.line[line_idx, 0] = cell_idx
 
 
 class Lines1D2D(Lines):
