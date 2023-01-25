@@ -52,6 +52,7 @@ class Line:
     sewerage: int
     sewerage_type: int
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
+    groundwater_exchange: Tuple[float, float]
 
 
 class Lines(Array[Line]):

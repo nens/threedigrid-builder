@@ -1,4 +1,5 @@
 import itertools
+from typing import Tuple
 from unittest import mock
 
 import numpy as np
@@ -63,6 +64,7 @@ class LinearObject:
     zoom_category: int
     material: int
     sewerage_type: int
+    groundwater_exchange: Tuple[float, float]
 
 
 class LinearObjects(Array[LinearObject], linear.BaseLinear):
@@ -100,6 +102,7 @@ def two_linear_objects():
         discharge_coefficient_negative=[0.5, 0.8],
         material=[-9999, 1],
         sewerage_type=[2, 1],
+        groundwater_exchange=[(1e-6, 2e-6), (1e-7, 2e-7)],
     )
 
 
@@ -143,6 +146,9 @@ def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_o
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, [2, 2, 1])
     assert_array_equal(nodes.s1d, dummy_points.s1d)
+    assert_array_equal(
+        nodes.groundwater_exchange, [(1e-6, 2e-6), (1e-6, 2e-6), (1e-7, 2e-7)]
+    )
 
 
 def test_interpolate_nodes_skips_embedded(two_linear_objects):

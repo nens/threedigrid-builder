@@ -107,6 +107,11 @@ class BaseLinear:
         # fixed_nodes also become nodes
         points = points.merge_with(fixed_nodes)
 
+        try:
+            groundwater_exchange = self.groundwater_exchange[points.linestring_idx]
+        except AttributeError:
+            groundwater_exchange = np.nan
+
         # construct the nodes with available attributes
         return Nodes(
             id=itertools.islice(node_id_counter, len(points)),
@@ -117,6 +122,7 @@ class BaseLinear:
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
             breach_ids=np.array([points.content_pk, points.secondary_content_pk]).T,
+            groundwater_exchange=groundwater_exchange,
         )
 
     def get_embedded(

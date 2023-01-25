@@ -1,6 +1,8 @@
 import itertools
+from typing import Iterator
 
 import numpy as np
+import shapely
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import LineType, NodeType
@@ -70,3 +72,41 @@ def get_lines(lines, node_id_offset, line_id_counter):
         line_coords=open_water_lines.line_coords,
         cross_pix_coords=open_water_lines.cross_pix_coords,
     )
+
+
+class Lines1D2DGroundwater(Lines):
+    @classmethod
+    def create(
+        cls, nodes: Nodes, line_id_counter: Iterator[int]
+    ) -> "Lines1D2DGroundwater":
+        """Create the 1D-2D groundwater lines
+
+        Sets: id, line[:, 1], content_type, content_pk
+        """
+        node_idx = np.where(np.isfinite(nodes.groundwater_exchange[:, 0]))[0]
+        line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
+        line[:, 1] = nodes.index_to_id(node_idx)
+        return cls(
+            id=itertools.islice(line_id_counter, len(node_idx)),
+            line=line,
+            content_type=nodes.content_type[node_idx],
+            content_pk=nodes.content_pk[node_idx],
+            groundwater_exchange=nodes.groundwater_exchange[node_idx],
+        )
+
+    def assign_2d_node(self, nodes: Nodes, cell_tree: shapely.STRtree) -> None:
+        """Assigns the 2D node id based on the node coordinate.
+
+        Requires: line[:, 1]
+        Sets: line[:, 0]
+        """
+        node_idx = nodes.id_to_index(self.line[:, 1])
+        side_1d = shapely.points(nodes.coordinates[node_idx])
+
+        # The query returns 2 1D arrays: one with indices into the supplied node
+        # geometries and one with indices into the tree of cells.
+        idx = cell_tree.query(side_1d)
+        # Address edge cases of multiple 1D-2D lines per node: just take the one
+        _, unique_matches = np.unique(idx[0], return_index=True)
+        line_idx, cell_idx = idx[:, unique_matches]
+        self.line[line_idx, 0] = cell_idx + nodes.n_groundwater_cells

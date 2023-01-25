@@ -52,6 +52,7 @@ class Node:
     drain_level: float  # Drain level entered for manholes
     initial_waterlevel: float
     zoom_category: int
+    groundwater_exchange: Tuple[float, float]
     # extra info, for manhole only:
     manhole_indicator: int
     surface_level: float
@@ -71,6 +72,10 @@ class Nodes(Array[Node]):
     @property
     def has_2d(self):
         return np.any(self.node_type == NodeType.NODE_2D_OPEN_WATER)
+
+    @property
+    def n_groundwater_cells(self):
+        return np.count_nonzero(self.node_type == NodeType.NODE_2D_GROUNDWATER)
 
     def get_extent_1d(self):
         is_1d = np.isin(

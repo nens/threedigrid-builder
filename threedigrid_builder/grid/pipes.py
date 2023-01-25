@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import shapely
 
 from threedigrid_builder.base import Array
@@ -26,6 +28,7 @@ class Pipe:
     # profile_num
     # original_length
     material: int
+    groundwater_exchange: Tuple[float, float]
 
 
 class Pipes(Array[Pipe], linear.BaseLinear):

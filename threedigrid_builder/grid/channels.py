@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import shapely
 
 from threedigrid_builder.base import Array
@@ -18,6 +20,7 @@ class Channel:
     calculation_type: CalculationType
     display_name: str
     zoom_category: int
+    groundwater_exchange: Tuple[float, float]
 
 
 class Channels(Array[Channel], linear.BaseLinear):
