@@ -1,10 +1,13 @@
 Changelog of threedigrid-builder
 ================================
 
-1.8.1 (unreleased)
+1.9.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added 2D groundwater boundaries (boundary types 6: GROUNDWATERLEVEL
+  and 7: GROUNDWATERDISCHARGE). These generate in boundary nodes connected
+  to groundwater cells and lines having new kcu values
+  -200, -300, -400, -500.
 
 
 1.8.0 (2023-01-19)
