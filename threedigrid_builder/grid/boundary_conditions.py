@@ -17,6 +17,11 @@ from threedigrid_builder.exceptions import SchematisationError
 __all__ = ["BoundaryConditions1D", "BoundaryConditions2D"]
 
 
+GROUNDWATER_BOUNDARY_TYPES = frozenset(
+    {BoundaryType.GROUNDWATERLEVEL, BoundaryType.GROUNDWATERDISCHARGE}
+)
+
+
 class BoundaryCondition1D:
     id: int
     boundary_type: BoundaryType
@@ -181,16 +186,33 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
 
         return node_idx[before if is_before else after], is_before
 
+    def adapt_node_idx_groundwater(self, idx, nodes, node_idx):
+        is_groundwater = self.boundary_type_is_groundwater(self.boundary_type[idx])
+        if is_groundwater:
+            n_groundwater_cells = np.count_nonzero(
+                nodes.node_type == NodeType.NODE_2D_GROUNDWATER
+            )
+            if n_groundwater_cells == 0:
+                raise SchematisationError(
+                    f"2D boundary condition {self.id[idx]} has groundwater type while "
+                    f"there are no groundwater cells."
+                )
+
+            node_idx += n_groundwater_cells
+        return is_groundwater
+
     @staticmethod
-    def get_kcu(is_horizontal: bool, is_before: bool) -> LineType:
-        if is_horizontal and is_before:
-            return LineType.LINE_2D_BOUNDARY_SOUTH
-        elif is_horizontal:  # and not is_before
-            return LineType.LINE_2D_BOUNDARY_NORTH
-        elif is_before:  # and not is_horizontal
-            return LineType.LINE_2D_BOUNDARY_WEST
-        else:  # not is_horizontal and not is_before
-            return LineType.LINE_2D_BOUNDARY_EAST
+    def get_kcu(is_horizontal: bool, is_before: bool, is_groundwater: bool) -> LineType:
+        return {
+            (True, True, False): LineType.LINE_2D_BOUNDARY_SOUTH,
+            (True, False, False): LineType.LINE_2D_BOUNDARY_NORTH,
+            (False, True, False): LineType.LINE_2D_BOUNDARY_WEST,
+            (False, False, False): LineType.LINE_2D_BOUNDARY_EAST,
+            (True, True, True): LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH,
+            (True, False, True): LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH,
+            (False, True, True): LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST,
+            (False, False, True): LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
+        }[(is_horizontal, is_before, is_groundwater)]
 
     @staticmethod
     def get_edge_coord_col(kcu: LineType) -> int:
@@ -199,6 +221,10 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
             LineType.LINE_2D_BOUNDARY_NORTH: 3,
             LineType.LINE_2D_BOUNDARY_WEST: 0,
             LineType.LINE_2D_BOUNDARY_EAST: 2,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH: 1,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH: 3,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST: 0,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST: 2,
         }[kcu]
 
     @staticmethod
@@ -208,7 +234,45 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
             LineType.LINE_2D_BOUNDARY_NORTH: (0, 3, 2, 3),
             LineType.LINE_2D_BOUNDARY_WEST: (0, 1, 0, 3),
             LineType.LINE_2D_BOUNDARY_EAST: (2, 1, 2, 3),
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH: (0, 1, 2, 1),
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH: (0, 3, 2, 3),
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST: (0, 1, 0, 3),
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST: (2, 1, 2, 3),
         }[kcu]
+
+    @staticmethod
+    def is_horizontal(kcu: LineType) -> bool:
+        return kcu in {
+            LineType.LINE_2D_BOUNDARY_SOUTH,
+            LineType.LINE_2D_BOUNDARY_NORTH,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH,
+        }
+
+    @staticmethod
+    def is_before(kcu: LineType) -> bool:
+        return kcu in {
+            LineType.LINE_2D_BOUNDARY_SOUTH,
+            LineType.LINE_2D_BOUNDARY_WEST,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST,
+        }
+
+    @staticmethod
+    def is_groundwater(kcu: LineType) -> bool:
+        return kcu in {
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
+        }
+
+    @staticmethod
+    def boundary_type_is_groundwater(boundary_type: BoundaryType) -> bool:
+        return boundary_type in {
+            BoundaryType.GROUNDWATERLEVEL,
+            BoundaryType.GROUNDWATERDISCHARGE,
+        }
 
     def check_edge_coord(
         self, edge_coord: np.ndarray, idx: int, is_horizontal: bool
@@ -235,25 +299,21 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         )
         boundary_cells.boundary_id[:] = self.id[idx]
         boundary_cells.boundary_type[:] = self.boundary_type[idx]
-        boundary_cells.node_type[:] = NodeType.NODE_2D_BOUNDARIES
+        boundary_cells.node_type[:] = (
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES
+            if self.is_groundwater(kcu)
+            else NodeType.NODE_2D_BOUNDARIES
+        )
         boundary_cells.pixel_coords[:] = -9999
 
         # the bounds and coordinates are shifted:
         size = boundary_cells.bounds[:, 2] - boundary_cells.bounds[:, 0]
-        axes = (
-            (1, 3)
-            if kcu in {LineType.LINE_2D_BOUNDARY_SOUTH, LineType.LINE_2D_BOUNDARY_NORTH}
-            else (0, 2)
-        )
-        add_or_subtract = (
-            -1
-            if kcu in {LineType.LINE_2D_BOUNDARY_SOUTH, LineType.LINE_2D_BOUNDARY_WEST}
-            else 1
-        )
+        axes = (1, 3) if self.is_horizontal(kcu) else (0, 2)
+        add_or_subtract = -1 if self.is_before(kcu) else 1
         boundary_cells.bounds[:, axes[0]] += size * add_or_subtract
         boundary_cells.bounds[:, axes[1]] += size * add_or_subtract
         boundary_cells.coordinates[:, axes[0]] += size * add_or_subtract
-        if kcu in {LineType.LINE_2D_BOUNDARY_SOUTH, LineType.LINE_2D_BOUNDARY_NORTH}:
+        if self.is_horizontal(kcu):
             boundary_cells.nodn[:] += add_or_subtract
         else:
             boundary_cells.nodm[:] += add_or_subtract
@@ -267,7 +327,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         boundary_cells: Nodes,
         line_id_counter: Iterator[int],
     ) -> Lines:
-        if kcu in {LineType.LINE_2D_BOUNDARY_SOUTH, LineType.LINE_2D_BOUNDARY_WEST}:
+        if self.is_before(kcu):
             line = np.array([boundary_cells.id, nodes.index_to_id(node_idx)]).T
         else:
             line = np.array([nodes.index_to_id(node_idx), boundary_cells.id]).T
@@ -306,8 +366,9 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
             node_idx, is_before = self.get_neighoring_node_idx(
                 bc_idx, nodes, node_idx, quad_idx, is_horizontal
             )
+            is_groundwater = self.adapt_node_idx_groundwater(bc_idx, nodes, node_idx)
 
-            kcu = self.get_kcu(is_horizontal, is_before)
+            kcu = self.get_kcu(is_horizontal, is_before, is_groundwater)
             edge_coord = nodes.bounds[node_idx, self.get_edge_coord_col(kcu)]
             self.check_edge_coord(edge_coord, bc_idx, is_horizontal)
 

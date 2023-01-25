@@ -8,6 +8,7 @@ from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import (
+    BoundaryType,
     CalculationType,
     ContentType,
     LineType,
@@ -330,3 +331,115 @@ def test_2d_boundary_condition_err(grid2d, bc_coords, expected_message):
             itertools.count(),
             itertools.count(),
         )
+
+
+@pytest.fixture
+def grid2d_gw():
+    nodes = Nodes(
+        id=range(4),
+        node_type=([NodeType.NODE_2D_OPEN_WATER] * 2)
+        + ([NodeType.NODE_2D_GROUNDWATER] * 2),
+        bounds=[(2.0, 3.0, 7.0, 8.0), (7.0, 3.0, 12.0, 8.0)] * 2,
+        pixel_coords=[(0, 0, 10, 10), (10, 0, 20, 10)] * 2,
+        nodk=[1, 1, 1, 1],
+        nodm=[1, 2, 1, 2],
+        nodn=[1, 1, 1, 1],
+    )
+    grid = Grid(nodes=nodes, lines=Lines(id=[]))
+    grid.quadtree = mock.Mock()
+    grid.quadtree.quad_idx = np.array([[1, 2]])[::-1].T
+    return grid
+
+
+@pytest.mark.parametrize(
+    "boundary_type,node_type,kcu,line",
+    [
+        (
+            BoundaryType.WATERLEVEL,
+            NodeType.NODE_2D_BOUNDARIES,
+            LineType.LINE_2D_BOUNDARY_EAST,
+            (1, 9),
+        ),
+        (
+            BoundaryType.DISCHARGE,
+            NodeType.NODE_2D_BOUNDARIES,
+            LineType.LINE_2D_BOUNDARY_EAST,
+            (1, 9),
+        ),
+        (
+            BoundaryType.GROUNDWATERLEVEL,
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
+            (3, 9),
+        ),
+        (
+            BoundaryType.GROUNDWATERDISCHARGE,
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
+            (3, 9),
+        ),
+    ],
+)
+def test_2d_boundary_condition_types(grid2d_gw, boundary_type, node_type, kcu, line):
+    boundary_conditions_2d = BoundaryConditions2D(
+        id=[1],
+        boundary_type=[boundary_type],
+        the_geom=[shapely.linestrings([(12.0, 3.0), (12.0, 8.0)])],
+    )
+    nodes, lines = boundary_conditions_2d.get_nodes_and_lines(
+        grid2d_gw.nodes,
+        grid2d_gw.cell_tree,
+        grid2d_gw.quadtree,
+        itertools.count(9),
+        itertools.count(7),
+    )
+
+    assert_array_equal(nodes.id, [9])
+    assert_array_equal(nodes.node_type, [node_type])
+    assert_array_equal(nodes.boundary_id, [1])
+    assert_array_equal(nodes.boundary_type, [boundary_type])
+    assert_array_equal(nodes.bounds, [(12.0, 3.0, 17, 8.0)])
+    assert_array_equal(nodes.pixel_coords, -9999)
+    assert_array_equal(nodes.nodm, [3])
+    assert_array_equal(nodes.nodn, [1])
+    assert_array_equal(lines.id, [7])
+    assert_array_equal(lines.kcu, [kcu])
+    assert_array_equal(lines.line, [line])
+    assert_array_equal(lines.cross_pix_coords, [(20, 0, 20, 10)])
+
+
+def test_2d_boundary_condition_combined(grid2d_gw):
+    boundary_conditions_2d = BoundaryConditions2D(
+        id=[1, 2],
+        boundary_type=[BoundaryType.WATERLEVEL, BoundaryType.GROUNDWATERLEVEL],
+        the_geom=[shapely.linestrings([(12.0, 3.0), (12.0, 8.0)])] * 2,
+    )
+
+    nodes, lines = boundary_conditions_2d.get_nodes_and_lines(
+        grid2d_gw.nodes,
+        grid2d_gw.cell_tree,
+        grid2d_gw.quadtree,
+        itertools.count(9),
+        itertools.count(7),
+    )
+
+    assert_array_equal(nodes.id, [9, 10])
+    assert_array_equal(
+        nodes.node_type,
+        [NodeType.NODE_2D_BOUNDARIES, NodeType.NODE_2D_GROUNDWATER_BOUNDARIES],
+    )
+    assert_array_equal(nodes.boundary_id, [1, 2])
+    assert_array_equal(
+        nodes.boundary_type, [BoundaryType.WATERLEVEL, BoundaryType.GROUNDWATERLEVEL]
+    )
+    assert_array_equal(nodes.bounds, [(12.0, 3.0, 17, 8.0)] * 2)
+    assert_array_equal(nodes.pixel_coords, -9999)
+    assert_array_equal(nodes.nodm, 3)
+    assert_array_equal(nodes.nodn, 1)
+    assert_array_equal(lines.id, [7, 8])
+    assert_array_equal(
+        lines.kcu,
+        [LineType.LINE_2D_BOUNDARY_EAST, LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST],
+    )
+    assert_array_equal(lines.line, [(1, 9), (3, 10)])
+    assert_array_equal(lines.cross_pix_coords, [(20, 0, 20, 10)] * 2)
