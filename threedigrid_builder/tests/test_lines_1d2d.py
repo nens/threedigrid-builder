@@ -441,6 +441,8 @@ def threeway_junction():
         line=[(1, 2), (1, 3), (4, 1)],
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=[11, 12, 13],
+        ds1d=[1.2, 2.3, 3.4],
+        ds1d_half=[0.6, 1.0, 1.7],
     )
     return nodes, lines
 
@@ -537,3 +539,8 @@ def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
     lines_1d2d.transfer_2d_node_to_groundwater(n_groundwater_cells)
     assert_array_equal(lines_1d2d.line[:, 0], expected)  # 2d side
     assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
+
+
+def test_assign_cross_width(threeway_junction):
+    lines_1d2d = Lines1D2D(id=[1], line=[[-9999, 1]])
+    lines_1d2d.assign_cross_width(*threeway_junction)

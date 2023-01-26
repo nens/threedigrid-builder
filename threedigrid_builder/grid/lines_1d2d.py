@@ -430,3 +430,19 @@ class Lines1D2D(Lines):
             code=breaches.code[breach_idx],
             display_name=breaches.display_name[breach_idx],
         )
+
+    def assign_cross_width(self, nodes: Nodes, lines: Lines):
+        endpoints = Endpoints.from_nodes_lines(
+            nodes,
+            lines,
+            node_mask=np.isin(nodes.id, self.line[:, 1]),
+            line_mask=np.isin(
+                lines.content_type,
+                [ContentType.TYPE_V2_CHANNEL, ContentType.TYPE_V2_PIPE],
+            ),
+        )
+        length = endpoints.sum_per_node(endpoints.ds1d_endpoint)
+        idx = search(
+            self.line[:, 1], length.id, check_exists=True, assume_ordered=False
+        )
+        self.cross_width[idx] = length.value

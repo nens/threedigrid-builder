@@ -38,7 +38,7 @@ class Line:
     frict_type2: int  # Friction type
     frict_value1: float  # Friction type
     frict_value2: float  # Friction type
-    cross_weight: float
+    cross_weight: float  # For 1D-2D: the cross_width
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
     is_1d_boundary: int  # internal flag

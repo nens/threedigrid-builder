@@ -24,6 +24,7 @@ def lines():
         line=[(1, 2), (2, 3), (1, 3)],
         line_geometries=[None, shapely.linestrings([(5, 5), (6, 6)]), None],
         ds1d=[np.nan, 16.0, 2.0],
+        ds1d_half=[np.nan, 8.0, 1.1],
         content_type=[CN, CH, CH],
     )
 
@@ -89,24 +90,32 @@ def test_reduce_per_node_empty(lines: Lines):
     assert_almost_equal(actual.value, [])
 
 
-def test_nanmin_per_node(lines: Lines):
-    endpoints = Endpoints(
-        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
+@pytest.fixture
+def endpoints_for_agg(lines):
+    return Endpoints(
+        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 0, 1]
     )
-    actual = endpoints.nanmin_per_node(endpoints.ds1d)
+
+
+def test_nanmin_per_node(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.nanmin_per_node(endpoints_for_agg.ds1d)
 
     assert_equal(actual.id, [1, 5])
     assert_almost_equal(actual.value, [2.0, 16.0])
 
 
-def test_first_per_node(lines: Lines):
-    endpoints = Endpoints(
-        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 0, 1]
-    )
-    actual = endpoints.first_per_node(endpoints.ds1d)
+def test_first_per_node(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.first_per_node(endpoints_for_agg.ds1d)
 
     assert_equal(actual.id, [1, 5])
     assert_almost_equal(actual.value, [16.0, np.nan])
+
+
+def test_sum_per_node(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.sum_per_node(endpoints_for_agg.ds1d)
+
+    assert_equal(actual.id, [1, 5])
+    assert_almost_equal(actual.value, [18.0, np.nan])
 
 
 def test_invert_level(lines: Lines):
@@ -118,3 +127,11 @@ def test_invert_level(lines: Lines):
     )
 
     assert_almost_equal(endpoints.invert_level, [4, 3, 5])
+
+
+def test_ds1d_endpoint(lines: Lines):
+    endpoints = Endpoints(
+        lines=lines, id=[0, 1, 2], line_idx=[1, 2, 2], is_start=[True, True, False]
+    )
+
+    assert_almost_equal(endpoints.ds1d_endpoint, [8.0, 1.1, 0.9])

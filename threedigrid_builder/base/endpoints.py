@@ -25,17 +25,14 @@ class Endpoints(Array[Endpoint]):
     scalars = ("lines",)
 
     @classmethod
-    def for_connection_nodes(
+    def from_nodes_lines(
         cls,
         nodes: Nodes,
         lines: Lines,
         line_mask=None,
         node_mask=None,
     ) -> "Endpoints":
-        """Return the endpoints for connection nodes
-
-        Optionally filter by the content type of the lines.
-        """
+        """Return the endpoints, optionally filtering with node / line masks."""
         if line_mask is None:
             where = np.arange(len(lines), dtype=int)
         else:
@@ -52,6 +49,22 @@ class Endpoints(Array[Endpoint]):
         node_mask = is_cn if node_mask is None else is_cn & node_mask
         return result[np.isin(result.node_id, nodes.id[node_mask])]
 
+    @classmethod
+    def for_connection_nodes(
+        cls,
+        nodes: Nodes,
+        lines: Lines,
+        line_mask=None,
+        node_mask=None,
+    ) -> "Endpoints":
+        """Return the endpoints for connection nodes
+
+        Optionally filter by the content type of the lines.
+        """
+        is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        node_mask = is_cn if node_mask is None else is_cn & node_mask
+        return cls.from_nodes_lines(nodes, lines, line_mask, node_mask)
+
     @property
     def is_end(self):
         return ~self.is_start
@@ -61,6 +74,10 @@ class Endpoints(Array[Endpoint]):
         return np.where(
             self.is_start, self.invert_level_start_point, self.invert_level_end_point
         )
+
+    @property
+    def ds1d_endpoint(self):
+        return np.where(self.is_start, self.ds1d_half, self.ds1d - self.ds1d_half)
 
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]
@@ -94,6 +111,9 @@ class Endpoints(Array[Endpoint]):
 
     def nanmin_per_node(self, values) -> "NodeValues":
         return self.reduce_per_node(np.fmin.reduceat, values)
+
+    def sum_per_node(self, values) -> "NodeValues":
+        return self.reduce_per_node(np.add.reduceat, values)
 
     def first_per_node(self, values) -> "NodeValues":
         return self.reduce_per_node(lambda x, y: x[y], values)

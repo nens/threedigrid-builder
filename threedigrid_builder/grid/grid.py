@@ -726,9 +726,7 @@ class Grid:
         self.breaches = lines_1d2d.output_breaches(potential_breaches)
         self.lines += lines_1d2d
 
-    def add_1d2d_groundwater_lines(
-        self, channels, connection_nodes, pipes, locations, line_id_counter
-    ) -> Lines1D2D:
+    def add_1d2d_groundwater_lines(self, line_id_counter) -> Lines1D2D:
         """Connect 1D and 2D groundwater elements by computing 1D-2D lines.
 
         Appends self.lines.
