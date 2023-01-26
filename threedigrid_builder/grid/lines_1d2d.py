@@ -54,6 +54,7 @@ class Lines1D2D(Lines):
             line=line,
             content_type=nodes.content_type[node_idx],
             groundwater_exchange=nodes.groundwater_exchange[node_idx],
+            kcu=LineType.LINE_1D2D_GROUNDWATER,
         )
 
     @property
@@ -315,14 +316,6 @@ class Lines1D2D(Lines):
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             ],
-        )
-
-    def assign_kcu_groundwater(self, mask, is_closed) -> None:
-        """Set kcu where it is not set already"""
-        self.kcu[mask] = np.where(
-            is_closed,
-            LineType.LINE_1D2D_GROUNDWATER_CLOSED,
-            LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER,
         )
 
     def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):

@@ -537,22 +537,3 @@ def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
     lines_1d2d.transfer_2d_node_to_groundwater(n_groundwater_cells)
     assert_array_equal(lines_1d2d.line[:, 0], expected)  # 2d side
     assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
-
-
-def test_assign_kcu_groundwater():
-    lines = Lines1D2D(id=range(7))
-
-    lines.assign_kcu_groundwater(
-        mask=np.array([1, 1, 0, 0], dtype=bool),
-        is_closed=np.array([1, 0, 1, 0], dtype=bool),
-    )
-
-    assert_array_equal(
-        lines.kcu,
-        [
-            LineType.LINE_1D2D_GROUNDWATER_CLOSED,
-            LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER,
-            -9999,
-            -9999,
-        ],
-    )
