@@ -84,24 +84,29 @@ class ConnectionNodes(Array[ConnectionNode]):
         )
         return nodes
 
-    def get_1d2d_properties(self, nodes, node_idx, channels, locations, **kwargs):
-        """Compute properties (is_closed, dpumax) of 1D-2D connection node flowlines.
+    def is_closed(self, content_pk):
+        """Whether object are 'closed' or 'open water' object.
+
+        This is relevant for 1D-2D connections.
+        """
+        return self.storage_area[self.id_to_index(content_pk)] >= 0
+
+    def get_1d2d_exchange_levels(self, content_pk, channels, locations, **kwargs):
+        """Compute the exchange level (dpumax) for 1D-2D flowlines.
+
+        For connection nodes 1D2D exchange levels are the drain levels. Where
+        there is no drain level, the bank levels are taken from connected channels.
 
         Args:
-            nodes (Nodes): All nodes
-            node_idx (array of int): indices into nodes for which to compute properties
-            channels (Channels): required for nodes without drain_level
-            locations (CrossSectionLocations): to take drain_level from for nodes
-                without drain_level but with channel(s)
+            content_pk (array of int): object ids for which to compute levels
+            channels (Channels): for the drain_levels
+            locations (CrossSectionLocations): for the bank_levels
 
         Returns:
-            tuple of:
-            - is_closed (array of bool): based on self.storage_area
-            - dpumax (array of float): based on self.drain_level or locations.bank_level
+            exchange levels a.k.a. dpumax (array of float)
         """
         # get the corresponding connection_node ids and indexes
-        connection_node_id = nodes.content_pk[node_idx]
-        connection_node_idx = self.id_to_index(connection_node_id)
+        connection_node_idx = self.id_to_index(content_pk)
         is_manhole = self.manhole_id[connection_node_idx] != -9999
         is_manhole_idx = connection_node_idx[is_manhole]
 
@@ -117,10 +122,10 @@ class ConnectionNodes(Array[ConnectionNode]):
             )
 
         # for open water nodes, compute drain level from channel bank levels
-        open_water = node_idx[~is_manhole]
+        open_water = ~is_manhole
         dpumax = np.full(len(self), np.nan)  # easier to initialize for all conn. nodes
         for name in ("connection_node_start_id", "connection_node_end_id"):
-            has_node = np.isin(getattr(channels, name), nodes.content_pk[open_water])
+            has_node = np.isin(getattr(channels, name), content_pk[open_water])
             cn_idx_with_channel = self.id_to_index(getattr(channels, name)[has_node])
             if name == "connection_node_start_id":
                 ds = 0.0
@@ -139,9 +144,7 @@ class ConnectionNodes(Array[ConnectionNode]):
 
         # for manholes: put in the drain level
         dpumax[is_manhole] = self.drain_level[is_manhole_idx]
-
-        is_closed = self.storage_area[connection_node_idx] >= 0
-        return is_closed, dpumax
+        return dpumax
 
 
 def set_calculation_types(nodes: Nodes, lines: Lines):

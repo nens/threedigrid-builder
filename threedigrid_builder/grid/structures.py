@@ -32,27 +32,32 @@ class Culvert:  # NL: duiker
 class Culverts(Array[Culvert], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CULVERT
 
-    def get_1d2d_properties(self, nodes, node_idx, connection_nodes, **kwargs):
-        """Compute properties (is_closed, dpumax) of 1D-2D culvert flowlines.
+    def is_closed(self, content_pk):
+        """Whether objects are 'closed' or 'open water'.
+
+        This is relevant for 1D-2D connections.
+        """
+        return np.full(len(content_pk), True, dtype=bool)
+
+    def get_1d2d_exchange_levels(self, content_pk, s1d, connection_nodes, **kwargs):
+        """Compute the exchange level (dpumax) for 1D-2D flowlines.
+
+        For pipes and culverts 1D2D exchange levels are interpololated between
+        connection node drain levels.
 
         Args:
-            nodes (Nodes): All nodes
-            node_idx (array of int): indices into nodes for which to compute properties
-            connection_nodes (ConnectionNodes): for the drain_level
+            content_pk (array of int): object ids for which to compute levels
+            s1d (array of int): distance on the objects where to compute levels
+            connection_nodes (ConnectionNodes): for the drain_levels
 
         Returns:
-            tuple of:
-            - is_closed (bool): always True
-            - dpumax (array of float): interpolated between CN drain_level
+            exchange levels a.k.a. dpumax (array of float)
         """
-        # dpumax is interpolated between drain levels of adjacent manholes (conn nodes)
-        dpumax = self.compute_drain_level(
-            ids=nodes.content_pk[node_idx],
-            s=nodes.s1d[node_idx],
+        return self.compute_drain_level(
+            ids=content_pk,
+            s=s1d,
             connection_nodes=connection_nodes,
         )
-
-        return True, dpumax
 
 
 class WeirOrifice:  # NL: stuw / doorlaat

@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import numpy as np
 import shapely
 
 from threedigrid_builder.base import Array
@@ -26,26 +27,25 @@ class Channel:
 class Channels(Array[Channel], linear.BaseLinear):
     content_type = ContentType.TYPE_V2_CHANNEL
 
-    def get_1d2d_properties(self, nodes, node_idx, locations, **kwargs):
-        """Compute properties (is_closed, dpumax) of 1D-2D channel flowlines.
+    def is_closed(self, content_pk):
+        """Whether objects are 'closed' or 'open water'.
+
+        This is relevant for 1D-2D connections.
+        """
+        return np.full(len(content_pk), False, dtype=bool)
+
+    def get_1d2d_exchange_levels(self, content_pk, s1d, locations, **kwargs):
+        """Compute the exchange level (dpumax) for 1D-2D flowlines.
+
+        For channels 1D-2D exchange levels are interpolated between crosssection
+        location bank levels.
 
         Args:
-            nodes (Nodes): All nodes
-            node_idx (array of int): indices into nodes for which to compute properties
+            content_pk (array of int): object ids for which to compute levels
+            s1d (array of int): distance on the objects where to compute levels
             locations (CrossSectionLocations): for the bank_levels
 
         Returns:
-            tuple of:
-            - is_closed (bool): always False
-            - dpumax (array of float): interpolated between CS location bank_levels
+            exchange levels a.k.a. dpumax (array of float)
         """
-        # dpumax is interpolated between cross section location bank levels
-        dpumax = compute_bottom_level(
-            nodes.content_pk[node_idx],
-            nodes.s1d[node_idx],
-            locations,
-            self,
-            "bank_level",
-        )
-
-        return False, dpumax
+        return compute_bottom_level(content_pk, s1d, locations, self, "bank_level")
