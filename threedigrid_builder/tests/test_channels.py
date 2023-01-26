@@ -3,8 +3,6 @@ import pytest
 import shapely
 from numpy.testing import assert_array_equal
 
-from threedigrid_builder.base import Nodes
-from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import Channels, CrossSectionLocations
 
 
@@ -21,29 +19,23 @@ def channels():
     )
 
 
-def test_1d2d_properties(channels):
-    nodes = Nodes(
-        id=[0, 2, 5],
-        s1d=[3, np.nan, 6],
-        content_type=[
-            ContentType.TYPE_V2_CHANNEL,
-            ContentType.TYPE_V2_CONNECTION_NODES,
-            ContentType.TYPE_V2_CHANNEL,
-        ],
-        content_pk=[1, 3, 1],
-    )
+def test_get_1d2d_exchange_levels(channels):
     locations = CrossSectionLocations(
         id=[2, 5],
         the_geom=shapely.points([(0, 0), [6, 6]]),
         bank_level=[1.0, 13.0],
         channel_id=[1, 1],
     )
-    node_idx = [0, 2]
 
-    is_closed, dpumax = channels.get_1d2d_properties(nodes, node_idx, locations)
-
-    # channels are no sewerage
-    assert_array_equal(is_closed, False)
+    actual = channels.get_1d2d_exchange_levels(
+        content_pk=np.array([1, 1]), s1d=np.array([3.0, 6.0]), locations=locations
+    )
 
     # bank levels are interpolated
-    assert_array_equal(dpumax, [4.0, 7.0])
+    assert_array_equal(actual, [4.0, 7.0])
+
+
+def test_is_closed(channels):
+    actual = channels.is_closed(np.array([1, 3]))
+
+    assert_array_equal(actual, [False, False])

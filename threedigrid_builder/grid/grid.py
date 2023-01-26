@@ -702,15 +702,18 @@ class Grid:
         node_idx = lines_1d2d.get_1d_node_idx(self.nodes)
         for objects in (channels, connection_nodes, pipes, culverts):
             mask = self.nodes.content_type[node_idx] == objects.content_type
-            is_closed, dpumax = objects.get_1d2d_properties(
-                self.nodes,
-                node_idx[mask],
-                locations=locations,
-                channels=channels,
-                connection_nodes=connection_nodes,
+            content_pk = self.nodes.content_pk[node_idx[mask]]
+            lines_1d2d.assign_kcu(mask, objects.is_closed(content_pk))
+            lines_1d2d.assign_dpumax(
+                mask,
+                objects.get_1d2d_exchange_levels(
+                    content_pk,
+                    s1d=self.nodes.s1d[node_idx[mask]],
+                    locations=locations,
+                    channels=channels,
+                    connection_nodes=connection_nodes,
+                ),
             )
-            lines_1d2d.assign_kcu(mask, is_closed)
-            lines_1d2d.assign_dpumax(mask, dpumax)
 
         lines_1d2d.assign_ds1d(self.nodes)
         lines_1d2d.assign_ds1d_half()

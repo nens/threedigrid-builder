@@ -6,7 +6,6 @@ import pytest
 import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
 
-from threedigrid_builder.base import Nodes
 from threedigrid_builder.constants import ContentType
 from threedigrid_builder.grid import ConnectionNodes, Culverts, Orifices, Weirs
 
@@ -120,29 +119,27 @@ def test_culverts_compute_bottom_level_raises_out_of_bounds(culvert_ids, ds, cul
         culverts.compute_bottom_level(culvert_ids, ds)
 
 
-def test_culverts_1d2d_properties(culverts):
-    nodes = Nodes(
-        id=[0, 2, 5, 7],
-        content_pk=[1, 1, 2, 2],
-        s1d=[12.0, 13.0, 14.0, 15.0],
-    )
-    node_idx = [0, 1, 3]
-
+def test_culverts_get_1d2d_exchange_levels(culverts):
+    content_pk = np.array([1, 1, 2])
+    s1d = np.array([12.0, 13.0, 15.0])
     connection_nodes = mock.Mock()
 
     with mock.patch.object(culverts, "compute_drain_level") as compute_drain_level:
         compute_drain_level.return_value = np.array([1.8, 2.5, 3.2])
-        is_closed, dpumax = culverts.get_1d2d_properties(
-            nodes, node_idx, connection_nodes
+        actual = culverts.get_1d2d_exchange_levels(
+            content_pk=content_pk, s1d=s1d, connection_nodes=connection_nodes
         )
 
         _, kwargs = compute_drain_level.call_args
-        assert_array_equal(kwargs["ids"], [1, 1, 2])  # the content pk
-        assert_array_equal(kwargs["s"], [12.0, 13.0, 15.0])  # the s1d
+        assert_array_equal(kwargs["ids"], content_pk)
+        assert_array_equal(kwargs["s"], s1d)
         assert kwargs["connection_nodes"] is connection_nodes
 
-    # culverts are closed
-    assert_array_equal(is_closed, True)
-
     # interpolation between manhole drain levels is further tested elsewhere
-    assert_array_equal(dpumax, [1.8, 2.5, 3.2])
+    assert_array_equal(actual, compute_drain_level.return_value)
+
+
+def test_is_closed(culverts):
+    actual = culverts.is_closed(np.array([1, 3]))
+
+    assert_array_equal(actual, [True, True])

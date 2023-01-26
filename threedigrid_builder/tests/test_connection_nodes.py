@@ -219,27 +219,14 @@ def test_bottom_levels_above_invert_level(structure_type, caplog):
     assert_almost_equal(nodes.dmax, [3.0, 20.0])
 
 
-def test_1d2d_properties(connection_nodes, caplog):
+def test_get_1d2d_exchange_levels(connection_nodes: ConnectionNodes, caplog):
     """Test setup:
 
-    - node 0: this has storage_area, drain_level is copied
-    - node 1: this is skipped (not in node_idx)
-    - node 2: this has no storage_area, it has 2 channels, lowest bank_level is taken
-    - node 3: this has no storage_area, it has no channels: outcome is NaN
-    - node 4: this has no storage_area, it 1 channel with no bank level: outcome is NaN
-    - node 5: this has storage_area == 0, drain_level is copied
+    - conn. node 1: drain_level is copied
+    - conn. node 3: it has 2 channels, lowest bank_level is taken
+    - conn. node 4: it has no channels: outcome is NaN
+    - conn. node 9: it 1 channel with no bank level: outcome is NaN
     """
-    caplog.set_level(
-        logging.WARNING, logger="threedigrid_builder.grid.connection_nodes"
-    )
-
-    nodes = Nodes(
-        id=[0, 1, 2, 3, 4, 5],
-        content_pk=[1, 3, 99, 4, 9, 10],
-        dmax=[1.0, 3.0, 2.0, 4.0, 2.3, 5.2],
-    )
-    node_idx = np.array([0, 1, 3, 4, 5])
-
     # channels & cs locations are so that:
     # - channel 32 (CN 1 -> 3, N 0 -> 1), start is 4.0 and end is 0.0
     # - channel 33 (CN 3 -> 9, N 1 -> 4), start&end are 1.0
@@ -266,14 +253,27 @@ def test_1d2d_properties(connection_nodes, caplog):
         bank_level=[4.0, 0.0, 1.0, -10.0, np.nan, 3.4],
     )
 
-    is_closed, dpumax = connection_nodes.get_1d2d_properties(
-        nodes, node_idx, channels, locations
+    caplog.set_level(
+        logging.WARNING, logger="threedigrid_builder.grid.connection_nodes"
     )
 
-    assert_array_equal(is_closed, [True, False, False, False, True])
-    assert_array_equal(dpumax, [1.2, np.nan, np.nan, 1.0, 3.4])
+    content_pk = np.array([1, 3, 4, 9])
+    actual = connection_nodes.get_1d2d_exchange_levels(
+        content_pk,
+        channels=channels,
+        locations=locations,
+        s1d=None,
+        connection_nodes=None,
+    )
+
+    assert_array_equal(actual, [1.2, np.nan, np.nan, 1.0])
 
     assert (
         caplog.record_tuples[0][2]
         == "Manholes [42] have a bottom_level that is above drain_level."
     )
+
+
+def test_is_closed(connection_nodes):
+    actual = connection_nodes.is_closed(content_pk=[1, 3, 4, 9, 10])
+    assert_array_equal(actual, [True, False, False, False, True])
