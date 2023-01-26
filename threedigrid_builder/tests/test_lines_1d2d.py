@@ -512,3 +512,47 @@ def test_output_breaches(get_velocity_points):
     assert_array_equal(actual.display_name, ["bb"])
 
     get_velocity_points.assert_called_once()
+
+
+def test_create_lines_1d2d_groundwater():
+    nodes = Nodes(
+        id=range(1, 5),
+        groundwater_exchange=[
+            (1e-6, 1e-7),
+            (2e-6, np.nan),
+            (np.nan, 1e-7),
+            (np.nan, np.nan),
+        ],
+    )
+    actual = Lines1D2D.create_groundwater(nodes, itertools.count())
+    assert_array_equal(actual.line, [[-9999, 1], [-9999, 2]])
+    assert_array_equal(actual.groundwater_exchange, [(1e-6, 1e-7), (2e-6, np.nan)])
+
+
+@pytest.mark.parametrize(
+    "n_groundwater_cells,expected", [(0, [-9999, -9999]), (3, [-9999, 5])]
+)
+def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
+    lines_1d2d = Lines1D2D(id=range(1, 3), line=[[-9999, 6], [2, 9]])
+    lines_1d2d.transfer_2d_node_to_groundwater(n_groundwater_cells)
+    assert_array_equal(lines_1d2d.line[:, 0], expected)  # 2d side
+    assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
+
+
+def test_assign_kcu_groundwater():
+    lines = Lines1D2D(id=range(7))
+
+    lines.assign_kcu_groundwater(
+        mask=np.array([1, 1, 0, 0], dtype=bool),
+        is_closed=np.array([1, 0, 1, 0], dtype=bool),
+    )
+
+    assert_array_equal(
+        lines.kcu,
+        [
+            LineType.LINE_1D2D_GROUNDWATER_CLOSED,
+            LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER,
+            -9999,
+            -9999,
+        ],
+    )

@@ -71,7 +71,10 @@ LINE_ORDER = [
         LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
         LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
     ],
-    [LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER, LineType.LINE_1D2D_GROUNDWATER_SEWER],
+    [
+        LineType.LINE_1D2D_GROUNDWATER_CLOSED,
+        LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER,
+    ],
     [
         LineType.LINE_2D_BOUNDARY_WEST,
         LineType.LINE_2D_BOUNDARY_EAST,
@@ -721,7 +724,9 @@ class Grid:
         self.breaches = lines_1d2d.output_breaches(potential_breaches)
         self.lines += lines_1d2d
 
-    def add_1d2d_groundwater_lines(self, line_id_counter) -> Lines1D2D:
+    def add_1d2d_groundwater_lines(
+        self, channels, connection_nodes, pipes, locations, line_id_counter
+    ) -> Lines1D2D:
         """Connect 1D and 2D groundwater elements by computing 1D-2D lines.
 
         Appends self.lines.
@@ -731,7 +736,19 @@ class Grid:
             return
         lines_1d2d_gw.assign_line_coords(self.nodes)
         lines_1d2d_gw.assign_2d_node(self.cell_tree)
-        lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes)
+        lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes.n_groundwater_cells)
+        # Go through objects and dispatch to get_1d2d_properties
+        node_idx = lines_1d2d_gw.get_1d_node_idx(self.nodes)
+        for objects in (channels, connection_nodes, pipes):
+            mask = self.nodes.content_type[node_idx] == objects.content_type
+            is_closed, _ = objects.get_1d2d_properties(
+                self.nodes,
+                node_idx[mask],
+                locations=locations,
+                channels=channels,
+                connection_nodes=connection_nodes,
+            )
+            lines_1d2d_gw.assign_kcu_groundwater(mask, is_closed)
         self.lines += lines_1d2d_gw
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):

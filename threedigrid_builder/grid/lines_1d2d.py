@@ -44,7 +44,7 @@ class Lines1D2D(Lines):
     ) -> "Lines1D2D":
         """Create the 1D-2D groundwater lines
 
-        Sets: id, line[:, 1], content_type, content_pk
+        Sets: id, line[:, 1]
         """
         node_idx = np.where(np.isfinite(nodes.groundwater_exchange[:, 0]))[0]
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
@@ -53,7 +53,6 @@ class Lines1D2D(Lines):
             id=itertools.islice(line_id_counter, len(node_idx)),
             line=line,
             content_type=nodes.content_type[node_idx],
-            content_pk=nodes.content_pk[node_idx],
             groundwater_exchange=nodes.groundwater_exchange[node_idx],
         )
 
@@ -291,13 +290,12 @@ class Lines1D2D(Lines):
         self.line[line_idx, 0] = cell_idx
         self.line_coords[:] = np.nan
 
-    def transfer_2d_node_to_groundwater(self, nodes: Nodes):
+    def transfer_2d_node_to_groundwater(self, offset: int):
         """Transfers the 1D-2D line to a groundwater node
 
         Sets: line[:, 0]
         """
         has_2d_node = np.where(self.line[:, 0] != -9999)[0]
-        offset = nodes.n_groundwater_cells
         if offset == 0:
             # no groundwater cells; reset the node id (will raise error later)
             self.line[has_2d_node, 0] = -9999
@@ -317,6 +315,14 @@ class Lines1D2D(Lines):
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
             ],
+        )
+
+    def assign_kcu_groundwater(self, mask, is_closed) -> None:
+        """Set kcu where it is not set already"""
+        self.kcu[mask] = np.where(
+            is_closed,
+            LineType.LINE_1D2D_GROUNDWATER_CLOSED,
+            LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER,
         )
 
     def assign_dpumax_from_breaches(self, potential_breaches: PotentialBreaches):
