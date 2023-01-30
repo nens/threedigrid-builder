@@ -83,6 +83,8 @@ class Endpoints(Array[Endpoint]):
         return getattr(self.lines, name)[self.line_idx]
 
     def _get_reduce_indices(self):
+        if len(self) == 0:
+            return np.empty((0,), dtype=int)
         diff = np.diff(self.node_id)
         if np.any(diff < 0):
             raise ValueError("endpoints must be ordered by node_id")

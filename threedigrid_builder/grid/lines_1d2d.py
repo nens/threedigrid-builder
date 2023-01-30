@@ -53,7 +53,6 @@ class Lines1D2D(Lines):
             id=itertools.islice(line_id_counter, len(node_idx)),
             line=line,
             content_type=nodes.content_type[node_idx],
-            groundwater_exchange=nodes.groundwater_exchange[node_idx],
             kcu=LineType.LINE_1D2D_GROUNDWATER,
         )
 
@@ -434,25 +433,40 @@ class Lines1D2D(Lines):
             display_name=breaches.display_name[breach_idx],
         )
 
-    def assign_cross_weight_from_storage_area(self, nodes: Nodes):
-        """Compute the 'cross_weight' (length of exchange) from manhole storage area."""
+    def _assign_groundwater_exchange_from_nodes(self, nodes: Nodes):
+        """Compute the groundwater exchange coefficients from nodes.
+
+        Sets:
+        - cross_weight (sqrt of manhole storage area)
+        - groundwater_exchange (from manhole)
+        """
         node_idx = self.get_1d_node_idx(nodes)
+        with np.errstate(
+            invalid="ignore"
+        ):  # not sure if NaN occurs (it would mean 0.0)
+            has_storage = nodes.storage_area[node_idx] > 0
+        self.cross_weight[has_storage] += np.sqrt(
+            nodes.storage_area[node_idx[has_storage]]
+        )
 
-        self.cross_weight[:] = 0.0
-        with np.seterr("ignore"):
-            has_storage = node_idx[nodes.storage_area[node_idx] > 0]
-        self.cross_weight[has_storage] = np.sqrt(nodes.storage_area[has_storage])
+        has_gw = np.isfinite(nodes.groundwater_exchange[node_idx]).all(axis=1)
+        self.groundwater_exchange[has_gw] += (
+            self.cross_weight[has_gw, np.newaxis]
+            * nodes.groundwater_exchange[node_idx[has_gw]]
+        )
 
-    def assign_groundwater_exchange(self, nodes: Nodes, lines: Lines):
-        """Compute the total groundwater exchange.
+    def _assign_groundwater_exchange_from_lines(self, nodes: Nodes, lines: Lines):
+        """Compute the groundwater exchange from lines.
 
-        Sets: cross_weight (add length for groundwater exchange)
+        Sets:
+        - cross_weight (sum of halfs of connected objects that have gw exchange)
+        - groundwater_exchange (weighted sum of lines.groundwater_exchange)
         """
         endpoints = Endpoints.from_nodes_lines(
             nodes,
             lines,
             node_mask=np.isin(nodes.id, self.line[:, 1]),
-            line_mask=np.isfinite(lines.groundwater_exchange[:, 0]),
+            line_mask=np.isfinite(lines.groundwater_exchange).all(axis=1),
         )
         idx = search(
             self.line[:, 1],
@@ -462,6 +476,24 @@ class Lines1D2D(Lines):
         )
 
         self.cross_weight[idx] += endpoints.sum_per_node(endpoints.ds1d_endpoint)
-        self.groundwater_exchange[idx, :] = endpoints.sum_per_node(
-            endpoints.ds1d_endpoint * endpoints.groundwater_exchange[:]
+        self.groundwater_exchange[idx, :] += endpoints.sum_per_node(
+            endpoints.ds1d_endpoint[:, np.newaxis] * endpoints.groundwater_exchange
         )
+
+    def assign_groundwater_exchange(self, nodes: Nodes, lines: Lines):
+        """Compute the groundwater exchange coefficients.
+
+        Sets:
+        - cross_weight (sum of sqrt(nodes.storage area) and lines.ds1d_half)
+        - groundwater_exchange (weighted average of groundwater_exchange)
+        """
+        self.cross_weight[:] = 0.0
+        self.groundwater_exchange[:] = 0.0
+
+        self._assign_groundwater_exchange_from_nodes(nodes)
+        self._assign_groundwater_exchange_from_lines(nodes, lines)
+
+        # change 'weighted sum' to 'weighted average' (avoiding div by 0)
+        has_weight = self.cross_weight > 0.0
+        self.groundwater_exchange[has_weight, :] /= self.cross_weight[has_weight]
+        self.groundwater_exchange[~has_weight, :] = np.nan

@@ -94,7 +94,7 @@ def test_reduce_per_node_2dim(lines: Lines):
 
 def test_reduce_per_node_empty_2dim(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[])
-    actual = endpoints.reduce_per_node(None, np.array((0, 2)))
+    actual = endpoints.reduce_per_node(None, np.empty((0, 2)))
 
     assert actual.shape == (0, 2)
 
@@ -117,6 +117,13 @@ def test_reduce_per_node_id(endpoints_for_agg: Endpoints):
     actual = endpoints_for_agg.get_reduce_per_node_id()
 
     assert_equal(actual, [1, 5])
+
+
+def test_reduce_per_node_id_empty(lines: Lines):
+    endpoints = Endpoints(lines=lines, id=[])
+    actual = endpoints.get_reduce_per_node_id()
+
+    assert actual.shape == (0,)
 
 
 def test_nanmin_per_node(endpoints_for_agg: Endpoints):
