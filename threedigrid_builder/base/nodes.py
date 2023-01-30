@@ -52,7 +52,7 @@ class Node:
     drain_level: float  # Drain level entered for manholes
     initial_waterlevel: float
     zoom_category: int
-    groundwater_exchange: Tuple[float, float]
+    groundwater_exchange: Tuple[float, float, float]
     # extra info, for manhole only:
     manhole_indicator: int
     surface_level: float

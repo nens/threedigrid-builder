@@ -514,18 +514,15 @@ def test_output_breaches(get_velocity_points):
     get_velocity_points.assert_called_once()
 
 
-def test_create_lines_1d2d_groundwater():
-    nodes = Nodes(
-        id=range(1, 5),
-        groundwater_exchange=[
-            (1e-6, 1e-7),
-            (2e-6, np.nan),
-            (np.nan, 1e-7),
-            (np.nan, np.nan),
-        ],
-    )
-    actual = Lines1D2D.create_groundwater(nodes, itertools.count())
-    assert_array_equal(actual.line, [[-9999, 1], [-9999, 2]])
+def test_create_lines_1d2d_groundwater(threeway_junction):
+    nodes, lines = threeway_junction
+
+    nodes.groundwater_exchange[0, :] = 1.0
+    nodes.groundwater_exchange[3, :] = 1.0
+    lines.groundwater_exchange[0, :] = 1.0
+
+    actual = Lines1D2D.create_groundwater(nodes, lines, itertools.count())
+    assert_array_equal(actual.line, [[-9999, 1], [-9999, 2], [-9999, 4]])
 
 
 @pytest.mark.parametrize(
@@ -543,24 +540,29 @@ def test_assign_groundwater_exchange_from_nodes(threeway_junction):
 
     nodes.storage_area[:] = [9.0, 4.0, np.nan, -2.0]
     nodes.groundwater_exchange[:] = [
-        [1.0, 2.0],
-        [np.nan, np.nan],
-        [np.nan, np.nan],
-        [5.0, 6.0],
+        [1.0, 2.0, 0.0],
+        [np.nan, np.nan, np.nan],
+        [np.nan, np.nan, np.nan],
+        [5.0, 6.0, 0.0],
     ]
 
     lines_1d2d = Lines1D2D(
         id=range(len(nodes)),
         line=[[-9999] + [i] for i in nodes.id],
         cross_weight=0.0,
-        groundwater_exchange=[[0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
+        groundwater_exchange=[
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [4.0, 0.0, 0.0],
+        ],
     )
     lines_1d2d._assign_groundwater_exchange_from_nodes(nodes)
 
     assert_almost_equal(lines_1d2d.cross_weight, [3.0, 2.0, 0.0, 0.0])
     assert_almost_equal(
         lines_1d2d.groundwater_exchange,
-        [[3.0, 1.0 + 6.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
+        [[3.0, 1.0 + 6.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [4.0, 0.0, 0.0]],
     )
 
 
@@ -569,16 +571,23 @@ def test_assign_groundwater_exchange_from_lines(threeway_junction):
 
     lines.ds1d[:] = [1.2, 2.3, 3.4]
     lines.ds1d_half[:] = [0.6, 1.0, 1.7]
-    lines.groundwater_exchange[:] = [[1.0, 2.0], [5.0, 6.0], [np.nan, np.nan]]
+    lines.groundwater_exchange[:] = [
+        [1.0, 2.0, 0.0],
+        [5.0, 6.0, 0.0],
+        [np.nan, np.nan, np.nan],
+    ]
     lines_1d2d = Lines1D2D(
-        id=[1], line=[[-9999, 1]], cross_weight=0.4, groundwater_exchange=[[0.0, 1.0]]
+        id=[1],
+        line=[[-9999, 1]],
+        cross_weight=0.4,
+        groundwater_exchange=[[0.0, 1.0, 0.0]],
     )
     lines_1d2d._assign_groundwater_exchange_from_lines(nodes, lines)
 
     assert_almost_equal(lines_1d2d.cross_weight, [0.4 + 0.6 + 1.0])
     assert_almost_equal(
         lines_1d2d.groundwater_exchange,
-        [[0.6 * 1.0 + 1.0 * 5.0, 1.0 + 0.6 * 2.0 + 1.0 * 6.0]],
+        [[0.6 * 1.0 + 1.0 * 5.0, 1.0 + 0.6 * 2.0 + 1.0 * 6.0, 0.0]],
     )
 
 
@@ -587,17 +596,21 @@ def test_assign_groundwater_exchange(threeway_junction):
 
     nodes.storage_area[:] = [9.0, 4.0, np.nan, -2.0]
     nodes.groundwater_exchange[:] = [
-        [1.0, 2.0],
-        [np.nan, np.nan],
-        [np.nan, np.nan],
-        [5.0, 6.0],
+        [1.0, 2.0, 0.0],
+        [np.nan, np.nan, np.nan],
+        [np.nan, np.nan, np.nan],
+        [5.0, 6.0, 0.0],
     ]
     lines.ds1d[:] = [1.2, 2.3, 3.4]
     lines.ds1d_half[:] = [0.6, 1.0, 1.7]
-    lines.groundwater_exchange[:] = [[1.0, 2.0], [5.0, 6.0], [np.nan, np.nan]]
+    lines.groundwater_exchange[:] = [
+        [1.0, 2.0, 0.0],
+        [5.0, 6.0, 0.0],
+        [np.nan, np.nan, np.nan],
+    ]
 
     lines_1d2d = Lines1D2D(id=[1], line=[[-9999, 1]])
     lines_1d2d.assign_groundwater_exchange(nodes, lines)
 
     assert_almost_equal(lines_1d2d.cross_weight, [4.6])
-    assert_almost_equal(lines_1d2d.groundwater_exchange, [[1.8695652, 2.8695652]])
+    assert_almost_equal(lines_1d2d.groundwater_exchange, [[1.8695652, 2.8695652, 0.0]])

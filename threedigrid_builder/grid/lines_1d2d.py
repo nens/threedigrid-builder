@@ -40,19 +40,32 @@ class Lines1D2D(Lines):
 
     @classmethod
     def create_groundwater(
-        cls, nodes: Nodes, line_id_counter: Iterator[int]
+        cls, nodes: Nodes, lines: Lines, line_id_counter: Iterator[int]
     ) -> "Lines1D2D":
         """Create the 1D-2D groundwater lines
 
-        Sets: id, line[:, 1]
+        Nodes get a 1D-2D groundwater lines if:
+        - they have groundwater_exchange
+        - they have at least 1 line connected to it with groundwater_exchange
+
+        Sets: id, line[:, 1], kcu
         """
-        node_idx = np.where(np.isfinite(nodes.groundwater_exchange[:, 0]))[0]
+        node_has_gw = np.isfinite(nodes.groundwater_exchange).all(axis=1)
+        line_has_gw = np.isfinite(lines.groundwater_exchange).all(axis=1)
+
+        node_idx = np.unique(
+            np.concatenate(
+                [
+                    np.where(node_has_gw)[0],
+                    nodes.id_to_index(lines.line[line_has_gw].ravel()),
+                ]
+            )
+        )
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
         return cls(
             id=itertools.islice(line_id_counter, len(node_idx)),
             line=line,
-            content_type=nodes.content_type[node_idx],
             kcu=LineType.LINE_1D2D_GROUNDWATER,
         )
 

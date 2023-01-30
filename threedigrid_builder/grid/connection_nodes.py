@@ -36,7 +36,7 @@ class ConnectionNode:
     initial_waterlevel: float
     display_name: str
     zoom_category: int
-    groundwater_exchange: Tuple[float, float]
+    groundwater_exchange: Tuple[float, float, float]
 
 
 class ConnectionNodes(Array[ConnectionNode]):

@@ -21,7 +21,7 @@ class Channel:
     calculation_type: CalculationType
     display_name: str
     zoom_category: int
-    groundwater_exchange: Tuple[float, float]
+    groundwater_exchange: Tuple[float, float, float]
 
 
 class Channels(Array[Channel], linear.BaseLinear):
