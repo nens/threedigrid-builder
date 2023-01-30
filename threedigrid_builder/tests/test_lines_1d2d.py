@@ -541,6 +541,23 @@ def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
     assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
 
 
-def test_assign_cross_width(threeway_junction):
-    lines_1d2d = Lines1D2D(id=[1], line=[[-9999, 1]])
-    lines_1d2d.assign_cross_width(*threeway_junction)
+def assign_cross_weight_manholes(threeway_junction):
+    nodes, lines = threeway_junction
+
+    nodes.storage_area[:] = [9.0, 4.0, np.nan, -2.0]
+    lines_1d2d = Lines1D2D(
+        id=range(len(nodes)), line=[[-9999] + [i] for i in range(nodes.id)]
+    )
+    lines_1d2d.assign_cross_weight_from_storage_area(nodes, lines)
+
+    assert_almost_equal(lines_1d2d.cross_weight, [3.0, 2.0, 0.0, 0.0])
+
+
+def test_assign_groundwater_exchange(threeway_junction):
+    nodes, lines = threeway_junction
+
+    lines.groundwater_exchange[:, 0] = [1e-6, 1e-7, np.nan]
+    lines_1d2d = Lines1D2D(id=[1], line=[[-9999, 1]], cross_weight=0.4)
+    lines_1d2d.assign_groundwater_exchange(nodes, lines)
+
+    assert_almost_equal(lines_1d2d.cross_weight, [0.4 + 0.6 + 1.0])

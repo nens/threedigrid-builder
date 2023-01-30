@@ -129,11 +129,14 @@ class Lines1D2D(Lines):
         channel_id_per_node = endpoints.first_per_node(endpoints.content_pk)
         # Use the node_id -> channel_id map to set channel_id on self
         idx = search(
-            channel_id_per_node.id, node_ids, check_exists=False, assume_ordered=True
+            endpoints.get_reduce_per_node_id(),
+            node_ids,
+            check_exists=False,
+            assume_ordered=True,
         )
         mask = idx != -9999
 
-        self.content_pk[is_connection_node[mask]] = channel_id_per_node.value[idx[mask]]
+        self.content_pk[is_connection_node[mask]] = channel_id_per_node[idx[mask]]
         self.content_type[is_connection_node[mask]] = ContentType.TYPE_V2_CHANNEL
 
     def assign_exchange_lines(self, exchange_lines: ExchangeLines) -> None:
@@ -431,18 +434,34 @@ class Lines1D2D(Lines):
             display_name=breaches.display_name[breach_idx],
         )
 
-    def assign_cross_width(self, nodes: Nodes, lines: Lines):
+    def assign_cross_weight_from_storage_area(self, nodes: Nodes):
+        """Compute the 'cross_weight' (length of exchange) from manhole storage area."""
+        node_idx = self.get_1d_node_idx(nodes)
+
+        self.cross_weight[:] = 0.0
+        with np.seterr("ignore"):
+            has_storage = node_idx[nodes.storage_area[node_idx] > 0]
+        self.cross_weight[has_storage] = np.sqrt(nodes.storage_area[has_storage])
+
+    def assign_groundwater_exchange(self, nodes: Nodes, lines: Lines):
+        """Compute the total groundwater exchange.
+
+        Sets: cross_weight (add length for groundwater exchange)
+        """
         endpoints = Endpoints.from_nodes_lines(
             nodes,
             lines,
             node_mask=np.isin(nodes.id, self.line[:, 1]),
-            line_mask=np.isin(
-                lines.content_type,
-                [ContentType.TYPE_V2_CHANNEL, ContentType.TYPE_V2_PIPE],
-            ),
+            line_mask=np.isfinite(lines.groundwater_exchange[:, 0]),
         )
-        length = endpoints.sum_per_node(endpoints.ds1d_endpoint)
         idx = search(
-            self.line[:, 1], length.id, check_exists=True, assume_ordered=False
+            self.line[:, 1],
+            endpoints.get_reduce_per_node_id(),
+            check_exists=True,
+            assume_ordered=False,
         )
-        self.cross_width[idx] = length.value
+
+        self.cross_weight[idx] += endpoints.sum_per_node(endpoints.ds1d_endpoint)
+        self.groundwater_exchange[idx, :] = endpoints.sum_per_node(
+            endpoints.ds1d_endpoint * endpoints.groundwater_exchange[:]
+        )

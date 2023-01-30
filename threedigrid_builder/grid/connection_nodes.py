@@ -194,8 +194,8 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     nodes.calculation_type[node_mask] = CalculationType.ISOLATED
     # overwrite with the one derived from the line endpoints
     nodes.calculation_type[
-        nodes.id_to_index(calculation_type.id)
-    ] = calculation_type.value
+        nodes.id_to_index(endpoints.get_reduce_per_node_id())
+    ] = calculation_type
 
 
 def _put_if_less(a, ind, v):
@@ -250,10 +250,10 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
     )
     endpoints.reorder_by("node_id")
     dmax_per_node = endpoints.nanmin_per_node(endpoints.invert_level)
-    node_idx = nodes.id_to_index(dmax_per_node.id)
+    node_idx = nodes.id_to_index(endpoints.get_reduce_per_node_id())
 
     # The new dmax is the minimum of the existing one and the one from above computation
-    dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node.value)
+    dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node)
 
     # Check if the new node dmax is below the original manhole dmax
     is_manhole = nodes.manhole_id[node_idx] != -9999

@@ -78,16 +78,32 @@ def test_reduce_per_node(lines: Lines, ufunc, expected):
     )
     actual = endpoints.reduce_per_node(ufunc, endpoints.ds1d)
 
-    assert_equal(actual.id, [1, 5])
-    assert_almost_equal(actual.value, expected)
+    assert_almost_equal(actual, expected)
+
+
+def test_reduce_per_node_2dim(lines: Lines):
+    endpoints = Endpoints(
+        lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
+    )
+    actual = endpoints.reduce_per_node(
+        np.fmax.reduceat, np.array([[1.0, 4.0], [3.0, 3.0], [5.0, 6.0], [7.0, 8.0]])
+    )
+
+    assert_almost_equal(actual, np.array([[3.0, 4.0], [7.0, 8.0]]))
+
+
+def test_reduce_per_node_empty_2dim(lines: Lines):
+    endpoints = Endpoints(lines=lines, id=[])
+    actual = endpoints.reduce_per_node(None, np.array((0, 2)))
+
+    assert actual.shape == (0, 2)
 
 
 def test_reduce_per_node_empty(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[])
     actual = endpoints.reduce_per_node(None, [])
 
-    assert_equal(actual.id, [])
-    assert_almost_equal(actual.value, [])
+    assert actual.shape == (0,)
 
 
 @pytest.fixture
@@ -97,25 +113,28 @@ def endpoints_for_agg(lines):
     )
 
 
+def test_reduce_per_node_id(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.get_reduce_per_node_id()
+
+    assert_equal(actual, [1, 5])
+
+
 def test_nanmin_per_node(endpoints_for_agg: Endpoints):
     actual = endpoints_for_agg.nanmin_per_node(endpoints_for_agg.ds1d)
 
-    assert_equal(actual.id, [1, 5])
-    assert_almost_equal(actual.value, [2.0, 16.0])
+    assert_almost_equal(actual, [2.0, 16.0])
 
 
 def test_first_per_node(endpoints_for_agg: Endpoints):
     actual = endpoints_for_agg.first_per_node(endpoints_for_agg.ds1d)
 
-    assert_equal(actual.id, [1, 5])
-    assert_almost_equal(actual.value, [16.0, np.nan])
+    assert_almost_equal(actual, [16.0, np.nan])
 
 
 def test_sum_per_node(endpoints_for_agg: Endpoints):
     actual = endpoints_for_agg.sum_per_node(endpoints_for_agg.ds1d)
 
-    assert_equal(actual.id, [1, 5])
-    assert_almost_equal(actual.value, [18.0, np.nan])
+    assert_almost_equal(actual, [18.0, np.nan])
 
 
 def test_invert_level(lines: Lines):

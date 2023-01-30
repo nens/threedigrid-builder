@@ -82,7 +82,16 @@ class Endpoints(Array[Endpoint]):
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]
 
-    def reduce_per_node(self, reduceat, values) -> "NodeValues":
+    def _get_reduce_indices(self):
+        diff = np.diff(self.node_id)
+        if np.any(diff < 0):
+            raise ValueError("endpoints must be ordered by node_id")
+        return np.concatenate([[0], np.where(diff > 0)[0] + 1])
+
+    def get_reduce_per_node_id(self):
+        return self.node_id[self._get_reduce_indices()]
+
+    def reduce_per_node(self, reduceat, values):
         """Compute the per-node reduction of 'values'
 
         The 'reduceat' function is normally a numpy ufunc.reduceat. This function
@@ -98,31 +107,19 @@ class Endpoints(Array[Endpoint]):
 
         Returns node ids and corresponding maximum values.
         """
-        if len(values) != len(self):
+        values = np.asarray(values)
+        if values.shape[0] != len(self):
             raise ValueError("values must have the same length as self")
         if len(values) == 0:
-            return NodeValues(id=[])
-        diff = np.diff(self.node_id)
-        if np.any(diff < 0):
-            raise ValueError("endpoints must be ordered by node_id")
-        indices = np.concatenate([[0], np.where(diff > 0)[0] + 1])
-        result = reduceat(values, indices)
-        return NodeValues(id=self.node_id[indices], value=result)
+            return np.empty((0,) + values.shape[1:])
+        indices = self._get_reduce_indices()
+        return reduceat(values, indices)
 
-    def nanmin_per_node(self, values) -> "NodeValues":
+    def nanmin_per_node(self, values):
         return self.reduce_per_node(np.fmin.reduceat, values)
 
-    def sum_per_node(self, values) -> "NodeValues":
+    def sum_per_node(self, values):
         return self.reduce_per_node(np.add.reduceat, values)
 
-    def first_per_node(self, values) -> "NodeValues":
+    def first_per_node(self, values):
         return self.reduce_per_node(lambda x, y: x[y], values)
-
-
-class NodeValue:
-    id: int
-    value: float
-
-
-class NodeValues(Array[NodeValue]):
-    pass
