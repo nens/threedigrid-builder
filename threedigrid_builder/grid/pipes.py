@@ -29,7 +29,7 @@ class Pipe:
     # profile_num
     # original_length
     material: int
-    groundwater_exchange: Tuple[float, float]
+    groundwater_exchange: Tuple[float, float, float]
 
 
 class Pipes(Array[Pipe], linear.BaseLinear):
