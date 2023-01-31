@@ -9,6 +9,8 @@ Changelog of threedigrid-builder
   to groundwater cells and lines having new kcu values
   600, 700, 800, 900.
 
+- Save memory by lazily creating empty columns.
+
 
 1.8.0 (2023-01-19)
 ------------------

@@ -84,7 +84,10 @@ class Endpoints(Array[Endpoint]):
         )
 
     def __getattr__(self, name):
-        return getattr(self.lines, name)[self.line_idx]
+        try:
+            return super(self.__class__, self).__getattr__(name)
+        except AttributeError:
+            return getattr(self.lines, name)[self.line_idx]
 
     def _get_reduce_indices(self):
         """Return indices into self containing the same node ids.
