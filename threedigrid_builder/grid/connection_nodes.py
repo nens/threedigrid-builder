@@ -82,9 +82,6 @@ class ConnectionNodes(Array[ConnectionNode]):
             storage_area=self.storage_area,
             display_name=self.display_name,
             zoom_category=self.zoom_category,
-            exchange_thickness=self.exchange_thickness,
-            hydraulic_conductivity_out=self.hydraulic_conductivity_out,
-            hydraulic_conductivity_in=self.hydraulic_conductivity_in,
         )
 
     def is_closed(self, content_pk):
@@ -148,6 +145,16 @@ class ConnectionNodes(Array[ConnectionNode]):
         # for manholes: put in the drain level
         dpumax[is_manhole] = self.drain_level[is_manhole_idx]
         return dpumax
+
+    def has_groundwater_exchange(self, content_pk):
+        idx = self.id_to_index(content_pk)
+        with np.errstate(invalid="ignore"):
+            return (
+                (self.storage_area[idx] > 0)
+                & (self.exchange_thickness[idx] > 0)
+                & np.isfinite(self.hydraulic_conductivity_out[idx])
+                & np.isfinite(self.hydraulic_conductivity_in[idx])
+            )
 
 
 def set_calculation_types(nodes: Nodes, lines: Lines):

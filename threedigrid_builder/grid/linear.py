@@ -277,16 +277,6 @@ class BaseLinear:
         except AttributeError:
             sewerage_type = -9999
 
-        # Conditionally add groundwater exchange (pipes and channels only)
-        try:
-            exchange_thickness = objs.exchange_thickness[segment_idx]
-            hydraulic_conductivity_out = objs.hydraulic_conductivity_out[segment_idx]
-            hydraulic_conductivity_in = objs.hydraulic_conductivity_in[segment_idx]
-        except AttributeError:
-            exchange_thickness = np.nan
-            hydraulic_conductivity_out = np.nan
-            hydraulic_conductivity_in = np.nan
-
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -317,9 +307,6 @@ class BaseLinear:
             dist_calc_points=dist_calc_points,
             material=material,
             sewerage_type=sewerage_type,
-            exchange_thickness=exchange_thickness,
-            hydraulic_conductivity_out=hydraulic_conductivity_out,
-            hydraulic_conductivity_in=hydraulic_conductivity_in,
         )
 
     def compute_bottom_level(self, ids, s):

@@ -517,6 +517,11 @@ def test_output_breaches(get_velocity_points):
 def test_create_lines_1d2d_groundwater(threeway_junction):
     nodes, lines = threeway_junction
 
+    nodes.storage_area[:] = [
+        1.0,
+        np.nan,
+        np.nan,
+    ]
     nodes.exchange_thickness[:] = [0.1, np.nan, np.nan, 0.1]
     nodes.hydraulic_conductivity_in[:] = [1e-7, np.nan, np.nan, 2e-7]
     nodes.hydraulic_conductivity_out[:] = [1e-6, np.nan, np.nan, 2e-6]

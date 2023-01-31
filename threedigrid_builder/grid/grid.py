@@ -739,7 +739,7 @@ class Grid:
         lines_1d2d_gw.assign_line_coords(self.nodes)
         lines_1d2d_gw.assign_2d_node(self.cell_tree)
         lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes.n_groundwater_cells)
-        lines_1d2d_gw.assign_groundwater_exchange(self.nodes)
+        lines_1d2d_gw.assign_groundwater_exchange(self.nodes, self.lines)
         self.lines += lines_1d2d_gw
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):

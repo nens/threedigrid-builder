@@ -52,9 +52,6 @@ class Node:
     drain_level: float  # Drain level entered for manholes
     initial_waterlevel: float
     zoom_category: int
-    exchange_thickness: float  # internal
-    hydraulic_conductivity_out: float  # internal
-    hydraulic_conductivity_in: float  # internal
     # extra info, for manhole only:
     manhole_indicator: int
     surface_level: float
