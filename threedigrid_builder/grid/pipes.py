@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import numpy as np
 import shapely
 
@@ -29,7 +27,9 @@ class Pipe:
     # profile_num
     # original_length
     material: int
-    groundwater_exchange: Tuple[float, float, float]
+    exchange_thickness: float
+    hydraulic_conductivity_out: float
+    hydraulic_conductivity_in: float
 
 
 class Pipes(Array[Pipe], linear.BaseLinear):

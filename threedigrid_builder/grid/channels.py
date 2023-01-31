@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import numpy as np
 import shapely
 
@@ -21,7 +19,9 @@ class Channel:
     calculation_type: CalculationType
     display_name: str
     zoom_category: int
-    groundwater_exchange: Tuple[float, float, float]
+    exchange_thickness: float
+    hydraulic_conductivity_out: float
+    hydraulic_conductivity_in: float
 
 
 class Channels(Array[Channel], linear.BaseLinear):

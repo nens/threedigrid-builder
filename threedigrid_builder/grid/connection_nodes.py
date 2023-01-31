@@ -1,6 +1,5 @@
 import itertools
 import logging
-from typing import Tuple
 
 import numpy as np
 import shapely
@@ -36,7 +35,9 @@ class ConnectionNode:
     initial_waterlevel: float
     display_name: str
     zoom_category: int
-    groundwater_exchange: Tuple[float, float, float]
+    exchange_thickness: float
+    hydraulic_conductivity_out: float
+    hydraulic_conductivity_in: float
 
 
 class ConnectionNodes(Array[ConnectionNode]):
@@ -68,7 +69,7 @@ class ConnectionNodes(Array[ConnectionNode]):
             int(NodeType.NODE_1D_NO_STORAGE),
         )
 
-        nodes = Nodes(
+        return Nodes(
             id=itertools.islice(node_id_counter, len(self)),
             coordinates=shapely.get_coordinates(self.the_geom),
             content_type=ContentType.TYPE_V2_CONNECTION_NODES,
@@ -81,8 +82,10 @@ class ConnectionNodes(Array[ConnectionNode]):
             storage_area=self.storage_area,
             display_name=self.display_name,
             zoom_category=self.zoom_category,
+            exchange_thickness=self.exchange_thickness,
+            hydraulic_conductivity_out=self.hydraulic_conductivity_out,
+            hydraulic_conductivity_in=self.hydraulic_conductivity_in,
         )
-        return nodes
 
     def is_closed(self, content_pk):
         """Whether object are 'closed' or 'open water' object.
@@ -188,13 +191,13 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     )
     endpoints.reorder(np.lexsort([replace(endpoints.kcu, PRIORITY), endpoints.node_id]))
 
-    calculation_type = endpoints.first_per_node(endpoints.kcu)
+    calculation_type = endpoints.first(endpoints.kcu)
 
     # start off with ISOLATED
     nodes.calculation_type[node_mask] = CalculationType.ISOLATED
     # overwrite with the one derived from the line endpoints
     nodes.calculation_type[
-        nodes.id_to_index(endpoints.get_reduce_per_node_id())
+        nodes.id_to_index(endpoints.get_reduce_id())
     ] = calculation_type
 
 
@@ -249,8 +252,8 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
         ),
     )
     endpoints.reorder_by("node_id")
-    dmax_per_node = endpoints.nanmin_per_node(endpoints.invert_level)
-    node_idx = nodes.id_to_index(endpoints.get_reduce_per_node_id())
+    dmax_per_node = endpoints.nanmin(endpoints.invert_level)
+    node_idx = nodes.id_to_index(endpoints.get_reduce_id())
 
     # The new dmax is the minimum of the existing one and the one from above computation
     dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node)

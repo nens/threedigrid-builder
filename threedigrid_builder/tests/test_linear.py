@@ -1,5 +1,4 @@
 import itertools
-from typing import Tuple
 from unittest import mock
 
 import numpy as np
@@ -64,7 +63,9 @@ class LinearObject:
     zoom_category: int
     material: int
     sewerage_type: int
-    groundwater_exchange: Tuple[float, float, float]
+    exchange_thickness: float
+    hydraulic_conductivity_out: float
+    hydraulic_conductivity_in: float
 
 
 class LinearObjects(Array[LinearObject], linear.BaseLinear):
@@ -102,7 +103,9 @@ def two_linear_objects():
         discharge_coefficient_negative=[0.5, 0.8],
         material=[-9999, 1],
         sewerage_type=[2, 1],
-        groundwater_exchange=[(1e-6, 2e-6, 0.0), (1e-7, 2e-7, 0.0)],
+        exchange_thickness=[0.1, 0.2],
+        hydraulic_conductivity_out=[1e-7, 2e-7],
+        hydraulic_conductivity_in=[1e-6, 2e-6],
     )
 
 
@@ -146,10 +149,6 @@ def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_o
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, [2, 2, 1])
     assert_array_equal(nodes.s1d, dummy_points.s1d)
-    assert_array_equal(
-        nodes.groundwater_exchange,
-        [(1e-6, 2e-6, 0.0), (1e-6, 2e-6, 0.0), (1e-7, 2e-7, 0.0)],
-    )
 
 
 def test_interpolate_nodes_skips_embedded(two_linear_objects):
@@ -268,6 +267,11 @@ def test_get_lines(connection_nodes, two_linear_objects):
     assert_almost_equal(lines.dpumax, [2, 3, 2.5, 3.5, 4])
     assert_almost_equal(lines.material, [-9999, -9999, 1, 1, 1])
     assert_almost_equal(lines.sewerage_type, [2, 2, 1, 1, 1])
+    assert_almost_equal(lines.exchange_thickness, [0.1, 0.1, 0.2, 0.2, 0.2])
+    assert_almost_equal(
+        lines.hydraulic_conductivity_out, [1e-7, 1e-7, 2e-7, 2e-7, 2e-7]
+    )
+    assert_almost_equal(lines.hydraulic_conductivity_in, [1e-6, 1e-6, 2e-6, 2e-6, 2e-6])
 
 
 def test_get_lines_embedded_mode(connection_nodes, two_linear_objects):

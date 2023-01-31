@@ -517,9 +517,12 @@ def test_output_breaches(get_velocity_points):
 def test_create_lines_1d2d_groundwater(threeway_junction):
     nodes, lines = threeway_junction
 
-    nodes.groundwater_exchange[0, :] = 1.0
-    nodes.groundwater_exchange[3, :] = 1.0
-    lines.groundwater_exchange[0, :] = 1.0
+    nodes.exchange_thickness[:] = [0.1, np.nan, np.nan, 0.1]
+    nodes.hydraulic_conductivity_in[:] = [1e-7, np.nan, np.nan, 2e-7]
+    nodes.hydraulic_conductivity_out[:] = [1e-6, np.nan, np.nan, 2e-6]
+    lines.exchange_thickness[0] = 0.1
+    lines.hydraulic_conductivity_in[0] = 1e-7
+    lines.hydraulic_conductivity_out[0] = 1e-6
 
     actual = Lines1D2D.create_groundwater(nodes, lines, itertools.count())
     assert_array_equal(actual.line, [[-9999, 1], [-9999, 2], [-9999, 4]])
@@ -535,35 +538,40 @@ def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
     assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
 
 
-def test_assign_groundwater_exchange_from_nodes(threeway_junction):
-    nodes, lines = threeway_junction
-
-    nodes.storage_area[:] = [9.0, 4.0, np.nan, -2.0]
-    nodes.groundwater_exchange[:] = [
-        [1.0, 2.0, 0.0],
-        [np.nan, np.nan, np.nan],
-        [np.nan, np.nan, np.nan],
-        [5.0, 6.0, 0.0],
-    ]
-
+@pytest.mark.parametrize(
+    "area,thickness,hc_out,hc_in,cross_weight,frict1,frict2",
+    [
+        (9.0, 0.1, 3.0, 2.0, 3.0, 3.0 / 0.1 * 3.0, 2.0 / 0.1 * 3.0),
+        (0.0, 0.1, 3.0, 2.0, 0.0, 0.0, 0.0),
+        (np.nan, 0.1, 3.0, 2.0, 0.0, 0.0, 0.0),
+        (9.0, 0.0, 3.0, 2.0, 0.0, 0.0, 0.0),
+        (9.0, np.nan, 3.0, 2.0, 0.0, 0.0, 0.0),
+        (9.0, 0.1, np.nan, 2.0, 0.0, 0.0, 0.0),
+        (9.0, 0.1, 3.0, np.nan, 0.0, 0.0, 0.0),
+    ],
+)
+def test_assign_groundwater_exchange_from_nodes(
+    area, thickness, hc_in, hc_out, cross_weight, frict1, frict2
+):
+    nodes = Nodes(
+        id=[1],
+        storage_area=area,
+        exchange_thickness=thickness,
+        hydraulic_conductivity_out=hc_out,
+        hydraulic_conductivity_in=hc_in,
+    )
     lines_1d2d = Lines1D2D(
-        id=range(len(nodes)),
-        line=[[-9999] + [i] for i in nodes.id],
-        cross_weight=0.0,
-        groundwater_exchange=[
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0],
-            [4.0, 0.0, 0.0],
-        ],
+        id=[1],
+        line=[[-9999, 1]],
+        cross_weight=0.1,
+        frict_value1=0.2,
+        frict_value2=0.3,
     )
     lines_1d2d._assign_groundwater_exchange_from_nodes(nodes)
 
-    assert_almost_equal(lines_1d2d.cross_weight, [3.0, 2.0, 0.0, 0.0])
-    assert_almost_equal(
-        lines_1d2d.groundwater_exchange,
-        [[3.0, 1.0 + 6.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [4.0, 0.0, 0.0]],
-    )
+    assert_almost_equal(lines_1d2d.cross_weight, cross_weight + 0.1)
+    assert_almost_equal(lines_1d2d.frict_value1, frict1 + 0.2)
+    assert_almost_equal(lines_1d2d.frict_value2, frict2 + 0.3)
 
 
 def test_assign_groundwater_exchange_from_lines(threeway_junction):
@@ -571,46 +579,61 @@ def test_assign_groundwater_exchange_from_lines(threeway_junction):
 
     lines.ds1d[:] = [1.2, 2.3, 3.4]
     lines.ds1d_half[:] = [0.6, 1.0, 1.7]
-    lines.groundwater_exchange[:] = [
-        [1.0, 2.0, 0.0],
-        [5.0, 6.0, 0.0],
-        [np.nan, np.nan, np.nan],
-    ]
+    lines.exchange_thickness[:] = [0.1, 0.2, np.nan]
+    lines.hydraulic_conductivity_out[:] = [2.0, 3.0, np.nan]
+    lines.hydraulic_conductivity_in[:] = [4.0, 5.0, np.nan]
+
     lines_1d2d = Lines1D2D(
-        id=[1],
-        line=[[-9999, 1]],
-        cross_weight=0.4,
-        groundwater_exchange=[[0.0, 1.0, 0.0]],
+        id=range(3),
+        line=[[-9999, 1], [-9999, 2], [-9999, 3]],
+        cross_weight=0.1,
+        frict_value1=0.2,
+        frict_value2=0.3,
     )
     lines_1d2d._assign_groundwater_exchange_from_lines(nodes, lines)
 
-    assert_almost_equal(lines_1d2d.cross_weight, [0.4 + 0.6 + 1.0])
+    assert_almost_equal(lines_1d2d.cross_weight[0], 0.1 + 0.6 + 1.0)
     assert_almost_equal(
-        lines_1d2d.groundwater_exchange,
-        [[0.6 * 1.0 + 1.0 * 5.0, 1.0 + 0.6 * 2.0 + 1.0 * 6.0, 0.0]],
+        lines_1d2d.frict_value1[0], 0.2 + 0.6 * 2.0 / 0.1 + 1.0 * 3.0 / 0.2
+    )
+    assert_almost_equal(
+        lines_1d2d.frict_value2[0], 0.3 + 0.6 * 4.0 / 0.1 + 1.0 * 5.0 / 0.2
     )
 
 
 def test_assign_groundwater_exchange(threeway_junction):
     nodes, lines = threeway_junction
 
-    nodes.storage_area[:] = [9.0, 4.0, np.nan, -2.0]
-    nodes.groundwater_exchange[:] = [
-        [1.0, 2.0, 0.0],
-        [np.nan, np.nan, np.nan],
-        [np.nan, np.nan, np.nan],
-        [5.0, 6.0, 0.0],
-    ]
+    nodes.storage_area[0] = 9.0
+    nodes.exchange_thickness[0] = 0.15
+    nodes.hydraulic_conductivity_out[0] = 2.0
+    nodes.hydraulic_conductivity_in[0] = 3.0
     lines.ds1d[:] = [1.2, 2.3, 3.4]
     lines.ds1d_half[:] = [0.6, 1.0, 1.7]
-    lines.groundwater_exchange[:] = [
-        [1.0, 2.0, 0.0],
-        [5.0, 6.0, 0.0],
-        [np.nan, np.nan, np.nan],
-    ]
+    lines.exchange_thickness[:] = [0.1, 0.2, np.nan]
+    lines.hydraulic_conductivity_out[:] = [2.0, 3.0, np.nan]
+    lines.hydraulic_conductivity_in[:] = [4.0, 5.0, np.nan]
 
-    lines_1d2d = Lines1D2D(id=[1], line=[[-9999, 1]])
+    lines_1d2d = Lines1D2D(
+        id=range(3),
+        line=[[-9999, 1], [-9999, 2], [-9999, 3]],
+    )
     lines_1d2d.assign_groundwater_exchange(nodes, lines)
 
-    assert_almost_equal(lines_1d2d.cross_weight, [4.6])
-    assert_almost_equal(lines_1d2d.groundwater_exchange, [[1.8695652, 2.8695652, 0.0]])
+    assert_almost_equal(lines_1d2d.cross_weight, [3.0 + 0.6 + 1.0, 0.6, 1.3])
+    assert_almost_equal(
+        lines_1d2d.frict_value1,
+        [
+            (3.0 * 2.0 / 0.15 + 0.6 * 2.0 / 0.1 + 1.0 * 3.0 / 0.2) / (3.0 + 0.6 + 1.0),
+            2.0 / 0.1,
+            3.0 / 0.2,
+        ],
+    )
+    assert_almost_equal(
+        lines_1d2d.frict_value2,
+        [
+            (3.0 * 3.0 / 0.15 + 0.6 * 4.0 / 0.1 + 1.0 * 5.0 / 0.2) / (3.0 + 0.6 + 1.0),
+            4.0 / 0.1,
+            5.0 / 0.2,
+        ],
+    )

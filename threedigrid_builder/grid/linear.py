@@ -107,11 +107,6 @@ class BaseLinear:
         # fixed_nodes also become nodes
         points = points.merge_with(fixed_nodes)
 
-        try:
-            groundwater_exchange = self.groundwater_exchange[points.linestring_idx]
-        except AttributeError:
-            groundwater_exchange = np.nan
-
         # construct the nodes with available attributes
         return Nodes(
             id=itertools.islice(node_id_counter, len(points)),
@@ -122,7 +117,6 @@ class BaseLinear:
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
             breach_ids=np.array([points.content_pk, points.secondary_content_pk]).T,
-            groundwater_exchange=groundwater_exchange,
         )
 
     def get_embedded(
@@ -283,6 +277,16 @@ class BaseLinear:
         except AttributeError:
             sewerage_type = -9999
 
+        # Conditionally add groundwater exchange (pipes and channels only)
+        try:
+            exchange_thickness = objs.exchange_thickness[segment_idx]
+            hydraulic_conductivity_out = objs.hydraulic_conductivity_out[segment_idx]
+            hydraulic_conductivity_in = objs.hydraulic_conductivity_in[segment_idx]
+        except AttributeError:
+            exchange_thickness = np.nan
+            hydraulic_conductivity_out = np.nan
+            hydraulic_conductivity_in = np.nan
+
         # construct the result
         return Lines(
             id=itertools.islice(line_id_counter, len(segments)),
@@ -313,6 +317,9 @@ class BaseLinear:
             dist_calc_points=dist_calc_points,
             material=material,
             sewerage_type=sewerage_type,
+            exchange_thickness=exchange_thickness,
+            hydraulic_conductivity_out=hydraulic_conductivity_out,
+            hydraulic_conductivity_in=hydraulic_conductivity_in,
         )
 
     def compute_bottom_level(self, ids, s):

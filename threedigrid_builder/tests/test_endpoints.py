@@ -60,7 +60,7 @@ def test_for_connection_nodes_with_node_mask(nodes: Nodes, lines: Lines):
 def test_getattr(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[0, 1, 2], line_idx=[1, 2, 1])
 
-    assert_equal(endpoints.ds1d, lines.ds1d[[1, 2, 1]])
+    assert_equal(endpoints.content_type, lines.content_type[[1, 2, 1]])
 
 
 @pytest.mark.parametrize(
@@ -72,36 +72,36 @@ def test_getattr(lines: Lines):
         (lambda x, y: y, [0.0, 2.0]),
     ],
 )
-def test_reduce_per_node(lines: Lines, ufunc, expected):
+def test_reduce(lines: Lines, ufunc, expected):
     endpoints = Endpoints(
         lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
     )
-    actual = endpoints.reduce_per_node(ufunc, endpoints.ds1d)
+    actual = endpoints.reduce(ufunc, [16.0, 2.0, 16.0, np.nan])
 
     assert_almost_equal(actual, expected)
 
 
-def test_reduce_per_node_2dim(lines: Lines):
+def test_reduce_2dim(lines: Lines):
     endpoints = Endpoints(
         lines=lines, id=range(4), node_id=[1, 1, 5, 5], line_idx=[1, 2, 1, 0]
     )
-    actual = endpoints.reduce_per_node(
+    actual = endpoints.reduce(
         np.fmax.reduceat, np.array([[1.0, 4.0], [3.0, 3.0], [5.0, 6.0], [7.0, 8.0]])
     )
 
     assert_almost_equal(actual, np.array([[3.0, 4.0], [7.0, 8.0]]))
 
 
-def test_reduce_per_node_empty_2dim(lines: Lines):
+def test_reduce_empty_2dim(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[])
-    actual = endpoints.reduce_per_node(None, np.empty((0, 2)))
+    actual = endpoints.reduce(None, np.empty((0, 2)))
 
     assert actual.shape == (0, 2)
 
 
-def test_reduce_per_node_empty(lines: Lines):
+def test_reduce_empty(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[])
-    actual = endpoints.reduce_per_node(None, [])
+    actual = endpoints.reduce(None, [])
 
     assert actual.shape == (0,)
 
@@ -113,33 +113,33 @@ def endpoints_for_agg(lines):
     )
 
 
-def test_reduce_per_node_id(endpoints_for_agg: Endpoints):
-    actual = endpoints_for_agg.get_reduce_per_node_id()
+def test_reduce_id(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.get_reduce_id()
 
     assert_equal(actual, [1, 5])
 
 
-def test_reduce_per_node_id_empty(lines: Lines):
+def test_reduce_id_empty(lines: Lines):
     endpoints = Endpoints(lines=lines, id=[])
-    actual = endpoints.get_reduce_per_node_id()
+    actual = endpoints.get_reduce_id()
 
     assert actual.shape == (0,)
 
 
-def test_nanmin_per_node(endpoints_for_agg: Endpoints):
-    actual = endpoints_for_agg.nanmin_per_node(endpoints_for_agg.ds1d)
+def test_nanmin(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.nanmin([16.0, 2.0, np.nan, 16.0])
 
     assert_almost_equal(actual, [2.0, 16.0])
 
 
-def test_first_per_node(endpoints_for_agg: Endpoints):
-    actual = endpoints_for_agg.first_per_node(endpoints_for_agg.ds1d)
+def test_first(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.first([16.0, 2.0, np.nan, 16.0])
 
     assert_almost_equal(actual, [16.0, np.nan])
 
 
-def test_sum_per_node(endpoints_for_agg: Endpoints):
-    actual = endpoints_for_agg.sum_per_node(endpoints_for_agg.ds1d)
+def test_sum(endpoints_for_agg: Endpoints):
+    actual = endpoints_for_agg.sum([16.0, 2.0, np.nan, 16.0])
 
     assert_almost_equal(actual, [18.0, np.nan])
 
@@ -155,9 +155,9 @@ def test_invert_level(lines: Lines):
     assert_almost_equal(endpoints.invert_level, [4, 3, 5])
 
 
-def test_ds1d_endpoint(lines: Lines):
+def test_ds1d(lines: Lines):
     endpoints = Endpoints(
         lines=lines, id=[0, 1, 2], line_idx=[1, 2, 2], is_start=[True, True, False]
     )
 
-    assert_almost_equal(endpoints.ds1d_endpoint, [8.0, 1.1, 0.9])
+    assert_almost_equal(endpoints.ds1d, [8.0, 1.1, 0.9])

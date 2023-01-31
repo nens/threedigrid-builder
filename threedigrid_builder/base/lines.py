@@ -34,11 +34,11 @@ class Line:
     flou: float  # obstacle height
     cross_id1: int  # the id of the cross section definition
     cross_id2: int  # the id of the cross section definition
-    frict_type1: int  # Friction type
-    frict_type2: int  # Friction type
-    frict_value1: float  # Friction type
-    frict_value2: float  # Friction type
-    cross_weight: float  # For 1D-2D: the cross_width
+    frict_type1: int
+    frict_type2: int
+    frict_value1: float  # For 1D-2Dgw: resistance factor-out (hydr. cond / thickness)
+    frict_value2: float  # For 1D-2Dgw: resistance factor-in (hydr. cond / thickness)
+    cross_weight: float  # For 1D-2Dgw: the exchange length (tables: cross_width)
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float
     is_1d_boundary: int  # internal flag
@@ -52,7 +52,9 @@ class Line:
     sewerage: int
     sewerage_type: int
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
-    groundwater_exchange: Tuple[float, float, float]
+    exchange_thickness: float  # internal
+    hydraulic_conductivity_out: float  # internal
+    hydraulic_conductivity_in: float  # internal
 
 
 class Lines(Array[Line]):

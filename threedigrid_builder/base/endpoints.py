@@ -45,9 +45,9 @@ class Endpoints(Array[Endpoint]):
             node_id=lines.line[where].ravel(),
             is_start=np.tile([True, False], n),
         )
-        is_cn = nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-        node_mask = is_cn if node_mask is None else is_cn & node_mask
-        return result[np.isin(result.node_id, nodes.id[node_mask])]
+        if node_mask is not None:
+            result = result[np.isin(result.node_id, nodes.id[node_mask])]
+        return result
 
     @classmethod
     def for_connection_nodes(
@@ -76,13 +76,26 @@ class Endpoints(Array[Endpoint]):
         )
 
     @property
-    def ds1d_endpoint(self):
-        return np.where(self.is_start, self.ds1d_half, self.ds1d - self.ds1d_half)
+    def ds1d(self):
+        return np.where(
+            self.is_start,
+            self.lines.ds1d_half[self.line_idx],
+            self.lines.ds1d[self.line_idx] - self.lines.ds1d_half[self.line_idx],
+        )
 
     def __getattr__(self, name):
         return getattr(self.lines, name)[self.line_idx]
 
     def _get_reduce_indices(self):
+        """Return indices into self containing the same node ids.
+
+        Intended for usage in reduction functions (see reduce).
+
+        For instance:
+
+         - self.node_id = [1, 1, 5, 5, 5]
+         - gives: indices = [0, 2]
+        """
         if len(self) == 0:
             return np.empty((0,), dtype=int)
         diff = np.diff(self.node_id)
@@ -90,10 +103,14 @@ class Endpoints(Array[Endpoint]):
             raise ValueError("endpoints must be ordered by node_id")
         return np.concatenate([[0], np.where(diff > 0)[0] + 1])
 
-    def get_reduce_per_node_id(self):
+    def get_reduce_id(self):
+        """Return unique node ids.
+
+        Intended for usage with reduction functions (see reduce).
+        """
         return self.node_id[self._get_reduce_indices()]
 
-    def reduce_per_node(self, reduceat, values):
+    def reduce(self, reduceat, values):
         """Compute the per-node reduction of 'values'
 
         The 'reduceat' function is normally a numpy ufunc.reduceat. This function
@@ -105,7 +122,7 @@ class Endpoints(Array[Endpoint]):
          - self.node_id = [1, 1, 5, 5, 5]
          - values = [1., 3., 5., 7., 9.]
          - gives: indices = [0, 2]
-         - and reduceat is expected to act on indices [0, 2) and [2, <end>)
+         - and reduceat is expected to act on index ranges [0, 2) and [2, <end>)
 
         Returns node ids and corresponding maximum values.
         """
@@ -117,11 +134,11 @@ class Endpoints(Array[Endpoint]):
         indices = self._get_reduce_indices()
         return reduceat(values, indices)
 
-    def nanmin_per_node(self, values):
-        return self.reduce_per_node(np.fmin.reduceat, values)
+    def nanmin(self, values):
+        return self.reduce(np.fmin.reduceat, values)
 
-    def sum_per_node(self, values):
-        return self.reduce_per_node(np.add.reduceat, values)
+    def sum(self, values):
+        return self.reduce(np.add.reduceat, values)
 
-    def first_per_node(self, values):
-        return self.reduce_per_node(lambda x, y: x[y], values)
+    def first(self, values):
+        return self.reduce(lambda x, y: x[y], values)

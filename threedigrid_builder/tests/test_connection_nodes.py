@@ -39,6 +39,9 @@ def connection_nodes():
         calculation_type=np.array([1, 2, 5, 2, 2]),
         bottom_level=np.array([2.1, np.nan, np.nan, np.nan, 2.1]),
         drain_level=[1.2, np.nan, np.nan, np.nan, np.nan],
+        exchange_thickness=[0.1, 0.2, np.nan, np.nan, np.nan],
+        hydraulic_conductivity_out=[1e-7, 2e-7, np.nan, np.nan, np.nan],
+        hydraulic_conductivity_in=[1e-6, 2e-6, np.nan, np.nan, np.nan],
     )
 
 
@@ -65,6 +68,13 @@ def test_get_nodes(connection_nodes):
     assert_array_equal(nodes.calculation_type, connection_nodes.calculation_type)
     assert_array_equal(nodes.dmax, connection_nodes.bottom_level)
     assert_array_equal(nodes.storage_area, connection_nodes.storage_area)
+    assert_array_equal(nodes.exchange_thickness, connection_nodes.exchange_thickness)
+    assert_array_equal(
+        nodes.hydraulic_conductivity_out, connection_nodes.hydraulic_conductivity_out
+    )
+    assert_array_equal(
+        nodes.hydraulic_conductivity_in, connection_nodes.hydraulic_conductivity_in
+    )
 
 
 @pytest.mark.parametrize(
