@@ -95,6 +95,9 @@ class Endpoints(Array[Endpoint]):
     def nanmin_per_node(self, values) -> "NodeValues":
         return self.reduce_per_node(np.fmin.reduceat, values)
 
+    def sum_per_node(self, values) -> "NodeValues":
+        return self.reduce_per_node(np.fmin.reduceat, values)
+
     def first_per_node(self, values) -> "NodeValues":
         return self.reduce_per_node(lambda x, y: x[y], values)
 

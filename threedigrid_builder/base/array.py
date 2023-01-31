@@ -186,11 +186,12 @@ class Array(Generic[T]):
             if name == "id":
                 continue
             value = kwargs.pop(name, None)
-            try:
-                arr = _to_ndarray(value, elem_type, id.size)
-            except ValueError as e:
-                raise ValueError(f"Error parsing {name} to array: {e}")
-            setattr(self, name, arr)
+            if value is not None:
+                try:
+                    arr = _to_ndarray(value, elem_type, id.size)
+                except ValueError as e:
+                    raise ValueError(f"Error parsing {name} to array: {e}")
+                setattr(self, name, arr)
 
         # call the init of the wrapped class
         if len(kwargs) > 0:
@@ -256,6 +257,15 @@ class Array(Generic[T]):
         index = np.asarray(index)
         return self.take("id", index)
 
+    def __getattr__(self, name):
+        try:
+            elem_type = typing.get_type_hints(self.data_class)[name]
+        except KeyError:
+            raise AttributeError
+        arr = _to_ndarray(None, elem_type, len(self))
+        setattr(self, name, arr)
+        return arr
+
     def take(self, name, index, fill_value=None):
         """Take values from a column, returing 'fill_value' where index == -9999.
 
@@ -280,7 +290,7 @@ class Array(Generic[T]):
         return {field: getattr(self, field) for field in fields}
 
     def __getitem__(self, idx) -> T:
-        """Create a masked copy of this arraay dataclass"""
+        """Create a masked copy of this array dataclass"""
         args = {}
         for field in typing.get_type_hints(self.data_class):
             args[field] = getattr(self, field)[idx]

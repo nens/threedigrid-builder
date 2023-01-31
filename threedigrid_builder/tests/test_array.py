@@ -491,3 +491,11 @@ def test_take(name, index, expected):
     )
 
     assert_equal(records.take(name, index), expected)
+
+
+def test_empty_column():
+    records = Records(id=[1, 2, 3])
+    assert "number" not in records.__dict__
+    arr = records.number
+    assert records.__dict__["number"] is arr
+    assert_equal(arr, np.nan)
