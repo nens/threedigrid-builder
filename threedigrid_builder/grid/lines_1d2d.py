@@ -5,12 +5,7 @@ import numpy as np
 import shapely
 
 from threedigrid_builder.base import Endpoints, Lines, Nodes, replace, search
-from threedigrid_builder.constants import (
-    CalculationType,
-    ContentType,
-    LineType,
-    NodeType,
-)
+from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .channels import Channels
 from .connection_nodes import ConnectionNodes
@@ -435,7 +430,11 @@ class Lines1D2D(Lines):
         node_idx = np.where(
             np.isin(
                 nodes.content_type,
-                [NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE],
+                [
+                    ContentType.TYPE_V2_CHANNEL,
+                    ContentType.TYPE_V2_PIPE,
+                    ContentType.TYPE_V2_CONNECTION_NODES,
+                ],
             )
         )[0]
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
@@ -448,31 +447,41 @@ class Lines1D2D(Lines):
             content_pk=nodes.content_pk[node_idx],
         )
 
-    def _assign_groundwater_exchange_from_connection_nodes(self, cn: ConnectionNodes):
-        is_cn = np.where(self.content_type == ContentType.TYPE_V2_CONNECTION_NODES)[0]
-        has_gw = is_cn[cn.has_groundwater_exchange(self.content_pk[is_cn])]
-        cn_idx = cn.id_to_index(self.content_pk[has_gw])
+    def _assign_groundwater_exchange_from_connection_nodes(
+        self, nodes: Nodes, cn: ConnectionNodes
+    ):
+        cn_has_gw = cn.has_groundwater_exchange()
+        node_has_gw = (
+            nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
+        ) & np.isin(nodes.content_pk, cn.id[cn_has_gw])
+        idx = search(
+            self.line[:, 1],
+            nodes.id[node_has_gw],
+            check_exists=True,
+            assume_ordered=False,
+        )
 
-        length = np.sqrt(cn.storage_area[cn_idx])
-        thickness = cn.exchange_thickness[cn_idx]
-        self.cross_weight[has_gw] += length
+        length = np.sqrt(cn.storage_area[cn_has_gw])
+        thickness = cn.exchange_thickness[cn_has_gw]
+        self.cross_weight[idx] += length
 
         factor = length / thickness
-        self.frict_value1[has_gw] += factor * cn.hydraulic_conductivity_out[cn_idx]
-        self.frict_value2[has_gw] += factor * cn.hydraulic_conductivity_in[cn_idx]
+        self.frict_value1[idx] += factor * cn.hydraulic_conductivity_out[cn_has_gw]
+        self.frict_value2[idx] += factor * cn.hydraulic_conductivity_in[cn_has_gw]
 
     def _assign_groundwater_exchange_from_linear_objects(
         self, nodes: Nodes, lines: Lines, objs: BaseLinear
     ):
         """Compute the friction values for groundwater exchange for line exchange"""
-        is_type = np.where(self.content_type == objs.content_type)[0]
-        has_gw = is_type[objs.has_groundwater_exchange(self.content_pk[is_type])]
+        obj_has_gw = objs.has_groundwater_exchange()
+        line_has_gw = (lines.content_type == objs.content_type) & np.isin(
+            lines.content_pk, objs.id[obj_has_gw]
+        )
 
         endpoints = Endpoints.from_nodes_lines(
             nodes,
             lines,
-            line_mask=(lines.content_type == objs.content_type)
-            & np.isin(lines.content_pk, self.content_pk[has_gw]),
+            line_mask=line_has_gw,
         )
         endpoints.reorder_by("node_id")
         idx = search(
@@ -513,7 +522,7 @@ class Lines1D2D(Lines):
         self.frict_value1[:] = 0.0
         self.frict_value2[:] = 0.0
 
-        self._assign_groundwater_exchange_from_connection_nodes(connection_nodes)
+        self._assign_groundwater_exchange_from_connection_nodes(nodes, connection_nodes)
         self._assign_groundwater_exchange_from_linear_objects(nodes, lines, channels)
         self._assign_groundwater_exchange_from_linear_objects(nodes, lines, pipes)
 
@@ -524,3 +533,6 @@ class Lines1D2D(Lines):
 
         self.frict_value2[has_weight] /= self.cross_weight[has_weight]
         self.frict_value2[~has_weight] = np.nan
+
+    def filter_groundwater(self) -> "Lines1D2D":
+        return self[self.cross_weight > 0.0]

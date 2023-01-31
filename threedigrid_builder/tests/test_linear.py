@@ -63,9 +63,6 @@ class LinearObject:
     zoom_category: int
     material: int
     sewerage_type: int
-    exchange_thickness: float
-    hydraulic_conductivity_out: float
-    hydraulic_conductivity_in: float
 
 
 class LinearObjects(Array[LinearObject], linear.BaseLinear):
@@ -103,9 +100,6 @@ def two_linear_objects():
         discharge_coefficient_negative=[0.5, 0.8],
         material=[-9999, 1],
         sewerage_type=[2, 1],
-        exchange_thickness=[0.1, 0.2],
-        hydraulic_conductivity_out=[1e-7, 2e-7],
-        hydraulic_conductivity_in=[1e-6, 2e-6],
     )
 
 
@@ -267,11 +261,6 @@ def test_get_lines(connection_nodes, two_linear_objects):
     assert_almost_equal(lines.dpumax, [2, 3, 2.5, 3.5, 4])
     assert_almost_equal(lines.material, [-9999, -9999, 1, 1, 1])
     assert_almost_equal(lines.sewerage_type, [2, 2, 1, 1, 1])
-    assert_almost_equal(lines.exchange_thickness, [0.1, 0.1, 0.2, 0.2, 0.2])
-    assert_almost_equal(
-        lines.hydraulic_conductivity_out, [1e-7, 1e-7, 2e-7, 2e-7, 2e-7]
-    )
-    assert_almost_equal(lines.hydraulic_conductivity_in, [1e-6, 1e-6, 2e-6, 2e-6, 2e-6])
 
 
 def test_get_lines_embedded_mode(connection_nodes, two_linear_objects):

@@ -39,9 +39,6 @@ def connection_nodes():
         calculation_type=np.array([1, 2, 5, 2, 2]),
         bottom_level=np.array([2.1, np.nan, np.nan, np.nan, 2.1]),
         drain_level=[1.2, np.nan, np.nan, np.nan, np.nan],
-        exchange_thickness=[0.1, 0.2, np.nan, np.nan, np.nan],
-        hydraulic_conductivity_out=[1e-7, 2e-7, np.nan, np.nan, np.nan],
-        hydraulic_conductivity_in=[1e-6, 2e-6, np.nan, np.nan, np.nan],
     )
 
 
@@ -68,13 +65,6 @@ def test_get_nodes(connection_nodes):
     assert_array_equal(nodes.calculation_type, connection_nodes.calculation_type)
     assert_array_equal(nodes.dmax, connection_nodes.bottom_level)
     assert_array_equal(nodes.storage_area, connection_nodes.storage_area)
-    assert_array_equal(nodes.exchange_thickness, connection_nodes.exchange_thickness)
-    assert_array_equal(
-        nodes.hydraulic_conductivity_out, connection_nodes.hydraulic_conductivity_out
-    )
-    assert_array_equal(
-        nodes.hydraulic_conductivity_in, connection_nodes.hydraulic_conductivity_in
-    )
 
 
 @pytest.mark.parametrize(
@@ -287,3 +277,30 @@ def test_get_1d2d_exchange_levels(connection_nodes: ConnectionNodes, caplog):
 def test_is_closed(connection_nodes):
     actual = connection_nodes.is_closed(content_pk=[1, 3, 4, 9, 10])
     assert_array_equal(actual, [True, False, False, False, True])
+
+
+@pytest.mark.parametrize(
+    "area,thickness,hc_out,hc_in,expected",
+    [
+        (9.0, 0.1, 3.0, 2.0, True),
+        (0.0, 0.1, 3.0, 2.0, False),
+        (np.nan, 0.1, 3.0, 2.0, False),
+        (9.0, 0.0, 3.0, 2.0, False),
+        (9.0, np.nan, 3.0, 2.0, False),
+        (9.0, 0.1, np.nan, 2.0, False),
+        (9.0, 0.1, 3.0, np.nan, False),
+    ],
+)
+def test_has_groundwater_exchange(area, thickness, hc_out, hc_in, expected):
+    connection_nodes = ConnectionNodes(
+        id=[1],
+        storage_area=area,
+        exchange_thickness=thickness,
+        hydraulic_conductivity_out=hc_out,
+        hydraulic_conductivity_in=hc_in,
+    )
+
+    actual = connection_nodes.has_groundwater_exchange()
+
+    assert len(actual) == 1
+    assert actual[0] == expected

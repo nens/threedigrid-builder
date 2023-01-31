@@ -39,3 +39,27 @@ def test_is_closed(channels):
     actual = channels.is_closed(np.array([1, 3]))
 
     assert_array_equal(actual, [False, False])
+
+
+@pytest.mark.parametrize(
+    "thickness,hc_out,hc_in,expected",
+    [
+        (0.1, 3.0, 2.0, True),
+        (0.0, 3.0, 2.0, False),
+        (np.nan, 3.0, 2.0, False),
+        (0.1, np.nan, 2.0, False),
+        (0.1, 3.0, np.nan, False),
+    ],
+)
+def test_has_groundwater_exchange(thickness, hc_out, hc_in, expected):
+    channels = Channels(
+        id=[1],
+        exchange_thickness=thickness,
+        hydraulic_conductivity_out=hc_out,
+        hydraulic_conductivity_in=hc_in,
+    )
+
+    actual = channels.has_groundwater_exchange()
+
+    assert len(actual) == 1
+    assert actual[0] == expected

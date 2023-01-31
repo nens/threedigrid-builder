@@ -146,14 +146,13 @@ class ConnectionNodes(Array[ConnectionNode]):
         dpumax[is_manhole] = self.drain_level[is_manhole_idx]
         return dpumax
 
-    def has_groundwater_exchange(self, content_pk):
-        idx = self.id_to_index(content_pk)
+    def has_groundwater_exchange(self):
         with np.errstate(invalid="ignore"):
             return (
-                (self.storage_area[idx] > 0)
-                & (self.exchange_thickness[idx] > 0)
-                & np.isfinite(self.hydraulic_conductivity_out[idx])
-                & np.isfinite(self.hydraulic_conductivity_in[idx])
+                (self.storage_area > 0)
+                & (self.exchange_thickness > 0)
+                & np.isfinite(self.hydraulic_conductivity_out)
+                & np.isfinite(self.hydraulic_conductivity_in)
             )
 
 
