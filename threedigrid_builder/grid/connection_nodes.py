@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import shapely
 
-from threedigrid_builder.base import Array, Endpoints, Lines, Nodes, replace
+from threedigrid_builder.base import Array, LineHalfs, Lines, Nodes, replace
 from threedigrid_builder.constants import (
     CalculationType,
     ContentType,
@@ -183,7 +183,7 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     node_mask = (nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES) & (
         nodes.calculation_type == -9999
     )
-    endpoints = Endpoints.for_connection_nodes(
+    line_halfs = LineHalfs.for_connection_nodes(
         nodes,
         lines,
         line_mask=np.isin(
@@ -197,15 +197,17 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
         & (lines.kcu != -9999),
         node_mask=node_mask,
     )
-    endpoints.reorder(np.lexsort([replace(endpoints.kcu, PRIORITY), endpoints.node_id]))
+    line_halfs.reorder(
+        np.lexsort([replace(line_halfs.kcu, PRIORITY), line_halfs.node_id])
+    )
 
-    calculation_type = endpoints.first(endpoints.kcu)
+    calculation_type = line_halfs.first(line_halfs.kcu)
 
     # start off with ISOLATED
     nodes.calculation_type[node_mask] = CalculationType.ISOLATED
-    # overwrite with the one derived from the line endpoints
+    # overwrite with the one derived from the line line_halfs
     nodes.calculation_type[
-        nodes.id_to_index(endpoints.get_reduce_id())
+        nodes.id_to_index(line_halfs.get_reduce_id())
     ] = calculation_type
 
 
@@ -245,7 +247,7 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
         lines (Lines): the lines, including channels, pipes, weirs, and culverts
     """
     # Compute the lowest invert level for each node connection node dmax will be the lowest of these object types:
-    endpoints = Endpoints.for_connection_nodes(
+    line_halfs = LineHalfs.for_connection_nodes(
         nodes,
         lines,
         line_mask=np.isin(
@@ -259,9 +261,9 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
             ],
         ),
     )
-    endpoints.reorder_by("node_id")
-    dmax_per_node = endpoints.nanmin(endpoints.invert_level)
-    node_idx = nodes.id_to_index(endpoints.get_reduce_id())
+    line_halfs.reorder_by("node_id")
+    dmax_per_node = line_halfs.nanmin(line_halfs.invert_level)
+    node_idx = nodes.id_to_index(line_halfs.get_reduce_id())
 
     # The new dmax is the minimum of the existing one and the one from above computation
     dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node)

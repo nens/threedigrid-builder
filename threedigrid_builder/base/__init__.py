@@ -1,6 +1,6 @@
 from .array import *  # NOQA
-from .endpoints import *  # NOQA
 from .interfaces import *  # NOQA
+from .line_halfs import *  # NOQA
 from .lines import *  # NOQA
 from .linestrings import *  # NOQA
 from .nodes import *  # NOQA

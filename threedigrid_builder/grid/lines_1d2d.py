@@ -4,7 +4,7 @@ from typing import Iterator
 import numpy as np
 import shapely
 
-from threedigrid_builder.base import Endpoints, Lines, Nodes, replace, search
+from threedigrid_builder.base import LineHalfs, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
 from .channels import Channels
@@ -92,7 +92,7 @@ class Lines1D2D(Lines):
         )[0]
         node_ids = self.line[is_connection_node, 1]
 
-        endpoints = Endpoints.for_connection_nodes(
+        line_halfs = LineHalfs.for_connection_nodes(
             nodes,
             lines,
             line_mask=(
@@ -101,20 +101,20 @@ class Lines1D2D(Lines):
             ),
             node_mask=np.isin(nodes.id, node_ids),
         )
-        # Order the endpoints by (channel_id, calc type) and pick the first
-        endpoints.reorder(
+        # Order the line_halfs by (channel_id, calc type) and pick the first
+        line_halfs.reorder(
             np.lexsort(
                 [
-                    endpoints.content_pk,
-                    replace(endpoints.kcu, PRIORITY),
-                    endpoints.node_id,
+                    line_halfs.content_pk,
+                    replace(line_halfs.kcu, PRIORITY),
+                    line_halfs.node_id,
                 ]
             )
         )
-        channel_id_per_node = endpoints.first(endpoints.content_pk)
+        channel_id_per_node = line_halfs.first(line_halfs.content_pk)
         # Use the node_id -> channel_id map to set channel_id on self
         idx = search(
-            endpoints.get_reduce_id(),
+            line_halfs.get_reduce_id(),
             node_ids,
             check_exists=False,
             assume_ordered=True,
@@ -461,27 +461,27 @@ class Lines1D2D(Lines):
         line_has_gw = (lines_1d.content_type == objs.content_type) & np.isin(
             lines_1d.content_pk, objs.id[objs.has_groundwater_exchange]
         )
-        endpoints = Endpoints.from_nodes_lines(
+        line_halfs = LineHalfs.from_nodes_lines(
             nodes,
             lines_1d,
             line_mask=line_has_gw,
         )
-        endpoints.reorder_by("node_id")
+        line_halfs.reorder_by("node_id")
         idx = search(
             self.line[:, 1],
-            endpoints.get_reduce_id(),
+            line_halfs.get_reduce_id(),
             check_exists=True,
             assume_ordered=False,
         )
-        objs_idx = objs.id_to_index(endpoints.content_pk)
+        objs_idx = objs.id_to_index(line_halfs.content_pk)
 
-        factor = endpoints.ds1d / objs.exchange_thickness[objs_idx]
+        factor = line_halfs.ds1d / objs.exchange_thickness[objs_idx]
 
-        self.cross_weight[idx] += endpoints.sum(endpoints.ds1d)
-        self.frict_value1[idx] += endpoints.sum(
+        self.cross_weight[idx] += line_halfs.sum(line_halfs.ds1d)
+        self.frict_value1[idx] += line_halfs.sum(
             factor * objs.hydraulic_conductivity_out[objs_idx]
         )
-        self.frict_value2[idx] += endpoints.sum(
+        self.frict_value2[idx] += line_halfs.sum(
             factor * objs.hydraulic_conductivity_in[objs_idx]
         )
 

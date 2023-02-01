@@ -6,18 +6,18 @@ from .array import Array
 from .lines import Lines
 from .nodes import Nodes
 
-__all__ = ["Endpoints"]
+__all__ = ["LineHalfs"]
 
 
-class Endpoint:
+class LineHalf:
     id: int
     line_idx: int
     is_start: bool
     node_id: int
 
 
-class Endpoints(Array[Endpoint]):
-    """Each line has 2 endpoints.
+class LineHalfs(Array[LineHalf]):
+    """Each line has 2 line_halfs.
 
     This class makes it easier to reason about all the objects on a node.
     """
@@ -31,8 +31,8 @@ class Endpoints(Array[Endpoint]):
         lines: Lines,
         line_mask=None,
         node_mask=None,
-    ) -> "Endpoints":
-        """Return the endpoints, optionally filtering with node / line masks."""
+    ) -> "LineHalfs":
+        """Return the line_halfs, optionally filtering with node / line masks."""
         if line_mask is None:
             where = np.arange(len(lines), dtype=int)
         else:
@@ -56,8 +56,8 @@ class Endpoints(Array[Endpoint]):
         lines: Lines,
         line_mask=None,
         node_mask=None,
-    ) -> "Endpoints":
-        """Return the endpoints for connection nodes
+    ) -> "LineHalfs":
+        """Return the line_halfs for connection nodes
 
         Optionally filter by the content type of the lines.
         """
@@ -103,7 +103,7 @@ class Endpoints(Array[Endpoint]):
             return np.empty((0,), dtype=int)
         diff = np.diff(self.node_id)
         if np.any(diff < 0):
-            raise ValueError("endpoints must be ordered by node_id")
+            raise ValueError("line_halfs must be ordered by node_id")
         return np.concatenate([[0], np.where(diff > 0)[0] + 1])
 
     def get_reduce_id(self):
