@@ -427,60 +427,43 @@ class Lines1D2D(Lines):
 
         Sets: id, line[:, 1], kcu
         """
-        node_idx = np.where(
-            np.isin(
-                nodes.content_type,
-                [
-                    ContentType.TYPE_V2_CHANNEL,
-                    ContentType.TYPE_V2_PIPE,
-                    ContentType.TYPE_V2_CONNECTION_NODES,
-                ],
-            )
-        )[0]
+        node_idx = np.where(nodes.has_groundwater_exchange)[0]
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
         return cls(
             id=itertools.islice(line_id_counter, len(node_idx)),
             line=line,
             kcu=LineType.LINE_1D2D_GROUNDWATER,
-            content_type=nodes.content_type[node_idx],
-            content_pk=nodes.content_pk[node_idx],
         )
 
     def _assign_groundwater_exchange_from_connection_nodes(
         self, nodes: Nodes, cn: ConnectionNodes
     ):
-        cn_has_gw = cn.has_groundwater_exchange
-        node_has_gw = (
-            nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
-        ) & np.isin(nodes.content_pk, cn.id[cn_has_gw])
-        idx = search(
-            self.line[:, 1],
-            nodes.id[node_has_gw],
-            check_exists=True,
-            assume_ordered=False,
-        )
+        node_idx = self.get_1d_node_idx(nodes)
+        idx = np.where(
+            nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+        )[0]
+        cn_idx = cn.id_to_index(nodes.content_pk[node_idx[idx]])
+        mask = cn.has_groundwater_exchange[cn_idx]
+        idx = idx[mask]
+        cn_idx = cn_idx[mask]
 
-        length = np.sqrt(cn.storage_area[cn_has_gw])
-        thickness = cn.exchange_thickness[cn_has_gw]
+        length = np.sqrt(cn.storage_area[cn_idx])
+        factor = length / cn.exchange_thickness[cn_idx]
+
         self.cross_weight[idx] += length
-
-        factor = length / thickness
-        self.frict_value1[idx] += factor * cn.hydraulic_conductivity_out[cn_has_gw]
-        self.frict_value2[idx] += factor * cn.hydraulic_conductivity_in[cn_has_gw]
+        self.frict_value1[idx] += factor * cn.hydraulic_conductivity_out[cn_idx]
+        self.frict_value2[idx] += factor * cn.hydraulic_conductivity_in[cn_idx]
 
     def _assign_groundwater_exchange_from_linear_objects(
-        self, nodes: Nodes, lines: Lines, objs: BaseLinear
+        self, nodes: Nodes, lines_1d: Lines, objs: BaseLinear
     ):
-        """Compute the friction values for groundwater exchange for line exchange"""
-        obj_has_gw = objs.has_groundwater_exchange
-        line_has_gw = (lines.content_type == objs.content_type) & np.isin(
-            lines.content_pk, objs.id[obj_has_gw]
+        line_has_gw = (lines_1d.content_type == objs.content_type) & np.isin(
+            lines_1d.content_pk, objs.id[objs.has_groundwater_exchange]
         )
-
         endpoints = Endpoints.from_nodes_lines(
             nodes,
-            lines,
+            lines_1d,
             line_mask=line_has_gw,
         )
         endpoints.reorder_by("node_id")
@@ -492,10 +475,9 @@ class Lines1D2D(Lines):
         )
         objs_idx = objs.id_to_index(endpoints.content_pk)
 
-        length = endpoints.sum(endpoints.ds1d)
-        self.cross_weight[idx] += length
-
         factor = endpoints.ds1d / objs.exchange_thickness[objs_idx]
+
+        self.cross_weight[idx] += endpoints.sum(endpoints.ds1d)
         self.frict_value1[idx] += endpoints.sum(
             factor * objs.hydraulic_conductivity_out[objs_idx]
         )
@@ -533,6 +515,3 @@ class Lines1D2D(Lines):
 
         self.frict_value2[has_weight] /= self.cross_weight[has_weight]
         self.frict_value2[~has_weight] = np.nan
-
-    def filter_groundwater(self) -> "Lines1D2D":
-        return self[self.cross_weight > 0.0]

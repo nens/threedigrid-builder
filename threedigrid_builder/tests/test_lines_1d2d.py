@@ -520,33 +520,18 @@ def test_output_breaches(get_velocity_points):
     get_velocity_points.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "content_type,expected",
-    [
-        (ContentType.TYPE_V2_CHANNEL, True),
-        (ContentType.TYPE_V2_PIPE, True),
-        (ContentType.TYPE_V2_CONNECTION_NODES, True),
-        (ContentType.TYPE_V2_CULVERT, False),
-    ],
-)
-def test_create_lines_1d2d_groundwater(content_type, expected):
-    nodes = Nodes(id=[1], content_pk=3, content_type=content_type)
+@pytest.mark.parametrize("has_groundwater_exchange", [True, False])
+def test_create_lines_1d2d_groundwater(has_groundwater_exchange):
+    nodes = Nodes(
+        id=[1], content_pk=3, has_groundwater_exchange=has_groundwater_exchange
+    )
     actual = Lines1D2D.create_groundwater(nodes, itertools.count())
 
-    if expected:
+    if has_groundwater_exchange:
         assert_array_equal(actual.line, [[-9999, 1]])
         assert_array_equal(actual.kcu, LineType.LINE_1D2D_GROUNDWATER)
-        assert_array_equal(actual.content_pk, [3])
-        assert_array_equal(actual.content_type, [content_type])
     else:
         assert len(actual) == 0
-
-
-def test_filter_groundwater():
-    lines_1d2d = Lines1D2D(id=[1, 2], cross_weight=[0.0, 1.0])
-
-    actual = lines_1d2d.filter_groundwater()
-    assert_array_equal(actual.id, [2])
 
 
 @pytest.mark.parametrize(
@@ -590,7 +575,7 @@ def test_assign_groundwater_exchange_from_connection_nodes():
     assert_almost_equal(lines_1d2d.frict_value2, [expected_frict2 + 0.3, 0.3, 0.3])
 
 
-def test_assign_groundwater_exchange_from_linear_objs(threeway_junction):
+def test_assign_groundwater_exchange_from_linear_objects(threeway_junction):
     nodes, lines = threeway_junction
 
     channels = Channels(

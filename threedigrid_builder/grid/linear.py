@@ -107,14 +107,6 @@ class BaseLinear:
         # fixed_nodes also become nodes
         points = points.merge_with(fixed_nodes)
 
-        # Conditionally add a marker to add 1D2D groundwater exchange lines
-        try:
-            has_groundwater_exchange = self.has_groundwater_exchange[
-                points.linestring_idx
-            ]
-        except AttributeError:
-            has_groundwater_exchange = False
-
         # construct the nodes with available attributes
         return Nodes(
             id=itertools.islice(node_id_counter, len(points)),
@@ -125,7 +117,9 @@ class BaseLinear:
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
             breach_ids=np.array([points.content_pk, points.secondary_content_pk]).T,
-            has_groundwater_exchange=has_groundwater_exchange,
+            has_groundwater_exchange=self.has_groundwater_exchange[
+                points.linestring_idx
+            ],
         )
 
     def get_embedded(
@@ -383,3 +377,22 @@ class BaseLinear:
         result[np.isnan(result)] = left[np.isnan(result)]
         result[np.isnan(result)] = right[np.isnan(result)]
         return result
+
+    @property
+    def has_groundwater_exchange(self):
+        return np.full(len(self), False, dtype=bool)
+
+    def apply_has_groundwater_exchange(self, nodes: Nodes, lines: Lines):
+        content_pk = self.id[self.has_groundwater_exchange]
+
+        if len(content_pk) == 0:
+            return
+
+        node_ids = np.unique(
+            lines.line[
+                (lines.content_type == self.content_type)
+                & np.isin(lines.content_pk, content_pk)
+            ]
+        )
+
+        nodes.has_groundwater_exchange[np.isin(nodes.id, node_ids)] = True

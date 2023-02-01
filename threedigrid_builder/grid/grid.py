@@ -738,6 +738,8 @@ class Grid:
         Appends self.lines.
         """
         lines_1d2d_gw = Lines1D2D.create_groundwater(self.nodes, line_id_counter)
+        if len(lines_1d2d_gw) == 0:
+            return
         lines_1d2d_gw.assign_groundwater_exchange(
             self.nodes,
             self.lines,
@@ -745,9 +747,6 @@ class Grid:
             channels=channels,
             pipes=pipes,
         )
-        lines_1d2d_gw = lines_1d2d_gw.filter_groundwater()
-        if len(lines_1d2d_gw) == 0:
-            return
         lines_1d2d_gw.assign_line_coords(self.nodes)
         lines_1d2d_gw.assign_2d_node(self.cell_tree)
         lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes.n_groundwater_cells)

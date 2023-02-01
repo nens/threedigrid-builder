@@ -7,7 +7,7 @@ import shapely
 from numpy.testing import assert_almost_equal, assert_array_equal
 from shapely.testing import assert_geometries_equal
 
-from threedigrid_builder.base import Array, Nodes, PointsOnLine
+from threedigrid_builder.base import Array, Lines, Nodes, PointsOnLine
 from threedigrid_builder.constants import CalculationType, ContentType, NodeType
 from threedigrid_builder.grid import ConnectionNodes, linear
 
@@ -66,7 +66,7 @@ class LinearObject:
 
 
 class LinearObjects(Array[LinearObject], linear.BaseLinear):
-    content_type = ContentType.TYPE_V2_CONNECTION_NODES  # just pick one for the test
+    content_type = ContentType.TYPE_V2_1D_LATERAL  # just pick one for the test
 
 
 @pytest.fixture
@@ -138,7 +138,7 @@ def test_interpolate_nodes(global_dist_calc_points, expected_dists, two_linear_o
     assert_almost_equal(
         nodes.coordinates, shapely.get_coordinates(dummy_points.the_geom)
     )
-    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_1D_LATERAL)
     assert_array_equal(nodes.content_pk, [1, 1, 2])
     assert_array_equal(nodes.node_type, NodeType.NODE_1D_NO_STORAGE)
     assert_array_equal(nodes.calculation_type, [2, 2, 1])
@@ -194,7 +194,7 @@ def test_interpolate_nodes_with_fixture(two_linear_objects):
 
     assert_array_equal(nodes.id, [2, 3, 4, 5])
     assert_almost_equal(nodes.coordinates, [(10, 0), (0, 30), (0, 50), (25, 100)])
-    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
+    assert_array_equal(nodes.content_type, ContentType.TYPE_V2_1D_LATERAL)
     assert_array_equal(nodes.content_pk, [1, 2, 2, 2])
     assert_array_equal(nodes.calculation_type, [2, 1, 1, 1])
     assert_array_equal(nodes.s1d, [10.0, 30.0, 50.0, 125.0])
@@ -245,7 +245,7 @@ def test_get_lines(connection_nodes, two_linear_objects):
 
     assert_array_equal(lines.id, range(5))
     assert_array_equal(lines.line, expected_line)
-    assert_array_equal(lines.content_type, ContentType.TYPE_V2_CONNECTION_NODES)
+    assert_array_equal(lines.content_type, ContentType.TYPE_V2_1D_LATERAL)
     assert_array_equal(lines.content_pk, [1, 1, 2, 2, 2])
     assert_array_equal(lines.kcu, [2, 2, 1, 1, 1])
     assert_array_equal(lines.cross_id1, [17, 17, 18, 18, 18])
@@ -419,3 +419,20 @@ def test_compute_drain_level_with_two_nan(two_linear_objects, connection_nodes):
     )
 
     assert_almost_equal(actual, [np.nan, 1.0])
+
+
+@mock.patch.object(LinearObjects, "has_groundwater_exchange", np.array([False, True]))
+def test_apply_has_groundwater_exchange(two_linear_objects):
+    nodes = Nodes(
+        id=[1, 2, 3, 4],
+    )
+    lines = Lines(
+        id=range(3),
+        content_pk=[1, 2, 2],
+        content_type=LinearObjects.content_type,
+        line=[[2, 1], [1, 3], [3, 4]],
+    )
+
+    two_linear_objects.apply_has_groundwater_exchange(nodes, lines)
+
+    assert_array_equal(nodes.has_groundwater_exchange, [1, 0, 1, 1])
