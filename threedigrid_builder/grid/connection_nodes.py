@@ -82,6 +82,7 @@ class ConnectionNodes(Array[ConnectionNode]):
             storage_area=self.storage_area,
             display_name=self.display_name,
             zoom_category=self.zoom_category,
+            has_groundwater_exchange=self.has_groundwater_exchange,
         )
 
     def is_closed(self, content_pk):
@@ -146,6 +147,7 @@ class ConnectionNodes(Array[ConnectionNode]):
         dpumax[is_manhole] = self.drain_level[is_manhole_idx]
         return dpumax
 
+    @property
     def has_groundwater_exchange(self):
         with np.errstate(invalid="ignore"):
             return (

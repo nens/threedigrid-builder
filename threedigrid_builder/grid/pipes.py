@@ -62,6 +62,7 @@ class Pipes(Array[Pipe], linear.BaseLinear):
             connection_nodes=connection_nodes,
         )
 
+    @property
     def has_groundwater_exchange(self):
         with np.errstate(invalid="ignore"):
             return (

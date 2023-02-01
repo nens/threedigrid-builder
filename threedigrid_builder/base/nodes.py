@@ -57,6 +57,7 @@ class Node:
     surface_level: float
     shape: str  # enum with classes "00", "01", "02"
     width: float
+    has_groundwater_exchange: int  # internal
 
 
 class Nodes(Array[Node]):

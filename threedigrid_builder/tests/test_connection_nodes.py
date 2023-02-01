@@ -300,7 +300,7 @@ def test_has_groundwater_exchange(area, thickness, hc_out, hc_in, expected):
         hydraulic_conductivity_in=hc_in,
     )
 
-    actual = connection_nodes.has_groundwater_exchange()
+    actual = connection_nodes.has_groundwater_exchange
 
     assert len(actual) == 1
     assert actual[0] == expected

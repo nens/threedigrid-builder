@@ -50,6 +50,7 @@ class Channels(Array[Channel], linear.BaseLinear):
         """
         return compute_bottom_level(content_pk, s1d, locations, self, "bank_level")
 
+    @property
     def has_groundwater_exchange(self):
         with np.errstate(invalid="ignore"):
             return (

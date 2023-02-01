@@ -450,7 +450,7 @@ class Lines1D2D(Lines):
     def _assign_groundwater_exchange_from_connection_nodes(
         self, nodes: Nodes, cn: ConnectionNodes
     ):
-        cn_has_gw = cn.has_groundwater_exchange()
+        cn_has_gw = cn.has_groundwater_exchange
         node_has_gw = (
             nodes.content_type == ContentType.TYPE_V2_CONNECTION_NODES
         ) & np.isin(nodes.content_pk, cn.id[cn_has_gw])
@@ -473,7 +473,7 @@ class Lines1D2D(Lines):
         self, nodes: Nodes, lines: Lines, objs: BaseLinear
     ):
         """Compute the friction values for groundwater exchange for line exchange"""
-        obj_has_gw = objs.has_groundwater_exchange()
+        obj_has_gw = objs.has_groundwater_exchange
         line_has_gw = (lines.content_type == objs.content_type) & np.isin(
             lines.content_pk, objs.id[obj_has_gw]
         )
