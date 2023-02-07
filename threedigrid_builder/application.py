@@ -192,6 +192,14 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
 
+        if grid.meta.has_groundwater:
+            grid.add_1d2d_groundwater_lines(
+                line_id_counter,
+                connection_nodes=connection_nodes,
+                channels=channels,
+                pipes=pipes,
+            )
+
     if grid_settings.use_0d_inflow in (
         InflowType.IMPERVIOUS_SURFACE.value,
         InflowType.SURFACE.value,

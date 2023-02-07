@@ -9,6 +9,11 @@ Changelog of threedigrid-builder
   to groundwater cells and lines having new kcu values
   600, 700, 800, 900.
 
+- Added 1D-2D groundwater exchange lines (kcu 57). The generated lines have
+  attributes 'cross_weight', 'frict_value1', 'frict_value2' set based on
+  input 'exchange_thickness', 'hydraulic_conductivity_out' and
+  'hydraulic_conductivity_in' on input Channels, Pipes and Manholes.
+
 - Save memory by lazily creating empty columns.
 
 

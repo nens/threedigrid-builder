@@ -71,7 +71,9 @@ LINE_ORDER = [
         LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
         LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
     ],
-    [LineType.LINE_1D2D_GROUNDWATER_OPEN_WATER, LineType.LINE_1D2D_GROUNDWATER_SEWER],
+    [
+        LineType.LINE_1D2D_GROUNDWATER,
+    ],
     [
         LineType.LINE_2D_BOUNDARY_WEST,
         LineType.LINE_2D_BOUNDARY_EAST,
@@ -683,6 +685,9 @@ class Grid:
         Sets self.breaches and appends self.lines.
         """
         lines_1d2d = Lines1D2D.create(self.nodes, line_id_counter)
+        if len(lines_1d2d) == 0:
+            return
+        lines_1d2d.assign_line_coords(self.nodes)
         lines_1d2d.assign_connection_nodes_to_channels_from_breaches(
             self.nodes, potential_breaches=potential_breaches
         )
@@ -690,7 +695,7 @@ class Grid:
             self.nodes, lines=self.lines
         )
         lines_1d2d.assign_exchange_lines(exchange_lines)
-        lines_1d2d.assign_2d_side(self.nodes, exchange_lines)
+        lines_1d2d.assign_2d_side_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
         lines_1d2d.set_line_coords(self.nodes)
@@ -720,6 +725,32 @@ class Grid:
 
         self.breaches = lines_1d2d.output_breaches(potential_breaches)
         self.lines += lines_1d2d
+
+    def add_1d2d_groundwater_lines(
+        self,
+        line_id_counter,
+        connection_nodes,
+        channels,
+        pipes,
+    ) -> Lines1D2D:
+        """Connect 1D and 2D groundwater elements by computing 1D-2D lines.
+
+        Appends self.lines.
+        """
+        lines_1d2d_gw = Lines1D2D.create_groundwater(self.nodes, line_id_counter)
+        if len(lines_1d2d_gw) == 0:
+            return
+        lines_1d2d_gw.assign_groundwater_exchange(
+            self.nodes,
+            self.lines,
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+        )
+        lines_1d2d_gw.assign_line_coords(self.nodes)
+        lines_1d2d_gw.assign_2d_node(self.cell_tree)
+        lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes.n_groundwater_cells)
+        self.lines += lines_1d2d_gw
 
     def set_breach_ids(self, breach_points: PotentialBreachPoints):
         breach_points.assign_to_connection_nodes(self.nodes, self.lines)

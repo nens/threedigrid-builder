@@ -19,6 +19,9 @@ class Channel:
     calculation_type: CalculationType
     display_name: str
     zoom_category: int
+    exchange_thickness: float
+    hydraulic_conductivity_out: float
+    hydraulic_conductivity_in: float
 
 
 class Channels(Array[Channel], linear.BaseLinear):
@@ -46,3 +49,12 @@ class Channels(Array[Channel], linear.BaseLinear):
             exchange levels a.k.a. dpumax (array of float)
         """
         return compute_bottom_level(content_pk, s1d, locations, self, "bank_level")
+
+    @property
+    def has_groundwater_exchange(self):
+        with np.errstate(invalid="ignore"):
+            return (
+                (self.exchange_thickness > 0)
+                & np.isfinite(self.hydraulic_conductivity_out)
+                & np.isfinite(self.hydraulic_conductivity_in)
+            )

@@ -4,11 +4,15 @@ from typing import Iterator
 import numpy as np
 import shapely
 
-from threedigrid_builder.base import Endpoints, Lines, Nodes, replace, search
+from threedigrid_builder.base import LineHalfs, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 
+from .channels import Channels
+from .connection_nodes import ConnectionNodes
 from .exchange_lines import ExchangeLines
+from .linear import BaseLinear
 from .obstacles import Obstacles
+from .pipes import Pipes
 from .potential_breaches import PotentialBreaches
 
 __all__ = ["Lines1D2D"]
@@ -31,7 +35,7 @@ class Lines1D2D(Lines):
         # Merge the arrays
         line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
         line[:, 1] = nodes.index_to_id(node_idx)
-        return Lines1D2D(
+        return cls(
             id=itertools.islice(line_id_counter, len(node_idx)),
             line=line,
             content_type=nodes.content_type[node_idx],
@@ -88,7 +92,7 @@ class Lines1D2D(Lines):
         )[0]
         node_ids = self.line[is_connection_node, 1]
 
-        endpoints = Endpoints.for_connection_nodes(
+        line_halfs = LineHalfs.for_connection_nodes(
             nodes,
             lines,
             line_mask=(
@@ -97,24 +101,27 @@ class Lines1D2D(Lines):
             ),
             node_mask=np.isin(nodes.id, node_ids),
         )
-        # Order the endpoints by (channel_id, calc type) and pick the first
-        endpoints.reorder(
+        # Order the line_halfs by (channel_id, calc type) and pick the first
+        line_halfs.reorder(
             np.lexsort(
                 [
-                    endpoints.content_pk,
-                    replace(endpoints.kcu, PRIORITY),
-                    endpoints.node_id,
+                    line_halfs.content_pk,
+                    replace(line_halfs.kcu, PRIORITY),
+                    line_halfs.node_id,
                 ]
             )
         )
-        channel_id_per_node = endpoints.first_per_node(endpoints.content_pk)
+        channel_id_per_node = line_halfs.first(line_halfs.content_pk)
         # Use the node_id -> channel_id map to set channel_id on self
         idx = search(
-            channel_id_per_node.id, node_ids, check_exists=False, assume_ordered=True
+            line_halfs.get_reduce_id(),
+            node_ids,
+            check_exists=False,
+            assume_ordered=True,
         )
         mask = idx != -9999
 
-        self.content_pk[is_connection_node[mask]] = channel_id_per_node.value[idx[mask]]
+        self.content_pk[is_connection_node[mask]] = channel_id_per_node[idx[mask]]
         self.content_type[is_connection_node[mask]] = ContentType.TYPE_V2_CHANNEL
 
     def assign_exchange_lines(self, exchange_lines: ExchangeLines) -> None:
@@ -153,30 +160,32 @@ class Lines1D2D(Lines):
         """Get the 1D node index based on line[:, 1]"""
         return nodes.id_to_index(self.line[:, 1])
 
-    def assign_2d_side(self, nodes: Nodes, exchange_lines: ExchangeLines):
-        """Compute a Point on the (user-requested) 2D side for each line
-
-        If there is no exchange line this is the 1D node location. If there is
-        an exchange line, it is the closest point on the exchange line.
+    def assign_line_coords(self, nodes: Nodes):
+        """Copy the 1D node location to the 2D side for non-exchange line lines.
 
         Returns an array of shapely Point geometries
         Requires: line[:, 1], content_pk, content_type
-        Sets: line_coords[:, :2] (the 2D side), line_geometries
+        Sets: line_coords (side_1d and side_2d)
+        """
+        self.line_coords[:, 2:] = nodes.coordinates[self.get_1d_node_idx(nodes)]
+        self.line_coords[:, :2] = self.line_coords[:, 2:]
+
+    def assign_2d_side_from_exchange_lines(self, exchange_lines: ExchangeLines):
+        """Compute the closest Point on exchange line for each 1D2D line
+
+        Requires: line_coords[:, 2:] (side_1d), content_pk, content_type
+        Sets: line_coords[:, :2] (side_2d), line_geometries
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
-
-        # Collect the 1D sides of the 1D2D line
-        coords_1d = nodes.coordinates[self.get_1d_node_idx(nodes)]
 
         # Find the closest points on the exchange lines
         exc_geoms = exchange_lines.the_geom[
             exchange_lines.id_to_index(self.content_pk[has_exc])
         ]
         shapely.prepare(exc_geoms)
-        line_geom = shapely.shortest_line(exc_geoms, shapely.points(coords_1d[has_exc]))
+        line_geom = shapely.shortest_line(exc_geoms, self.side_1d[has_exc])
 
-        self.line_coords[~has_exc, :2] = coords_1d[~has_exc]
         self.line_coords[has_exc, :2] = shapely.get_coordinates(
             shapely.get_point(line_geom, 0)
         )
@@ -259,7 +268,7 @@ class Lines1D2D(Lines):
         """Assigns the 2D node id based on the line_coords
 
         Requires: line_coords[:, :2] (the 2D side)
-        Sets: line[:, 0], line_coords[:, :2] (clears)
+        Sets: line[:, 0], line_coords[:] (clears)
         """
         # The query returns 2 1D arrays: one with indices into the supplied node
         # geometries and one with indices into the tree of cells.
@@ -268,7 +277,19 @@ class Lines1D2D(Lines):
         _, unique_matches = np.unique(idx[0], return_index=True)
         line_idx, cell_idx = idx[:, unique_matches]
         self.line[line_idx, 0] = cell_idx
-        self.line_coords[:, :2] = np.nan
+        self.line_coords[:] = np.nan
+
+    def transfer_2d_node_to_groundwater(self, offset: int):
+        """Transfers the 1D-2D line to a groundwater node
+
+        Sets: line[:, 0]
+        """
+        has_2d_node = np.where(self.line[:, 0] != -9999)[0]
+        if offset == 0:
+            # no groundwater cells; reset the node id (will raise error later)
+            self.line[has_2d_node, 0] = -9999
+        else:
+            self.line[has_2d_node, 0] += offset
 
     def assign_kcu(self, mask, is_closed) -> None:
         """Set kcu where it is not set already"""
@@ -397,3 +418,100 @@ class Lines1D2D(Lines):
             code=breaches.code[breach_idx],
             display_name=breaches.display_name[breach_idx],
         )
+
+    @classmethod
+    def create_groundwater(
+        cls, nodes: Nodes, line_id_counter: Iterator[int]
+    ) -> "Lines1D2D":
+        """Create a 1D-2D groundwater lines for each 1D node.
+
+        Sets: id, line[:, 1], kcu
+        """
+        node_idx = np.where(nodes.has_groundwater_exchange)[0]
+        line = np.full((len(node_idx), 2), -9999, dtype=np.int32)
+        line[:, 1] = nodes.index_to_id(node_idx)
+        return cls(
+            id=itertools.islice(line_id_counter, len(node_idx)),
+            line=line,
+            kcu=LineType.LINE_1D2D_GROUNDWATER,
+        )
+
+    def _assign_groundwater_exchange_from_connection_nodes(
+        self, nodes: Nodes, cn: ConnectionNodes
+    ):
+        node_idx = self.get_1d_node_idx(nodes)
+        idx = np.where(
+            nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
+        )[0]
+        cn_idx = cn.id_to_index(nodes.content_pk[node_idx[idx]])
+        mask = cn.has_groundwater_exchange[cn_idx]
+        idx = idx[mask]
+        cn_idx = cn_idx[mask]
+
+        length = np.sqrt(cn.storage_area[cn_idx])
+        factor = length / cn.exchange_thickness[cn_idx]
+
+        self.cross_weight[idx] += length
+        self.frict_value1[idx] += factor * cn.hydraulic_conductivity_out[cn_idx]
+        self.frict_value2[idx] += factor * cn.hydraulic_conductivity_in[cn_idx]
+
+    def _assign_groundwater_exchange_from_linear_objects(
+        self, nodes: Nodes, lines_1d: Lines, objs: BaseLinear
+    ):
+        line_has_gw = (lines_1d.content_type == objs.content_type) & np.isin(
+            lines_1d.content_pk, objs.id[objs.has_groundwater_exchange]
+        )
+        line_halfs = LineHalfs.from_nodes_lines(
+            nodes,
+            lines_1d,
+            line_mask=line_has_gw,
+        )
+        line_halfs.reorder_by("node_id")
+        idx = search(
+            self.line[:, 1],
+            line_halfs.get_reduce_id(),
+            check_exists=True,
+            assume_ordered=False,
+        )
+        objs_idx = objs.id_to_index(line_halfs.content_pk)
+
+        factor = line_halfs.ds1d / objs.exchange_thickness[objs_idx]
+
+        self.cross_weight[idx] += line_halfs.sum(line_halfs.ds1d)
+        self.frict_value1[idx] += line_halfs.sum(
+            factor * objs.hydraulic_conductivity_out[objs_idx]
+        )
+        self.frict_value2[idx] += line_halfs.sum(
+            factor * objs.hydraulic_conductivity_in[objs_idx]
+        )
+
+    def assign_groundwater_exchange(
+        self,
+        nodes: Nodes,
+        lines: Lines,
+        connection_nodes: ConnectionNodes,
+        channels: Channels,
+        pipes: Pipes,
+    ):
+        """Compute the friction values for groundwater exchange
+
+        Sets:
+        - cross_weight (length of objects and sqrt of manhole area)
+        - frict_value1 (average from hydr. cond. out, thickness and length)
+        - frict_value2 (average from hydr. cond. in, thickness and length)
+        """
+        self.cross_weight[:] = 0.0
+        self.frict_value1[:] = 0.0
+        self.frict_value2[:] = 0.0
+
+        self._assign_groundwater_exchange_from_connection_nodes(nodes, connection_nodes)
+        self._assign_groundwater_exchange_from_linear_objects(nodes, lines, channels)
+        self._assign_groundwater_exchange_from_linear_objects(nodes, lines, pipes)
+
+        # change 'weighted sum' to 'weighted average' (avoiding div by 0)
+        has_weight = self.cross_weight > 0.0
+        self.frict_value1[has_weight] /= self.cross_weight[has_weight]
+        self.frict_value1[~has_weight] = np.nan
+
+        self.frict_value2[has_weight] /= self.cross_weight[has_weight]
+        self.frict_value2[~has_weight] = np.nan

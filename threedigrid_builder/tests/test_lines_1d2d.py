@@ -10,9 +10,12 @@ from shapely.testing import assert_geometries_equal
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 from threedigrid_builder.grid import (
+    Channels,
+    ConnectionNodes,
     ExchangeLines,
     Lines1D2D,
     Obstacles,
+    Pipes,
     PotentialBreaches,
 )
 
@@ -21,6 +24,7 @@ C1 = CalculationType.CONNECTED
 C2 = CalculationType.DOUBLE_CONNECTED
 CN = ContentType.TYPE_V2_CONNECTION_NODES
 CH = ContentType.TYPE_V2_CHANNEL
+PIPE = ContentType.TYPE_V2_PIPE
 EXC = ContentType.TYPE_V2_EXCHANGE_LINE
 BREACH = ContentType.TYPE_V2_BREACH
 
@@ -107,11 +111,18 @@ def test_assign_exchange_lines(
     assert_array_equal(lines.content_type, expected_content_type)
 
 
-def test_assign_2d_side():
+def test_assign_line_coords():
     nodes = Nodes(
         id=[1, 2, 3],
         coordinates=[(2, 5), (4, 5), (6, 5)],
     )
+    lines = Lines1D2D(id=range(2), line=[[-9999, 1], [-9999, 3]])
+    lines.assign_line_coords(nodes)
+
+    assert_array_equal(lines.line_coords, [[2, 5, 2, 5], [6, 5, 6, 5]])
+
+
+def test_assign_2d_side_from_exchange_lines():
     exchange_lines = ExchangeLines(
         id=[1, 2],
         the_geom=shapely.linestrings([[[0, 0], [10, 0]], [[0, 10], [10, 10]]]),
@@ -119,10 +130,11 @@ def test_assign_2d_side():
     lines = Lines1D2D(
         id=range(4),
         line=[[-9999, 1], [-9999, 1], [-9999, 2], [-9999, 3]],
+        line_coords=[[2, 5, 2, 5], [2, 5, 2, 5], [4, 5, 4, 5], [6, 5, 6, 5]],
         content_pk=[1, 2, 1, -9999],
         content_type=[EXC, EXC, EXC, -9999],
     )
-    lines.assign_2d_side(nodes, exchange_lines)
+    lines.assign_2d_side_from_exchange_lines(exchange_lines)
 
     assert_array_equal(lines.line_coords[:, :2], [[2, 0], [2, 10], [4, 0], [6, 5]])
 
@@ -433,6 +445,8 @@ def threeway_junction():
         line=[(1, 2), (1, 3), (4, 1)],
         content_type=ContentType.TYPE_V2_CHANNEL,
         content_pk=[11, 12, 13],
+        ds1d=[1.2, 2.3, 3.4],
+        ds1d_half=[0.6, 1.0, 1.7],
     )
     return nodes, lines
 
@@ -504,3 +518,154 @@ def test_output_breaches(get_velocity_points):
     assert_array_equal(actual.display_name, ["bb"])
 
     get_velocity_points.assert_called_once()
+
+
+@pytest.mark.parametrize("has_groundwater_exchange", [True, False])
+def test_create_lines_1d2d_groundwater(has_groundwater_exchange):
+    nodes = Nodes(
+        id=[1], content_pk=3, has_groundwater_exchange=has_groundwater_exchange
+    )
+    actual = Lines1D2D.create_groundwater(nodes, itertools.count())
+
+    if has_groundwater_exchange:
+        assert_array_equal(actual.line, [[-9999, 1]])
+        assert_array_equal(actual.kcu, LineType.LINE_1D2D_GROUNDWATER)
+    else:
+        assert len(actual) == 0
+
+
+@pytest.mark.parametrize(
+    "n_groundwater_cells,expected", [(0, [-9999, -9999]), (3, [-9999, 5])]
+)
+def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
+    lines_1d2d = Lines1D2D(id=range(1, 3), line=[[-9999, 6], [2, 9]])
+    lines_1d2d.transfer_2d_node_to_groundwater(n_groundwater_cells)
+    assert_array_equal(lines_1d2d.line[:, 0], expected)  # 2d side
+    assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
+
+
+def test_assign_groundwater_exchange_from_connection_nodes():
+    nodes = Nodes(
+        id=[1, 2, 3],
+        content_type=[CN, CN, CH],
+        content_pk=[3, 5, 3],
+    )
+    connection_nodes = ConnectionNodes(
+        id=[3, 5],
+        storage_area=[9.0, np.nan],
+        exchange_thickness=[0.1, np.nan],
+        hydraulic_conductivity_out=[3.0, np.nan],
+        hydraulic_conductivity_in=[2.0, np.nan],
+    )
+    lines_1d2d = Lines1D2D(
+        id=[1, 2, 3],
+        line=[[-9999, 1], [-9999, 2], [-9999, 3]],
+        cross_weight=0.1,
+        frict_value1=0.2,
+        frict_value2=0.3,
+    )
+    lines_1d2d._assign_groundwater_exchange_from_connection_nodes(
+        nodes, connection_nodes
+    )
+
+    expected_frict1 = 3.0 / 0.1 * 3.0
+    expected_frict2 = 2.0 / 0.1 * 3.0
+    assert_almost_equal(lines_1d2d.cross_weight, [3.1, 0.1, 0.1])
+    assert_almost_equal(lines_1d2d.frict_value1, [expected_frict1 + 0.2, 0.2, 0.2])
+    assert_almost_equal(lines_1d2d.frict_value2, [expected_frict2 + 0.3, 0.3, 0.3])
+
+
+def test_assign_groundwater_exchange_from_linear_objects(threeway_junction):
+    nodes, lines = threeway_junction
+
+    channels = Channels(
+        id=[11, 12, 13],
+        exchange_thickness=[0.1, 0.2, np.nan],
+        hydraulic_conductivity_out=[2.0, 3.0, np.nan],
+        hydraulic_conductivity_in=[4.0, 5.0, np.nan],
+    )
+
+    lines_1d2d = Lines1D2D(
+        id=range(4),
+        line=[[-9999, 1], [-9999, 2], [-9999, 3], [-9999, 4]],
+        cross_weight=0.1,
+        frict_value1=0.2,
+        frict_value2=0.3,
+    )
+    lines_1d2d._assign_groundwater_exchange_from_linear_objects(nodes, lines, channels)
+
+    assert_almost_equal(
+        lines_1d2d.cross_weight, [0.1 + 0.6 + 1.0, 0.1 + 0.6, 0.1 + 1.3, 0.1]
+    )
+    assert_almost_equal(
+        lines_1d2d.frict_value1,
+        [
+            0.2 + 0.6 * 2.0 / 0.1 + 1.0 * 3.0 / 0.2,
+            0.2 + 0.6 * 2.0 / 0.1,
+            0.2 + 1.3 * 3.0 / 0.2,
+            0.2,
+        ],
+    )
+    assert_almost_equal(
+        lines_1d2d.frict_value2,
+        [
+            0.3 + 0.6 * 4.0 / 0.1 + 1.0 * 5.0 / 0.2,
+            0.3 + 0.6 * 4.0 / 0.1,
+            0.3 + 1.3 * 5.0 / 0.2,
+            0.3,
+        ],
+    )
+
+
+def test_assign_groundwater_exchange(threeway_junction):
+    nodes, lines = threeway_junction
+
+    nodes.content_type[1:] = -9999
+    lines.content_type[2] = ContentType.TYPE_V2_PIPE
+    connection_nodes = ConnectionNodes(
+        id=[1],
+        storage_area=[9.0],
+        exchange_thickness=[0.1],
+        hydraulic_conductivity_out=[3.0],
+        hydraulic_conductivity_in=[2.0],
+    )
+    channels = Channels(
+        id=[11, 12],
+        exchange_thickness=[0.15, np.nan],
+        hydraulic_conductivity_out=[2.0, np.nan],
+        hydraulic_conductivity_in=[4.0, np.nan],
+    )
+    pipes = Pipes(
+        id=[13],
+        exchange_thickness=[0.2],
+        hydraulic_conductivity_out=[3.0],
+        hydraulic_conductivity_in=[5.0],
+    )
+
+    lines_1d2d = Lines1D2D(
+        id=range(4),
+        line=[[-9999, 1], [-9999, 2], [-9999, 3], [-9999, 4]],
+    )
+    lines_1d2d.assign_groundwater_exchange(
+        nodes, lines, connection_nodes=connection_nodes, channels=channels, pipes=pipes
+    )
+
+    assert_almost_equal(lines_1d2d.cross_weight, [3.0 + 0.6 + 1.7, 0.6, 0.0, 1.7])
+    assert_almost_equal(
+        lines_1d2d.frict_value1,
+        [
+            (3.0 * 3.0 / 0.1 + 0.6 * 2.0 / 0.15 + 1.7 * 3.0 / 0.2) / (3.0 + 0.6 + 1.7),
+            2.0 / 0.15,
+            np.nan,
+            3.0 / 0.2,
+        ],
+    )
+    assert_almost_equal(
+        lines_1d2d.frict_value2,
+        [
+            (3.0 * 2.0 / 0.1 + 0.6 * 4.0 / 0.15 + 1.7 * 5.0 / 0.2) / (3.0 + 0.6 + 1.7),
+            4.0 / 0.15,
+            np.nan,
+            5.0 / 0.2,
+        ],
+    )

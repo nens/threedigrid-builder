@@ -5,7 +5,7 @@ import shapely
 
 from threedigrid_builder.base import (
     Array,
-    Endpoints,
+    LineHalfs,
     Lines,
     Nodes,
     PointsOnLine,
@@ -77,30 +77,30 @@ class PotentialBreachPoints(PointsOnLine):
             s1d=np.delete(s1d, to_delete),
         )
 
-    def find_for_endpoints(self, endpoints: Endpoints):
-        """Return a breach for each endpoint by matching against channel id.
+    def find_for_line_halfs(self, line_halfs: LineHalfs):
+        """Return a breach for each line_half by matching against channel id.
 
-        It is assumed there is exactly 1 breach per endpoint. This is ensured
+        It is assumed there is exactly 1 breach per line_half. This is ensured
         by PotentialBreachPoints.merge().
         """
-        # per (is_start) endpoint, look for a breach point (at start)
-        idx = np.full(len(endpoints), fill_value=-9999, dtype=np.int32)
-        idx[endpoints.is_start] = search(
+        # per (is_start) line_half, look for a breach point (at start)
+        idx = np.full(len(line_halfs), fill_value=-9999, dtype=np.int32)
+        idx[line_halfs.is_start] = search(
             self.linestring_id,  # channel id
-            endpoints.content_pk[endpoints.is_start],  # lines.content_pk
+            line_halfs.content_pk[line_halfs.is_start],  # lines.content_pk
             mask=self.at_start,
             check_exists=False,
         )
-        # per (is_end) endpoint, look for a breach point (at end)
-        idx[endpoints.is_end] = search(
+        # per (is_end) line_half, look for a breach point (at end)
+        idx[line_halfs.is_end] = search(
             self.linestring_id,
-            endpoints.content_pk[endpoints.is_end],
+            line_halfs.content_pk[line_halfs.is_end],
             mask=self.at_end,
             check_exists=False,
         )
         has_breach_point = idx != -9999
         idx = idx[has_breach_point]
-        return endpoints.node_id[has_breach_point], idx
+        return line_halfs.node_id[has_breach_point], idx
 
     def assign_to_connection_nodes(self, nodes: Nodes, lines: Lines):
         """Per connection node, assign max two potential breach ids.
@@ -111,14 +111,14 @@ class PotentialBreachPoints(PointsOnLine):
         - If there are no double breach points: take the breach points of
           the first channel.
         """
-        # disassemble lines into Channel - Connection Node endpoints
-        endpoints = Endpoints.for_connection_nodes(
+        # disassemble lines into Channel - Connection Node line_halfs
+        line_halfs = LineHalfs.for_connection_nodes(
             nodes, lines, line_mask=lines.content_type == ContentType.TYPE_V2_CHANNEL
         )
-        endpoints.reorder_by("node_id")
+        line_halfs.reorder_by("node_id")
 
-        # per endpoint, match a breach point by their channel ids
-        node_ids, breach_point_idx = self.find_for_endpoints(endpoints)
+        # per line_half, match a breach point by their channel ids
+        node_ids, breach_point_idx = self.find_for_line_halfs(line_halfs)
         node_idx = nodes.id_to_index(node_ids)
 
         # iterate over nodes with a breach point and assign (if present)
