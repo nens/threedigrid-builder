@@ -367,22 +367,29 @@ class SQLite:
 
     def get_channels(self) -> Channels:
         """Return Channels"""
+        cols = [
+            models.Channel.the_geom,
+            models.Channel.dist_calc_points,
+            models.Channel.id,
+            models.Channel.code,
+            models.Channel.connection_node_start_id,
+            models.Channel.connection_node_end_id,
+            models.Channel.calculation_type,
+            models.Channel.display_name,
+            models.Channel.zoom_category,
+        ]
+
+        try:
+            cols += [
+                models.Channel.exchange_thickness,
+                models.Channel.hydraulic_conductivity_out,
+                models.Channel.hydraulic_conductivity_in,
+            ]
+        except AttributeError:
+            pass
+
         with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.Channel.the_geom,
-                    models.Channel.dist_calc_points,
-                    models.Channel.id,
-                    models.Channel.code,
-                    models.Channel.connection_node_start_id,
-                    models.Channel.connection_node_end_id,
-                    models.Channel.calculation_type,
-                    models.Channel.display_name,
-                    models.Channel.zoom_category,
-                )
-                .order_by(models.Channel.id)
-                .as_structarray()
-            )
+            arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
         arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
@@ -393,25 +400,35 @@ class SQLite:
 
     def get_connection_nodes(self) -> ConnectionNodes:
         """Return ConnectionNodes (which are enriched using the manhole table)"""
+        cols = [
+            models.ConnectionNode.the_geom,
+            models.ConnectionNode.id,
+            models.ConnectionNode.code,
+            models.ConnectionNode.storage_area,
+            models.ConnectionNode.initial_waterlevel,
+            models.Manhole.id.label("manhole_id"),
+            models.Manhole.calculation_type,
+            models.Manhole.bottom_level,
+            models.Manhole.drain_level,
+            models.Manhole.manhole_indicator,
+            models.Manhole.surface_level,
+            models.Manhole.shape,
+            models.Manhole.width,
+            models.Manhole.display_name,
+            models.Manhole.zoom_category,
+        ]
+        try:
+            cols += [
+                models.Manhole.exchange_thickness,
+                models.Manhole.hydraulic_conductivity_out,
+                models.Manhole.hydraulic_conductivity_in,
+            ]
+        except AttributeError:
+            pass
+
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.ConnectionNode.the_geom,
-                    models.ConnectionNode.id,
-                    models.ConnectionNode.code,
-                    models.ConnectionNode.storage_area,
-                    models.ConnectionNode.initial_waterlevel,
-                    models.Manhole.id.label("manhole_id"),
-                    models.Manhole.calculation_type,
-                    models.Manhole.bottom_level,
-                    models.Manhole.drain_level,
-                    models.Manhole.manhole_indicator,
-                    models.Manhole.surface_level,
-                    models.Manhole.shape,
-                    models.Manhole.width,
-                    models.Manhole.display_name,
-                    models.Manhole.zoom_category,
-                )
+                session.query(*cols)
                 .join(models.ConnectionNode.manholes, isouter=True)
                 .distinct(models.ConnectionNode.id)
                 .order_by(models.ConnectionNode.id)
@@ -637,28 +654,34 @@ class SQLite:
 
     def get_pipes(self) -> Pipes:
         """Return Pipes"""
+        cols = [
+            models.Pipe.id,
+            models.Pipe.code,
+            models.Pipe.sewerage_type,
+            models.Pipe.calculation_type,
+            models.Pipe.invert_level_start_point,
+            models.Pipe.invert_level_end_point,
+            models.Pipe.friction_type,
+            models.Pipe.friction_value,
+            models.Pipe.dist_calc_points,
+            models.Pipe.connection_node_start_id,
+            models.Pipe.connection_node_end_id,
+            models.Pipe.cross_section_definition_id,
+            models.Pipe.display_name,
+            models.Pipe.zoom_category,
+            models.Pipe.material,
+        ]
+        try:
+            cols += [
+                models.Pipe.exchange_thickness,
+                models.Pipe.hydraulic_conductivity_out,
+                models.Pipe.hydraulic_conductivity_in,
+            ]
+        except AttributeError:
+            pass
+
         with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.Pipe.id,
-                    models.Pipe.code,
-                    models.Pipe.sewerage_type,
-                    models.Pipe.calculation_type,
-                    models.Pipe.invert_level_start_point,
-                    models.Pipe.invert_level_end_point,
-                    models.Pipe.friction_type,
-                    models.Pipe.friction_value,
-                    models.Pipe.dist_calc_points,
-                    models.Pipe.connection_node_start_id,
-                    models.Pipe.connection_node_end_id,
-                    models.Pipe.cross_section_definition_id,
-                    models.Pipe.display_name,
-                    models.Pipe.zoom_category,
-                    models.Pipe.material,
-                )
-                .order_by(models.Pipe.id)
-                .as_structarray()
-            )
+            arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2

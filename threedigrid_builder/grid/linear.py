@@ -117,9 +117,6 @@ class BaseLinear:
             calculation_type=self.calculation_type[points.linestring_idx],
             s1d=points.s1d,
             breach_ids=np.array([points.content_pk, points.secondary_content_pk]).T,
-            has_groundwater_exchange=self.has_groundwater_exchange[
-                points.linestring_idx
-            ],
         )
 
     def get_embedded(
