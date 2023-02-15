@@ -430,7 +430,6 @@ class SQLite:
             arr = (
                 session.query(*cols)
                 .join(models.ConnectionNode.manholes, isouter=True)
-                .distinct(models.ConnectionNode.id)
                 .order_by(models.ConnectionNode.id)
                 .as_structarray()
             )
