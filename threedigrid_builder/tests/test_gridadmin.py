@@ -293,28 +293,6 @@ def test_write_attrs(h5_out, attr, shape, dtype):
     assert np.dtype(actual) == np.dtype(dtype)
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize(
-    "group,attr",
-    [
-        ("breaches", "prepared"),
-        ("levees", "prepared"),
-        ("lines", "channels_prepared"),
-        ("lines", "culverts_prepared"),
-        ("lines", "lines_prepared"),
-        ("lines", "orifices_prepared"),
-        ("lines", "pipes_prepared"),
-        ("lines", "weirs_prepared"),
-        ("nodes", "connectionnodes_prepared"),
-        ("nodes", "manholes_prepared"),
-        ("nodes", "prepared"),
-        ("pumps", "prepared"),
-    ],
-)  # [(x, y) for x in list(f) for y in list(f[x].attrs)]
-def test_write_sub_attrs(h5_out, group, attr):
-    assert h5_out[group].attrs[attr] == 1
-
-
 # obtained from bergermeer gridadmin.h5, edited:
 # - 20 pumps to 4
 # - int64 to int32
