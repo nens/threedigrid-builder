@@ -20,7 +20,7 @@ jobs:
             os: ubuntu-18.04
             numpy: numpy==1.15.*
             display_name: "2018"
-            pins: "h5py==2.9.* sqlalchemy==1.3.12 shapely==2.0.* pyproj==3.0.*"
+            pins: "h5py==2.9.* sqlalchemy==1.4.* shapely==2.0.* pyproj==3.0.*"
             extras: "[test,gridadmin]"
           # 2019
           - python: 3.8
@@ -51,10 +51,10 @@ jobs:
             pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
             extras: "[test,gridadmin]"
           # current
-          - python: '3.10'  # h5py has no wheels for 3.11 (yet) https://github.com/h5py/h5py/issues/2146
+          - python: '3.11'
             os: ubuntu-latest
             numpy: numpy
-            pins: "git+https://github.com/nens/threedi-modelchecker@master#egg=threedi-modelchecker"
+            pins: "h5py>=3.8.* sqlalchemy>=2.0.* shapely==2.0.* pyproj==3.4.*"
             display_name: "latest"
             extras: "[test,gridadmin]"
 
