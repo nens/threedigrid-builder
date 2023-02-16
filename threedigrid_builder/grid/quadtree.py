@@ -55,7 +55,6 @@ class QuadTree:
     def __init__(
         self, subgrid_meta, num_refine_levels, min_gridsize, use_2d_flow, refinements
     ):
-
         pixel_size = subgrid_meta["pixel_size"]
         min_num_pix = min_gridsize / pixel_size
         if min_num_pix % 2 == 0:

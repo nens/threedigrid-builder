@@ -363,16 +363,16 @@ class EmbeddedObjects:
 
         # Iterate over consecutive ranges (and keep a global mask of vpoints to keep)
         vpoints_to_keep = np.ones(n_vpoints, dtype=bool)
-        for (_first, _last) in zip(mult_vpoint_idx[is_first], mult_vpoint_idx[is_last]):
+        for _first, _last in zip(mult_vpoint_idx[is_first], mult_vpoint_idx[is_last]):
             vpoints_to_keep[_first : _last + 1] = False
 
             # Construct the graph (e.g. {"c2": ["v1", "v2"], "v2": ["c1"], ...}
             graph = defaultdict(list)
             mask_a = np.where((vpoint_idx_a >= _first) & (vpoint_idx_a <= _last))[0]
-            for (vpoint_idx, cell_idx) in zip(vpoint_idx_a[mask_a], cell_idx_a[mask_a]):
+            for vpoint_idx, cell_idx in zip(vpoint_idx_a[mask_a], cell_idx_a[mask_a]):
                 graph[f"c{cell_idx}"].append(f"v{vpoint_idx}")
             mask_b = np.where((vpoint_idx_b >= _first) & (vpoint_idx_b <= _last))[0]
-            for (vpoint_idx, cell_idx) in zip(vpoint_idx_b[mask_b], cell_idx_b[mask_b]):
+            for vpoint_idx, cell_idx in zip(vpoint_idx_b[mask_b], cell_idx_b[mask_b]):
                 graph[f"v{vpoint_idx}"].append(f"c{cell_idx}")
 
             # Get the shortest path (e.g. ['c2', 'v2', 'c1'])
