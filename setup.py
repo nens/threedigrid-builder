@@ -56,7 +56,7 @@ install_requires = [
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
-    "sqlalchemy>=1.4.0",
+    "sqlalchemy>=1.4.1",
 ]
 
 test_requires = ["pytest", "pytest-cov"]
