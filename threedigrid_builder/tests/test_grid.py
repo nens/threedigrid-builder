@@ -134,7 +134,6 @@ def test_set_crs_gdal(grid2d, crs_wkt_28992_legacy):
 
 
 def test_from_quadtree():
-
     quadtree = mock.Mock()
     area_mask = mock.Mock()
     counter = mock.Mock()

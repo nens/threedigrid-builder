@@ -576,7 +576,6 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "zoom_category", pumps.zoom_category)
 
     def write_surfaces(self, surfaces: Surfaces, surface_maps: SurfaceMaps):
-
         # For now use 0 instead of NaN as fill value for surfaces
         # The calcore does not support NaN (for surfaces) yet
         default_fill_value = 0
