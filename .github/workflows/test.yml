@@ -54,7 +54,7 @@ jobs:
           - python: '3.11'
             os: ubuntu-latest
             numpy: numpy
-            pins: "h5py>=3.8.* sqlalchemy>=2.0.* shapely==2.0.* pyproj==3.4.*"
+            pins: ""
             display_name: "latest"
             extras: "[test,gridadmin]"
 
@@ -84,7 +84,7 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade pip setuptools==63.* wheel scikit-build 
           pip install ${{ matrix.numpy }}
-          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} "pygdal>=$(gdal-config --version).7,==$(gdal-config --version).*"
+          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} "pygdal==$(gdal-config --version).*"
           pip list
 
       - name: Run unittests
