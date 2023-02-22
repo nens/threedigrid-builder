@@ -287,7 +287,7 @@ def test_sort_no_lines(grid_for_sorting):
     grid_for_sorting.sort()
 
 
-def test_sort_null_lines(grid_for_sorting):
+def test_sort_null_lines_err(grid_for_sorting):
     grid_for_sorting.lines.line[0] = (-9999, 2)
     with pytest.raises(ValueError):
         grid_for_sorting.sort()
