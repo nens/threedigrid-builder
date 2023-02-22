@@ -805,7 +805,7 @@ class Grid:
         # if one of the nodes is null, the numpy id reset will silently overflow and assign a
         # different new id, leading to an incorrect result
         if np.any(self.lines.line == -9999):
-            raise ValueError("Some lines are not fully connected to nodes")
+            raise ValueError("Some lines are not fully connected to nodes, causing a null value to be set for the line node")
 
         node_sorter = np.concatenate(
             [np.where(np.isin(self.nodes.node_type, group))[0] for group in NODE_ORDER]
