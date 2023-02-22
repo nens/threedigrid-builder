@@ -290,7 +290,7 @@ class Lines1D2D(Lines):
         nodes_removed = nodes.id_to_index(rows_removed.line[:, 1])
         nodes_removed_formatted = nodes.format_message(nodes_removed)
 
-        logger.warn(
+        logger.warning(
             f"Removing {len(rows_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
         )
 
