@@ -179,6 +179,18 @@ def test_assign_2d_node(side_2d_coordinates, expected_2d_node_id, cell_tree):
     assert_array_equal(lines.line_coords, np.nan)  # is cleared
 
 
+def test_remove_line_unassigned_nodes():
+    nodes = Nodes(id=[1, 2])
+    lines = Lines1D2D(
+        id=[1, 2], line=[(-9999, 1), (1, 2)], line_coords=[(10, 0, 0, 0), (5, 2, 3, 8)]
+    )
+    lines.remove_unassigned(nodes)
+    assert lines.id == [2]
+    assert (lines.line == [(1, 2)]).all()
+    assert (lines.line_coords == [(5, 2, 3, 8)]).all()
+    pass
+
+
 def test_assign_kcu():
     lines = Lines1D2D(id=range(7), line=[[-9999] + [x] for x in [1, 1, 2, 2, 3, 4, 5]])
     lines.content_type[0] = ContentType.TYPE_V2_BREACH
