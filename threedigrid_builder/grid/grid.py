@@ -698,6 +698,7 @@ class Grid:
         lines_1d2d.assign_2d_side_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
+        lines_1d2d = lines_1d2d.remove_unassigned(self.nodes)
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.fix_line_geometries()
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
@@ -801,6 +802,13 @@ class Grid:
 
         See NODE_ORDER and LINE_ORDER for the order.
         """
+        # if one of the nodes is null, the numpy id reset will silently overflow and assign a
+        # different new id, leading to an incorrect result
+        if np.any(self.lines.line == -9999):
+            raise ValueError(
+                "Some lines are not fully connected to nodes, causing a null value to be set for the line node"
+            )
+
         node_sorter = np.concatenate(
             [np.where(np.isin(self.nodes.node_type, group))[0] for group in NODE_ORDER]
         )

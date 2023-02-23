@@ -1,4 +1,5 @@
 import itertools
+import logging
 from typing import Iterator
 
 import numpy as np
@@ -14,6 +15,8 @@ from .linear import BaseLinear
 from .obstacles import Obstacles
 from .pipes import Pipes
 from .potential_breaches import PotentialBreaches
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["Lines1D2D"]
 
@@ -278,6 +281,22 @@ class Lines1D2D(Lines):
         line_idx, cell_idx = idx[:, unique_matches]
         self.line[line_idx, 0] = cell_idx
         self.line_coords[:] = np.nan
+
+    def remove_unassigned(self, nodes) -> None:
+        """Removes 1D-2D lines where any of the required nodes is set to null, represented as -9999
+        This is the case when the nodes are outside the 2D domain.
+        """
+        rows_removed = self.line[:, 0] == -9999
+        node_ids_removed = self.line[rows_removed, 1]
+        nodes_removed = nodes.id_to_index(node_ids_removed)
+        nodes_removed_formatted = nodes.format_message(nodes_removed)
+
+        logger.warning(
+            f"Removing {len(node_ids_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
+        )
+
+        new_array = self[self.line[:, 0] != -9999]
+        return new_array
 
     def transfer_2d_node_to_groundwater(self, offset: int):
         """Transfers the 1D-2D line to a groundwater node
