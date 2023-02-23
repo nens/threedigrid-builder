@@ -286,19 +286,17 @@ class Lines1D2D(Lines):
         """Removes 1D-2D lines where any of the required nodes is set to null, represented as -9999
         This is the case when the nodes are outside the 2D domain.
         """
-        rows_removed = self[np.where(self.line[:, 0] == -9999)]
-        nodes_removed = nodes.id_to_index(rows_removed.line[:, 1])
+        rows_removed = self.line[:, 0] == -9999
+        node_ids_removed = self.line[rows_removed, 1]
+        nodes_removed = nodes.id_to_index(node_ids_removed)
         nodes_removed_formatted = nodes.format_message(nodes_removed)
 
         logger.warning(
-            f"Removing {len(rows_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
+            f"Removing {len(node_ids_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
         )
 
-        new_array = self[np.where(self.line[:, 0] != -9999)]
-        # overwrite all columns of self with the columns of the array where rows with null nodes are deleted
-        for k, v in vars(new_array).items():
-            setattr(self, k, v)
-        pass
+        new_array = self[self.line[:, 0] != -9999]
+        return new_array
 
     def transfer_2d_node_to_groundwater(self, offset: int):
         """Transfers the 1D-2D line to a groundwater node
