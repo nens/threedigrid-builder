@@ -185,10 +185,9 @@ def test_remove_line_unassigned_nodes():
         id=[1, 2], line=[(-9999, 1), (1, 2)], line_coords=[(10, 0, 0, 0), (5, 2, 3, 8)]
     )
     lines = lines.remove_unassigned(nodes)
-    assert lines.id == [2]
-    assert (lines.line == [(1, 2)]).all()
-    assert (lines.line_coords == [(5, 2, 3, 8)]).all()
-    pass
+    np.testing.assert_equal(lines.id, [2])
+    np.testing.assert_equal(lines.line, [(1, 2)])
+    np.testing.assert_equal(lines.line_coords, [(5, 2, 3, 8)])
 
 
 def test_assign_kcu():
