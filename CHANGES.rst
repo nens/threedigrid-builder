@@ -16,6 +16,7 @@ Changelog of threedigrid-builder
 
 - Save memory by lazily creating empty columns.
 - Add Python 3.11 and SQLAlchemy 2.0 support, drop SQLAlchemy 1.3.
+- Allow connected objects outside the DEM, by removing 1D-2D connections which are outside the DEM
 
 
 1.8.0 (2023-01-19)
