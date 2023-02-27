@@ -518,6 +518,7 @@ class Lines1D2D(Lines):
         - cross_weight (length of objects and sqrt of manhole area)
         - frict_value1 (average from hydr. cond. out, thickness and length)
         - frict_value2 (average from hydr. cond. in, thickness and length)
+        - dpumax (from 1D nodes dmax)
         """
         self.cross_weight[:] = 0.0
         self.frict_value1[:] = 0.0
@@ -534,3 +535,5 @@ class Lines1D2D(Lines):
 
         self.frict_value2[has_weight] /= self.cross_weight[has_weight]
         self.frict_value2[~has_weight] = np.nan
+
+        self.dpumax = nodes[self.get_1d_node_idx(nodes)].dmax

@@ -630,6 +630,8 @@ def test_assign_groundwater_exchange_from_linear_objects(threeway_junction):
 
 def test_assign_groundwater_exchange(threeway_junction):
     nodes, lines = threeway_junction
+    dmax = np.array([-2.0, -3.0, -4.0, -5.0])
+    nodes.dmax = dmax
 
     nodes.content_type[1:] = -9999
     lines.content_type[2] = ContentType.TYPE_V2_PIPE
@@ -680,3 +682,4 @@ def test_assign_groundwater_exchange(threeway_junction):
             5.0 / 0.2,
         ],
     )
+    assert_almost_equal(lines_1d2d.dpumax, dmax)
