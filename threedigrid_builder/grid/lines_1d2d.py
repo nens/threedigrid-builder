@@ -534,3 +534,5 @@ class Lines1D2D(Lines):
 
         self.frict_value2[has_weight] /= self.cross_weight[has_weight]
         self.frict_value2[~has_weight] = np.nan
+
+        self.dpumax = nodes[self.get_1d_node_idx(nodes)].dmax
