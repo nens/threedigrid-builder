@@ -177,7 +177,7 @@ class Lines1D2D(Lines):
         """Compute the closest Point on exchange line for each 1D2D line
 
         Requires: line_coords[:, 2:] (side_1d), content_pk, content_type
-        Sets: line_coords[:, :2] (side_2d), line_geometries
+        Sets: line_coords[:, :2] (side_2d)
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
@@ -192,7 +192,6 @@ class Lines1D2D(Lines):
         self.line_coords[has_exc, :2] = shapely.get_coordinates(
             shapely.get_point(line_geom, 0)
         )
-        self.line_geometries[has_exc] = line_geom
 
     def assign_breaches(self, nodes: Nodes, potential_breaches: PotentialBreaches):
         """Assign breaches to the 1D-2D lines.
@@ -282,21 +281,24 @@ class Lines1D2D(Lines):
         self.line[line_idx, 0] = cell_idx
         self.line_coords[:] = np.nan
 
-    def remove_unassigned(self, nodes) -> None:
+    def remove_unassigned(self, nodes) -> "Lines1D2D":
         """Removes 1D-2D lines where any of the required nodes is set to null, represented as -9999
         This is the case when the nodes are outside the 2D domain.
         """
         rows_removed = self.line[:, 0] == -9999
         node_ids_removed = self.line[rows_removed, 1]
-        nodes_removed = nodes.id_to_index(node_ids_removed)
-        nodes_removed_formatted = nodes.format_message(nodes_removed)
+        if len(node_ids_removed) > 0:
+            nodes_removed = nodes.id_to_index(node_ids_removed)
+            nodes_removed_formatted = nodes.format_message(nodes_removed)
 
-        logger.warning(
-            f"Removing {len(node_ids_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
-        )
+            logger.warning(
+                f"Removing {len(node_ids_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
+            )
 
-        new_array = self[self.line[:, 0] != -9999]
-        return new_array
+            new_array = self[self.line[:, 0] != -9999]
+            return new_array
+        else:
+            return self
 
     def transfer_2d_node_to_groundwater(self, offset: int):
         """Transfers the 1D-2D line to a groundwater node
@@ -348,22 +350,23 @@ class Lines1D2D(Lines):
     def assign_dpumax_from_obstacles(self, obstacles: Obstacles):
         """Set the dpumax based on intersected obstacles
 
-        Only for (open) connections that are computed via an exchange line or breach.
-
-        Requires line_geometries.
+        Only for open connections. Requires line_geometries.
         """
-        is_displaced = np.isin(
-            self.content_type,
-            [ContentType.TYPE_V2_EXCHANGE_LINE, ContentType.TYPE_V2_BREACH],
+        is_open_water = np.isin(
+            self.kcu,
+            [
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            ],
         )
-        is_displaced_idx = np.where(is_displaced)[0]
+        is_open_water_idx = np.where(is_open_water)[0]
         obstacle_crest_levels, obstacle_idx = obstacles.compute_dpumax(
-            self, where=is_displaced_idx
+            self, where=is_open_water_idx
         )
-        self.assign_dpumax(is_displaced, obstacle_crest_levels)
+        self.assign_dpumax(is_open_water, obstacle_crest_levels)
         mask = obstacle_idx != -9999
         self.assign_ds1d_half_from_obstacles(
-            obstacles, is_displaced_idx[mask], obstacle_idx[mask]
+            obstacles, is_open_water_idx[mask], obstacle_idx[mask]
         )
 
     def assign_ds1d_half_from_obstacles(
