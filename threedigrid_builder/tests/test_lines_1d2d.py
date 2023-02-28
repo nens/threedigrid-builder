@@ -286,7 +286,14 @@ def test_assign_dpumax_from_obstacles(
         np.array([1, -9999]),
     )
 
-    lines = Lines1D2D(id=range(3), content_type=[EXC, -9999, EXC])
+    lines = Lines1D2D(
+        id=range(3),
+        kcu=[
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+        ],
+    )
 
     lines.assign_dpumax_from_obstacles(obstacles)
 
