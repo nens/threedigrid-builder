@@ -21,6 +21,7 @@ Changelog of threedigrid-builder
 - Reassign 1D-2D geometries for all open water lines, not just exchange lines and breaches, as follows:
   
   for potential_breaches, the actual line inserted by the user
+
   for others the line from the 1D node to the 2D cell center
 
 - Set exchange level for all these lines based on obstacles crossed.
