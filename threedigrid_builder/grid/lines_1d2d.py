@@ -350,9 +350,7 @@ class Lines1D2D(Lines):
     def assign_dpumax_from_obstacles(self, obstacles: Obstacles):
         """Set the dpumax based on intersected obstacles
 
-        Only for (open) connections that are computed via an exchange line or breach.
-
-        Requires line_geometries.
+        Only for open connections. Requires line_geometries.
         """
         is_open_water = np.isin(
             self.kcu,
