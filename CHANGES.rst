@@ -18,6 +18,10 @@ Changelog of threedigrid-builder
 - Add Python 3.11 and SQLAlchemy 2.0 support, drop SQLAlchemy 1.3.
 - Allow connected objects outside the DEM, by removing 1D-2D connections which are outside the DEM
 
+- Reassign 1D-2D geometries based on nodes for all open water lines, not just exchange lines and breaches.
+
+- Set exchange level for all these lines based on obstacles crossed.
+
 
 1.8.0 (2023-01-19)
 ------------------
