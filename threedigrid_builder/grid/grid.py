@@ -701,15 +701,19 @@ class Grid:
         lines_1d2d = lines_1d2d.remove_unassigned(self.nodes)
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.fix_line_geometries()
-        lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
-        lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
-        lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
         # Go through objects and dispatch to get_1d2d_properties
         node_idx = lines_1d2d.get_1d_node_idx(self.nodes)
         for objects in (channels, connection_nodes, pipes, culverts):
             mask = self.nodes.content_type[node_idx] == objects.content_type
             content_pk = self.nodes.content_pk[node_idx[mask]]
             lines_1d2d.assign_kcu(mask, objects.is_closed(content_pk))
+        lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
+        lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
+        lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
+        # Go through objects and dispatch to get_1d2d_properties
+        for objects in (channels, connection_nodes, pipes, culverts):
+            mask = self.nodes.content_type[node_idx] == objects.content_type
+            content_pk = self.nodes.content_pk[node_idx[mask]]
             lines_1d2d.assign_dpumax(
                 mask,
                 objects.get_1d2d_exchange_levels(

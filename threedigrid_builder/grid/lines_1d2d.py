@@ -177,7 +177,7 @@ class Lines1D2D(Lines):
         """Compute the closest Point on exchange line for each 1D2D line
 
         Requires: line_coords[:, 2:] (side_1d), content_pk, content_type
-        Sets: line_coords[:, :2] (side_2d), line_geometries
+        Sets: line_coords[:, :2] (side_2d)
         """
         # Create an array of node indices & corresponding exchange line indices
         has_exc = self.content_type == ContentType.TYPE_V2_EXCHANGE_LINE
@@ -192,7 +192,6 @@ class Lines1D2D(Lines):
         self.line_coords[has_exc, :2] = shapely.get_coordinates(
             shapely.get_point(line_geom, 0)
         )
-        self.line_geometries[has_exc] = line_geom
 
     def assign_breaches(self, nodes: Nodes, potential_breaches: PotentialBreaches):
         """Assign breaches to the 1D-2D lines.
@@ -355,18 +354,18 @@ class Lines1D2D(Lines):
 
         Requires line_geometries.
         """
-        is_displaced = np.isin(
-            self.content_type,
-            [ContentType.TYPE_V2_EXCHANGE_LINE, ContentType.TYPE_V2_BREACH],
+        is_open_water = np.isin(
+            self.kcu,
+            [LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER, LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER],
         )
-        is_displaced_idx = np.where(is_displaced)[0]
+        is_open_water_idx = np.where(is_open_water)[0]
         obstacle_crest_levels, obstacle_idx = obstacles.compute_dpumax(
-            self, where=is_displaced_idx
+            self, where=is_open_water_idx
         )
-        self.assign_dpumax(is_displaced, obstacle_crest_levels)
+        self.assign_dpumax(is_open_water, obstacle_crest_levels)
         mask = obstacle_idx != -9999
         self.assign_ds1d_half_from_obstacles(
-            obstacles, is_displaced_idx[mask], obstacle_idx[mask]
+            obstacles, is_open_water_idx[mask], obstacle_idx[mask]
         )
 
     def assign_ds1d_half_from_obstacles(
