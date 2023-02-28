@@ -354,7 +354,10 @@ class Lines1D2D(Lines):
         """
         is_open_water = np.isin(
             self.kcu,
-            [LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER, LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER],
+            [
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            ],
         )
         is_open_water_idx = np.where(is_open_water)[0]
         obstacle_crest_levels, obstacle_idx = obstacles.compute_dpumax(
