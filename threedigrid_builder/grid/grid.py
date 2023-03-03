@@ -698,7 +698,7 @@ class Grid:
         lines_1d2d.assign_2d_side_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_breaches(self.nodes, potential_breaches)
         lines_1d2d.assign_2d_node(self.cell_tree)
-        lines_1d2d = lines_1d2d.remove_unassigned(self.nodes)
+        lines_1d2d.check_unassigned(self.nodes)
         lines_1d2d.set_line_coords(self.nodes)
         lines_1d2d.fix_line_geometries()
         # Go through objects and dispatch to get_1d2d_properties
