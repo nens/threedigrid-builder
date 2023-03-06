@@ -293,7 +293,7 @@ class Lines1D2D(Lines):
             invalid_nodes_formatted = nodes.format_message(invalid_nodes)
 
             raise SchematisationError(
-                f"The following {invalid_nodes_formatted} are outside of the DEM, but are connected to an object which does not have an ISOLATED calculation type."
+                f"The following objects are connected but are (partially) outside of the 2D model domain: {invalid_nodes_formatted}."
             )
 
     def transfer_2d_node_to_groundwater(self, offset: int):
