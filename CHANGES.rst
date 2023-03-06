@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.9.0 (unreleased)
+1.9.0 (2023-03-06)
 ------------------
 
 - Added 2D groundwater boundaries (boundary types 6: GROUNDWATERLEVEL
