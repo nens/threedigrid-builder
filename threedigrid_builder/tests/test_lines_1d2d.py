@@ -1,4 +1,6 @@
 import itertools
+import re
+from contextlib import nullcontext as does_not_raise
 from unittest import mock
 
 import numpy as np
@@ -9,6 +11,7 @@ from shapely.testing import assert_geometries_equal
 
 from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
+from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import (
     Channels,
     ConnectionNodes,
@@ -179,15 +182,41 @@ def test_assign_2d_node(side_2d_coordinates, expected_2d_node_id, cell_tree):
     assert_array_equal(lines.line_coords, np.nan)  # is cleared
 
 
-def test_remove_line_unassigned_nodes():
-    nodes = Nodes(id=[1, 2])
-    lines = Lines1D2D(
-        id=[1, 2], line=[(-9999, 1), (1, 2)], line_coords=[(10, 0, 0, 0), (5, 2, 3, 8)]
-    )
-    lines = lines.remove_unassigned(nodes)
-    np.testing.assert_equal(lines.id, [2])
-    np.testing.assert_equal(lines.line, [(1, 2)])
-    np.testing.assert_equal(lines.line_coords, [(5, 2, 3, 8)])
+@pytest.mark.parametrize(
+    "nodes,lines,expectation",
+    [
+        (
+            Nodes(
+                id=[1, 2], content_type=[12, 12], content_pk=[5, 6], node_type=[4, 4]
+            ),
+            Lines1D2D(
+                id=[3, 4],
+                line=[(-9999, 1), (1, 2)],
+                line_coords=[(10, 0, 0, 0), (5, 2, 3, 8)],
+            ),
+            pytest.raises(
+                SchematisationError,
+                match=re.escape(
+                    "The following objects are connected but are (partially) outside of the 2D model domain: connection nodes [5]."
+                ),
+            ),
+        ),
+        (
+            Nodes(
+                id=[1, 2], content_type=[12, 12], content_pk=[5, 6], node_type=[4, 4]
+            ),
+            Lines1D2D(
+                id=[3, 4],
+                line=[(2, 1), (1, 2)],
+                line_coords=[(10, 0, 0, 0), (5, 2, 3, 8)],
+            ),
+            does_not_raise(),
+        ),
+    ],
+)
+def test_check_line_unassigned_nodes(nodes, lines, expectation):
+    with expectation:
+        lines.check_unassigned(nodes)
 
 
 def test_assign_kcu():

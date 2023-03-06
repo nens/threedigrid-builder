@@ -7,6 +7,7 @@ import shapely
 
 from threedigrid_builder.base import LineHalfs, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
+from threedigrid_builder.exceptions import SchematisationError
 
 from .channels import Channels
 from .connection_nodes import ConnectionNodes
@@ -281,24 +282,19 @@ class Lines1D2D(Lines):
         self.line[line_idx, 0] = cell_idx
         self.line_coords[:] = np.nan
 
-    def remove_unassigned(self, nodes) -> "Lines1D2D":
-        """Removes 1D-2D lines where any of the required nodes is set to null, represented as -9999
+    def check_unassigned(self, nodes) -> None:
+        """Checks 1D-2D lines where any of the required nodes is set to null, represented as -9999
         This is the case when the nodes are outside the 2D domain.
         """
-        rows_removed = self.line[:, 0] == -9999
-        node_ids_removed = self.line[rows_removed, 1]
-        if len(node_ids_removed) > 0:
-            nodes_removed = nodes.id_to_index(node_ids_removed)
-            nodes_removed_formatted = nodes.format_message(nodes_removed)
+        invalid_rows = self.line[:, 0] == -9999
+        if invalid_rows.any():
+            invalid_node_ids = self.line[invalid_rows, 1]
+            invalid_nodes = nodes.id_to_index(invalid_node_ids)
+            invalid_nodes_formatted = nodes.format_message(invalid_nodes)
 
-            logger.warning(
-                f"Removing {len(node_ids_removed)} 1D-2D lines attached to {nodes_removed_formatted} because they are outside of the DEM."
+            raise SchematisationError(
+                f"The following objects are connected but are (partially) outside of the 2D model domain: {invalid_nodes_formatted}."
             )
-
-            new_array = self[self.line[:, 0] != -9999]
-            return new_array
-        else:
-            return self
 
     def transfer_2d_node_to_groundwater(self, offset: int):
         """Transfers the 1D-2D line to a groundwater node
