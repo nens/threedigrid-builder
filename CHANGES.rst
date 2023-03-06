@@ -18,17 +18,14 @@ Changelog of threedigrid-builder
 
 - Add Python 3.11 and SQLAlchemy 2.0 support, drop SQLAlchemy 1.3.
 
-- Allow connected objects outside the DEM, by removing 1D-2D connections which are outside the DEM.
+- Raise comprehensive error for objects that connect to outside the 2D model domain.
 
 - Set dpumax for 1D2D groundwater lines based on dmax of 1D node.
 
-- Reassign 1D-2D geometries for all open water lines, not just exchange lines and breaches, as follows:
-  
-  for potential_breaches, the actual line inserted by the user
-
-  for others the line from the 1D node to the 2D cell center
-
-- Set exchange level for all these lines based on obstacles crossed.
+- Set dpumax for 1D2D open water lines based on the intersection of its line
+  geometry with obstacles. The line geometry is the line from the 1D node to the
+  2D cell center, except for potential_breaches, where it is geometry that
+  was provided by the user.
 
 
 1.8.0 (2023-01-19)
