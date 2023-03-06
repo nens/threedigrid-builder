@@ -287,8 +287,8 @@ class Lines1D2D(Lines):
         This is the case when the nodes are outside the 2D domain.
         """
         invalid_rows = self.line[:, 0] == -9999
-        invalid_node_ids = self.line[invalid_rows, 1]
-        if invalid_node_ids.any():
+        if invalid_rows.any():
+            invalid_node_ids = self.line[invalid_rows, 1]
             invalid_nodes = nodes.id_to_index(invalid_node_ids)
             invalid_nodes_formatted = nodes.format_message(invalid_nodes)
 
