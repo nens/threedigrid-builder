@@ -288,7 +288,7 @@ class Lines1D2D(Lines):
         """
         invalid_rows = self.line[:, 0] == -9999
         invalid_node_ids = self.line[invalid_rows, 1]
-        if len(invalid_node_ids) > 0:
+        if invalid_node_ids.any():
             invalid_nodes = nodes.id_to_index(invalid_node_ids)
             invalid_nodes_formatted = nodes.format_message(invalid_nodes)
 
