@@ -282,7 +282,7 @@ class Lines1D2D(Lines):
         self.line[line_idx, 0] = cell_idx
         self.line_coords[:] = np.nan
 
-    def check_unassigned(self, nodes) -> "Lines1D2D":
+    def check_unassigned(self, nodes) -> None:
         """Checks 1D-2D lines where any of the required nodes is set to null, represented as -9999
         This is the case when the nodes are outside the 2D domain.
         """
