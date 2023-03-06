@@ -197,7 +197,7 @@ def test_assign_2d_node(side_2d_coordinates, expected_2d_node_id, cell_tree):
             pytest.raises(
                 SchematisationError,
                 match=re.escape(
-                    "The following connection nodes [5] are outside of the DEM, but are connected to an object which does not have an ISOLATED calculation type."
+                    "The following objects are connected but are (partially) outside of the 2D model domain: connection nodes [5]."
                 ),
             ),
         ),
