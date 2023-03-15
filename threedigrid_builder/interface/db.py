@@ -377,16 +377,10 @@ class SQLite:
             models.Channel.calculation_type,
             models.Channel.display_name,
             models.Channel.zoom_category,
+            models.Channel.exchange_thickness,
+            models.Channel.hydraulic_conductivity_out,
+            models.Channel.hydraulic_conductivity_in,
         ]
-
-        try:
-            cols += [
-                models.Channel.exchange_thickness,
-                models.Channel.hydraulic_conductivity_out,
-                models.Channel.hydraulic_conductivity_in,
-            ]
-        except AttributeError:
-            pass
 
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
@@ -394,6 +388,8 @@ class SQLite:
         arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
+        arr["hydraulic_conductivity_out"] /= (24. * 3600.)
+        arr["hydraulic_conductivity_in"] /= (24. * 3600.)
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
@@ -416,15 +412,10 @@ class SQLite:
             models.Manhole.width,
             models.Manhole.display_name,
             models.Manhole.zoom_category,
+            models.Manhole.exchange_thickness,
+            models.Manhole.hydraulic_conductivity_out,
+            models.Manhole.hydraulic_conductivity_in,
         ]
-        try:
-            cols += [
-                models.Manhole.exchange_thickness,
-                models.Manhole.hydraulic_conductivity_out,
-                models.Manhole.hydraulic_conductivity_in,
-            ]
-        except AttributeError:
-            pass
 
         with self.get_session() as session:
             arr = (
@@ -438,6 +429,8 @@ class SQLite:
 
         # replace -9999.0 with NaN in initial_waterlevel
         arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
+        arr["hydraulic_conductivity_out"] /= (24. * 3600.)
+        arr["hydraulic_conductivity_in"] /= (24. * 3600.)
 
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
@@ -669,21 +662,18 @@ class SQLite:
             models.Pipe.display_name,
             models.Pipe.zoom_category,
             models.Pipe.material,
+            models.Pipe.exchange_thickness,
+            models.Pipe.hydraulic_conductivity_out,
+            models.Pipe.hydraulic_conductivity_in,
         ]
-        try:
-            cols += [
-                models.Pipe.exchange_thickness,
-                models.Pipe.hydraulic_conductivity_out,
-                models.Pipe.hydraulic_conductivity_in,
-            ]
-        except AttributeError:
-            pass
-
+        
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
+        arr["hydraulic_conductivity_out"] /= (24. * 3600.)
+        arr["hydraulic_conductivity_in"] /= (24. * 3600.)
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
