@@ -62,7 +62,7 @@ NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
 }
 
 
-def _object_as_dict(obj, prefix: str=None) -> dict:
+def _object_as_dict(obj, prefix: str = None) -> dict:
     """Convert SQLAlchemy object to dict, casting Enums"""
     result = {}
     if obj is None:
@@ -181,7 +181,7 @@ class SQLite:
                     session.query(models.VegetationDrag)
                     .filter_by(id=global_.vegetation_drag_settings_id)
                     .one(),
-                    prefix="vegetation"
+                    prefix="vegetation",
                 )
             else:
                 vegetation_drag = {}
@@ -228,7 +228,9 @@ class SQLite:
             _set_initialization_type(vegetation_drag, "height", default=NO_AGG)
             _set_initialization_type(vegetation_drag, "stem_count", default=NO_AGG)
             _set_initialization_type(vegetation_drag, "stem_diameter", default=NO_AGG)
-            _set_initialization_type(vegetation_drag, "drag_coefficient", default=NO_AGG)
+            _set_initialization_type(
+                vegetation_drag, "drag_coefficient", default=NO_AGG
+            )
 
         grid_settings = GridSettings.from_dict(global_)
         tables_settings = TablesSettings.from_dict(
@@ -404,7 +406,7 @@ class SQLite:
             models.Channel.hydraulic_conductivity_out,
             models.Channel.hydraulic_conductivity_in,
         ]
-        
+
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
@@ -689,7 +691,7 @@ class SQLite:
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
         ]
-        
+
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
 
