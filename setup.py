@@ -52,7 +52,7 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15",
-    "threedi-schema>=0.214.5",
+    "threedi-schema>=0.216.0",
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",

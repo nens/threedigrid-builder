@@ -4,7 +4,9 @@ Changelog of threedigrid-builder
 1.9.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Require schema version 216.
+
+- Add vegetation drag settings to gridadmin.h5
 
 
 1.9.0 (2023-03-06)

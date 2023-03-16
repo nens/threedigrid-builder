@@ -44,7 +44,13 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 214
+MIN_SQLITE_VERSION = 216
+
+# Columns to exlude from prefixing when converting db object to dict.
+EXCLUDED_COLUMNS = ["id", "display_name", "code"]
+
+
+DAY_IN_SECONDS = 24.0 * 3600.0
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -59,16 +65,21 @@ NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
 }
 
 
-def _object_as_dict(obj) -> dict:
-    """Convert SQLAlchemy object to dict, casting Enums"""
+def _object_as_dict(obj, prefix: str = None) -> dict:
+    """Convert SQLAlchemy object to dict, casting Enums. Optional to prefix keys."""
     result = {}
     if obj is None:
         return result
     for c in inspect(obj).mapper.column_attrs:
-        val = getattr(obj, c.key)
+        col_name = c.key
+        if prefix is not None and col_name not in EXCLUDED_COLUMNS:
+            key = prefix + "_" + col_name
+        else:
+            key = col_name
+        val = getattr(obj, col_name)
         if isinstance(val, Enum):
             val = val.value
-        result[c.key] = val
+        result[key] = val
     return result
 
 
@@ -168,6 +179,15 @@ class SQLite:
                 infiltration.setdefault("max_infiltration_capacity", None)
             else:
                 infiltration = {}
+            if global_.vegetation_drag_settings_id is not None:
+                vegetation_drag = _object_as_dict(
+                    session.query(models.VegetationDrag)
+                    .filter_by(id=global_.vegetation_drag_settings_id)
+                    .one(),
+                    prefix="vegetation",
+                )
+            else:
+                vegetation_drag = {}
             global_ = _object_as_dict(global_)
 
         # record if there is a DEM file to be expected
@@ -207,9 +227,23 @@ class SQLite:
             _set_initialization_type(groundwater, "infiltration_decay_period")
             _set_initialization_type(groundwater, "groundwater_hydro_connectivity")
 
+        if vegetation_drag:
+            _set_initialization_type(
+                vegetation_drag, "vegetation_height", default=NO_AGG
+            )
+            _set_initialization_type(
+                vegetation_drag, "vegetation_stem_count", default=NO_AGG
+            )
+            _set_initialization_type(
+                vegetation_drag, "vegetation_stem_diameter", default=NO_AGG
+            )
+            _set_initialization_type(
+                vegetation_drag, "vegetation_drag_coefficient", default=NO_AGG
+            )
+
         grid_settings = GridSettings.from_dict(global_)
         tables_settings = TablesSettings.from_dict(
-            {**groundwater, **interflow, **infiltration, **global_}
+            {**groundwater, **interflow, **infiltration, **vegetation_drag, **global_}
         )
         return {
             "epsg_code": global_["epsg_code"],
@@ -377,16 +411,10 @@ class SQLite:
             models.Channel.calculation_type,
             models.Channel.display_name,
             models.Channel.zoom_category,
+            models.Channel.exchange_thickness,
+            models.Channel.hydraulic_conductivity_out,
+            models.Channel.hydraulic_conductivity_in,
         ]
-
-        try:
-            cols += [
-                models.Channel.exchange_thickness,
-                models.Channel.hydraulic_conductivity_out,
-                models.Channel.hydraulic_conductivity_in,
-            ]
-        except AttributeError:
-            pass
 
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
@@ -394,6 +422,8 @@ class SQLite:
         arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
+        arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
+        arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
@@ -416,15 +446,10 @@ class SQLite:
             models.Manhole.width,
             models.Manhole.display_name,
             models.Manhole.zoom_category,
+            models.Manhole.exchange_thickness,
+            models.Manhole.hydraulic_conductivity_out,
+            models.Manhole.hydraulic_conductivity_in,
         ]
-        try:
-            cols += [
-                models.Manhole.exchange_thickness,
-                models.Manhole.hydraulic_conductivity_out,
-                models.Manhole.hydraulic_conductivity_in,
-            ]
-        except AttributeError:
-            pass
 
         with self.get_session() as session:
             arr = (
@@ -438,6 +463,8 @@ class SQLite:
 
         # replace -9999.0 with NaN in initial_waterlevel
         arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
+        arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
+        arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
@@ -669,21 +696,18 @@ class SQLite:
             models.Pipe.display_name,
             models.Pipe.zoom_category,
             models.Pipe.material,
+            models.Pipe.exchange_thickness,
+            models.Pipe.hydraulic_conductivity_out,
+            models.Pipe.hydraulic_conductivity_in,
         ]
-        try:
-            cols += [
-                models.Pipe.exchange_thickness,
-                models.Pipe.hydraulic_conductivity_out,
-                models.Pipe.hydraulic_conductivity_in,
-            ]
-        except AttributeError:
-            pass
 
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
+        arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
+        arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})

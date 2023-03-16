@@ -37,7 +37,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 214
+        get_version.return_value = 216
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
@@ -65,7 +65,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 214
+    assert db.get_version() == 216
 
 
 def test_get_boundary_conditions_1d(db):
@@ -287,6 +287,16 @@ def test_get_settings(db):
     assert s.infiltration_surface_option == 0
     assert s.max_infiltration_capacity is None
     assert s.max_infiltration_capacity_type is None
+
+    # there are no vegetation_drag settings
+    assert s.vegetation_height is None
+    assert s.vegetation_height_type is None
+    assert s.vegetation_stem_count is None
+    assert s.vegetation_stem_count_type is None
+    assert s.vegetation_stem_diameter is None
+    assert s.vegetation_stem_diameter_type is None
+    assert s.vegetation_drag_coefficient is None
+    assert s.vegetation_drag_coefficient is None
 
 
 def test_get_pumps(db):
