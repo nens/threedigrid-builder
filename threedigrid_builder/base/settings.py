@@ -104,6 +104,16 @@ class TablesSettings:
     max_infiltration_capacity: Optional[float] = None
     max_infiltration_capacity_type: Optional[InitializationType] = None
 
+    ## from VegetationDrag
+    vegetation_height: Optional[float] = None
+    vegetation_height_type: Optional[InitializationType] = None
+    vegetation_stem_count: Optional[float] = None
+    vegetation_stem_count_type: Optional[InitializationType] = None
+    vegetation_stem_diameter: Optional[float] = None
+    vegetation_stem_diameter_type: Optional[InitializationType] = None
+    vegetation_drag_coefficient: Optional[float] = None
+    vegetation_drag_coefficient_type: Optional[InitializationType] = None
+
     def __post_init__(self):
         # defaults
         if self.table_step_size_1d is None:

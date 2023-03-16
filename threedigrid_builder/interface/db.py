@@ -44,7 +44,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 214
+MIN_SQLITE_VERSION = 216
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -59,16 +59,20 @@ NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
 }
 
 
-def _object_as_dict(obj) -> dict:
+def _object_as_dict(obj, prefix=None) -> dict:
     """Convert SQLAlchemy object to dict, casting Enums"""
     result = {}
     if obj is None:
         return result
     for c in inspect(obj).mapper.column_attrs:
-        val = getattr(obj, c.key)
+        if prefix is not None:
+            key = prefix + "_" + c.key
+        else:
+            key = c.key
+        val = getattr(obj, key)
         if isinstance(val, Enum):
             val = val.value
-        result[c.key] = val
+        result[key] = val
     return result
 
 
@@ -168,6 +172,15 @@ class SQLite:
                 infiltration.setdefault("max_infiltration_capacity", None)
             else:
                 infiltration = {}
+            if global_.vegetation_drag_settings_id is not None:
+                vegetation_drag = _object_as_dict(
+                    session.query(models.VegetationDrag)
+                    .filter_by(id=global_.vegetation_drag_settings_id)
+                    .one(),
+                    prefix="vegetation"
+                )
+            else:
+                vegetation_drag = {}
             global_ = _object_as_dict(global_)
 
         # record if there is a DEM file to be expected
@@ -207,9 +220,15 @@ class SQLite:
             _set_initialization_type(groundwater, "infiltration_decay_period")
             _set_initialization_type(groundwater, "groundwater_hydro_connectivity")
 
+        if vegetation_drag:
+            _set_initialization_type(vegetation_drag, "height", default=NO_AGG)
+            _set_initialization_type(vegetation_drag, "stem_count", default=NO_AGG)
+            _set_initialization_type(vegetation_drag, "stem_diameter", default=NO_AGG)
+            _set_initialization_type(vegetation_drag, "drag_coefficient", default=NO_AGG)
+
         grid_settings = GridSettings.from_dict(global_)
         tables_settings = TablesSettings.from_dict(
-            {**groundwater, **interflow, **infiltration, **global_}
+            {**groundwater, **interflow, **infiltration, **vegetation_drag, **global_}
         )
         return {
             "epsg_code": global_["epsg_code"],
@@ -381,7 +400,7 @@ class SQLite:
             models.Channel.hydraulic_conductivity_out,
             models.Channel.hydraulic_conductivity_in,
         ]
-
+        
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
