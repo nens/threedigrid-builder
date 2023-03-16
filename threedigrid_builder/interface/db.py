@@ -41,13 +41,15 @@ from threedigrid_builder.grid import (
 
 __all__ = ["SQLite"]
 
-# Columns to exlude from prefixing when converting db object to dict.
-COLUMN_EXCLUDES = ["id", "display_name", "code"]
-
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
 MIN_SQLITE_VERSION = 216
+
+# Columns to exlude from prefixing when converting db object to dict.
+COLUMN_EXCLUDES = ["id", "display_name", "code"]
+
+DAY_IN_SECONDS = 24.0 * 3600.0
 
 # put some global defaults on datatypes
 NumpyQuery.default_numpy_settings[Integer] = {"dtype": np.int32, "null": -9999}
@@ -413,8 +415,8 @@ class SQLite:
         arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
-        arr["hydraulic_conductivity_out"] /= 24.0 * 3600.0
-        arr["hydraulic_conductivity_in"] /= 24.0 * 3600.0
+        arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
+        arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
@@ -454,8 +456,8 @@ class SQLite:
 
         # replace -9999.0 with NaN in initial_waterlevel
         arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
-        arr["hydraulic_conductivity_out"] /= 24.0 * 3600.0
-        arr["hydraulic_conductivity_in"] /= 24.0 * 3600.0
+        arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
+        arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
@@ -697,8 +699,8 @@ class SQLite:
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        arr["hydraulic_conductivity_out"] /= 24.0 * 3600.0
-        arr["hydraulic_conductivity_in"] /= 24.0 * 3600.0
+        arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
+        arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
