@@ -41,6 +41,9 @@ from threedigrid_builder.grid import (
 
 __all__ = ["SQLite"]
 
+# Columns to exlude from prefixing when converting db object to dict.
+COLUMN_EXCLUDES = ["id", "display_name", "code"]
+
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
@@ -59,17 +62,18 @@ NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
 }
 
 
-def _object_as_dict(obj, prefix=None) -> dict:
+def _object_as_dict(obj, prefix: str=None) -> dict:
     """Convert SQLAlchemy object to dict, casting Enums"""
     result = {}
     if obj is None:
         return result
     for c in inspect(obj).mapper.column_attrs:
-        if prefix is not None:
-            key = prefix + "_" + c.key
+        col_name = c.key
+        if prefix is not None and col_name not in COLUMN_EXCLUDES:
+            key = prefix + "_" + col_name
         else:
-            key = c.key
-        val = getattr(obj, key)
+            key = col_name
+        val = getattr(obj, col_name)
         if isinstance(val, Enum):
             val = val.value
         result[key] = val
@@ -407,8 +411,8 @@ class SQLite:
         arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
-        arr["hydraulic_conductivity_out"] /= (24. * 3600.)
-        arr["hydraulic_conductivity_in"] /= (24. * 3600.)
+        arr["hydraulic_conductivity_out"] /= 24. * 3600.
+        arr["hydraulic_conductivity_in"] /= 24. * 3600.
 
         # transform to a Channels object
         return Channels(**{name: arr[name] for name in arr.dtype.names})
@@ -448,8 +452,8 @@ class SQLite:
 
         # replace -9999.0 with NaN in initial_waterlevel
         arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
-        arr["hydraulic_conductivity_out"] /= (24. * 3600.)
-        arr["hydraulic_conductivity_in"] /= (24. * 3600.)
+        arr["hydraulic_conductivity_out"] /= 24. * 3600.
+        arr["hydraulic_conductivity_in"] /= 24. * 3600.
 
         return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
@@ -691,8 +695,8 @@ class SQLite:
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        arr["hydraulic_conductivity_out"] /= (24. * 3600.)
-        arr["hydraulic_conductivity_in"] /= (24. * 3600.)
+        arr["hydraulic_conductivity_out"] /= 24. * 3600.
+        arr["hydraulic_conductivity_in"] /= 24. * 3600.
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
