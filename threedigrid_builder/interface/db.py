@@ -228,11 +228,17 @@ class SQLite:
             _set_initialization_type(groundwater, "groundwater_hydro_connectivity")
 
         if vegetation_drag:
-            _set_initialization_type(vegetation_drag, "height", default=NO_AGG)
-            _set_initialization_type(vegetation_drag, "stem_count", default=NO_AGG)
-            _set_initialization_type(vegetation_drag, "stem_diameter", default=NO_AGG)
             _set_initialization_type(
-                vegetation_drag, "drag_coefficient", default=NO_AGG
+                vegetation_drag, "vegetation_height", default=NO_AGG
+            )
+            _set_initialization_type(
+                vegetation_drag, "vegetation_stem_count", default=NO_AGG
+            )
+            _set_initialization_type(
+                vegetation_drag, "vegetation_stem_diameter", default=NO_AGG
+            )
+            _set_initialization_type(
+                vegetation_drag, "vegetation_drag_coefficient", default=NO_AGG
             )
 
         grid_settings = GridSettings.from_dict(global_)
