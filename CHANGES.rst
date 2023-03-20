@@ -1,8 +1,8 @@
 Changelog of threedigrid-builder
 ================================
 
-1.9.1 (unreleased)
-------------------
+1.10.0 (2023-03-20)
+-------------------
 
 - Require schema version 216.
 
