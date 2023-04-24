@@ -454,85 +454,31 @@ class Lines1D2D(Lines):
             kcu=LineType.LINE_1D2D_GROUNDWATER,
         )
 
-    def _assign_groundwater_exchange_from_connection_nodes(
-        self, nodes: Nodes, cn: ConnectionNodes
+    def assign_groundwater_exchange(
+        self,
+        nodes: Nodes,
+        cn: ConnectionNodes,
     ):
+        """Compute the hydraulic_conductivity values for groundwater exchange manholes when present.
+        Set all dpumax values for 1d2d groundwater exchange lines.
+
+        Sets:
+        - hydraulic_conductivity_in for manholes
+        - hydraulic_conductivity_out for manholes
+        - dpumax (from 1D nodes dmax)
+        """
+
         node_idx = self.get_1d_node_idx(nodes)
         idx = np.where(
             nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
         )[0]
         cn_idx = cn.id_to_index(nodes.content_pk[node_idx[idx]])
+ 
         mask = cn.has_groundwater_exchange[cn_idx]
         idx = idx[mask]
         cn_idx = cn_idx[mask]
 
-        length = np.sqrt(cn.storage_area[cn_idx])
-        factor = length / cn.exchange_thickness[cn_idx]
-
-        self.cross_weight[idx] += length
-        self.frict_value1[idx] += factor * cn.hydraulic_conductivity_out[cn_idx]
-        self.frict_value2[idx] += factor * cn.hydraulic_conductivity_in[cn_idx]
-
-    def _assign_groundwater_exchange_from_linear_objects(
-        self, nodes: Nodes, lines_1d: Lines, objs: BaseLinear
-    ):
-        line_has_gw = (lines_1d.content_type == objs.content_type) & np.isin(
-            lines_1d.content_pk, objs.id[objs.has_groundwater_exchange]
-        )
-        line_halfs = LineHalfs.from_nodes_lines(
-            nodes,
-            lines_1d,
-            line_mask=line_has_gw,
-        )
-        line_halfs.reorder_by("node_id")
-        idx = search(
-            self.line[:, 1],
-            line_halfs.get_reduce_id(),
-            check_exists=True,
-            assume_ordered=False,
-        )
-        objs_idx = objs.id_to_index(line_halfs.content_pk)
-
-        factor = line_halfs.ds1d / objs.exchange_thickness[objs_idx]
-
-        self.cross_weight[idx] += line_halfs.sum(line_halfs.ds1d)
-        self.frict_value1[idx] += line_halfs.sum(
-            factor * objs.hydraulic_conductivity_out[objs_idx]
-        )
-        self.frict_value2[idx] += line_halfs.sum(
-            factor * objs.hydraulic_conductivity_in[objs_idx]
-        )
-
-    def assign_groundwater_exchange(
-        self,
-        nodes: Nodes,
-        lines: Lines,
-        connection_nodes: ConnectionNodes,
-        channels: Channels,
-        pipes: Pipes,
-    ):
-        """Compute the friction values for groundwater exchange
-
-        Sets:
-        - cross_weight (length of objects and sqrt of manhole area)
-        - frict_value1 (average from hydr. cond. out, thickness and length)
-        - frict_value2 (average from hydr. cond. in, thickness and length)
-        - dpumax (from 1D nodes dmax)
-        """
-        self.cross_weight[:] = 0.0
-        self.frict_value1[:] = 0.0
-        self.frict_value2[:] = 0.0
-
-        self._assign_groundwater_exchange_from_connection_nodes(nodes, connection_nodes)
-        self._assign_groundwater_exchange_from_linear_objects(nodes, lines, channels)
-        self._assign_groundwater_exchange_from_linear_objects(nodes, lines, pipes)
-
-        # change 'weighted sum' to 'weighted average' (avoiding div by 0)
-        has_weight = self.cross_weight > 0.0
-        self.frict_value1[has_weight] /= self.cross_weight[has_weight]
-        self.frict_value1[~has_weight] = np.nan
-
-        self.frict_value2[has_weight] /= self.cross_weight[has_weight]
-        self.frict_value2[~has_weight] = np.nan
-
+        self.hydraulic_conductivity_in[idx] = cn.hydraulic_conductivity_in[cn_idx] / cn.exchange_thickness[cn_idx]
+        self.hydraulic_conductivity_out[idx] = cn.hydraulic_conductivity_out[cn_idx] / cn.exchange_thickness[cn_idx]
+        
         self.dpumax = nodes[self.get_1d_node_idx(nodes)].dmax

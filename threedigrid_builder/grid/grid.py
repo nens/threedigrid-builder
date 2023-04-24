@@ -747,10 +747,7 @@ class Grid:
             return
         lines_1d2d_gw.assign_groundwater_exchange(
             self.nodes,
-            self.lines,
-            connection_nodes=connection_nodes,
-            channels=channels,
-            pipes=pipes,
+            cn=connection_nodes
         )
         lines_1d2d_gw.assign_line_coords(self.nodes)
         lines_1d2d_gw.assign_2d_node(self.cell_tree)
