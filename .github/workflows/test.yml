@@ -17,14 +17,14 @@ jobs:
         include:
           # 2018
           - python: 3.7
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             numpy: numpy==1.15.*
             display_name: "2018"
             pins: "h5py==2.9.* sqlalchemy==1.4.1 shapely==2.0.* pyproj==3.0.*"
             extras: "[test,gridadmin]"
           # 2019
           - python: 3.8
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             numpy: numpy==1.17.*
             display_name: "2019"
             pins: "h5py==2.10.* sqlalchemy==1.4.10 shapely==2.0.* pyproj==3.0.*"
