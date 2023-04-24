@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.10.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added groundwater boundaries to line types.
 
 
 1.10.0 (2023-03-20)

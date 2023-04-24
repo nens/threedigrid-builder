@@ -296,7 +296,7 @@ def test_sort_null_lines_err(grid_for_sorting):
 def test_sort_boundary_conditions():
     grid = Grid(
         Nodes(
-            id=[0, 1, 2, 3, 4, 5, 6],
+            id=[0, 1, 2, 3, 4, 5, 6, 7, 8],
             node_type=[
                 NodeType.NODE_2D_OPEN_WATER,
                 NodeType.NODE_1D_BOUNDARIES,
@@ -305,11 +305,13 @@ def test_sort_boundary_conditions():
                 NodeType.NODE_1D_BOUNDARIES,
                 NodeType.NODE_2D_BOUNDARIES,
                 NodeType.NODE_1D_NO_STORAGE,
+                NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
+                NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
             ],
-            dmax=[0, 1, 2, 3, 4, 5, 6],
+            dmax=[0, 1, 2, 3, 4, 5, 6, 7, 8],
         ),
         Lines(
-            id=[0, 1, 2, 3, 4, 5],
+            id=[0, 1, 2, 3, 4, 5, 6],
             kcu=[
                 LineType.LINE_1D_ISOLATED,
                 LineType.LINE_1D_ISOLATED,
@@ -317,25 +319,34 @@ def test_sort_boundary_conditions():
                 LineType.LINE_2D_BOUNDARY_WEST,
                 LineType.LINE_2D_BOUNDARY_NORTH,
                 LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+                LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH,
             ],
-            is_1d_boundary=[1, 1] + [-9999] * 4,
-            line=[(6, 4), (1, 6), (0, 3), (0, 5), (2, 0), (0, 6)],
-            dpumax=[0, 1, 2, 3, 4, 5],
+            is_1d_boundary=[1, 1] + [-9999] * 5,
+            line=[(6, 4), (1, 6), (0, 3), (0, 5), (2, 0), (0, 6), (7, 8)],
+            dpumax=[0, 1, 2, 3, 4, 5, 6],
         ),
     )
     grid.sort()
 
-    # expected order: 2D (0), 1D (6), 2D boundaries (2, 3, 5), 1D boundaries (1, 4)
-    assert_array_equal(grid.nodes.id, [0, 1, 2, 3, 4, 5, 6])
-    assert_array_equal(grid.nodes.dmax, [0, 6, 2, 3, 5, 1, 4])
-    # expected order: 1D2D (5), 2D boundaries (4, 2, 3), 1D boundaries (1, 0)
+    # expected order:
+    #   2D (0), 1D (6)
+    #   2D boundaries (2, 3, 5)
+    #   2D groundwater (7, 8)
+    #   1D boundaries (1, 4)
+    assert_array_equal(grid.nodes.id, [0, 1, 2, 3, 4, 5, 6, 7, 8])
+    assert_array_equal(grid.nodes.dmax, [0, 6, 2, 3, 5, 7, 8, 1, 4])
+    # expected order:
+    #   1D2D (5)
+    #   2D boundaries (4, 2, 3)
+    #   2D Groundwater (6)
+    #   1D boundaries (1, 0)
     # note that the 1D and 2D boundaries are sorted internally so that the order matches
     # the order in the corresponding nodes
-    assert_array_equal(grid.lines.id, [0, 1, 2, 3, 4, 5])
-    assert_array_equal(grid.lines.dpumax, [5, 4, 2, 3, 1, 0])
+    assert_array_equal(grid.lines.id, [0, 1, 2, 3, 4, 5, 6])
+    assert_array_equal(grid.lines.dpumax, [5, 4, 2, 3, 6, 1, 0])
     # the correct line order can also be seen by the increasing node ids:
     assert_array_equal(
-        grid.lines.line, [[0, 1], [2, 0], [0, 3], [0, 4], [5, 1], [1, 6]]
+        grid.lines.line, [[0, 1], [2, 0], [0, 3], [0, 4], [5, 6], [7, 1], [1, 8]]
     )
 
 
