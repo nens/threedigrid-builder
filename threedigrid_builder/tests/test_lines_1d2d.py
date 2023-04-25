@@ -13,12 +13,10 @@ from threedigrid_builder.base import Lines, Nodes
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import (
-    Channels,
     ConnectionNodes,
     ExchangeLines,
     Lines1D2D,
     Obstacles,
-    Pipes,
     PotentialBreaches,
 )
 

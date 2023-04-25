@@ -9,12 +9,9 @@ from threedigrid_builder.base import LineHalfs, Lines, Nodes, replace, search
 from threedigrid_builder.constants import CalculationType, ContentType, LineType
 from threedigrid_builder.exceptions import SchematisationError
 
-from .channels import Channels
 from .connection_nodes import ConnectionNodes
 from .exchange_lines import ExchangeLines
-from .linear import BaseLinear
 from .obstacles import Obstacles
-from .pipes import Pipes
 from .potential_breaches import PotentialBreaches
 
 logger = logging.getLogger(__name__)
