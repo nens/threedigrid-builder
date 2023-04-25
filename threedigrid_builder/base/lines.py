@@ -52,8 +52,8 @@ class Line:
     sewerage: int
     sewerage_type: int
     windshieldings: Tuple[float, float, float, float, float, float, float, float]
-    hydraulic_conductivity_in: float
-    hydraulic_conductivity_out: float
+    hydraulic_resistance_in: float
+    hydraulic_resistance_out: float
 
 
 class Lines(Array[Line]):

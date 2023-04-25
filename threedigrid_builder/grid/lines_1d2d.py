@@ -454,13 +454,9 @@ class Lines1D2D(Lines):
             kcu=LineType.LINE_1D2D_GROUNDWATER,
         )
 
-    def assign_groundwater_exchange(
-        self,
-        nodes: Nodes,
-        cn: ConnectionNodes,
-    ):
-        """Compute the hydraulic_conductivity values for groundwater exchange manholes when present.
-        Set all dpumax values for 1d2d groundwater exchange lines.
+    def assign_groundwater_exchange(self, nodes: Nodes, cn: ConnectionNodes):
+        """Compute the hydraulic_conductivity values for groundwater exchange manholes
+        when present. Set all dpumax values for 1d2d groundwater exchange lines.
 
         Sets:
         - hydraulic_conductivity_in for manholes
@@ -473,12 +469,16 @@ class Lines1D2D(Lines):
             nodes.content_type[node_idx] == ContentType.TYPE_V2_CONNECTION_NODES
         )[0]
         cn_idx = cn.id_to_index(nodes.content_pk[node_idx[idx]])
- 
+
         mask = cn.has_groundwater_exchange[cn_idx]
         idx = idx[mask]
         cn_idx = cn_idx[mask]
 
-        self.hydraulic_conductivity_in[idx] = cn.hydraulic_conductivity_in[cn_idx] / cn.exchange_thickness[cn_idx]
-        self.hydraulic_conductivity_out[idx] = cn.hydraulic_conductivity_out[cn_idx] / cn.exchange_thickness[cn_idx]
-        
+        self.hydraulic_resistance_in[idx] = (
+            cn.hydraulic_conductivity_in[cn_idx] / cn.exchange_thickness[cn_idx]
+        )
+        self.hydraulic_resistance_out[idx] = (
+            cn.hydraulic_conductivity_out[cn_idx] / cn.exchange_thickness[cn_idx]
+        )
+
         self.dpumax = nodes[self.get_1d_node_idx(nodes)].dmax

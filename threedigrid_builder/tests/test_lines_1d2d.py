@@ -591,7 +591,7 @@ def test_transfer_2d_node_to_groundwater(n_groundwater_cells, expected):
     assert_array_equal(lines_1d2d.line[:, 1], [6, 9])  # 1d side
 
 
-def test_assign_groundwater_exchange_from_connection_nodes():
+def test_assign_groundwater_exchange():
     nodes = Nodes(
         id=[1, 2, 3],
         content_type=[CN, CN, CH],
@@ -611,111 +611,7 @@ def test_assign_groundwater_exchange_from_connection_nodes():
         frict_value1=0.2,
         frict_value2=0.3,
     )
-    lines_1d2d._assign_groundwater_exchange_from_connection_nodes(
-        nodes, connection_nodes
-    )
+    lines_1d2d.assign_groundwater_exchange(nodes, connection_nodes)
 
-    expected_frict1 = 3.0 / 0.1 * 3.0
-    expected_frict2 = 2.0 / 0.1 * 3.0
-    assert_almost_equal(lines_1d2d.cross_weight, [3.1, 0.1, 0.1])
-    assert_almost_equal(lines_1d2d.frict_value1, [expected_frict1 + 0.2, 0.2, 0.2])
-    assert_almost_equal(lines_1d2d.frict_value2, [expected_frict2 + 0.3, 0.3, 0.3])
-
-
-def test_assign_groundwater_exchange_from_linear_objects(threeway_junction):
-    nodes, lines = threeway_junction
-
-    channels = Channels(
-        id=[11, 12, 13],
-        exchange_thickness=[0.1, 0.2, np.nan],
-        hydraulic_conductivity_out=[2.0, 3.0, np.nan],
-        hydraulic_conductivity_in=[4.0, 5.0, np.nan],
-    )
-
-    lines_1d2d = Lines1D2D(
-        id=range(4),
-        line=[[-9999, 1], [-9999, 2], [-9999, 3], [-9999, 4]],
-        cross_weight=0.1,
-        frict_value1=0.2,
-        frict_value2=0.3,
-    )
-    lines_1d2d._assign_groundwater_exchange_from_linear_objects(nodes, lines, channels)
-
-    assert_almost_equal(
-        lines_1d2d.cross_weight, [0.1 + 0.6 + 1.0, 0.1 + 0.6, 0.1 + 1.3, 0.1]
-    )
-    assert_almost_equal(
-        lines_1d2d.frict_value1,
-        [
-            0.2 + 0.6 * 2.0 / 0.1 + 1.0 * 3.0 / 0.2,
-            0.2 + 0.6 * 2.0 / 0.1,
-            0.2 + 1.3 * 3.0 / 0.2,
-            0.2,
-        ],
-    )
-    assert_almost_equal(
-        lines_1d2d.frict_value2,
-        [
-            0.3 + 0.6 * 4.0 / 0.1 + 1.0 * 5.0 / 0.2,
-            0.3 + 0.6 * 4.0 / 0.1,
-            0.3 + 1.3 * 5.0 / 0.2,
-            0.3,
-        ],
-    )
-
-
-def test_assign_groundwater_exchange(threeway_junction):
-    nodes, lines = threeway_junction
-    dmax = np.array([-2.0, -3.0, -4.0, -5.0])
-    nodes.dmax = dmax
-
-    nodes.content_type[1:] = -9999
-    lines.content_type[2] = ContentType.TYPE_V2_PIPE
-    connection_nodes = ConnectionNodes(
-        id=[1],
-        storage_area=[9.0],
-        exchange_thickness=[0.1],
-        hydraulic_conductivity_out=[3.0],
-        hydraulic_conductivity_in=[2.0],
-    )
-    channels = Channels(
-        id=[11, 12],
-        exchange_thickness=[0.15, np.nan],
-        hydraulic_conductivity_out=[2.0, np.nan],
-        hydraulic_conductivity_in=[4.0, np.nan],
-    )
-    pipes = Pipes(
-        id=[13],
-        exchange_thickness=[0.2],
-        hydraulic_conductivity_out=[3.0],
-        hydraulic_conductivity_in=[5.0],
-    )
-
-    lines_1d2d = Lines1D2D(
-        id=range(4),
-        line=[[-9999, 1], [-9999, 2], [-9999, 3], [-9999, 4]],
-    )
-    lines_1d2d.assign_groundwater_exchange(
-        nodes, lines, connection_nodes=connection_nodes, channels=channels, pipes=pipes
-    )
-
-    assert_almost_equal(lines_1d2d.cross_weight, [3.0 + 0.6 + 1.7, 0.6, 0.0, 1.7])
-    assert_almost_equal(
-        lines_1d2d.frict_value1,
-        [
-            (3.0 * 3.0 / 0.1 + 0.6 * 2.0 / 0.15 + 1.7 * 3.0 / 0.2) / (3.0 + 0.6 + 1.7),
-            2.0 / 0.15,
-            np.nan,
-            3.0 / 0.2,
-        ],
-    )
-    assert_almost_equal(
-        lines_1d2d.frict_value2,
-        [
-            (3.0 * 2.0 / 0.1 + 0.6 * 4.0 / 0.15 + 1.7 * 5.0 / 0.2) / (3.0 + 0.6 + 1.7),
-            4.0 / 0.15,
-            np.nan,
-            5.0 / 0.2,
-        ],
-    )
-    assert_almost_equal(lines_1d2d.dpumax, dmax)
+    assert_almost_equal(lines_1d2d.hydraulic_resistance_in, [20.0, np.nan, np.nan])
+    assert_almost_equal(lines_1d2d.hydraulic_resistance_out, [30.0, np.nan, np.nan])
