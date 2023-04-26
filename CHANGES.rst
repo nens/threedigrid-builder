@@ -6,6 +6,11 @@ Changelog of threedigrid-builder
 
 - Added groundwater boundaries to line types.
 
+- Refactored hydraulic conductivity information to be set on all
+  Channels, Pipes, and Manholes in the form of hydraulic resistance.
+  Previously a weighted average was taken and set on the 1D2D groundwater
+  line.
+
 
 1.10.0 (2023-03-20)
 -------------------

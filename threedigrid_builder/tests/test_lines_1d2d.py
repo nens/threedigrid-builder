@@ -602,13 +602,7 @@ def test_assign_groundwater_exchange():
         hydraulic_conductivity_out=[3.0, np.nan],
         hydraulic_conductivity_in=[2.0, np.nan],
     )
-    lines_1d2d = Lines1D2D(
-        id=[1, 2, 3],
-        line=[[-9999, 1], [-9999, 2], [-9999, 3]],
-        cross_weight=0.1,
-        frict_value1=0.2,
-        frict_value2=0.3,
-    )
+    lines_1d2d = Lines1D2D(id=[1, 2, 3], line=[[-9999, 1], [-9999, 2], [-9999, 3]])
     lines_1d2d.assign_groundwater_exchange(nodes, connection_nodes)
 
     assert_almost_equal(lines_1d2d.hydraulic_resistance_in, [20.0, np.nan, np.nan])

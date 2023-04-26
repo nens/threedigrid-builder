@@ -1,9 +1,12 @@
+import itertools
+
 import numpy as np
 import pytest
 import shapely
 from numpy.testing import assert_array_equal
 
-from threedigrid_builder.grid import Channels, CrossSectionLocations
+from threedigrid_builder.base import Nodes
+from threedigrid_builder.grid import Channels, ConnectionNodes, CrossSectionLocations
 
 
 @pytest.fixture
@@ -63,3 +66,25 @@ def test_has_groundwater_exchange(thickness, hc_out, hc_in, expected):
 
     assert len(actual) == 1
     assert actual[0] == expected
+
+
+@pytest.mark.parametrize(
+    "thickness,hc_out,hc_in,res_out,res_in",
+    [
+        (0.1, 3.0, 2.0, 30.0, 20.0),
+        (np.nan, 3.0, 2.0, np.nan, np.nan),
+        (0.1, np.nan, 2.0, np.nan, 20.0),
+        (0.1, 3.0, np.nan, 30.0, np.nan),
+    ],
+)
+def test_set_hydraulic_resistance(channels, thickness, hc_out, hc_in, res_in, res_out):
+    channels.exchange_thickness = np.array([thickness])
+    channels.hydraulic_conductivity_out = np.array([hc_out])
+    channels.hydraulic_conductivity_in = np.array([hc_in])
+
+    cn = ConnectionNodes(id=[21, 42], the_geom=shapely.points([(0, 21), (1, 25)]))
+    nodes = Nodes(id=[10], content_pk=[1], s1d=[0.5])
+    lines = channels.get_lines(cn, nodes, itertools.count(start=0))
+
+    assert_array_equal(lines.hydraulic_resistance_in, [res_in, res_in])
+    assert_array_equal(lines.hydraulic_resistance_out, [res_out, res_out])
