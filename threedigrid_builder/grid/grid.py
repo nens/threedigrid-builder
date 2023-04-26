@@ -736,13 +736,7 @@ class Grid:
         self.breaches = lines_1d2d.output_breaches(potential_breaches)
         self.lines += lines_1d2d
 
-    def add_1d2d_groundwater_lines(
-        self,
-        line_id_counter,
-        connection_nodes,
-        channels,
-        pipes,
-    ) -> Lines1D2D:
+    def add_1d2d_groundwater_lines(self, line_id_counter, connection_nodes) -> None:
         """Connect 1D and 2D groundwater elements by computing 1D-2D lines.
 
         Appends self.lines.
@@ -750,13 +744,7 @@ class Grid:
         lines_1d2d_gw = Lines1D2D.create_groundwater(self.nodes, line_id_counter)
         if len(lines_1d2d_gw) == 0:
             return
-        lines_1d2d_gw.assign_groundwater_exchange(
-            self.nodes,
-            self.lines,
-            connection_nodes=connection_nodes,
-            channels=channels,
-            pipes=pipes,
-        )
+        lines_1d2d_gw.assign_groundwater_exchange(self.nodes, cn=connection_nodes)
         lines_1d2d_gw.assign_line_coords(self.nodes)
         lines_1d2d_gw.assign_2d_node(self.cell_tree)
         lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes.n_groundwater_cells)

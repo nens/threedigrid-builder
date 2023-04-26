@@ -253,6 +253,21 @@ class BaseLinear:
             frict_type = -9999
             frict_value = np.nan
 
+        # conditionall add hydraulic conductivity (for channels and pipes only)
+        try:
+            exchange_thickness = objs.exchange_thickness
+            hydraulic_resistance_in = (
+                objs.hydraulic_conductivity_in[segment_idx]
+                / exchange_thickness[segment_idx]
+            )
+            hydraulic_resistance_out = (
+                objs.hydraulic_conductivity_out[segment_idx]
+                / exchange_thickness[segment_idx]
+            )
+        except AttributeError:
+            hydraulic_resistance_in = np.nan
+            hydraulic_resistance_out = np.nan
+
         # Conditionally add discharge coefficients, (for culverts only). If one culvert has
         # multiple segments positive coefficient goes onto the first segment and negative
         # coefficient goes onto last segment (otherwise we have to much energy losses.)
@@ -307,6 +322,8 @@ class BaseLinear:
             dist_calc_points=dist_calc_points,
             material=material,
             sewerage_type=sewerage_type,
+            hydraulic_resistance_in=hydraulic_resistance_in,
+            hydraulic_resistance_out=hydraulic_resistance_out,
         )
 
     def compute_bottom_level(self, ids, s):
