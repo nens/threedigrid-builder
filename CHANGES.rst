@@ -1,6 +1,12 @@
 Changelog of threedigrid-builder
 ================================
 
+1.11.1 (unreleased)
+-------------------
+
+- Nothing changed yet.
+
+
 1.11.0 (2023-05-01)
 -------------------
 
