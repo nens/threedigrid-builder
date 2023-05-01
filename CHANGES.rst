@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.11.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fix MacOS build by bumping gfortran version.
 
 
 1.11.0 (2023-05-01)
