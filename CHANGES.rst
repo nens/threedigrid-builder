@@ -1,7 +1,13 @@
 Changelog of threedigrid-builder
 ================================
 
-1.10.1 (unreleased)
+1.11.1 (unreleased)
+-------------------
+
+- Nothing changed yet.
+
+
+1.11.0 (2023-05-01)
 -------------------
 
 - Added groundwater boundaries to line types.
@@ -10,6 +16,8 @@ Changelog of threedigrid-builder
   Channels, Pipes, and Manholes in the form of hydraulic resistance.
   Previously a weighted average was taken and set on the 1D2D groundwater
   line.
+
+- Filter boundry nodes from nodes which can have a 1D2D groundwater connection.
 
 
 1.10.0 (2023-03-20)

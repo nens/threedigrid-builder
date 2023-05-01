@@ -409,4 +409,7 @@ class BaseLinear:
             ]
         )
 
-        nodes.has_groundwater_exchange[np.isin(nodes.id, node_ids)] = True
+        nodes.has_groundwater_exchange[
+            np.isin(nodes.id, node_ids)
+            & (nodes.calculation_type != CalculationType.BOUNDARY_NODE)
+        ] = True

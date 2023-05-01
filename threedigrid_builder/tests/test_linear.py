@@ -436,3 +436,26 @@ def test_apply_has_groundwater_exchange(two_linear_objects):
     two_linear_objects.apply_has_groundwater_exchange(nodes, lines)
 
     assert_array_equal(nodes.has_groundwater_exchange, [1, 0, 1, 1])
+
+
+@mock.patch.object(LinearObjects, "has_groundwater_exchange", np.array([False, True]))
+def test_apply_has_groundwater_exchange_boundary_condition(two_linear_objects):
+    nodes = Nodes(
+        id=[1, 2, 3, 4],
+        calculation_type=[
+            CalculationType.CONNECTED,
+            CalculationType.CONNECTED,
+            CalculationType.CONNECTED,
+            CalculationType.BOUNDARY_NODE,
+        ],
+    )
+    lines = Lines(
+        id=range(3),
+        content_pk=[1, 2, 2],
+        content_type=LinearObjects.content_type,
+        line=[[2, 1], [1, 3], [3, 4]],
+    )
+
+    two_linear_objects.apply_has_groundwater_exchange(nodes, lines)
+
+    assert_array_equal(nodes.has_groundwater_exchange, [1, 0, 1, 0])
