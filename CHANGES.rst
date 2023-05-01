@@ -11,6 +11,8 @@ Changelog of threedigrid-builder
   Previously a weighted average was taken and set on the 1D2D groundwater
   line.
 
+- Filter boundry nodes from nodes which can have a 1D2D groundwater connection.
+
 
 1.10.0 (2023-03-20)
 -------------------
