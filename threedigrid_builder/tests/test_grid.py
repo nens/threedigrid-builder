@@ -96,7 +96,7 @@ def grid1d(meta):
         ("infiltration_rate_type", "has_simple_infiltration"),
         ("groundwater_impervious_layer_level_type", "has_groundwater"),
         ("interflow_type", "has_interflow"),
-        ("vegetation_height_type", "has_vegetation")
+        ("vegetation_height_type", "has_vegetation"),
     ],
 )
 def test_from_meta(meta, setting, expected_true):

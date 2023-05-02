@@ -172,6 +172,7 @@ def test_integration(tmp_path, filename):
             "has_max_infiltration_capacity": False,
             "has_pumpstations": True,
             "has_simple_infiltration": False,
+            "has_vegetation": False,
             "model_name": "simple_infil_no_grndwtr",
             "model_slug": "slug-123abc",
             "revision_hash": "123abc",

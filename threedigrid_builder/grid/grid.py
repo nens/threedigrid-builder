@@ -273,9 +273,7 @@ class Grid:
         )
         meta.has_groundwater = s.groundwater_impervious_layer_level_type is not None
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0
-        meta.has_vegetation = (
-            s.vegetation_height_type is not None
-        )
+        meta.has_vegetation = s.vegetation_height_type is not None
         return cls(Nodes(id=[]), Lines(id=[]), meta=meta)
 
     def set_crs(self, crs: CRS):
