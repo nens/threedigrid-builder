@@ -96,6 +96,7 @@ def grid1d(meta):
         ("infiltration_rate_type", "has_simple_infiltration"),
         ("groundwater_impervious_layer_level_type", "has_groundwater"),
         ("interflow_type", "has_interflow"),
+        ("vegetation_height_type", "has_vegetation")
     ],
 )
 def test_from_meta(meta, setting, expected_true):
@@ -112,6 +113,7 @@ def test_from_meta(meta, setting, expected_true):
         "has_simple_infiltration",
         "has_groundwater",
         "has_interflow",
+        "has_vegetation",
     ):
         assert getattr(grid.meta, attr) is (attr == expected_true)
 
