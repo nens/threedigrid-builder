@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.11.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added has_vegetation attribute to Meta() class.
 
 
 1.11.1 (2023-05-01)
