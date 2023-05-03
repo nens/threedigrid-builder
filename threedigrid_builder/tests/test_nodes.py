@@ -22,6 +22,19 @@ def test_get_extent_1d(nodes):
     assert nodes.get_extent_1d() == (1, 10, 2, 12)
 
 
+def test_get_extent_1d_from_1d_boundaries(nodes):
+    nodes = Nodes(
+        id=range(3),
+        coordinates=[(1, 10), (2, 12), (3, 13)],
+        node_type=[
+            NodeType.NODE_1D_BOUNDARIES,
+            NodeType.NODE_1D_BOUNDARIES,
+            NodeType.NODE_1D_BOUNDARIES,
+        ],
+    )
+    assert nodes.get_extent_1d() == (1, 10, 3, 13)
+
+
 def test_get_extent_2d(nodes):
     nodes = Nodes(
         id=range(3),

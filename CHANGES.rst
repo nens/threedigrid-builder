@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Added has_vegetation attribute to Meta() class.
 
+- Add 1D boundary nodes to get_extent_1d.
+
 
 1.11.1 (2023-05-01)
 -------------------
