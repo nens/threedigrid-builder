@@ -79,7 +79,12 @@ class Nodes(Array[Node]):
 
     def get_extent_1d(self):
         is_1d = np.isin(
-            self.node_type, (NodeType.NODE_1D_NO_STORAGE, NodeType.NODE_1D_STORAGE)
+            self.node_type,
+            (
+                NodeType.NODE_1D_NO_STORAGE,
+                NodeType.NODE_1D_STORAGE,
+                NodeType.NODE_1D_BOUNDARIES,
+            ),
         )
         if not is_1d.any():
             return
