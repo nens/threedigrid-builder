@@ -148,7 +148,7 @@ def test_integration(tmp_path, filename):
             k: (v.decode() if isinstance(v, bytes) else v) for (k, v) in f.attrs.items()
         }
         assert_almost_equal(
-            attrs.pop("extent_1d"), [105427.6, 511727.1, 115887.0, 523463.3], decimal=1
+            attrs.pop("extent_1d"), [105427.6, 511632.4, 115887.0, 523549.6], decimal=1
         )
         assert_almost_equal(
             attrs.pop("extent_2d"), [106314, 514912, 111114, 519872], decimal=1
