@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.11.3 (unreleased)
+1.11.3 (2023-05-08)
 -------------------
 
 - Change DB interface to match changed column names in threedi-schema.
