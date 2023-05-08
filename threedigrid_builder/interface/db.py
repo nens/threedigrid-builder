@@ -44,11 +44,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 216
-
-# Columns to exlude from prefixing when converting db object to dict.
-EXCLUDED_COLUMNS = ["id", "display_name", "code"]
-
+MIN_SQLITE_VERSION = 217
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -65,21 +61,16 @@ NumpyQuery.default_numpy_settings[custom_types.Geometry] = {
 }
 
 
-def _object_as_dict(obj, prefix: str = None) -> dict:
+def _object_as_dict(obj) -> dict:
     """Convert SQLAlchemy object to dict, casting Enums. Optional to prefix keys."""
     result = {}
     if obj is None:
         return result
     for c in inspect(obj).mapper.column_attrs:
-        col_name = c.key
-        if prefix is not None and col_name not in EXCLUDED_COLUMNS:
-            key = prefix + "_" + col_name
-        else:
-            key = col_name
-        val = getattr(obj, col_name)
+        val = getattr(obj, c.key)
         if isinstance(val, Enum):
             val = val.value
-        result[key] = val
+        result[c.key] = val
     return result
 
 
@@ -184,7 +175,6 @@ class SQLite:
                     session.query(models.VegetationDrag)
                     .filter_by(id=global_.vegetation_drag_settings_id)
                     .one(),
-                    prefix="vegetation",
                 )
             else:
                 vegetation_drag = {}
