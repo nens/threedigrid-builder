@@ -4,7 +4,8 @@ Changelog of threedigrid-builder
 1.11.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Build the release with the build package instead of setuptools.
+- Rewrite release workflow to use a supported github action for github release.
 
 
 1.11.3 (2023-05-08)
