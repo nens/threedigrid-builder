@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.11.4 (unreleased)
+1.11.4 (2023-05-17)
 -------------------
 
 - Build the release with the build package instead of setuptools.
