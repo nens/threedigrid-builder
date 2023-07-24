@@ -117,7 +117,7 @@ class SQLite:
 
     def upgrade(self):
         schema = ModelSchema(self.db)
-        schema.upgrade()
+        schema.upgrade(backup=False, set_views=False)
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
