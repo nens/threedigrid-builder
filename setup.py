@@ -52,6 +52,7 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15",
+    "numpy<1.25.0",
     "threedi-schema>=0.217.0",
     "shapely>=2",
     "pyproj>=3",
