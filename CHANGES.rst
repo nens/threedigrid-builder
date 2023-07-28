@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.11.5 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Pin numpy to 1.24.* on python 3.11 to prevent build errors 
 
 
 1.11.4 (2023-05-17)
