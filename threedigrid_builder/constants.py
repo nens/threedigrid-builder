@@ -86,6 +86,8 @@ class ContentType(IntEnum):
 class FrictionType(IntEnum):
     CHEZY = 1
     MANNING = 2  # pipes have 4 here in the input, but this is mapped to 2 on read
+    CHEZY_CONVEYANCE = 3
+    MANNING_CONVEYANCE = 4
 
 
 @unique
