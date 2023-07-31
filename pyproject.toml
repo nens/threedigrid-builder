@@ -93,4 +93,4 @@ norecursedirs = [
 ]
 python_files = ["test_*.py"]
 testpaths = ["threedigrid_builder"]
-filterwarnings = ["error::numpy"]
+filterwarnings = ["error:::numpy"]
