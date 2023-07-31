@@ -3,6 +3,8 @@ import pathlib
 import shutil
 import sys
 
+from setuptools import find_packages
+
 try:
     from skbuild import setup
 except ImportError:
@@ -35,5 +37,13 @@ else:
     cmake_args = []
 
 setup(
+    packages=find_packages(
+        include=(
+            "threedigrid_builder",
+            "threedigrid_builder.*",
+        ),
+    ),
     cmake_args=cmake_args,
+    include_package_data=True,
+    zip_safe=False,
 )
