@@ -37,6 +37,7 @@ cli = ["typer"]
 
 [project.urls]
 Documentation = "https://docs.3di.lizard.net/"
+Repository = "https://github.com/nens/threedigrid-builder"
 
 [project.scripts]
 threedigrid-builder = "threedigrid_builder.cli:run"
