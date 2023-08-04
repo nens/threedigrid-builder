@@ -1,8 +1,0 @@
-ipython
-jupyterlab
-ipdb
-ipywidgets
-matplotlib
-jedi==0.17.2
-h5py
-pytest

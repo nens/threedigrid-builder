@@ -1,3 +1,47 @@
+[project]
+name = "threedigrid-builder"
+authors = [
+    {name = "Martijn Siemerink", email = "martijn.siemerink@nelen-schuurmans.nl"}
+]
+description = "Generate a 3Di simulation grid from a model schematisation."
+readme = "README.rst"
+requires-python = ">=3.7"
+license = {text = "GNU General Public License v3.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "License :: Other/Proprietary License",
+]
+dependencies = [
+    "numpy>=1.15,<1.25.0",
+    "threedi-schema>=0.217.0",
+    "shapely>=2",
+    "pyproj>=3",
+    "condenser[geo]>=0.1.1",
+    "sqlalchemy>=1.4.1",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
+gridadmin = ["h5py>=2.7"]
+gpkg = ["geopandas"]
+cli = ["typer"]
+
+[project.urls]
+Documentation = "https://docs.3di.lizard.net/"
+Repository = "https://github.com/nens/threedigrid-builder"
+
+[project.scripts]
+threedigrid-builder = "threedigrid_builder.cli:run"
+
 [build-system]
 # numpy required to execute setup.py
 requires = [
@@ -16,3 +60,27 @@ requires = [
     "numpy; python_version>='3.11'",
     "ninja; platform_system!='Windows'"
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "threedigrid_builder.__version__"}
+
+[tool.isort]
+profile = "black"
+force_alphabetical_sort_within_sections = true
+
+[tool.pytest.ini_options]
+norecursedirs = [
+    ".venv",
+    "data",
+    "doc",
+    "etc",
+    "*.egg-info",
+    "misc",
+    "var",
+    "build",
+    "lib",
+    "include",
+]
+python_files = ["test_*.py"]
+testpaths = ["threedigrid_builder"]
+filterwarnings = ["error:::numpy"]
