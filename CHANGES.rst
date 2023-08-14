@@ -4,6 +4,7 @@ Changelog of threedigrid-builder
 1.11.5 (unreleased)
 -------------------
 
+- Add new friction types to support friction with conveyance.
 - Pin numpy to 1.24.* on python 3.11 to prevent build errors 
 
 
