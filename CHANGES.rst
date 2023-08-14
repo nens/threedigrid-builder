@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.12.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed failing Windows build.
 
 
 1.12.0 (2023-08-14)
