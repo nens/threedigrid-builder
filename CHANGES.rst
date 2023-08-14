@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.11.5 (unreleased)
+1.12.0 (2023-08-14)
 -------------------
 
 - Add new friction types to support friction with conveyance.
