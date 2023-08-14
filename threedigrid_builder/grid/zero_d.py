@@ -300,7 +300,7 @@ class BaseSurfaces:
             centroid_y=centroid_coords[:, 1][self.unique_surfaces_mask],
             dry_weather_flow=self.dry_weather_flow[self.unique_surfaces_mask],
             nr_of_inhabitants=self.nr_of_inhabitants[self.unique_surfaces_mask],
-            **extra_fields,
+            **extra_fields
         )
 
     def as_surface_maps(
