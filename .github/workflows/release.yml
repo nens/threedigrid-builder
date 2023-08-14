@@ -7,6 +7,7 @@ on:
   pull_request:  # also build on PRs touching this file
     paths:
       - ".github/workflows/release.yml"
+  workflow_dispatch:
 
 jobs:
   build_sdist:
