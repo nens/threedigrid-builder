@@ -5,7 +5,7 @@ authors = [
 ]
 description = "Generate a 3Di simulation grid from a model schematisation."
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {text = "GNU General Public License v3.0"}
 classifiers = [
     "Programming Language :: Python :: 3",
