@@ -357,6 +357,7 @@ class GridAdminOut(OutputInterface):
             group, "display_name", to_bytes_array(nodes.display_name, 64)
         )
         self.write_dataset(group, "zoom_category", nodes.zoom_category)
+        self.write_dataset(group, "manhole_id", nodes.manhole_id)
         self.write_dataset(group, "manhole_indicator", nodes.manhole_indicator)
         self.write_dataset(group, "shape", to_bytes_array(nodes.shape, 4))
         self.write_dataset(group, "drain_level", nodes.drain_level)
