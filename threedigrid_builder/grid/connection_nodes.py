@@ -82,6 +82,7 @@ class ConnectionNodes(Array[ConnectionNode]):
             storage_area=self.storage_area,
             display_name=self.display_name,
             zoom_category=self.zoom_category,
+            manhole_indicator=self.manhole_indicator,
             has_groundwater_exchange=self.has_groundwater_exchange,
         )
 

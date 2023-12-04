@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.12.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add manhole_indicator field to gridadmin for future export.
 
 
 1.12.1 (2023-08-14)
