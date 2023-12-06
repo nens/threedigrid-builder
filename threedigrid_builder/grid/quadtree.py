@@ -107,6 +107,9 @@ class QuadTree:
         self.n_lines_u = np.array(0, dtype=np.int32, order="F")
         self.n_lines_v = np.array(0, dtype=np.int32, order="F")
 
+        import ipdb
+
+        ipdb.set_trace()
         m_quadtree.make_quadtree(
             self.kmax,
             self.mmax,
