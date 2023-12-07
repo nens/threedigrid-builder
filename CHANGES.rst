@@ -6,6 +6,8 @@ Changelog of threedigrid-builder
 
 - Add manhole_indicator field to gridadmin for future export.
 
+- Reduce memory use by reducing DEM mask datatype to int8.
+
 
 1.12.1 (2023-08-14)
 -------------------

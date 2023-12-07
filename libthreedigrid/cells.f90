@@ -24,12 +24,12 @@ module m_cells
         double precision, intent(inout) :: bounds(:, :) ! Bbox of comp cell
         double precision, intent(inout) :: coords(:, :) ! Cell center coordinates
         integer, intent(inout) :: pixel_coords(:, :) ! pixel bbox of comp cell
-        integer*2, intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
+        integer*1, intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
         integer, intent(inout) :: line(:, :) ! Array with connecting nodes of line.
         integer, intent(inout) :: cross_pix_coords(:, :) ! Array pixel indices of line interface
         integer, intent(in) :: n_line_u ! Number of active u-dir lines.
         integer, intent(in) :: n_line_v  ! Number of active v-dir lines.
-        integer*2, allocatable :: area_mask_padded(:, :)
+        integer*1, allocatable :: area_mask_padded(:, :)
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -95,7 +95,7 @@ module m_cells
         integer, intent(in) :: mn(4)
         integer, intent(in) :: lg(:,:)
         integer, intent(in) :: lgrmin
-        integer*2, intent(in) :: area_mask(:,:)
+        integer*1, intent(in) :: area_mask(:,:)
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)

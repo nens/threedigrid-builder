@@ -16,7 +16,7 @@ module m_quadtree
         integer, intent(in) :: nmax(:) ! Y Dimension of each refinement level
         integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
         integer, intent(in) :: use_2d_flow  ! Whether to add flowlines
-        integer*2, intent(in) :: area_mask(:, :) ! Array with active pixels of model.
+        integer*1, intent(in) :: area_mask(:, :) ! Array with active pixels of model.
         integer, intent(inout) :: lg(:, :) ! Array with all refinement levels.
         integer, intent(inout) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
         integer, intent(inout) :: n_cells ! counter for active cells
@@ -121,11 +121,11 @@ module m_quadtree
         integer, intent(in) :: lgrmin
         logical, intent(in) :: use_2d_flow
         integer, intent(inout) :: lg(:,:)
-        integer*2, intent(in) :: area_mask(:,:)
+        integer*1, intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
         integer, intent(inout) :: n_line_u
         integer, intent(inout) :: n_line_v
-        integer*2, allocatable:: area_mask_padded(:, :)
+        integer*1, allocatable:: area_mask_padded(:, :)
         integer :: k
         integer :: m,n
         integer :: mn(4)
