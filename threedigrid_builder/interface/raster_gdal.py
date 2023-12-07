@@ -40,9 +40,7 @@ class GDALInterface(RasterInterface):
             "width": width,
             "height": height,
             "bbox": bbox,
-            "area_mask": np.asfortranarray(
-                np.flipud(mask).T.astype(dtype=np.bool_, copy=True)
-            ),
+            "area_mask": np.flipud(mask).T.astype(dtype=np.int8, copy=True, order="F"),
         }
         return data
 
@@ -60,7 +58,7 @@ class GDALInterface(RasterInterface):
         band = self._dataset.GetRasterBand(1)
         size_j, size_i = band.GetBlockSize()
         nodata = band.GetNoDataValue()
-        mask = np.zeros((height, width), dtype=bool)
+        mask = np.zeros((height, width), dtype=np.int8)
         n_blocks_j = ((width - 1) // size_j) + 1
         n_blocks_i = ((height - 1) // size_i) + 1
 

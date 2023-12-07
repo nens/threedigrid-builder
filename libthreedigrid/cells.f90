@@ -24,12 +24,12 @@ module m_cells
         double precision, intent(inout) :: bounds(:, :) ! Bbox of comp cell
         double precision, intent(inout) :: coords(:, :) ! Cell center coordinates
         integer, intent(inout) :: pixel_coords(:, :) ! pixel bbox of comp cell
-        logical*1, intent(in) :: area_mask(:, :) ! Array with active pixels of model.
+        integer*1, intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
         integer, intent(inout) :: line(:, :) ! Array with connecting nodes of line.
         integer, intent(inout) :: cross_pix_coords(:, :) ! Array pixel indices of line interface
         integer, intent(in) :: n_line_u ! Number of active u-dir lines.
         integer, intent(in) :: n_line_v  ! Number of active v-dir lines.
-        logical*1, allocatable :: area_mask_padded(:, :)
+        integer*1, allocatable :: area_mask_padded(:, :)
         integer :: nod
         integer :: k
         integer :: i0, i1, j0, j1
@@ -95,7 +95,7 @@ module m_cells
         integer, intent(in) :: mn(4)
         integer, intent(in) :: lg(:,:)
         integer, intent(in) :: lgrmin
-        logical*1, intent(in) :: area_mask(:,:)
+        integer*1, intent(in) :: area_mask(:,:)
         integer, intent(in) :: quad_idx(:,:)
         integer, intent(in), optional :: nod
         integer, intent(inout), optional :: line(:,:)
@@ -111,7 +111,7 @@ module m_cells
         !!!!! U - direction !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(3) < size(quad_idx, 1)) then
-            if(lg(mn(3)+1, mn(2)) == k .and. any(area_mask(i1:i1+1,j0:j1))) then
+            if(lg(mn(3)+1, mn(2)) == k .and. any(minval(area_mask(i1:i1+1,j0:j1), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3)+1, mn(2)) 
@@ -120,7 +120,7 @@ module m_cells
                     cross_pix_coords(l_u,:) = (/ i1, j0 - 1, i1, j1 /) ! Python indexing so -1 at start slice
                 endif
             else
-                if (lg(mn(3)+1, mn(2)) == k-1 .and. any(area_mask(i1:i1+1,j0:j2))) then
+                if (lg(mn(3)+1, mn(2)) == k-1 .and. any(minval(area_mask(i1:i1+1,j0:j2), 1) > 0)) then
                     l_u = l_u + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(3)+1, mn(2)) 
@@ -129,7 +129,7 @@ module m_cells
                         cross_pix_coords(l_u,:) = (/ i1, j0 - 1, i1, j2 /) ! Python indexing so -1 at start slice
                     endif
                 endif
-                if (lg(mn(3)+1, mn(4)) == k-1 .and. any(area_mask(i1:i1+1,j3:j1))) then
+                if (lg(mn(3)+1, mn(4)) == k-1 .and. any(minval(area_mask(i1:i1+1,j3:j1), 1) > 0)) then
                     l_u = l_u + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(3)+1,mn(4))
@@ -142,7 +142,7 @@ module m_cells
         endif
 
         if (mn(1) > 1) then
-            if(lg(mn(1)-1, mn(2)) == k-1 .and. any(area_mask(i0-1:i0,j0:j2))) then
+            if(lg(mn(1)-1, mn(2)) == k-1 .and. any(minval(area_mask(i0-1:i0,j0:j2), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1)-1, mn(2))
@@ -151,7 +151,7 @@ module m_cells
                     cross_pix_coords(l_u,:) = (/ i0 - 1, j0 - 1, i0 - 1, j2 /)
                 endif
             endif
-            if(lg(mn(1)-1, mn(4)) == k-1 .and. any(area_mask(i0-1:i0,j3:j1))) then
+            if(lg(mn(1)-1, mn(4)) == k-1 .and. any(minval(area_mask(i0-1:i0,j3:j1), 1) > 0)) then
                 l_u = l_u + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1)-1, mn(4))
@@ -170,7 +170,7 @@ module m_cells
         !!!!! V - direction !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!
         if (mn(4) < size(quad_idx, 2)) then
-            if (lg(mn(1), mn(4)+1) == k .and. any(area_mask(i0:i1,j1:j1+1))) then
+            if (lg(mn(1), mn(4)+1) == k .and. any(minval(area_mask(i0:i1,j1:j1+1), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(4)+1)
@@ -179,7 +179,7 @@ module m_cells
                     cross_pix_coords(l_v,:) = (/ i0 - 1, j1, i1, j1 /) ! Python indexing so -1 at start slice
                 endif
             else
-                if (lg(mn(1), mn(4)+1) == k-1 .and. any(area_mask(i0:i2,j1:j1+1))) then
+                if (lg(mn(1), mn(4)+1) == k-1 .and. any(minval(area_mask(i0:i2,j1:j1+1), 2) > 0)) then
                     l_v = l_v + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(1), mn(4)+1)
@@ -188,7 +188,7 @@ module m_cells
                         cross_pix_coords(l_v,:) = (/ i0 - 1, j1, i2, j1 /) ! Python indexing so -1 at start slice
                     endif
                 endif
-                if (lg(mn(3), mn(4)+1) == k-1 .and. any(area_mask(i3:i1,j1:j1+1))) then
+                if (lg(mn(3), mn(4)+1) == k-1 .and. any(minval(area_mask(i3:i1,j1:j1+1), 2) > 0)) then
                     l_v = l_v + 1
                     if (present(line)) then
                         neighbour = quad_idx(mn(3), mn(4)+1)
@@ -201,7 +201,7 @@ module m_cells
         endif
             
         if (mn(2) > 1) then
-            if(lg(mn(1), mn(2)-1) == k-1 .and. any(area_mask(i0:i2,max(1,j0-j0)))) then
+            if(lg(mn(1), mn(2)-1) == k-1 .and. any(minval(area_mask(i0:i2,max(1,j0-1):j0), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(1), mn(2)-1)
@@ -210,7 +210,7 @@ module m_cells
                     cross_pix_coords(l_v,:) = (/ i0 - 1, j0 - 1, i2, j0 - 1/) ! Python indexing so -1 at start slice
                 endif
             endif
-            if(lg(mn(3), mn(2)-1) == k-1 .and. any(area_mask(i3:i1,max(1,j0-j0)))) then
+            if(lg(mn(3), mn(2)-1) == k-1 .and. any(minval(area_mask(i3:i1,max(1,j0-1):j0), 2) > 0)) then
                 l_v = l_v + 1
                 if (present(line)) then
                     neighbour = quad_idx(mn(3), mn(2)-1)

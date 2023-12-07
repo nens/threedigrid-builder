@@ -107,10 +107,6 @@ class QuadTree:
         self.n_lines_u = np.array(0, dtype=np.int32, order="F")
         self.n_lines_v = np.array(0, dtype=np.int32, order="F")
 
-        print("make_quadtree")
-        import ipdb
-
-        ipdb.set_trace()
         m_quadtree.make_quadtree(
             self.kmax,
             self.mmax,
@@ -198,9 +194,6 @@ class QuadTree:
         line = np.empty((total_lines, 2), dtype=np.int32, order="F")
         cross_pix_coords = np.full((total_lines, 4), -9999, dtype=np.int32, order="F")
 
-        import ipdb
-
-        ipdb.set_trace()
         m_cells.set_2d_computational_nodes_lines(
             np.array([self.origin[0], self.origin[1]], dtype=np.float64),
             self.min_cell_pixels,

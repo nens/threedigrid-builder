@@ -14,9 +14,8 @@ from threedigrid_builder.grid.quadtree import reduce_refinement_levels
 def subgrid_meta():
     width = 20
     height = 16
-    mask = np.array((width, height), dtype=bool, order="F")
-    mask = True
-    mask[15:, :] = False
+    mask = np.ones((width, height), dtype=np.int8, order="F")
+    mask[15:, :] = 0
     return {
         "pixel_size": 0.5,
         "width": width,

@@ -79,12 +79,12 @@ module m_grid_utils
 
     function pad_area_mask(raster, i0, i1, j0, j1) result(padded_raster)
 
-        logical*1, intent(in) :: raster(:,:)
+        integer*1, intent(in) :: raster(:,:)
         integer, intent(in) :: i0
         integer, intent(in) :: i1
         integer, intent(in) :: j0
         integer, intent(in) :: j1
-        logical*1, allocatable :: padded_raster(:, :)
+        integer*1, allocatable :: padded_raster(:, :)
         integer :: i_size, j_size, size_raster_i, size_raster_j
 
         size_raster_i = size(raster, 1)
@@ -92,7 +92,7 @@ module m_grid_utils
         i_size = max(0, i1, size_raster_i)
         j_size = max(0, j1, size_raster_j)
         allocate(padded_raster(1:i_size, 1:j_size))
-        padded_raster = .FALSE.
+        padded_raster = 0
 
         padded_raster(1:size_raster_i, 1:size_raster_j) = raster(1:size_raster_i, 1:size_raster_j)
 
