@@ -40,7 +40,9 @@ class GDALInterface(RasterInterface):
             "width": width,
             "height": height,
             "bbox": bbox,
-            "area_mask": np.flipud(mask).T.astype(dtype=bool, copy=True, order="F"),
+            "area_mask": np.asfortranarray(
+                np.flipud(mask).T.astype(dtype=np.bool_, copy=True)
+            ),
         }
         return data
 

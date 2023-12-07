@@ -16,7 +16,7 @@ module m_quadtree
         integer, intent(in) :: nmax(:) ! Y Dimension of each refinement level
         integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
         integer, intent(in) :: use_2d_flow  ! Whether to add flowlines
-        logical, intent(in) :: area_mask(:, :) ! Array with active pixels of model.
+        logical*1, intent(inout) :: area_mask(:, :) ! Array with active pixels of model.
         integer, intent(inout) :: lg(:, :) ! Array with all refinement levels.
         integer, intent(inout) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
         integer, intent(inout) :: n_cells ! counter for active cells
@@ -25,7 +25,9 @@ module m_quadtree
         integer :: k
         integer :: m, n
 
+        write(*,*) sizeof(area_mask)
         write(*,*) '** INFO: Start making quadtree.'
+        call sleep(60)
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
@@ -121,11 +123,11 @@ module m_quadtree
         integer, intent(in) :: lgrmin
         logical, intent(in) :: use_2d_flow
         integer, intent(inout) :: lg(:,:)
-        logical, intent(in) :: area_mask(:,:)
+        logical*1, intent(in) :: area_mask(:,:)
         integer, intent(inout) :: quad_idx(:,:)
         integer, intent(inout) :: n_line_u
         integer, intent(inout) :: n_line_v
-        logical, allocatable:: area_mask_padded(:, :)
+        logical*1, allocatable:: area_mask_padded(:, :)
         integer :: k
         integer :: m,n
         integer :: mn(4)
@@ -137,8 +139,14 @@ module m_quadtree
         n_line_u = 0
         n_line_v = 0
         quad_idx = 0
+
+        write(*,*) "Find active cells"
+        call sleep(60)
         call get_pix_corners(kmax, mmax(kmax), nmax(kmax), lgrmin, i0, i1, j0, j1)
-        area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
+        area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1)
+        write(*,*) "pad area mask"
+        write(*,*) sizeof(area_mask_padded)
+
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
@@ -147,7 +155,7 @@ module m_quadtree
                     i1 = min(i1, size(area_mask, 1))
                     j1 = min(j1, size(area_mask, 2))
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                        if (all(area_mask_padded(i0:i1, j0:j1) == 0)) then
+                        if (all(area_mask_padded(i0:i1, j0:j1))) then
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
                         else
                             n_cells = n_cells + 1
