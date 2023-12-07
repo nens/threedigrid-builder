@@ -35,14 +35,13 @@ class GDALInterface(RasterInterface):
     def read(self):
         width, height, bbox, mask = self._create_area_arr_from_dem()
 
-        data = {
+        return {
             "pixel_size": self.pixel_size,
             "width": width,
             "height": height,
             "bbox": bbox,
             "area_mask": np.flipud(mask).T.astype(dtype=np.int8, copy=True, order="F"),
         }
-        return data
 
     def _create_area_arr_from_dem(self):
         xpixel, _, xmin, _, ypixel, ymax = self.transform

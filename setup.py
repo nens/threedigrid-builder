@@ -34,7 +34,7 @@ if "clean" in sys.argv:
 if sys.platform == "win32":
     cmake_args = ["-G", "MSYS Makefiles", "-DCMAKE_GNUtoMS=ON"]
 else:
-    cmake_args = ["-DF2PY_REPORT_ON_ARRAY_COPY=1", "-DCMAKE_BUILD_TYPE=DEBUG"]
+    cmake_args = []
 
 long_description = open("README.rst").read()
 
