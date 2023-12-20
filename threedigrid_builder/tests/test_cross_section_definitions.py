@@ -156,13 +156,14 @@ def test_tabulate_tabulated_err(width, height, match):
 
 
 def test_tabulate_inverted_egg():
-    shape, width_1d, height_1d, table = tabulate_inverted_egg(
+    shape, width_1d, height_1d, table, yz = tabulate_inverted_egg(
         "my-shape", "1.52", "ignored"
     )
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
     assert width_1d == 1.52
     assert height_1d == 1.52 * 1.5
+    assert yz is None
 
     # the expected table is exactly what inpy returns for a width of 1.52
     expected_table = np.array(

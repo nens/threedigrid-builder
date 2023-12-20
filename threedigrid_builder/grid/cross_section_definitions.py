@@ -43,12 +43,14 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
             content_pk=ids,
             code=self.code[idx],
             count=0,
+            count_yz = 0,
         )
         if len(result) == 0:
             return result
 
-        offset = 0
         tables = []
+        yz_coordinate = []
+
 
         # Numpy array views on width/height based on idx
         width_idx = self.width[idx]
@@ -56,22 +58,31 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
 
         for i, shape in enumerate(self.shape[idx]):
             tabulator = tabulators[shape]
-            result.shape[i], result.width_1d[i], result.height_1d[i], table = tabulator(
+            result.shape[i], result.width_1d[i], result.height_1d[i], table, yz = tabulator(
                 shape, width_idx[i], height_idx[i]
             )
             if table is not None:
                 result.count[i] = len(table)
-                result.offset[i] = offset
-                offset += len(table)
                 tables.append(table)
+            if yz is not None:
+                result.count_yz[i] = len(yz)
+                yz_coordinate.append(yz)
+
 
         result.offset[:] = np.roll(np.cumsum(result.count), 1)
         result.offset[0] = 0
+        result.offset_yz[:] = np.roll(np.cumsum(result.count_yz), 1)
+        result.offset_yz[0] = 0
 
         if len(tables) > 0:
             result.tables = np.concatenate(tables, axis=0)
         else:
             result.tables = np.empty((0, 2))
+
+        if len(yz_coordinate) > 0:
+            result.yz_coordinate = np.concatenate(yz_coordinate, axis=0)
+        else:
+            result.yz_coordinate = np.empty((0, 4))    
 
         return result
 
@@ -85,11 +96,14 @@ class CrossSection:
     height_1d: float
     offset: int
     count: int
+    offset_yz: int
+    count_yz: int
     # tables: Tuple[float, float] has different length so is specified on CrossSections
 
 
 class CrossSections(Array[CrossSection]):
     tables = None
+    yz_coordinate = None
 
 
 def tabulate_builtin(shape, width, height):
@@ -112,7 +126,7 @@ def tabulate_builtin(shape, width, height):
             f"Unable to parse cross section definition width (got: '{width}')."
         )
 
-    return shape, width, None, None
+    return shape, width, None, None, None
 
 
 def tabulate_egg(shape, width, height):
@@ -151,7 +165,7 @@ def tabulate_egg(shape, width, height):
     widths = np.sqrt(p / q) * 2
 
     table = np.array([heights, widths]).T
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width, height, table
+    return CrossSectionShape.TABULATED_TRAPEZIUM, width, height, table, None
 
 
 def tabulate_inverted_egg(shape, width, height):
@@ -161,7 +175,7 @@ def tabulate_inverted_egg(shape, width, height):
     """
     type_, width, height, table = tabulate_egg(shape, width, height)
     table[:, 1] = table[::-1, 1]
-    return type_, width, height, table
+    return type_, width, height, table, None
 
 
 def tabulate_closed_rectangle(shape, width, height):
@@ -185,7 +199,7 @@ def tabulate_closed_rectangle(shape, width, height):
             f"(got: '{width}', '{height}')."
         )
     table = np.array([[0.0, width], [height, 0.0]], order="F")
-    return CrossSectionShape.TABULATED_RECTANGLE, width, height, table
+    return CrossSectionShape.TABULATED_RECTANGLE, width, height, table, None
 
 
 def _parse_tabulated(width, height):
@@ -229,7 +243,7 @@ def tabulate_tabulated(shape, width, height):
             f"(got: {height})."
         )
 
-    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
+    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
 
 
 def tabulate_yz(shape, width, height):
@@ -275,6 +289,11 @@ def tabulate_yz(shape, width, height):
     if is_closed:
         ys = ys[:-1]
         zs = zs[:-1]
+        yz = None
+    else:
+        yz = np.empty((len(ys), 4), dtype=float)
+        yz[:, 0] = ys
+        yz[:, 1] = zs
 
     # Adapt non-unique height coordinates. Why?
     # Because if a segment of the profile is exactly horizontal, we need 2 widths
@@ -318,7 +337,7 @@ def tabulate_yz(shape, width, height):
         table = table[1:]
 
     height_1d, width_1d = table.max(axis=0).tolist()
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table
+    return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table, yz
 
 
 tabulators = {
