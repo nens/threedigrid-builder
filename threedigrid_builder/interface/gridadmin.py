@@ -442,6 +442,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "frict_type2", lines.frict_type2)
         self.write_dataset(group, "frict_value1", lines.frict_value1)
         self.write_dataset(group, "frict_value2", lines.frict_value2)
+        self.write_dataset(group, "veg_coef1", lines.veg_coef1)
+        self.write_dataset(group, "veg_coef2", lines.veg_coef2)
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(
             group, "hydraulic_resistance_in", lines.hydraulic_resistance_in
@@ -690,7 +692,10 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "offset", cross_sections.offset)
         self.write_dataset(group, "count", cross_sections.count)
         self.write_dataset(group, "tables", cross_sections.tables.T, insert_dummy=False)
-        self.write_dataset(group, "yz", cross_sections.yz_coordinate.T, insert_dummy=False)
+        if cross_sections.tables_yz is not None:
+            self.write_dataset(group, "offset_yz", cross_sections.offset_yz)
+            self.write_dataset(group, "count_yz", cross_sections.count_yz)
+            self.write_dataset(group, "tables_yz", cross_sections.tables_yz.T, insert_dummy=False)
 
     def write_obstacles(self, obstacles: Obstacles):
         """For backwards compat, the group is named 'levees'"""

@@ -17,6 +17,12 @@ class CrossSectionDefinition:
     shape: CrossSectionShape
     height: str  # space-separated list of floats
     width: str  # space-separated list of floats
+    friction_values: str  # space-separated list of floats
+    vegetation_stem_densities: str  # space-separated list of floats
+    vegetation_stem_diameters: str  # space-separated list of floats
+    vegetation_heights: str  # space-separated list of floats
+    vegetation_drag_coefficients: str  # space-separated list of floats
+
 
 
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
@@ -49,7 +55,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
             return result
 
         tables = []
-        yz_coordinate = []
+        tables_yz = []
 
 
         # Numpy array views on width/height based on idx
@@ -66,7 +72,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                 tables.append(table)
             if yz is not None:
                 result.count_yz[i] = len(yz)
-                yz_coordinate.append(yz)
+                tables_yz.append(yz)
 
 
         result.offset[:] = np.roll(np.cumsum(result.count), 1)
@@ -79,10 +85,10 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
         else:
             result.tables = np.empty((0, 2))
 
-        if len(yz_coordinate) > 0:
-            result.yz_coordinate = np.concatenate(yz_coordinate, axis=0)
+        if len(tables_yz) > 0:
+            result.tables_yz = np.concatenate(tables_yz, axis=0)
         else:
-            result.yz_coordinate = np.empty((0, 4))    
+            result.tables_yz = np.empty((0, 4))    
 
         return result
 
@@ -103,7 +109,7 @@ class CrossSection:
 
 class CrossSections(Array[CrossSection]):
     tables = None
-    yz_coordinate = None
+    tables_yz = None
 
 
 def tabulate_builtin(shape, width, height):
@@ -173,7 +179,7 @@ def tabulate_inverted_egg(shape, width, height):
 
     See tabulate_egg.
     """
-    type_, width, height, table = tabulate_egg(shape, width, height)
+    type_, width, height, table, yz = tabulate_egg(shape, width, height)
     table[:, 1] = table[::-1, 1]
     return type_, width, height, table, None
 
@@ -246,7 +252,7 @@ def tabulate_tabulated(shape, width, height):
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
 
 
-def tabulate_yz(shape, width, height):
+def tabulate_yz(shape, width, height, friction_values, vegetation_stem_densities, vegetation_stem_diameters, vegetation_heights, vegetation_drag_coefficients):
     """Tabulate an (open or closed) YZ profile
 
     Args:
@@ -291,9 +297,17 @@ def tabulate_yz(shape, width, height):
         zs = zs[:-1]
         yz = None
     else:
-        yz = np.empty((len(ys), 4), dtype=float)
+        yz = np.zeros((len(ys), 4), dtype=float)
         yz[:, 0] = ys
         yz[:, 1] = zs
+        fric = np.array([float(x) for x in friction_values.split(" ")])
+        veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
+        veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
+        veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
+        veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
+        yz[:-1, 2] = fric
+        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_hght * veg_drag
+
 
     # Adapt non-unique height coordinates. Why?
     # Because if a segment of the profile is exactly horizontal, we need 2 widths
