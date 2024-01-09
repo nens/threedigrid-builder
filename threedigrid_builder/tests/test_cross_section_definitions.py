@@ -1,4 +1,3 @@
-from cmath import nan
 from unittest import mock
 
 import numpy as np
@@ -38,8 +37,12 @@ def test_convert_multiple(cross_section_definitions):
         "threedigrid_builder.grid.cross_section_definitions.tabulators",
         {
             SHP.CIRCLE: mock.Mock(return_value=(1, 0.1, None, None, None)),
-            SHP.TABULATED_TRAPEZIUM: mock.Mock(return_value=(5, 15.0, 2.0, table_1, None)),
-            SHP.TABULATED_RECTANGLE: mock.Mock(return_value=(6, 11.0, 2.0, table_2, None)),
+            SHP.TABULATED_TRAPEZIUM: mock.Mock(
+                return_value=(5, 15.0, 2.0, table_1, None)
+            ),
+            SHP.TABULATED_RECTANGLE: mock.Mock(
+                return_value=(6, 11.0, 2.0, table_2, None)
+            ),
         },
     ):
         actual = cross_section_definitions.convert([1, 3, 9])
@@ -134,13 +137,16 @@ def test_tabulate_egg():
 
 
 def test_tabulate_tabulated():
-    shape, width_1d, height_1d, table, yz = tabulate_tabulated("my-shape", "1 2 3", "0 1 2")
+    shape, width_1d, height_1d, table, yz = tabulate_tabulated(
+        "my-shape", "1 2 3", "0 1 2"
+    )
 
     assert shape == "my-shape"
     assert width_1d == 3.0  # the max
     assert height_1d == 2.0
     assert_almost_equal(table, np.array([[0, 1], [1, 2], [2, 3]], dtype=float))
     assert yz is None
+
 
 @pytest.mark.parametrize(
     "width,height,match",
@@ -195,7 +201,19 @@ def test_tabulate_inverted_egg():
 @pytest.mark.parametrize(
     "width,height,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width,exp_height,exp_table,exp_yz",
     [
-        ("0 0.5 1 1.5", "0.5 0 0 0.5", "1 1 1", "1 1 1", "1 1 1", "1 1 1", "1 1 1", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]], [[0, 0.5, 1, 1], [0.5, 0, 1, 1], [1, 0, 1, 1], [1.5, 0.5, 0, 0]]),
+        (
+            "0 0.5 1 1.5",
+            "0.5 0 0 0.5",
+            "1 1 1",
+            "1 1 1",
+            "1 1 1",
+            "1 1 1",
+            "1 1 1",
+            1.5,
+            0.5,
+            [[0, 0.5], [0.5, 1.5]],
+            [[0, 0.5, 1, 1], [0.5, 0, 1, 1], [1, 0, 1, 1], [1.5, 0.5, 0, 0]],
+        ),
         (
             "0 0.5 1 1.5",
             "0.5 0 0 0.25",
@@ -207,7 +225,7 @@ def test_tabulate_inverted_egg():
             1.5,
             0.5,
             [[0, 0.5], [0.25, 1.25], [0.5, 1.5]],
-            [[0, 0.5, 1, 3], [0.5, 0, 1, 1], [1, 0, 1, 1], [1.5, 0.25, 0, 0]]
+            [[0, 0.5, 1, 3], [0.5, 0, 1, 1], [1, 0, 1, 1], [1.5, 0.25, 0, 0]],
         ),
         (
             "0 1 2 3 4 5",
@@ -220,7 +238,14 @@ def test_tabulate_inverted_egg():
             5,
             1,
             [[0, 0], [0.5, 3], [0.5, 4], [1, 5]],
-            [[0, 1, 1, 1], [1, 0, 1, 1], [2, 0.5, 1, 1], [3, 0.5, 1, 1], [4, 0, 1, 1], [5, 1, 0, 0]]
+            [
+                [0, 1, 1, 1],
+                [1, 0, 1, 1],
+                [2, 0.5, 1, 1],
+                [3, 0.5, 1, 1],
+                [4, 0, 1, 1],
+                [5, 1, 0, 0],
+            ],
         ),
         (
             "0 1 2 2 0 0",
@@ -233,14 +258,65 @@ def test_tabulate_inverted_egg():
             2.0,
             1.5,
             [[0, 0], [0.5, 2.0], [1.5, 2.0], [1.5, 0.0]],
-            None
+            None,
         ),
-        ("0 0.5 0.75 1.0 1.5", "0.5 0 0 0 0.5", "1 1 1 1", "1 1 1 1", "1 1 1 1", "1 1 1 1", "1 1 1 1", 1.5, 0.5, [[0, 0.5], [0.5, 1.5]], [[0, 0.5, 1, 1], [0.5, 0, 1, 1], [0.75, 0, 1, 1], [1, 0, 1, 1], [1.5, 0.5, 0, 0]]),
-        ("0 1 0 1 0", "0 1 1 0 0", "1 1 1 1", "1 1 1 1", "1 1 1 1", "1 1 1 1", "1 1 1 1", 1, 1, [[0, 1], [0.5, 0], [1, 1], [1, 0]], None),
+        (
+            "0 0.5 0.75 1.0 1.5",
+            "0.5 0 0 0 0.5",
+            "1 1 1 1",
+            "1 1 1 1",
+            "1 1 1 1",
+            "1 1 1 1",
+            "1 1 1 1",
+            1.5,
+            0.5,
+            [[0, 0.5], [0.5, 1.5]],
+            [
+                [0, 0.5, 1, 1],
+                [0.5, 0, 1, 1],
+                [0.75, 0, 1, 1],
+                [1, 0, 1, 1],
+                [1.5, 0.5, 0, 0],
+            ],
+        ),
+        (
+            "0 1 0 1 0",
+            "0 1 1 0 0",
+            "1 1 1 1",
+            "1 1 1 1",
+            "1 1 1 1",
+            "1 1 1 1",
+            "1 1 1 1",
+            1,
+            1,
+            [[0, 1], [0.5, 0], [1, 1], [1, 0]],
+            None,
+        ),
     ],
 )
-def test_tabulate_yz(width, height, friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width, exp_height, exp_table, exp_yz):
-    shape, width_1d, height_1d, table, yz = tabulate_yz("my-shape", width, height,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients)
+def test_tabulate_yz(
+    width,
+    height,
+    friction_values,
+    vegetation_stem_densities,
+    vegetation_stem_diameters,
+    vegetation_heights,
+    vegetation_drag_coefficients,
+    exp_width,
+    exp_height,
+    exp_table,
+    exp_yz,
+):
+    shape, width_1d, height_1d, table, yz = tabulate_yz(
+        "my-shape",
+        width,
+        height,
+        friction_values,
+        vegetation_stem_densities,
+        vegetation_stem_diameters,
+        vegetation_heights,
+        vegetation_drag_coefficients,
+    )
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
     assert width_1d == exp_width

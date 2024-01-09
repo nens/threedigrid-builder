@@ -169,8 +169,12 @@ def test_apply_to_lines(channels, channel_lines, locations):
     assert_equal(channel_lines.frict_type2, [1, 2, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.frict_value1, [30, 0.02, 40, 40, 40, 0.03, 0.03])
     assert_equal(channel_lines.frict_value2, [30, 0.02, 35, 35, 35, 0.03, 0.03])
-    assert_almost_equal(channel_lines.veg_coef1, [0.1, 0.006, 0.2, 0.2, 0.2, 0.036, 0.036])
-    assert_almost_equal(channel_lines.veg_coef2, [0.1, 0.006, 0.15, 0.15, 0.15, 0.036, 0.036])
+    assert_almost_equal(
+        channel_lines.veg_coef1, [0.1, 0.006, 0.2, 0.2, 0.2, 0.036, 0.036]
+    )
+    assert_almost_equal(
+        channel_lines.veg_coef2, [0.1, 0.006, 0.15, 0.15, 0.15, 0.036, 0.036]
+    )
     assert_almost_equal(
         channel_lines.cross_weight, [1.0, 1.0, 1.0, 0.65, 0.0, 1.0, 1.0]
     )

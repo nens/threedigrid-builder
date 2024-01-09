@@ -24,7 +24,6 @@ class CrossSectionDefinition:
     vegetation_drag_coefficients: str  # space-separated list of floats
 
 
-
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
     def convert(self, ids):
         """Convert to CrossSections.
@@ -49,7 +48,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
             content_pk=ids,
             code=self.code[idx],
             count=0,
-            count_yz = 0,
+            count_yz=0,
         )
         if len(result) == 0:
             return result
@@ -57,23 +56,25 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
         tables = []
         tables_yz = []
 
-
         # Numpy array views on width/height based on idx
         width_idx = self.width[idx]
         height_idx = self.height[idx]
 
         for i, shape in enumerate(self.shape[idx]):
             tabulator = tabulators[shape]
-            result.shape[i], result.width_1d[i], result.height_1d[i], table, yz = tabulator(
-                shape, width_idx[i], height_idx[i]
-            )
+            (
+                result.shape[i],
+                result.width_1d[i],
+                result.height_1d[i],
+                table,
+                yz,
+            ) = tabulator(shape, width_idx[i], height_idx[i])
             if table is not None:
                 result.count[i] = len(table)
                 tables.append(table)
             if yz is not None:
                 result.count_yz[i] = len(yz)
                 tables_yz.append(yz)
-
 
         result.offset[:] = np.roll(np.cumsum(result.count), 1)
         result.offset[0] = 0
@@ -88,7 +89,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
         if len(tables_yz) > 0:
             result.tables_yz = np.concatenate(tables_yz, axis=0)
         else:
-            result.tables_yz = np.empty((0, 4))    
+            result.tables_yz = np.empty((0, 4))
 
         return result
 
@@ -252,7 +253,16 @@ def tabulate_tabulated(shape, width, height):
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
 
 
-def tabulate_yz(shape, width, height, friction_values, vegetation_stem_densities, vegetation_stem_diameters, vegetation_heights, vegetation_drag_coefficients):
+def tabulate_yz(
+    shape,
+    width,
+    height,
+    friction_values,
+    vegetation_stem_densities,
+    vegetation_stem_diameters,
+    vegetation_heights,
+    vegetation_drag_coefficients,
+):
     """Tabulate an (open or closed) YZ profile
 
     Args:
@@ -307,7 +317,6 @@ def tabulate_yz(shape, width, height, friction_values, vegetation_stem_densities
         veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
         yz[:-1, 2] = fric
         yz[:-1, 3] = veg_stemden * veg_stemdia * veg_hght * veg_drag
-
 
     # Adapt non-unique height coordinates. Why?
     # Because if a segment of the profile is exactly horizontal, we need 2 widths

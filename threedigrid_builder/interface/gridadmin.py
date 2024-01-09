@@ -695,7 +695,9 @@ class GridAdminOut(OutputInterface):
         if cross_sections.tables_yz is not None:
             self.write_dataset(group, "offset_yz", cross_sections.offset_yz)
             self.write_dataset(group, "count_yz", cross_sections.count_yz)
-            self.write_dataset(group, "tables_yz", cross_sections.tables_yz.T, insert_dummy=False)
+            self.write_dataset(
+                group, "tables_yz", cross_sections.tables_yz.T, insert_dummy=False
+            )
 
     def write_obstacles(self, obstacles: Obstacles):
         """For backwards compat, the group is named 'levees'"""
