@@ -56,11 +56,8 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
         tables = []
         tables_yz = []
 
-        # Numpy array views on width/height based on idx
-        width_idx = self.width[idx]
-        height_idx = self.height[idx]
-
-        for i, shape in enumerate(self.shape[idx]):
+        for i, self_i in enumerate(idx):
+            shape = self.shape[self_i]
             tabulator = tabulators[shape]
             (
                 result.shape[i],
@@ -68,12 +65,20 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                 result.height_1d[i],
                 table,
                 yz,
-            ) = tabulator(shape, width_idx[i], height_idx[i])
+            ) = tabulator(shape, self.width[self_i], self.height[self_i])
             if table is not None:
                 result.count[i] = len(table)
                 tables.append(table)
             if yz is not None:
                 result.count_yz[i] = len(yz)
+                yz = set_friction_vegetation_values(
+                    yz,
+                    self.friction_values[self_i],
+                    self.vegetation_stem_densities[self_i],
+                    self.vegetation_stem_diameters[self_i],
+                    self.vegetation_heights[self_i],
+                    self.vegetation_drag_coefficients[self_i],
+                )
                 tables_yz.append(yz)
 
         result.offset[:] = np.roll(np.cumsum(result.count), 1)
@@ -180,7 +185,7 @@ def tabulate_inverted_egg(shape, width, height):
 
     See tabulate_egg.
     """
-    type_, width, height, table, yz = tabulate_egg(shape, width, height)
+    type_, width, height, table, _ = tabulate_egg(shape, width, height)
     table[:, 1] = table[::-1, 1]
     return type_, width, height, table, None
 
@@ -253,16 +258,7 @@ def tabulate_tabulated(shape, width, height):
     return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
 
 
-def tabulate_yz(
-    shape,
-    width,
-    height,
-    friction_values,
-    vegetation_stem_densities,
-    vegetation_stem_diameters,
-    vegetation_heights,
-    vegetation_drag_coefficients,
-):
+def tabulate_yz(shape, width, height):
     """Tabulate an (open or closed) YZ profile
 
     Args:
@@ -272,10 +268,11 @@ def tabulate_yz(
 
     Returns:
         tuple:  shape, width_1d (float),
-                height_1d (float), table (ndarray of shape (M, 2))
+                height_1d (float), table (ndarray of shape (M, 2)), yz (ndarray of shape (M, 4))
     """
     ys, zs = _parse_tabulated(width, height)
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
+    shape_return = CrossSectionShape.TABULATED_TRAPEZIUM
     if is_closed and len(zs) < 4:
         raise SchematisationError(
             f"Cross section definitions of closed profiles must have at least "
@@ -310,13 +307,7 @@ def tabulate_yz(
         yz = np.zeros((len(ys), 4), dtype=float)
         yz[:, 0] = ys
         yz[:, 1] = zs
-        fric = np.array([float(x) for x in friction_values.split(" ")])
-        veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
-        veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
-        veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
-        veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
-        yz[:-1, 2] = fric
-        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_hght * veg_drag
+        shape_return = CrossSectionShape.TABULATED_YZ
 
     # Adapt non-unique height coordinates. Why?
     # Because if a segment of the profile is exactly horizontal, we need 2 widths
@@ -360,7 +351,7 @@ def tabulate_yz(
         table = table[1:]
 
     height_1d, width_1d = table.max(axis=0).tolist()
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table, yz
+    return shape_return, width_1d, height_1d, table, yz
 
 
 tabulators = {
@@ -373,3 +364,27 @@ tabulators = {
     CrossSectionShape.TABULATED_YZ: tabulate_yz,
     CrossSectionShape.INVERTED_EGG: tabulate_inverted_egg,
 }
+
+
+def set_friction_vegetation_values(
+    yz,
+    friction_values,
+    vegetation_stem_densities,
+    vegetation_stem_diameters,
+    vegetation_heights,
+    vegetation_drag_coefficients,
+):
+    """Convert friction and vegetation properties from list into arrays, if available,
+    and add to yz"""
+    if len(friction_values) > 0:
+        fric = np.array([float(x) for x in friction_values.split(" ")])
+        yz[:-1, 2] = fric
+
+    if len(vegetation_drag_coefficients) > 0:
+        veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
+        veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
+        veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
+        veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
+        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_hght * veg_drag
+
+    return yz
