@@ -354,32 +354,3 @@ def test_tabulate_yz(
 def test_tabulate_yz_err(width, height, match):
     with pytest.raises(SchematisationError, match=match):
         tabulate_yz("my-shape", width, height)
-
-
-# @pytest.mark.parametrize(
-#     "yz,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_yz",
-#     [
-#         (
-#             [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-#             "0.2 0.3 0.1",
-#             "1 2 3",
-#             "0.5 0.1 0.3",
-#             "2 3 1",
-#             "1 1 1",
-#             [
-#                 [0, 0, 0.2, 1],
-#                 [0, 0, 0.3, 0.6],
-#                 [0, 0, 0.1, 0.9],
-#                 [0, 0, 0, 0],
-#             ],
-#         ),
-#     ],
-# )
-# def test_set_friction_vegetation_values(yz,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_yz):
-#     yz_1d = set_friction_vegetation_values(yz,
-#     friction_values,
-#     vegetation_stem_densities,
-#     vegetation_stem_diameters,
-#     vegetation_heights,
-#     vegetation_drag_coefficients)
-#     assert_almost_equal(yz_1d, np.array(exp_yz, dtype=float))
