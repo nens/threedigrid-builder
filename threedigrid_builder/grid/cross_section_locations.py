@@ -70,18 +70,22 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         lines.frict_type2 = self.friction_type[idx2]
         lines.frict_value1 = self.friction_value[idx1]
         lines.frict_value2 = self.friction_value[idx2]
+
         lines.veg_coef1 = (
             self.vegetation_stem_density[idx1]
             * self.vegetation_stem_diameter[idx1]
             * self.vegetation_height[idx1]
             * self.vegetation_drag_coefficient[idx1]
         )
+        lines.veg_coef1[np.isnan(lines.veg_coef1)] = 0.0
+
         lines.veg_coef2 = (
             self.vegetation_stem_density[idx2]
             * self.vegetation_stem_diameter[idx2]
             * self.vegetation_height[idx2]
             * self.vegetation_drag_coefficient[idx2]
         )
+        lines.veg_coef2[np.isnan(lines.veg_coef2)] = 0.0
 
         # Compute invert levels and start and end
         lines.invert_level_start_point = compute_bottom_level(
