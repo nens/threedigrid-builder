@@ -45,6 +45,8 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         - frict_type2: the friction type of the second cross section location
         - frict_value1: the friction value of the first cross section location
         - frict_value2: the friction value of the second cross section location
+        - veg_coef1: the product of vegetation properties of the first cross section location
+        - veg_coef2: the product of vegetation properties of the second cross section location
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
         - dpumax: the largest of the two invert levels
