@@ -143,7 +143,7 @@ def test_get_cross_section_definitions(db):
     assert isinstance(definitions, CrossSectionDefinitions)
 
     # some test samples
-    assert len(definitions.id) == 11
+    assert len(definitions.id) == 13
     assert definitions.id[8] == 97
     assert definitions.shape[7] == CrossSectionShape.RECTANGLE
     assert definitions.height[10] == "0.4"
