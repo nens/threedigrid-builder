@@ -129,7 +129,7 @@ def tabulate_builtin(shape, width, height):
         height (str): ignored
 
     Returns:
-        tuple:  shape, width_1d (float), None, None
+        tuple:  shape, width_1d (float), None, None, None
     """
     try:
         width = float(width)
@@ -151,7 +151,7 @@ def tabulate_egg(shape, width, height):
 
     Returns:
         tuple:  TABULATED_TRAPEZIUM, width_1d (float),
-                height_1d (float), table (ndarray of shape (M, 2))
+                height_1d (float), table (ndarray of shape (M, 2)), None
     """
     NUM_INCREMENTS = 16
 
@@ -200,7 +200,7 @@ def tabulate_closed_rectangle(shape, width, height):
 
     Returns:
         tuple:  TABULATED_RECTANGLE, width_1d (float),
-                height (float), table (ndarray of shape (M, 2))
+                height (float), table (ndarray of shape (M, 2)), None
     """
     try:
         width = float(width)
@@ -246,7 +246,7 @@ def tabulate_tabulated(shape, width, height):
 
     Returns:
         tuple:  shape, width_1d (float),
-                height_1d (float), table (ndarray of shape (M, 2))
+                height_1d (float), table (ndarray of shape (M, 2)), None
     """
     widths, heights = _parse_tabulated(width, height)
     if len(heights) > 1 and np.any(np.diff(heights) < 0.0):
@@ -272,7 +272,6 @@ def tabulate_yz(shape, width, height):
     """
     ys, zs = _parse_tabulated(width, height)
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
-    shape_return = CrossSectionShape.TABULATED_TRAPEZIUM
     if is_closed and len(zs) < 4:
         raise SchematisationError(
             f"Cross section definitions of closed profiles must have at least "
@@ -303,6 +302,7 @@ def tabulate_yz(shape, width, height):
         ys = ys[:-1]
         zs = zs[:-1]
         yz = None
+        shape_return = CrossSectionShape.TABULATED_TRAPEZIUM
     else:
         yz = np.zeros((len(ys), 4), dtype=float)
         yz[:, 0] = ys
