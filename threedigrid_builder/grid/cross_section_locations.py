@@ -17,6 +17,10 @@ class CrossSectionLocation:
     bank_level: float
     friction_type: FrictionType
     friction_value: float
+    vegetation_stem_density: float
+    vegetation_stem_diameter: float
+    vegetation_height: float
+    vegetation_drag_coefficient: float
 
 
 class CrossSectionLocations(Array[CrossSectionLocation]):
@@ -41,6 +45,8 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         - frict_type2: the friction type of the second cross section location
         - frict_value1: the friction value of the first cross section location
         - frict_value2: the friction value of the second cross section location
+        - veg_coef1: the product of vegetation properties of the first cross section location
+        - veg_coef2: the product of vegetation properties of the second cross section location
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
         - dpumax: the largest of the two invert levels
@@ -64,6 +70,22 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         lines.frict_type2 = self.friction_type[idx2]
         lines.frict_value1 = self.friction_value[idx1]
         lines.frict_value2 = self.friction_value[idx2]
+
+        lines.veg_coef1 = (
+            self.vegetation_stem_density[idx1]
+            * self.vegetation_stem_diameter[idx1]
+            * self.vegetation_height[idx1]
+            * self.vegetation_drag_coefficient[idx1]
+        )
+        lines.veg_coef1[np.isnan(lines.veg_coef1)] = 0.0
+
+        lines.veg_coef2 = (
+            self.vegetation_stem_density[idx2]
+            * self.vegetation_stem_diameter[idx2]
+            * self.vegetation_height[idx2]
+            * self.vegetation_drag_coefficient[idx2]
+        )
+        lines.veg_coef2[np.isnan(lines.veg_coef2)] = 0.0
 
         # Compute invert levels and start and end
         lines.invert_level_start_point = compute_bottom_level(

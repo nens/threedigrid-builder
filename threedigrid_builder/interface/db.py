@@ -468,6 +468,11 @@ class SQLite:
                     models.CrossSectionDefinition.shape,
                     models.CrossSectionDefinition.width,
                     models.CrossSectionDefinition.height,
+                    models.CrossSectionDefinition.friction_values,
+                    models.CrossSectionDefinition.vegetation_stem_densities,
+                    models.CrossSectionDefinition.vegetation_stem_diameters,
+                    models.CrossSectionDefinition.vegetation_heights,
+                    models.CrossSectionDefinition.vegetation_drag_coefficients,
                 )
                 .order_by(models.CrossSectionDefinition.id)
                 .as_structarray()
@@ -497,6 +502,10 @@ class SQLite:
                     models.CrossSectionLocation.bank_level,
                     models.CrossSectionLocation.friction_type,
                     models.CrossSectionLocation.friction_value,
+                    models.CrossSectionLocation.vegetation_stem_density,
+                    models.CrossSectionLocation.vegetation_stem_diameter,
+                    models.CrossSectionLocation.vegetation_height,
+                    models.CrossSectionLocation.vegetation_drag_coefficient,
                 )
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()

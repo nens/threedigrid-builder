@@ -17,6 +17,11 @@ class CrossSectionDefinition:
     shape: CrossSectionShape
     height: str  # space-separated list of floats
     width: str  # space-separated list of floats
+    friction_values: str  # space-separated list of floats
+    vegetation_stem_densities: str  # space-separated list of floats
+    vegetation_stem_diameters: str  # space-separated list of floats
+    vegetation_heights: str  # space-separated list of floats
+    vegetation_drag_coefficients: str  # space-separated list of floats
 
 
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
@@ -43,35 +48,53 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
             content_pk=ids,
             code=self.code[idx],
             count=0,
+            count_yz=0,
         )
         if len(result) == 0:
             return result
 
-        offset = 0
         tables = []
+        tables_yz = []
 
-        # Numpy array views on width/height based on idx
-        width_idx = self.width[idx]
-        height_idx = self.height[idx]
-
-        for i, shape in enumerate(self.shape[idx]):
+        for i, self_i in enumerate(idx):
+            shape = self.shape[self_i]
             tabulator = tabulators[shape]
-            result.shape[i], result.width_1d[i], result.height_1d[i], table = tabulator(
-                shape, width_idx[i], height_idx[i]
-            )
+            (
+                result.shape[i],
+                result.width_1d[i],
+                result.height_1d[i],
+                table,
+                yz,
+            ) = tabulator(shape, self.width[self_i], self.height[self_i])
             if table is not None:
                 result.count[i] = len(table)
-                result.offset[i] = offset
-                offset += len(table)
                 tables.append(table)
+            if yz is not None:
+                result.count_yz[i] = len(yz)
+                yz = set_friction_vegetation_values(
+                    yz,
+                    self.friction_values[self_i],
+                    self.vegetation_stem_densities[self_i],
+                    self.vegetation_stem_diameters[self_i],
+                    self.vegetation_heights[self_i],
+                    self.vegetation_drag_coefficients[self_i],
+                )
+                tables_yz.append(yz)
 
         result.offset[:] = np.roll(np.cumsum(result.count), 1)
         result.offset[0] = 0
+        result.offset_yz[:] = np.roll(np.cumsum(result.count_yz), 1)
+        result.offset_yz[0] = 0
 
         if len(tables) > 0:
             result.tables = np.concatenate(tables, axis=0)
         else:
             result.tables = np.empty((0, 2))
+
+        if len(tables_yz) > 0:
+            result.tables_yz = np.concatenate(tables_yz, axis=0)
+        else:
+            result.tables_yz = np.empty((0, 4))
 
         return result
 
@@ -85,11 +108,14 @@ class CrossSection:
     height_1d: float
     offset: int
     count: int
+    offset_yz: int
+    count_yz: int
     # tables: Tuple[float, float] has different length so is specified on CrossSections
 
 
 class CrossSections(Array[CrossSection]):
     tables = None
+    tables_yz = None
 
 
 def tabulate_builtin(shape, width, height):
@@ -103,7 +129,7 @@ def tabulate_builtin(shape, width, height):
         height (str): ignored
 
     Returns:
-        tuple:  shape, width_1d (float), None, None
+        tuple:  shape, width_1d (float), None, None, None
     """
     try:
         width = float(width)
@@ -112,7 +138,7 @@ def tabulate_builtin(shape, width, height):
             f"Unable to parse cross section definition width (got: '{width}')."
         )
 
-    return shape, width, None, None
+    return shape, width, None, None, None
 
 
 def tabulate_egg(shape, width, height):
@@ -125,7 +151,7 @@ def tabulate_egg(shape, width, height):
 
     Returns:
         tuple:  TABULATED_TRAPEZIUM, width_1d (float),
-                height_1d (float), table (ndarray of shape (M, 2))
+                height_1d (float), table (ndarray of shape (M, 2)), None
     """
     NUM_INCREMENTS = 16
 
@@ -151,7 +177,7 @@ def tabulate_egg(shape, width, height):
     widths = np.sqrt(p / q) * 2
 
     table = np.array([heights, widths]).T
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width, height, table
+    return CrossSectionShape.TABULATED_TRAPEZIUM, width, height, table, None
 
 
 def tabulate_inverted_egg(shape, width, height):
@@ -159,9 +185,9 @@ def tabulate_inverted_egg(shape, width, height):
 
     See tabulate_egg.
     """
-    type_, width, height, table = tabulate_egg(shape, width, height)
+    type_, width, height, table, _ = tabulate_egg(shape, width, height)
     table[:, 1] = table[::-1, 1]
-    return type_, width, height, table
+    return type_, width, height, table, None
 
 
 def tabulate_closed_rectangle(shape, width, height):
@@ -174,7 +200,7 @@ def tabulate_closed_rectangle(shape, width, height):
 
     Returns:
         tuple:  TABULATED_RECTANGLE, width_1d (float),
-                height (float), table (ndarray of shape (M, 2))
+                height (float), table (ndarray of shape (M, 2)), None
     """
     try:
         width = float(width)
@@ -185,7 +211,7 @@ def tabulate_closed_rectangle(shape, width, height):
             f"(got: '{width}', '{height}')."
         )
     table = np.array([[0.0, width], [height, 0.0]], order="F")
-    return CrossSectionShape.TABULATED_RECTANGLE, width, height, table
+    return CrossSectionShape.TABULATED_RECTANGLE, width, height, table, None
 
 
 def _parse_tabulated(width, height):
@@ -220,7 +246,7 @@ def tabulate_tabulated(shape, width, height):
 
     Returns:
         tuple:  shape, width_1d (float),
-                height_1d (float), table (ndarray of shape (M, 2))
+                height_1d (float), table (ndarray of shape (M, 2)), None
     """
     widths, heights = _parse_tabulated(width, height)
     if len(heights) > 1 and np.any(np.diff(heights) < 0.0):
@@ -229,7 +255,7 @@ def tabulate_tabulated(shape, width, height):
             f"(got: {height})."
         )
 
-    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T
+    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
 
 
 def tabulate_yz(shape, width, height):
@@ -242,7 +268,7 @@ def tabulate_yz(shape, width, height):
 
     Returns:
         tuple:  shape, width_1d (float),
-                height_1d (float), table (ndarray of shape (M, 2))
+                height_1d (float), table (ndarray of shape (M, 2)), yz (ndarray of shape (M, 4))
     """
     ys, zs = _parse_tabulated(width, height)
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
@@ -275,6 +301,13 @@ def tabulate_yz(shape, width, height):
     if is_closed:
         ys = ys[:-1]
         zs = zs[:-1]
+        yz = None
+        shape_return = CrossSectionShape.TABULATED_TRAPEZIUM
+    else:
+        yz = np.zeros((len(ys), 4), dtype=float)
+        yz[:, 0] = ys
+        yz[:, 1] = zs
+        shape_return = CrossSectionShape.TABULATED_YZ
 
     # Adapt non-unique height coordinates. Why?
     # Because if a segment of the profile is exactly horizontal, we need 2 widths
@@ -318,7 +351,7 @@ def tabulate_yz(shape, width, height):
         table = table[1:]
 
     height_1d, width_1d = table.max(axis=0).tolist()
-    return CrossSectionShape.TABULATED_TRAPEZIUM, width_1d, height_1d, table
+    return shape_return, width_1d, height_1d, table, yz
 
 
 tabulators = {
@@ -331,3 +364,27 @@ tabulators = {
     CrossSectionShape.TABULATED_YZ: tabulate_yz,
     CrossSectionShape.INVERTED_EGG: tabulate_inverted_egg,
 }
+
+
+def set_friction_vegetation_values(
+    yz,
+    friction_values,
+    vegetation_stem_densities,
+    vegetation_stem_diameters,
+    vegetation_heights,
+    vegetation_drag_coefficients,
+):
+    """Convert friction and vegetation properties from list into arrays, if available,
+    and add to yz"""
+    if friction_values is not None:
+        fric = np.array([float(x) for x in friction_values.split(" ")])
+        yz[:-1, 2] = fric
+
+    if vegetation_drag_coefficients is not None:
+        veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
+        veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
+        veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
+        veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
+        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_hght * veg_drag
+
+    return yz
