@@ -97,7 +97,7 @@ def _set_initialization_type(
 
 
 class SQLite:
-    def __init__(self, path: pathlib.Path, upgrade=False):
+    def __init__(self, path: pathlib.Path, upgrade=False, convert_to_geopackage=False):
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         self.db = ThreediDatabase(path)
@@ -106,7 +106,7 @@ class SQLite:
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
             if upgrade:
-                self.upgrade()
+                self.upgrade(convert_to_geopackage=convert_to_geopackage)
             else:
                 raise SchematisationError(f"Too old sqlite version {version}.")
 
@@ -115,9 +115,11 @@ class SQLite:
         schema = ModelSchema(self.db)
         return schema.get_version()
 
-    def upgrade(self):
+    def upgrade(self, convert_to_geopackage=False):
         schema = ModelSchema(self.db)
-        schema.upgrade(backup=False, set_views=False)
+        schema.upgrade(
+            backup=False, set_views=False, convert_to_geopackage=convert_to_geopackage
+        )
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
