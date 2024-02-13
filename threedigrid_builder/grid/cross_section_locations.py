@@ -47,8 +47,8 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         - frict_value2: the friction value of the second cross section location
         - veg_coef1: the product of vegetation properties of the first cross section location (except height)
         - veg_coef2: the product of vegetation properties of the second cross section location (except height)
-        - veg_hght1: the vegetation height of the first cross section
-        - veg_hght2: the vegetation height of the second cross section
+        - veg_height1: the vegetation height of the first cross section
+        - veg_height2: the vegetation height of the second cross section
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
         - dpumax: the largest of the two invert levels
@@ -86,10 +86,10 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
             * self.vegetation_drag_coefficient[idx2]
         )
         lines.veg_coef2[np.isnan(lines.veg_coef2)] = 0.0
-        lines.veg_hght1 = self.vegetation_height[idx1]
-        lines.veg_hght1[np.isnan(lines.veg_hght1)] = 0.0
-        lines.veg_hght2 = self.vegetation_height[idx2]
-        lines.veg_hght2[np.isnan(lines.veg_hght2)] = 0.0
+        lines.veg_height1 = self.vegetation_height[idx1]
+        lines.veg_height1[np.isnan(lines.veg_height1)] = 0.0
+        lines.veg_height2 = self.vegetation_height[idx2]
+        lines.veg_height2[np.isnan(lines.veg_height2)] = 0.0
 
         # Compute invert levels and start and end
         lines.invert_level_start_point = compute_bottom_level(
