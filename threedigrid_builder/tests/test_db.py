@@ -65,7 +65,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 217
+    assert db.get_version() == 220
 
 
 def test_get_boundary_conditions_1d(db):
