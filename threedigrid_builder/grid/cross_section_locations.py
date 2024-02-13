@@ -45,8 +45,10 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         - frict_type2: the friction type of the second cross section location
         - frict_value1: the friction value of the first cross section location
         - frict_value2: the friction value of the second cross section location
-        - veg_coef1: the product of vegetation properties of the first cross section location
-        - veg_coef2: the product of vegetation properties of the second cross section location
+        - veg_coef1: the product of vegetation properties of the first cross section location (except height)
+        - veg_coef2: the product of vegetation properties of the second cross section location (except height)
+        - veg_hght1: the vegetation height of the first cross section
+        - veg_hght2: the vegetation height of the second cross section
         - invert_level_start_point: 'reference_level' interpolated at the line end
         - invert_level_end_point: 'reference_level' interpolated at the line start
         - dpumax: the largest of the two invert levels
@@ -74,7 +76,6 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         lines.veg_coef1 = (
             self.vegetation_stem_density[idx1]
             * self.vegetation_stem_diameter[idx1]
-            * self.vegetation_height[idx1]
             * self.vegetation_drag_coefficient[idx1]
         )
         lines.veg_coef1[np.isnan(lines.veg_coef1)] = 0.0
@@ -82,10 +83,13 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
         lines.veg_coef2 = (
             self.vegetation_stem_density[idx2]
             * self.vegetation_stem_diameter[idx2]
-            * self.vegetation_height[idx2]
             * self.vegetation_drag_coefficient[idx2]
         )
         lines.veg_coef2[np.isnan(lines.veg_coef2)] = 0.0
+        lines.veg_hght1 = self.vegetation_height[idx1]
+        lines.veg_hght1[np.isnan(lines.veg_hght1)] = 0.0
+        lines.veg_hght2 = self.vegetation_height[idx2]
+        lines.veg_hght2[np.isnan(lines.veg_hght2)] = 0.0
 
         # Compute invert levels and start and end
         lines.invert_level_start_point = compute_bottom_level(
