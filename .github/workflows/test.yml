@@ -95,4 +95,4 @@ jobs:
       - name: Run integration tests
         shell: bash
         run: |
-          pytest -c /dev/null integration_tests
+          pytest integration_tests

@@ -22,7 +22,7 @@ def count_unique(arr):
 
 @pytest.mark.parametrize(
     "filename",
-    ["v2_bergermeer.sqlite", "v2_bergermeer_spatialite4.sqlite", "v2_bergermeer.gpkg"],
+    ["v2_bergermeer.sqlite", "v2_bergermeer.gpkg"],
 )
 def test_integration(tmp_path, filename):
     shutil.copyfile(unittests_data_path / filename, tmp_path / filename)
@@ -109,6 +109,8 @@ def test_integration(tmp_path, filename):
             -9999: 1,
             CrossSectionShape.CIRCLE: 8,
             CrossSectionShape.RECTANGLE: 3,
+            CrossSectionShape.TABULATED_TRAPEZIUM: 1,
+            CrossSectionShape.TABULATED_YZ: 1,
         }
 
         ## EMBEDDED NODES

@@ -140,6 +140,8 @@ def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
         ("dist_calc_points", (6,), "float64"),
         ("friction_type", (6,), "int32"),
         ("friction_value", (6,), "float64"),
+        ("veg_coef1", (6,), "float64"),
+        ("veg_coef2", (6,), "float64"),
         ("id", (6,), "int32"),
         ("invert_level_end_point", (6,), "float64"),
         ("invert_level_start_point", (6,), "float64"),

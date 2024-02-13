@@ -62,6 +62,10 @@ def locations():
         channel_id=[51, 53, 53, 52, 54],
         friction_type=[1, 1, 1, 2, 2],
         friction_value=[30, 35, 40, 0.02, 0.03],
+        vegetation_stem_density=[1, 0.3, 0.4, np.nan, np.nan],
+        vegetation_stem_diameter=[0.5, 0.5, 0.5, np.nan, np.nan],
+        vegetation_height=[0.2, 1, 1, np.nan, np.nan],
+        vegetation_drag_coefficient=[1, 1, 1, np.nan, np.nan],
         reference_level=[1.0, 2.0, 3.0, 5.0, 6.0],
         definition_id=[3, 3, 4, 4, 5],
     )
@@ -163,8 +167,10 @@ def test_apply_to_lines(channels, channel_lines, locations):
     assert_equal(channel_lines.cross_id2, [3, 4, 3, 3, 3, 5, 5])
     assert_equal(channel_lines.frict_type1, [1, 2, 1, 1, 1, 2, 2])
     assert_equal(channel_lines.frict_type2, [1, 2, 1, 1, 1, 2, 2])
-    assert_equal(channel_lines.frict_value1, [30, 0.02, 40, 40, 40, 0.03, 0.03])
-    assert_equal(channel_lines.frict_value2, [30, 0.02, 35, 35, 35, 0.03, 0.03])
+    assert_equal(channel_lines.frict_value1, [30.0, 0.02, 40.0, 40.0, 40.0, 0.03, 0.03])
+    assert_equal(channel_lines.frict_value2, [30.0, 0.02, 35.0, 35.0, 35.0, 0.03, 0.03])
+    assert_almost_equal(channel_lines.veg_coef1, [0.1, 0.0, 0.2, 0.2, 0.2, 0.0, 0.0])
+    assert_almost_equal(channel_lines.veg_coef2, [0.1, 0.0, 0.15, 0.15, 0.15, 0.0, 0.0])
     assert_almost_equal(
         channel_lines.cross_weight, [1.0, 1.0, 1.0, 0.65, 0.0, 1.0, 1.0]
     )

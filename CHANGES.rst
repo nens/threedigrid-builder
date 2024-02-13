@@ -4,7 +4,13 @@ Changelog of threedigrid-builder
 1.12.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Add single vegetation and variable friction/vegetation for 1D elements. 
+
+- Add a table for open YZ profile to support 1D variable friction and vegetation.
+
+- Update unit tests and the integration test (bergemeer test).
+
+- Remove the spatialie4 version of the integration test (bergemeer test).
 
 
 1.12.2 (2023-12-07)
