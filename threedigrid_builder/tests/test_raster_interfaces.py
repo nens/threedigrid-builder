@@ -15,9 +15,18 @@ def test_does_not_exist(tmp_path):
     gdal.VersionInfo().startswith("304"),
     reason="this test is known two fail with GDAL 3.4",
 )
-def test_crs(dem_path, crs_wkt_28992_legacy):
+def test_crs_legacy(dem_path, crs_wkt_28992_legacy):
     with GDALInterface(dem_path) as dem:
         assert dem.crs == crs_wkt_28992_legacy
+
+
+@pytest.mark.skipif(
+    not gdal.VersionInfo().startswith("304"),
+    reason="this test is known two fail with GDAL 3.4",
+)
+def test_crs(dem_path, crs_wkt_28992):
+    with GDALInterface(dem_path) as dem:
+        assert dem.crs == crs_wkt_28992
 
 
 def test_pixel_size(dem_path):
