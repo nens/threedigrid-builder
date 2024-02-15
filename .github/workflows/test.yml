@@ -55,7 +55,7 @@ jobs:
             os: ubuntu-22.04
             numpy: numpy==1.24.*
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
-            display_name: "latest"
+            display_name: "2023"
             extras: "[test,gridadmin]"
           # current (still using 3.11 because 3.12 breaks; see issue 348)
           - python: '3.11'
