@@ -52,7 +52,7 @@ jobs:
             extras: "[test,gridadmin]"
           # 2023
           - python: '3.11'
-            os: ubuntu-latest
+            os: ubuntu-22.04
             numpy: numpy==1.24.*
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
             display_name: "latest"
