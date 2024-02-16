@@ -22,6 +22,7 @@ jobs:
             display_name: "2019"
             pins: "h5py==2.10.* sqlalchemy==1.4.10 shapely==2.0.* pyproj==3.0.*"
             extras: "[test,gridadmin]"
+            ppa: ""
           # 2020
           - python: 3.9
             os: ubuntu-20.04
@@ -29,6 +30,7 @@ jobs:
             display_name: "2020"
             pins: "h5py==3.1.* sqlalchemy==1.4.20 shapely==2.0.* pyproj==3.0.*"
             extras: "[test,gridadmin]"
+            ppa: ""
           # 2021
           - python: 3.9
             os: ubuntu-20.04
@@ -36,6 +38,7 @@ jobs:
             display_name: "2021"
             pins: "h5py==3.3.* sqlalchemy==1.4.30 shapely==2.0.* pyproj==3.2.*"
             extras: "[test,gridadmin]"
+            ppa: ""
           # 2022
           - python: '3.10'
             os: ubuntu-22.04
@@ -43,6 +46,7 @@ jobs:
             display_name: "2022"
             pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
             extras: "[test,gridadmin]"
+            ppa: ""
           # 2023
           - python: '3.11'
             os: ubuntu-22.04
@@ -50,6 +54,7 @@ jobs:
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
             display_name: "2023"
             extras: "[test,gridadmin]"
+            ppa: ""
           # current (still using 3.11 because 3.12 breaks; see issue 348)
           - python: '3.11'
             os: ubuntu-latest
@@ -57,6 +62,15 @@ jobs:
             pins: ""
             display_name: "latest"
             extras: "[test,gridadmin]"
+            ppa: ""
+          - python: '3.11'
+            os: ubuntu-latest
+            numpy: numpy==1.24.*
+            pins: ""
+            display_name: "GDAL36"
+            extras: "[test,gridadmin]"
+            ppa: "ppa:ubuntugis/ppa"
+
 
     steps:
       - uses: actions/checkout@v3
@@ -67,6 +81,12 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Add PPA
+        run: |
+          sudo add-apt-repository ${{ matrix.ppa }} -y && sudo apt update
+          apt show libgdal-dev | grep Version          
+        if: matrix.ppa != ""
 
       - name: Install GDAL, sqlite3 and spatialite
         run: |
