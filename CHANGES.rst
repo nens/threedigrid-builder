@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.12.3 (unreleased)
+1.13.0 (2024-02-16)
 -------------------
 
 - Add single vegetation and variable friction/vegetation for 1D elements. 
