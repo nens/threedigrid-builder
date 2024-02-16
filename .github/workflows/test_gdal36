@@ -1,0 +1,54 @@
+name: Linux
+
+# Run on PR requests. And on master itself.
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  TestGDAL:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+      - name: Add PPA
+        run: |
+          sudo add-apt-repository ppa:ubuntugis/ppa -y && sudo apt update
+          apt show libgdal-dev | grep Version
+
+      - name: Install GDAL, sqlite3 and spatialite
+        run: |
+          sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
+          echo $(gdal-config --version)
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ubuntu-22.04-pip-3.11-numpy==1.24.*-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ubuntu-22.04-pip-3.11-numpy==1.24.*-
+
+      - name: Install python dependencies
+        shell: bash
+        run: |
+          pip install --disable-pip-version-check --upgrade pip setuptools==63.* wheel scikit-build
+          pip install numpy==1.24.*
+          pip install -e .[test,gridadmin] --no-build-isolation ${{ matrix.pins }} "pygdal==$(gdal-config --version).*"
+          pip list
+
+      - name: Run unittests
+        shell: bash
+        run: |
+          pytest
+
+      - name: Run integration tests
+        shell: bash
+        run: |
+          pytest integration_tests
