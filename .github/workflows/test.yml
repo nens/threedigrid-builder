@@ -79,7 +79,7 @@ jobs:
         run: |
           sudo add-apt-repository "ppa:ubuntugis/ppa" -y && sudo apt update
           apt show libgdal-dev | grep Version          
-        if: matrix.display_name == "GDAL36"
+        if: matrix.display_name == 'GDAL36'
 
       - name: Install GDAL, sqlite3 and spatialite
         run: |
