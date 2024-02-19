@@ -50,7 +50,7 @@ jobs:
         if: matrix.os == 'windows-2019'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.12.0
+        uses: pypa/cibuildwheel@v2.16.5
         # to supply options, put them in 'env', like:
         env:
           CIBW_SKIP: "pp* *musllinux*" # skips pypy and musllinux
@@ -70,22 +70,22 @@ jobs:
           path: ./wheelhouse/*.whl
           retention-days: 5
 
-  publish:
-    name: Publish on GitHub and PyPI
-    needs: [build_sdist, build_wheels]
-    runs-on: ubuntu-latest
-    # release on every tag
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: artifact
-          path: dist
+  # publish:
+  #   name: Publish on GitHub and PyPI
+  #   needs: [build_sdist, build_wheels]
+  #   runs-on: ubuntu-latest
+  #   # release on every tag
+  #   if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
+  #   steps:
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: artifact
+  #         path: dist
 
-      - name: Upload Github release
-        uses: softprops/action-gh-release@v1
+  #     - name: Upload Github release
+  #       uses: softprops/action-gh-release@v1
 
-      - name: Upload Release Assets to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
+  #     - name: Upload Release Assets to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         password: ${{ secrets.PYPI_UPLOAD_TOKEN }}
