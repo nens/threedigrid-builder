@@ -84,7 +84,7 @@ setup(
         "gpkg": ["geopandas"],
         "cli": ["typer"],
     },
-    python_requires=">=3.7",
+    python_requires=">=3.8,<3.12",
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
