@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.13.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Remove python 3.12 from wheel build and set minimum python version to 3.7. 
 
 
 1.13.0 (2024-02-16)
