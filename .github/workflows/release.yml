@@ -53,7 +53,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.5
         # to supply options, put them in 'env', like:
         env:
-          CIBW_SKIP: "pp* *musllinux*" # skips pypy and musllinux
+          CIBW_SKIP: "pp* *musllinux* cp312" # skips pypy, musllinux and python3.12
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-12
