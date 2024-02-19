@@ -118,8 +118,8 @@ add_custom_command(
       -m "numpy.f2py"
       -m ${f2py_module_name}
       --lower
-      "${fortran_src_dir}/cells.f90 ${fortran_src_dir}/quadtree.f90"
-      #only: make_quadtree set_2d_computational_nodes_lines
+      "${fortran_src_dir}/cells.f90"
+      "${fortran_src_dir}/quadtree.f90"
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${fortran_src_file}
   )
