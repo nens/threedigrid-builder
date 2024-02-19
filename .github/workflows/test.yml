@@ -99,7 +99,7 @@ jobs:
           pip install --disable-pip-version-check --upgrade pip wheel scikit-build
           pip install ${{ matrix.setuptools }}
           pip install ${{ matrix.numpy }}
-          pip install -v -e .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "pygdal==$(gdal-config --version).*"
+          pip install -e .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "pygdal==$(gdal-config --version).*"
           pip list
       
       - name: run setup.py for python 3.12
