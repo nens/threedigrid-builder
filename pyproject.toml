@@ -13,6 +13,7 @@ requires = [
     "numpy==1.21.3; python_version=='3.10'",
     "numpy==1.24.2; python_version=='3.11'",
     # do not pin numpy on future versions of python to avoid incompatible numpy and python versions
-    "numpy; python_version>='3.11'",
+    "numpy==1.26.*; python_version=='3.12'",
     "ninja; platform_system!='Windows'"
 ]
+build-backend = "setuptools.build_meta"

@@ -30,6 +30,7 @@ if "clean" in sys.argv:
     print("removing build folder")
     if os.path.isdir(p / "_skbuild"):
         shutil.rmtree(p / "_skbuild")
+    sys.exit()
 
 if sys.platform == "win32":
     cmake_args = ["-G", "MSYS Makefiles", "-DCMAKE_GNUtoMS=ON"]
@@ -51,7 +52,7 @@ def get_version():
 
 
 install_requires = [
-    "numpy>=1.15,<1.25.0",
+    "numpy>=1.15",
     "threedi-schema==0.219.*",
     "shapely>=2",
     "pyproj>=3",
@@ -84,7 +85,7 @@ setup(
         "gpkg": ["geopandas"],
         "cli": ["typer"],
     },
-    python_requires=">=3.8,<3.12",
+    python_requires=">=3.8",
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
