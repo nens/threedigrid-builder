@@ -55,9 +55,9 @@ jobs:
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
             display_name: "2023"
             extras: "[test,gridadmin]"
-          # current (still using 3.11 because 3.12 breaks; see issue 348)
+          # current (using ubuntu 22.04 because latest will change to 24.04 with gdal 3.8 at some moment)
           - python: '3.12'
-            os: ubuntu-latest
+            os: ubuntu-22.04
             setuptools: setuptools==69.*
             numpy: numpy==1.26.*
             pins: ""
