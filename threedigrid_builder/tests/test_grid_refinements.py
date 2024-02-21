@@ -7,6 +7,7 @@ from threedigrid_builder.grid import GridRefinements
 
 EPSILON = 1e-4
 
+
 @pytest.fixture
 def refinements():
     return GridRefinements(
@@ -98,7 +99,9 @@ def test_rasterize_line_refinement2(refinements):
 
 
 def test_rasterize_poly_refinement(refinements):
-    refinements.the_geom[0] = shapely.box(13.0+EPSILON, 11.0+EPSILON, 14.0+EPSILON, 13.0+EPSILON)
+    refinements.the_geom[0] = shapely.box(
+        13.0 + EPSILON, 11.0 + EPSILON, 14.0 + EPSILON, 13.0 + EPSILON
+    )
     actual = refinements.rasterize(
         origin=(12.0, 10.0), height=8, width=6, cell_size=0.5, no_data_value=3
     )
@@ -150,8 +153,8 @@ def test_rasterize_multiple_refinements(reverse):
         id=[5, 8],
         refinement_level=[1, 2],
         the_geom=[
-            shapely.box(13.0+EPSILON, 11.0+EPSILON, 14.0+EPSILON, 13.0+EPSILON),
-            shapely.box(12.5+EPSILON, 10.5+EPSILON, 13.5+EPSILON, 12.5+EPSILON),
+            shapely.box(13.0 + EPSILON, 11.0 + EPSILON, 14.0 + EPSILON, 13.0 + EPSILON),
+            shapely.box(12.5 + EPSILON, 10.5 + EPSILON, 13.5 + EPSILON, 12.5 + EPSILON),
         ],
     )
     if reverse:
