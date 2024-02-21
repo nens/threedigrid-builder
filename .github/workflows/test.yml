@@ -63,13 +63,14 @@ jobs:
             pins: ""
             display_name: "latest"
             extras: "[test,gridadmin]"
-          - python: '3.11'
-            os: ubuntu-latest
-            numpy: numpy==1.24.*
+          - python: '3.12 - gdal 3.6'
+            os: ubuntu-22.04
+            setuptools: setuptools==69.*
+            numpy: numpy==1.26.*
             pins: ""
-            display_name: "GDAL36"
+            display_name: "latest"
             extras: "[test,gridadmin]"
-
+            use_gdal_36: true
 
     steps:
       - uses: actions/checkout@v3
@@ -85,7 +86,7 @@ jobs:
         run: |
           sudo add-apt-repository "ppa:ubuntugis/ppa" -y && sudo apt update
           apt show libgdal-dev | grep Version          
-        if: matrix.display_name == 'GDAL36'
+        if: matrix.use_gdal_36
 
       - name: Install GDAL, sqlite3 and spatialite
         run: |
