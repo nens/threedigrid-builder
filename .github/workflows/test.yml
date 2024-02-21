@@ -63,12 +63,12 @@ jobs:
             pins: ""
             display_name: "latest"
             extras: "[test,gridadmin]"
-          - python: '3.12 - gdal 3.6'
+          - python: '3.12'
             os: ubuntu-22.04
             setuptools: setuptools==69.*
             numpy: numpy==1.26.*
             pins: ""
-            display_name: "latest"
+            display_name: "latest - gdal 3.6"
             extras: "[test,gridadmin]"
             use_gdal_36: true
 
