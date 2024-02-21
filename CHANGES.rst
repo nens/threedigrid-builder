@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.13.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Make package compatible with Python 3.12
 
 
 1.13.1 (2024-02-19)

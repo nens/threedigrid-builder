@@ -18,6 +18,7 @@ jobs:
           # 2019
           - python: 3.8
             os: ubuntu-20.04
+            setuptools: setuptools==63.*
             numpy: numpy==1.17.*
             display_name: "2019"
             pins: "h5py==2.10.* sqlalchemy==1.4.10 shapely==2.0.* pyproj==3.0.*"
@@ -25,6 +26,7 @@ jobs:
           # 2020
           - python: 3.9
             os: ubuntu-20.04
+            setuptools: setuptools==63.*
             numpy: numpy==1.19.*
             display_name: "2020"
             pins: "h5py==3.1.* sqlalchemy==1.4.20 shapely==2.0.* pyproj==3.0.*"
@@ -32,6 +34,7 @@ jobs:
           # 2021
           - python: 3.9
             os: ubuntu-20.04
+            setuptools: setuptools==63.*
             numpy: numpy==1.21.*
             display_name: "2021"
             pins: "h5py==3.3.* sqlalchemy==1.4.30 shapely==2.0.* pyproj==3.2.*"
@@ -39,6 +42,7 @@ jobs:
           # 2022
           - python: '3.10'
             os: ubuntu-22.04
+            setuptools: setuptools==63.*
             numpy: numpy==1.23.*
             display_name: "2022"
             pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
@@ -46,14 +50,16 @@ jobs:
           # 2023
           - python: '3.11'
             os: ubuntu-22.04
+            setuptools: setuptools==63.*
             numpy: numpy==1.24.*
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
             display_name: "2023"
             extras: "[test,gridadmin]"
-          # current (still using 3.11 because 3.12 breaks; see issue 348)
-          - python: '3.11'
-            os: ubuntu-latest
-            numpy: numpy==1.24.*
+          # current (using ubuntu 22.04 because latest will change to 24.04 with gdal 3.8 at some moment)
+          - python: '3.12'
+            os: ubuntu-22.04
+            setuptools: setuptools==69.*
+            numpy: numpy==1.26.*
             pins: ""
             display_name: "latest"
             extras: "[test,gridadmin]"
@@ -95,10 +101,16 @@ jobs:
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --disable-pip-version-check --upgrade pip setuptools==63.* wheel scikit-build 
+          pip install --disable-pip-version-check --upgrade pip wheel scikit-build
+          pip install ${{ matrix.setuptools }}
           pip install ${{ matrix.numpy }}
-          pip install -e .${{ matrix.extras }} --no-build-isolation ${{ matrix.pins }} "pygdal==$(gdal-config --version).*"
+          pip install -e .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "pygdal==$(gdal-config --version).*"
           pip list
+
+      - name: run setup.py for python 3.12
+        if: matrix.python == '3.12'
+        run: |
+          python setup.py develop
 
       - name: Run unittests
         shell: bash
