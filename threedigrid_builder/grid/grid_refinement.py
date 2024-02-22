@@ -86,7 +86,7 @@ def rasterize(geoms, values, origin, width, height, cell_size, no_data_value):
 
     # ATTRIBUTE=BURN_ATTR burns the BURN_ATTR value of each feature
     # ALL_TOUCHED turns off the special GDAL algorithm for lines
-    options = ["ATTRIBUTE=" + burn_attr, "ALL_TOUCHED=1"]
+    options = ["ATTRIBUTE=" + burn_attr, "ALL_TOUCHED=TRUE"]
 
     with Dataset(array, **dataset_kwargs) as dataset:
         gdal.RasterizeLayer(dataset, (1,), layer, options=options)

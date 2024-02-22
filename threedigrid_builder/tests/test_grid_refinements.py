@@ -99,9 +99,7 @@ def test_rasterize_line_refinement2(refinements):
 
 
 def test_rasterize_poly_refinement(refinements):
-    refinements.the_geom[0] = shapely.box(
-        13.0 + EPSILON, 11.0 + EPSILON, 14.0 + EPSILON, 13.0 + EPSILON
-    )
+    refinements.the_geom[0] = shapely.box(13.0, 11.0, 14.0, 13.0)
     actual = refinements.rasterize(
         origin=(12.0, 10.0), height=8, width=6, cell_size=0.5, no_data_value=3
     )
