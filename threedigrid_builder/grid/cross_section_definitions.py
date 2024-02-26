@@ -94,7 +94,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
         if len(tables_yz) > 0:
             result.tables_yz = np.concatenate(tables_yz, axis=0)
         else:
-            result.tables_yz = np.empty((0, 4))
+            result.tables_yz = np.empty((0, 5))
 
         return result
 
@@ -304,7 +304,7 @@ def tabulate_yz(shape, width, height):
         yz = None
         shape_return = CrossSectionShape.TABULATED_TRAPEZIUM
     else:
-        yz = np.zeros((len(ys), 4), dtype=float)
+        yz = np.zeros((len(ys), 5), dtype=float)
         yz[:, 0] = ys
         yz[:, 1] = zs
         shape_return = CrossSectionShape.TABULATED_YZ
@@ -385,6 +385,7 @@ def set_friction_vegetation_values(
         veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
         veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
         veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
-        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_hght * veg_drag
+        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_drag
+        yz[:-1, 4] = veg_hght
 
     return yz

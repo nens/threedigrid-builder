@@ -1,7 +1,21 @@
 Changelog of threedigrid-builder
 ================================
 
-1.12.3 (unreleased)
+1.13.2 (unreleased)
+-------------------
+
+- Make package compatible with Python 3.12
+- Make package compatible with GDAL 3.4 and 3.6. Note that in GDAL 3.6 refinements where the area exactly matches
+  the grid may slightly differ from those in GDAL 3.4 and older.
+
+
+1.13.1 (2024-02-19)
+-------------------
+
+- Remove python 3.12 from wheel build and set minimum python version to 3.7. 
+
+
+1.13.0 (2024-02-16)
 -------------------
 
 - Add single vegetation and variable friction/vegetation for 1D elements. 

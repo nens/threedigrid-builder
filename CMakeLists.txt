@@ -89,7 +89,7 @@ cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
 
 # Compiler flags
 set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -Wconversion -Wmaybe-uninitialized")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -s -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -Wconversion -Wmaybe-uninitialized -fcheck=all -fimplicit-none -Wextra")
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
@@ -99,7 +99,6 @@ set(fortran_src_file "${fortran_src_dir}/parameters.f90"
                       "${fortran_src_dir}/geo_utils.f90"
                       "${fortran_src_dir}/cells.f90"
                       "${fortran_src_dir}/quadtree.f90"
-                      "${fortran_src_dir}/_fgrid.pyf"
                     )
 set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
 set(f2py_module_c "${f2py_module_name}module.c")
@@ -119,8 +118,8 @@ add_custom_command(
       -m "numpy.f2py"
       -m ${f2py_module_name}
       --lower
-      ${fortran_src_file}
-      #only: make_quadtree set_2d_computational_nodes_lines
+      "${fortran_src_dir}/cells.f90"
+      "${fortran_src_dir}/quadtree.f90"
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${fortran_src_file}
   )

@@ -38,8 +38,10 @@ class Line:
     frict_type2: int
     frict_value1: float  # For 1D-2Dgw: resistance factor-out (hydr. cond / thickness)
     frict_value2: float  # For 1D-2Dgw: resistance factor-in (hydr. cond / thickness)
-    veg_coef1: float  # the product of vegetation properties
-    veg_coef2: float  # the product of vegetation properties
+    veg_coef1: float  # the product of vegetation properties (except height)
+    veg_coef2: float  # the product of vegetation properties (except height)
+    veg_height1: float  # the vegetaion height
+    veg_height2: float  # the vegetaion height
     cross_weight: float  # For 1D-2Dgw: the exchange length (tables: cross_width)
     discharge_coefficient_positive: float
     discharge_coefficient_negative: float

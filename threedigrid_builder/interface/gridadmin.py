@@ -444,6 +444,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "frict_value2", lines.frict_value2)
         self.write_dataset(group, "veg_coef1", lines.veg_coef1)
         self.write_dataset(group, "veg_coef2", lines.veg_coef2)
+        self.write_dataset(group, "veg_height1", lines.veg_height1)
+        self.write_dataset(group, "veg_height2", lines.veg_height2)
         self.write_dataset(group, "cross_weight", lines.cross_weight)
         self.write_dataset(
             group, "hydraulic_resistance_in", lines.hydraulic_resistance_in
