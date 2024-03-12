@@ -34,8 +34,8 @@ data_path = pathlib.Path(__file__).resolve().parents[0] / "data"
 def db(tmp_path_factory):
     """Yields a threedigrid_builder.interface.db.SQLite object with access
     to the test v2_bergermeer.sqlite."""
-    fn = tmp_path_factory.mktemp("data") / "v2_bergermeer.sqlite"
-    sqlite_path = data_path / "v2_bergermeer.sqlite"
+    fn = tmp_path_factory.mktemp("data") / "v2_bergermeer.gpkg"
+    sqlite_path = data_path / "v2_bergermeer.gpkg"
     shutil.copyfile(sqlite_path, fn)
     if not os.path.isfile(fn):
         pytest.skip("sample sqlite is not available", allow_module_level=True)

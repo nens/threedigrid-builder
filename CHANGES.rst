@@ -7,6 +7,9 @@ Changelog of threedigrid-builder
 - Make package compatible with Python 3.12
 - Make package compatible with GDAL 3.4 and 3.6. Note that in GDAL 3.6 refinements where the area exactly matches
   the grid may slightly differ from those in GDAL 3.4 and older.
+- Add geopackage schematisation to test data
+- Use geopackage, instead of spatialite, for tests
+- Add geopackage to schematisations tested in integration test
 
 
 1.13.1 (2024-02-19)

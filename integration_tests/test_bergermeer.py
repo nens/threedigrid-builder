@@ -20,7 +20,10 @@ def count_unique(arr):
     return dict(zip(*np.unique(arr, return_counts=True)))
 
 
-@pytest.mark.parametrize("filename", ["v2_bergermeer.sqlite"])
+@pytest.mark.parametrize(
+    "filename",
+    ["v2_bergermeer.sqlite", "v2_bergermeer.gpkg"],
+)
 def test_integration(tmp_path, filename):
     shutil.copyfile(unittests_data_path / filename, tmp_path / filename)
     progress_callback = Mock()
