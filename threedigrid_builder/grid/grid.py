@@ -332,7 +332,7 @@ class Grid:
         # Some general quadtree grid statistics we need in the .h5 later on.
         quadtree_stats = QuadtreeStats(
             lgrmin=quadtree.lgrmin,
-            kmax=quadtree.kmax,
+            kmax=quadtree.nr_grid_levels,
             mmax=quadtree.mmax,
             nmax=quadtree.nmax,
             dx=quadtree.dx,

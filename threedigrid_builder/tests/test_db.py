@@ -238,9 +238,9 @@ def test_get_settings(db):
     # some settings copied over from SQLite:
     assert g.use_1d_flow is True
     assert g.use_2d_flow is True
-    assert g.grid_space == 20.0
-    assert g.dist_calc_points == 15.0
-    assert g.kmax == 4
+    assert g.minimum_cell_size == 20.0
+    assert g.calculation_point_distance_1d == 15.0
+    assert g.nr_grid_levels == 4
     assert g.embedded_cutoff_threshold == 0.05
     assert g.max_angle_1d_advection == 0.4 * np.pi
     # use_2d is based on the presence of dem_file:
@@ -248,9 +248,9 @@ def test_get_settings(db):
 
     s = result["tables_settings"]
     assert isinstance(s, TablesSettings)
-    assert s.table_step_size == 0.05
-    assert s.frict_type == 2
-    assert s.frict_coef == 0.03
+    assert s.minimum_table_step_size == 0.05
+    assert s.friction_type == 2
+    assert s.friction_coefficient == 0.03
     assert s.frict_coef_type == InitializationType.GLOBAL
     assert s.interception_global == 100.0
     assert s.interception_type == InitializationType.NO_AGG

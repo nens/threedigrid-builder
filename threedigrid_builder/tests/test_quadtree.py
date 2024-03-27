@@ -80,7 +80,7 @@ def quadtree_poly_refinement(subgrid_meta):
 
 
 def test_quadtree_no_refinement(quadtree_no_refinement):
-    assert quadtree_no_refinement.kmax == 1
+    assert quadtree_no_refinement.nr_grid_levels == 1
     assert np.size(quadtree_no_refinement.mmax) == 1
     assert quadtree_no_refinement.mmax[0] == 3
     assert quadtree_no_refinement.nmax[0] == 2
@@ -107,7 +107,7 @@ def test_quadtree_no_even_pixels(subgrid_meta):
 
 
 def test_quadtree_line_refinement(quadtree_line_refinement):
-    assert quadtree_line_refinement.kmax == 3
+    assert quadtree_line_refinement.nr_grid_levels == 3
     assert np.size(quadtree_line_refinement.mmax) == 3
     assert quadtree_line_refinement.mmax[2] == 3
     assert quadtree_line_refinement.nmax[2] == 2
@@ -129,7 +129,7 @@ def test_quadtree_line_refinement(quadtree_line_refinement):
 
 
 def test_quadtree_poly_refinement(quadtree_poly_refinement):
-    assert quadtree_poly_refinement.kmax == 2
+    assert quadtree_poly_refinement.nr_grid_levels == 2
     assert np.size(quadtree_poly_refinement.mmax) == 2
     assert quadtree_poly_refinement.mmax[1] == 3
     assert quadtree_poly_refinement.nmax[1] == 2

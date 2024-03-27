@@ -200,7 +200,7 @@ class BaseLinear:
         zoom_category = np.take(objs.zoom_category, segment_idx)
         connection_node_start_id = np.take(objs.connection_node_start_id, segment_idx)
         connection_node_end_id = np.take(objs.connection_node_end_id, segment_idx)
-        dist_calc_points = np.take(objs.dist_calc_points, segment_idx)
+        dist_calc_points = np.take(objs.calculation_point_distance_1d, segment_idx)
 
         # set the right node indices for each segment
         first_idx, last_idx = counts_to_ranges(np.bincount(segments.linestring_idx))
@@ -247,7 +247,7 @@ class BaseLinear:
 
         # conditionally add friction type and value (for pipes and culverts only)
         try:
-            frict_type = objs.friction_type[segment_idx]
+            frict_type = objs.friction_coefficient[segment_idx]
             frict_value = objs.friction_value[segment_idx]
         except AttributeError:
             frict_type = -9999

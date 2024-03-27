@@ -45,13 +45,13 @@ def meta():
             use_1d_flow=True,
             use_2d_flow=True,
             use_0d_inflow=0,
-            grid_space=20.0,
-            dist_calc_points=25.0,
-            kmax=4,
+            minimum_cell_size=20.0,
+            calculation_point_distance_1d=25.0,
+            nr_grid_levels=4,
         ),
         tables_settings=TablesSettings(
-            table_step_size=0.05,
-            frict_coef=0.03,
+            minimum_table_step_size=0.05,
+            friction_coefficient=0.03,
             frict_coef_type=9,
         ),
     )

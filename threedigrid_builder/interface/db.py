@@ -44,7 +44,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 217
+MIN_SQLITE_VERSION = 300
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -145,60 +145,45 @@ class SQLite:
         """
 
         with self.get_session() as session:
-            global_ = session.query(models.GlobalSetting).order_by("id").first()
-            if global_.groundwater_settings_id is not None:
-                groundwater = _object_as_dict(
-                    session.query(models.GroundWater)
-                    .filter_by(id=global_.groundwater_settings_id)
-                    .one()
-                )
+            model_settings = session.query(models.ModelSettings).order_by("id").first()
+            if model_settings.use_groundwater_flow or model_settings.use_groundwater_storage:
+                groundwater = _object_as_dict(session.query(models.GroundWater).one())
             else:
                 groundwater = {}
-            if global_.interflow_settings_id is not None:
-                interflow = _object_as_dict(
-                    session.query(models.Interflow)
-                    .filter_by(id=global_.interflow_settings_id)
-                    .one()
-                )
+            if model_settings.use_interflow:
+                interflow = _object_as_dict(session.query(models.Interflow).one())
             else:
                 interflow = {}
-            if global_.simple_infiltration_settings_id is not None:
-                infiltration = _object_as_dict(
-                    session.query(models.SimpleInfiltration)
-                    .filter_by(id=global_.simple_infiltration_settings_id)
-                    .one()
-                )
+            if model_settings.use_simple_infiltration:
+                infiltration = _object_as_dict(session.query(models.SimpleInfiltration).one())
                 # older sqlites have no max_infiltration_capacity field
                 infiltration.setdefault("max_infiltration_capacity", None)
             else:
                 infiltration = {}
-            if global_.vegetation_drag_settings_id is not None:
-                vegetation_drag = _object_as_dict(
-                    session.query(models.VegetationDrag)
-                    .filter_by(id=global_.vegetation_drag_settings_id)
-                    .one(),
-                )
+            if model_settings.use_vegetation_drag_2d:
+                vegetation_drag = _object_as_dict(session.query(models.VegetationDrag).one())
             else:
                 vegetation_drag = {}
-            global_ = _object_as_dict(global_)
+            model_settings = _object_as_dict(model_settings)
 
         # record if there is a DEM file to be expected
         # Note: use_2d_flow only determines whether there are flow lines
-        global_["use_2d"] = bool(global_["dem_file"])
+        model_settings["use_2d"] = bool(model_settings["dem_file"])
 
         # set/adapt initialization types to include information about file presence
         NO_AGG = InitializationType.NO_AGG
         AVERAGE = InitializationType.AVERAGE
         _set_initialization_type(
-            global_, "frict_coef", default=AVERAGE if global_["frict_avg"] else NO_AGG
+            model_settings, "friction_coefficient", default=AVERAGE if model_settings["friction_averaging"] else NO_AGG
         )
-        _set_initialization_type(
-            global_,
-            "interception_global",
-            file_field="interception_file",
-            type_field="interception_type",
-            default=NO_AGG,
-        )
+        # TODO: figure out what to do here; there could be no interception
+        # _set_initialization_type(
+        #     model_settings,
+        #     "interception_global",
+        #     file_field="interception_file",
+        #     type_field="interception_type",
+        #     default=NO_AGG,
+        # )
         if interflow:
             _set_initialization_type(interflow, "porosity", default=NO_AGG)
             _set_initialization_type(
@@ -207,7 +192,7 @@ class SQLite:
         if infiltration:
             _set_initialization_type(infiltration, "infiltration_rate", default=NO_AGG)
             _set_initialization_type(
-                infiltration, "max_infiltration_capacity", default=NO_AGG
+                infiltration, "max_infiltration_volume", default=NO_AGG
             )
 
         if groundwater:
@@ -217,7 +202,7 @@ class SQLite:
             _set_initialization_type(groundwater, "equilibrium_infiltration_rate")
             _set_initialization_type(groundwater, "initial_infiltration_rate")
             _set_initialization_type(groundwater, "infiltration_decay_period")
-            _set_initialization_type(groundwater, "groundwater_hydro_connectivity")
+            _set_initialization_type(groundwater, "groundwater_hydraulic_conductivity")
 
         if vegetation_drag:
             _set_initialization_type(
@@ -232,14 +217,18 @@ class SQLite:
             _set_initialization_type(
                 vegetation_drag, "vegetation_drag_coefficient", default=NO_AGG
             )
+        # Copy Simulation Template Settings to model_settings dict
+        template_settings = _object_as_dict(session.query(models.SimulationTemplateSettings).order_by("id").first())
+        model_settings["name"] = template_settings["name"]
+        model_settings["use_0d_inflow"] = template_settings["use_0d_inflow"]
 
-        grid_settings = GridSettings.from_dict(global_)
+        grid_settings = GridSettings.from_dict(model_settings)
         tables_settings = TablesSettings.from_dict(
-            {**groundwater, **interflow, **infiltration, **vegetation_drag, **global_}
+            {**groundwater, **interflow, **infiltration, **vegetation_drag, **model_settings}
         )
         return {
-            "epsg_code": global_["epsg_code"],
-            "model_name": global_["name"],
+            "epsg_code": model_settings["epsg_code"],
+            "model_name": model_settings["name"],
             "grid_settings": grid_settings,
             "tables_settings": tables_settings,
         }

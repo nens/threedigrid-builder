@@ -30,9 +30,9 @@ class GridSettings:
     use_1d_flow: bool
     use_2d_flow: bool
     use_0d_inflow: int
-    grid_space: float
-    dist_calc_points: float
-    kmax: int
+    minimum_cell_size: float
+    calculation_point_distance_1d: float
+    nr_grid_levels: int
     embedded_cutoff_threshold: float = 0.05
     max_angle_1d_advection: float = 0.4 * np.pi
 
@@ -56,10 +56,11 @@ class TablesSettings:
     """Settings necessary for threedi-tables."""
 
     ## from GlobalSettings
-    table_step_size: float
-    frict_coef: float
-    frict_coef_type: InitializationType
-    frict_type: FrictionType = FrictionType.MANNING
+    minimum_table_step_size: float
+    friction_coefficient: float
+    # TODO figure out how to fix this
+    # frict_coef_type: InitializationType
+    friction_type: FrictionType = FrictionType.MANNING
     interception_global: Optional[float] = None
     interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__
@@ -117,9 +118,9 @@ class TablesSettings:
     def __post_init__(self):
         # defaults
         if self.table_step_size_1d is None:
-            self.table_step_size_1d = self.table_step_size
+            self.table_step_size_1d = self.minimum_table_step_size
         if self.maximum_table_step_size is None:
-            self.maximum_table_step_size = 100 * self.table_step_size
+            self.maximum_table_step_size = 100 * self.minimum_table_step_size
 
         # validations
         for field in (
@@ -129,7 +130,7 @@ class TablesSettings:
         ):
             greater_zero_check(self, field)
 
-        if self.maximum_table_step_size < self.table_step_size:
+        if self.maximum_table_step_size < self.minimum_table_step_size:
             raise SchematisationError(
                 f"'maximum_table_step_size' must not be less than 'table_step_size'."
             )
