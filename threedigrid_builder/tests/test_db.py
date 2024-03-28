@@ -37,7 +37,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 217
+        get_version.return_value = 300
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
@@ -65,7 +65,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 220
+    assert db.get_version() == 300
 
 
 def test_get_boundary_conditions_1d(db):
@@ -251,8 +251,8 @@ def test_get_settings(db):
     assert s.minimum_table_step_size == 0.05
     assert s.friction_type == 2
     assert s.friction_coefficient == 0.03
-    assert s.frict_coef_type == InitializationType.GLOBAL
-    assert s.interception_global == 100.0
+    assert s.friction_coefficient_type == InitializationType.GLOBAL
+    assert s.interception == 100.0
     assert s.interception_type == InitializationType.NO_AGG
     assert s.table_step_size_1d == 0.05
     assert s.maximum_table_step_size == 5.0
@@ -269,8 +269,8 @@ def test_get_settings(db):
     assert s.initial_infiltration_rate_type == InitializationType.GLOBAL
     assert s.infiltration_decay_period == 0.1
     assert s.infiltration_decay_period_type == InitializationType.GLOBAL
-    assert s.groundwater_hydro_connectivity == 1.0
-    assert s.groundwater_hydro_connectivity_type == InitializationType.GLOBAL
+    assert s.groundwater_hydraulic_conductivity == 1.0
+    assert s.groundwater_hydraulic_conductivity_type == InitializationType.GLOBAL
 
     # there are interflow settings, but most are unset
     assert s.interflow_type == 0  # means: no interflow

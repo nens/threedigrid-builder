@@ -266,7 +266,7 @@ class Grid:
         # set flags
         s = meta.tables_settings  # shorthand
         meta.has_interception = s.interception_type is not None
-        meta.has_groundwater_flow = s.groundwater_hydro_connectivity_type is not None
+        meta.has_groundwater_flow = s.groundwater_hydraulic_conductivity_type is not None
         meta.has_simple_infiltration = s.infiltration_rate_type is not None
         meta.has_max_infiltration_capacity = (
             s.max_infiltration_capacity_type is not None
@@ -332,7 +332,7 @@ class Grid:
         # Some general quadtree grid statistics we need in the .h5 later on.
         quadtree_stats = QuadtreeStats(
             lgrmin=quadtree.lgrmin,
-            kmax=quadtree.nr_grid_levels,
+            kmax=quadtree.kmax,
             mmax=quadtree.mmax,
             nmax=quadtree.nmax,
             dx=quadtree.dx,

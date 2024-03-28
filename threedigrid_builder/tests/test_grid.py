@@ -52,7 +52,7 @@ def meta():
         tables_settings=TablesSettings(
             minimum_table_step_size=0.05,
             friction_coefficient=0.03,
-            frict_coef_type=9,
+            friction_coefficient_type=9,
         ),
     )
 
@@ -92,7 +92,7 @@ def grid1d(meta):
     "setting,expected_true",
     [
         ("interception_type", "has_interception"),
-        ("groundwater_hydro_connectivity_type", "has_groundwater_flow"),
+        ("groundwater_hydraulic_conductivity_type", "has_groundwater_flow"),
         ("infiltration_rate_type", "has_simple_infiltration"),
         ("groundwater_impervious_layer_level_type", "has_groundwater"),
         ("interflow_type", "has_interflow"),

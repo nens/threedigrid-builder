@@ -103,7 +103,7 @@ def grid_all():
         tables_settings=TablesSettings(
             minimum_table_step_size=0.05,
             friction_coefficient=0.03,
-            frict_coef_type=9,
+            friction_coefficient_type=9,
         ),
     )
     quadtree_stats = QuadtreeStats(

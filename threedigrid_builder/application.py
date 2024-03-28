@@ -70,8 +70,8 @@ def _make_gridadmin(
         progress_callback(0.7, "Constructing 2D computational grid...")
         quadtree = QuadTree(
             subgrid_meta,
-            grid_settings.nr_grid_levels,
-            grid_settings.minimum_cell_size,
+            grid_settings.kmax,
+            grid_settings.grid_space,
             grid_settings.use_2d_flow,
             refinements,
         )

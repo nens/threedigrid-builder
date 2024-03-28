@@ -56,12 +56,12 @@ class TablesSettings:
     """Settings necessary for threedi-tables."""
 
     ## from GlobalSettings
+    # TODO: update comments to reflect origins
     minimum_table_step_size: float
     friction_coefficient: float
-    # TODO figure out how to fix this
-    # frict_coef_type: InitializationType
+    friction_coefficient_type: InitializationType
     friction_type: FrictionType = FrictionType.MANNING
-    interception_global: Optional[float] = None
+    interception: Optional[float] = None
     interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__
     maximum_table_step_size: float = None  # actual default  is set in __post_init__
@@ -84,8 +84,8 @@ class TablesSettings:
     initial_infiltration_rate_type: Optional[InitializationType] = None
     infiltration_decay_period: Optional[float] = None
     infiltration_decay_period_type: Optional[InitializationType] = None
-    groundwater_hydro_connectivity: Optional[float] = None
-    groundwater_hydro_connectivity_type: Optional[InitializationType] = None
+    groundwater_hydraulic_conductivity: Optional[float] = None
+    groundwater_hydraulic_conductivity_type: Optional[InitializationType] = None
 
     ## from Interflow
     interflow_type: InterflowType = InterflowType.NO_INTERLFOW

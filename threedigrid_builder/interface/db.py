@@ -82,7 +82,6 @@ def _set_initialization_type(
         file_field = f"{global_field}_file"
     if not type_field:
         type_field = f"{global_field}_type"
-
     # If the ``file_field`` contains a value, the initialization type will be changed to
     # the ``default_type``, if supplied.
     if dct[file_field]:
@@ -94,6 +93,7 @@ def _set_initialization_type(
     else:
         # No file, no global value
         dct[type_field] = None
+    print(f"dct[{type_field}]={dct[type_field]}")
 
 
 class SQLite:
@@ -164,6 +164,10 @@ class SQLite:
                 vegetation_drag = _object_as_dict(session.query(models.VegetationDrag).one())
             else:
                 vegetation_drag = {}
+            if model_settings.use_interception:
+                interception = _object_as_dict(session.query(models.Interception).one())
+            else:
+                interception = {}
             model_settings = _object_as_dict(model_settings)
 
         # record if there is a DEM file to be expected
@@ -176,14 +180,13 @@ class SQLite:
         _set_initialization_type(
             model_settings, "friction_coefficient", default=AVERAGE if model_settings["friction_averaging"] else NO_AGG
         )
-        # TODO: figure out what to do here; there could be no interception
-        # _set_initialization_type(
-        #     model_settings,
-        #     "interception_global",
-        #     file_field="interception_file",
-        #     type_field="interception_type",
-        #     default=NO_AGG,
-        # )
+        _set_initialization_type(
+            interception,
+            "interception",
+            file_field="interception_file",
+            type_field="interception_type",
+            default=NO_AGG,
+        )
         if interflow:
             _set_initialization_type(interflow, "porosity", default=NO_AGG)
             _set_initialization_type(
@@ -194,7 +197,6 @@ class SQLite:
             _set_initialization_type(
                 infiltration, "max_infiltration_volume", default=NO_AGG
             )
-
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)
             _set_initialization_type(groundwater, "groundwater_impervious_layer_level")
@@ -224,7 +226,7 @@ class SQLite:
 
         grid_settings = GridSettings.from_dict(model_settings)
         tables_settings = TablesSettings.from_dict(
-            {**groundwater, **interflow, **infiltration, **vegetation_drag, **model_settings}
+            {**groundwater, **interflow, **infiltration, **vegetation_drag, **model_settings, **interception}
         )
         return {
             "epsg_code": model_settings["epsg_code"],
