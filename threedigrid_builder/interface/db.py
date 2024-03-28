@@ -146,7 +146,10 @@ class SQLite:
 
         with self.get_session() as session:
             model_settings = session.query(models.ModelSettings).order_by("id").first()
-            if model_settings.use_groundwater_flow or model_settings.use_groundwater_storage:
+            if (
+                model_settings.use_groundwater_flow
+                or model_settings.use_groundwater_storage
+            ):
                 groundwater = _object_as_dict(session.query(models.GroundWater).one())
             else:
                 groundwater = {}
@@ -155,13 +158,17 @@ class SQLite:
             else:
                 interflow = {}
             if model_settings.use_simple_infiltration:
-                infiltration = _object_as_dict(session.query(models.SimpleInfiltration).one())
+                infiltration = _object_as_dict(
+                    session.query(models.SimpleInfiltration).one()
+                )
                 # older sqlites have no max_infiltration_capacity field
                 infiltration.setdefault("max_infiltration_capacity", None)
             else:
                 infiltration = {}
             if model_settings.use_vegetation_drag_2d:
-                vegetation_drag = _object_as_dict(session.query(models.VegetationDrag).one())
+                vegetation_drag = _object_as_dict(
+                    session.query(models.VegetationDrag).one()
+                )
             else:
                 vegetation_drag = {}
             if model_settings.use_interception:
@@ -178,7 +185,9 @@ class SQLite:
         NO_AGG = InitializationType.NO_AGG
         AVERAGE = InitializationType.AVERAGE
         _set_initialization_type(
-            model_settings, "friction_coefficient", default=AVERAGE if model_settings["friction_averaging"] else NO_AGG
+            model_settings,
+            "friction_coefficient",
+            default=AVERAGE if model_settings["friction_averaging"] else NO_AGG,
         )
         _set_initialization_type(
             interception,
@@ -220,13 +229,22 @@ class SQLite:
                 vegetation_drag, "vegetation_drag_coefficient", default=NO_AGG
             )
         # Copy Simulation Template Settings to model_settings dict
-        template_settings = _object_as_dict(session.query(models.SimulationTemplateSettings).order_by("id").first())
+        template_settings = _object_as_dict(
+            session.query(models.SimulationTemplateSettings).order_by("id").first()
+        )
         model_settings["name"] = template_settings["name"]
         model_settings["use_0d_inflow"] = template_settings["use_0d_inflow"]
 
         grid_settings = GridSettings.from_dict(model_settings)
         tables_settings = TablesSettings.from_dict(
-            {**groundwater, **interflow, **infiltration, **vegetation_drag, **model_settings, **interception}
+            {
+                **groundwater,
+                **interflow,
+                **infiltration,
+                **vegetation_drag,
+                **model_settings,
+                **interception,
+            }
         )
         return {
             "epsg_code": model_settings["epsg_code"],

@@ -266,7 +266,9 @@ class Grid:
         # set flags
         s = meta.tables_settings  # shorthand
         meta.has_interception = s.interception_type is not None
-        meta.has_groundwater_flow = s.groundwater_hydraulic_conductivity_type is not None
+        meta.has_groundwater_flow = (
+            s.groundwater_hydraulic_conductivity_type is not None
+        )
         meta.has_simple_infiltration = s.infiltration_rate_type is not None
         meta.has_max_infiltration_capacity = (
             s.max_infiltration_capacity_type is not None
