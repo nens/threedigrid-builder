@@ -47,7 +47,7 @@ class GridSettings:
     def __post_init__(self):
         # validations
         if self.use_2d:
-            for field in ["grid_space", "kmax"]:
+            for field in ["grid_sminimum_cell_sizepace", "nr_grid_levels"]:
                 greater_zero_check(self, field)
 
 
@@ -67,7 +67,7 @@ class TablesSettings:
     maximum_table_step_size: float = None  # actual default  is set in __post_init__
 
     # TODO --> https://github.com/nens/threedigrid-builder/issues/86
-    manhole_storage_area: Optional[float] = None
+    manhole_aboveground_storage_area: Optional[float] = None
 
     # obstacle detection could be a tool in QGis?
     # dem_obstacle_detection: bool
@@ -124,7 +124,7 @@ class TablesSettings:
 
         # validations
         for field in (
-            "table_step_size",
+            "minimum_table_step_size",
             "table_step_size_1d",
             "maximum_table_step_size",
         ):
@@ -132,7 +132,7 @@ class TablesSettings:
 
         if self.maximum_table_step_size < self.minimum_table_step_size:
             raise SchematisationError(
-                f"'maximum_table_step_size' must not be less than 'table_step_size'."
+                f"'maximum_table_step_size' must not be less than 'minimum_table_step_size'."
             )
 
         # check enums

@@ -256,7 +256,7 @@ def test_get_settings(db):
     assert s.interception_type == InitializationType.NO_AGG
     assert s.table_step_size_1d == 0.05
     assert s.maximum_table_step_size == 5.0
-    assert s.manhole_storage_area is None
+    assert s.manhole_aboveground_storage_area is None
 
     # groundwater settings
     assert s.groundwater_impervious_layer_level == -5.0
