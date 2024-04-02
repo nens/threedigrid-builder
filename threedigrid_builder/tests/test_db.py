@@ -260,17 +260,17 @@ def test_get_settings(db):
 
     # groundwater settings
     assert s.groundwater_impervious_layer_level == -5.0
-    assert s.groundwater_impervious_layer_level_type == InitializationType.GLOBAL
+    assert s.groundwater_impervious_layer_level_aggregation == InitializationType.GLOBAL
     assert s.phreatic_storage_capacity == 0.25
-    assert s.phreatic_storage_capacity_type == InitializationType.GLOBAL
+    assert s.phreatic_storage_capacity_aggregation == InitializationType.GLOBAL
     assert s.equilibrium_infiltration_rate == 100.0
     assert s.equilibrium_infiltration_rate_type == InitializationType.GLOBAL
     assert s.initial_infiltration_rate == 300.0
-    assert s.initial_infiltration_rate_type == InitializationType.GLOBAL
+    assert s.initial_infiltration_rate_aggregation == InitializationType.GLOBAL
     assert s.infiltration_decay_period == 0.1
-    assert s.infiltration_decay_period_type == InitializationType.GLOBAL
+    assert s.infiltration_decay_period_aggregation == InitializationType.GLOBAL
     assert s.groundwater_hydraulic_conductivity == 1.0
-    assert s.groundwater_hydraulic_conductivity_type == InitializationType.GLOBAL
+    assert s.groundwater_hydraulic_conductivity_aggregation == InitializationType.GLOBAL
 
     # there are interflow settings, but most are unset
     assert s.interflow_type == 0  # means: no interflow

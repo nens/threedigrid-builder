@@ -75,17 +75,17 @@ class TablesSettings:
 
     ## from Groundwater
     groundwater_impervious_layer_level: Optional[float] = None
-    groundwater_impervious_layer_level_type: Optional[InitializationType] = None
+    groundwater_impervious_layer_level_aggregation: Optional[InitializationType] = None
     phreatic_storage_capacity: Optional[float] = None
-    phreatic_storage_capacity_type: Optional[InitializationType] = None
+    phreatic_storage_capacity_aggregation: Optional[InitializationType] = None
     equilibrium_infiltration_rate: Optional[float] = None
     equilibrium_infiltration_rate_type: Optional[InitializationType] = None
     initial_infiltration_rate: Optional[float] = None
-    initial_infiltration_rate_type: Optional[InitializationType] = None
+    initial_infiltration_rate_aggregation: Optional[InitializationType] = None
     infiltration_decay_period: Optional[float] = None
-    infiltration_decay_period_type: Optional[InitializationType] = None
+    infiltration_decay_period_aggregation: Optional[InitializationType] = None
     groundwater_hydraulic_conductivity: Optional[float] = None
-    groundwater_hydraulic_conductivity_type: Optional[InitializationType] = None
+    groundwater_hydraulic_conductivity_aggregation: Optional[InitializationType] = None
 
     ## from Interflow
     interflow_type: InterflowType = InterflowType.NO_INTERLFOW

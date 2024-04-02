@@ -94,7 +94,7 @@ def grid1d(meta):
         ("interception_type", "has_interception"),
         ("groundwater_hydraulic_conductivity_type", "has_groundwater_flow"),
         ("infiltration_rate_type", "has_simple_infiltration"),
-        ("groundwater_impervious_layer_level_type", "has_groundwater"),
+        ("groundwater_impervious_layer_level_aggregation", "has_groundwater"),
         ("interflow_type", "has_interflow"),
         ("vegetation_height_type", "has_vegetation"),
     ],
