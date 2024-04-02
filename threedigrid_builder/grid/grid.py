@@ -271,7 +271,7 @@ class Grid:
         )
         meta.has_simple_infiltration = s.infiltration_rate_type is not None
         meta.has_max_infiltration_capacity = (
-            s.max_infiltration_capacity_type is not None
+                s.max_infiltration_volume_type is not None
         )
         meta.has_groundwater = s.groundwater_impervious_layer_level_aggregation is not None
         meta.has_interflow = s.interflow_type is not None and s.interflow_type != 0

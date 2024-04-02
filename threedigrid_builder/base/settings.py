@@ -102,8 +102,8 @@ class TablesSettings:
     infiltration_surface_option: InfiltrationSurfaceOption = (
         InfiltrationSurfaceOption.RAIN
     )
-    max_infiltration_capacity: Optional[float] = None
-    max_infiltration_capacity_type: Optional[InitializationType] = None
+    max_infiltration_volume: Optional[float] = None
+    max_infiltration_volume_type: Optional[InitializationType] = None
 
     ## from VegetationDrag
     vegetation_height: Optional[float] = None
