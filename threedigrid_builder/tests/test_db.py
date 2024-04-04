@@ -238,9 +238,9 @@ def test_get_settings(db):
     # some settings copied over from SQLite:
     assert g.use_1d_flow is True
     assert g.use_2d_flow is True
-    assert g.minimum_cell_size == 20.0
-    assert g.calculation_point_distance_1d == 15.0
-    assert g.nr_grid_levels == 4
+    assert g.grid_space == 20.0
+    assert g.dist_calc_points == 15.0
+    assert g.kmax == 4
     assert g.embedded_cutoff_threshold == 0.05
     assert g.max_angle_1d_advection == 0.4 * np.pi
     # use_2d is based on the presence of dem_file:
@@ -248,29 +248,29 @@ def test_get_settings(db):
 
     s = result["tables_settings"]
     assert isinstance(s, TablesSettings)
-    assert s.minimum_table_step_size == 0.05
-    assert s.friction_type == 2
-    assert s.friction_coefficient == 0.03
-    assert s.friction_coefficient_type == InitializationType.GLOBAL
-    assert s.interception == 100.0
+    assert s.table_step_size == 0.05
+    assert s.frict_type == 2
+    assert s.frict_coef == 0.03
+    assert s.frict_coef_type == InitializationType.GLOBAL
+    assert s.interception_global == 100.0
     assert s.interception_type == InitializationType.NO_AGG
     assert s.table_step_size_1d == 0.05
     assert s.maximum_table_step_size == 5.0
-    assert s.manhole_aboveground_storage_area is None
+    assert s.manhole_storage_area is None
 
     # groundwater settings
     assert s.groundwater_impervious_layer_level == -5.0
-    assert s.groundwater_impervious_layer_level_aggregation == InitializationType.GLOBAL
+    assert s.groundwater_impervious_layer_level_type == InitializationType.GLOBAL
     assert s.phreatic_storage_capacity == 0.25
-    assert s.phreatic_storage_capacity_aggregation == InitializationType.GLOBAL
+    assert s.phreatic_storage_capacity_type == InitializationType.GLOBAL
     assert s.equilibrium_infiltration_rate == 100.0
     assert s.equilibrium_infiltration_rate_type == InitializationType.GLOBAL
     assert s.initial_infiltration_rate == 300.0
-    assert s.initial_infiltration_rate_aggregation == InitializationType.GLOBAL
+    assert s.initial_infiltration_rate_type == InitializationType.GLOBAL
     assert s.infiltration_decay_period == 0.1
-    assert s.infiltration_decay_period_aggregation == InitializationType.GLOBAL
-    assert s.groundwater_hydraulic_conductivity == 1.0
-    assert s.groundwater_hydraulic_conductivity_aggregation == InitializationType.GLOBAL
+    assert s.infiltration_decay_period_type == InitializationType.GLOBAL
+    assert s.groundwater_hydro_connectivity == 1.0
+    assert s.groundwater_hydro_connectivity_type == InitializationType.GLOBAL
 
     # there are interflow settings, but most are unset
     assert s.interflow_type == 0  # means: no interflow
@@ -285,8 +285,8 @@ def test_get_settings(db):
     assert s.infiltration_rate is None
     assert s.infiltration_rate_type is None
     assert s.infiltration_surface_option == 0
-    assert s.max_infiltration_volume is None
-    assert s.max_infiltration_volume_type is None
+    assert s.max_infiltration_capacity is None
+    assert s.max_infiltration_capacity_type is None
 
     # there are no vegetation_drag settings
     assert s.vegetation_height is None

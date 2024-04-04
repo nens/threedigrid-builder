@@ -96,14 +96,14 @@ def grid_all():
             use_1d_flow=True,
             use_2d_flow=True,
             use_0d_inflow=True,
-            minimum_cell_size=20.0,
-            calculation_point_distance_1d=25.0,
-            nr_grid_levels=4,
+            grid_space=20.0,
+            dist_calc_points=25.0,
+            kmax=4,
         ),
         tables_settings=TablesSettings(
-            minimum_table_step_size=0.05,
-            friction_coefficient=0.03,
-            friction_coefficient_type=9,
+            table_step_size=0.05,
+            frict_coef=0.03,
+            frict_coef_type=9,
         ),
     )
     quadtree_stats = QuadtreeStats(

@@ -208,17 +208,32 @@ class SQLite:
         if groundwater:
             # default is what the user supplied (MIN/MAX/AVERAGE)
 
-            _set_initialization_type(groundwater, "groundwater_impervious_layer_level",
-                                     type_field="groundwater_impervious_layer_level_aggregation")
-            _set_initialization_type(groundwater, "phreatic_storage_capacity",
-                                     type_field="phreatic_storage_capacity_aggregation")
+            _set_initialization_type(
+                groundwater,
+                "groundwater_impervious_layer_level",
+                type_field="groundwater_impervious_layer_level_aggregation",
+            )
+            _set_initialization_type(
+                groundwater,
+                "phreatic_storage_capacity",
+                type_field="phreatic_storage_capacity_aggregation",
+            )
             _set_initialization_type(groundwater, "equilibrium_infiltration_rate")
-            _set_initialization_type(groundwater, "initial_infiltration_rate",
-                                     type_field="initial_infiltration_rate_aggregation")
-            _set_initialization_type(groundwater, "infiltration_decay_period",
-                                     type_field="infiltration_decay_period_aggregation")
-            _set_initialization_type(groundwater, "groundwater_hydraulic_conductivity",
-                                     type_field="groundwater_hydraulic_conductivity_aggregation")
+            _set_initialization_type(
+                groundwater,
+                "initial_infiltration_rate",
+                type_field="initial_infiltration_rate_aggregation",
+            )
+            _set_initialization_type(
+                groundwater,
+                "infiltration_decay_period",
+                type_field="infiltration_decay_period_aggregation",
+            )
+            _set_initialization_type(
+                groundwater,
+                "groundwater_hydraulic_conductivity",
+                type_field="groundwater_hydraulic_conductivity_aggregation",
+            )
 
         if vegetation_drag:
             _set_initialization_type(
@@ -241,6 +256,7 @@ class SQLite:
         model_settings["use_0d_inflow"] = template_settings["use_0d_inflow"]
 
         grid_settings = GridSettings.from_dict(model_settings)
+        print(grid_settings)
         tables_settings = TablesSettings.from_dict(
             {
                 **groundwater,

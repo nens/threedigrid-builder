@@ -70,8 +70,8 @@ def _make_gridadmin(
         progress_callback(0.7, "Constructing 2D computational grid...")
         quadtree = QuadTree(
             subgrid_meta,
-            grid_settings.nr_grid_levels,
-            grid_settings.minimum_cell_size,
+            grid_settings.kmax,
+            grid_settings.grid_space,
             grid_settings.use_2d_flow,
             refinements,
         )
@@ -115,7 +115,7 @@ def _make_gridadmin(
             objects=channels,
             fixed_nodes=breach_points,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
-            global_dist_calc_points=grid_settings.calculation_point_distance_1d,
+            global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
             node_id_counter=node_id_counter,
             embedded_node_id_counter=embedded_node_id_counter,
@@ -135,7 +135,7 @@ def _make_gridadmin(
             objects=pipes,
             fixed_nodes=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
-            global_dist_calc_points=grid_settings.calculation_point_distance_1d,
+            global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
             node_id_counter=node_id_counter,
             embedded_node_id_counter=embedded_node_id_counter,
@@ -149,7 +149,7 @@ def _make_gridadmin(
             objects=culverts,
             fixed_nodes=None,
             cell_tree=grid.cell_tree if grid_settings.use_2d else None,
-            global_dist_calc_points=grid_settings.calculation_point_distance_1d,
+            global_dist_calc_points=grid_settings.dist_calc_points,
             embedded_cutoff_threshold=grid_settings.embedded_cutoff_threshold,
             node_id_counter=node_id_counter,
             embedded_node_id_counter=embedded_node_id_counter,
