@@ -247,7 +247,7 @@ class BaseLinear:
 
         # conditionally add friction type and value (for pipes and culverts only)
         try:
-            frict_type = objs.frict_type[segment_idx]
+            frict_type = objs.friction_type[segment_idx]
             frict_value = objs.friction_value[segment_idx]
         except AttributeError:
             frict_type = -9999
