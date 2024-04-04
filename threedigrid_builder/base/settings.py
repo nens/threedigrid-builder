@@ -88,7 +88,6 @@ class TablesSettings:
     phreatic_storage_capacity: Optional[float] = None
     phreatic_storage_capacity_type: Optional[InitializationType] = None
     equilibrium_infiltration_rate: Optional[float] = None
-    equilibrium_infiltration_rate: Optional[float] = None
     equilibrium_infiltration_rate_type: Optional[InitializationType] = None
     initial_infiltration_rate: Optional[float] = None
     initial_infiltration_rate_type: Optional[InitializationType] = None
@@ -134,7 +133,7 @@ class TablesSettings:
 
         # validations
         for field in (
-            "minimum_table_step_size",
+            "table_step_size",
             "table_step_size_1d",
             "maximum_table_step_size",
         ):
@@ -142,7 +141,7 @@ class TablesSettings:
 
         if self.maximum_table_step_size < self.table_step_size:
             raise SchematisationError(
-                f"'maximum_table_step_size' must not be less than 'minimum_table_step_size'."
+                f"'maximum_table_step_size' must not be less than 'table_step_size'."
             )
 
         # check enums

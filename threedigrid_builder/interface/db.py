@@ -256,7 +256,6 @@ class SQLite:
         model_settings["use_0d_inflow"] = template_settings["use_0d_inflow"]
 
         grid_settings = GridSettings.from_dict(model_settings)
-        print(grid_settings)
         tables_settings = TablesSettings.from_dict(
             {
                 **groundwater,
