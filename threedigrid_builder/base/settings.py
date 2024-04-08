@@ -64,16 +64,17 @@ class GridSettings:
 class TablesSettings:
     """Settings necessary for threedi-tables."""
 
-    ## from GlobalSettings
-    # TODO: update comments to reflect origins
+    ## from ModelSettings
     table_step_size: float
     frict_coef: float
     frict_coef_type: InitializationType
     frict_type: FrictionType = FrictionType.MANNING
-    interception_global: Optional[float] = None
-    interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__
     maximum_table_step_size: float = None  # actual default  is set in __post_init__
+
+    ## From Interception
+    interception_global: Optional[float] = None
+    interception_type: Optional[InitializationType] = None
 
     # TODO --> https://github.com/nens/threedigrid-builder/issues/86
     manhole_storage_area: Optional[float] = None
