@@ -376,11 +376,11 @@ def set_friction_vegetation_values(
 ):
     """Convert friction and vegetation properties from list into arrays, if available,
     and add to yz"""
-    if friction_values is not None:
+    if friction_values:
         fric = np.array([float(x) for x in friction_values.split(" ")])
         yz[:-1, 2] = fric
 
-    if vegetation_drag_coefficients is not None:
+    if vegetation_drag_coefficients:
         veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
         veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
         veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
