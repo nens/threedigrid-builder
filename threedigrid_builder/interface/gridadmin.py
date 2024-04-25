@@ -172,6 +172,7 @@ class GridAdminOut(OutputInterface):
         self.write_quadtree(grid.quadtree_stats)
         self.write_nodes(grid.nodes)
         self.write_nodes_embedded(grid.nodes_embedded)
+        self.write_quarters(grid.quarters)
         self.write_lines(grid.lines, grid.cross_sections)
         self.write_pumps(grid.pumps)
         self.write_cross_sections(grid.cross_sections)
@@ -557,6 +558,25 @@ class GridAdminOut(OutputInterface):
             np.where(has_friction_data, lines.frict_value1, np.nan),
         )
         self.write_dataset(group, "windshieldings", lines.windshieldings.T)
+
+    def write_quarters(self, quarters, group_name="quarters"):
+        """Write the "quarters" group in the gridadmin file
+
+        Raises a ValueError if it exists already.
+
+        Notes:
+            Some datasets were 64-bit integers, but now they are saved as 32-bit integers.
+
+        Args:
+            quarters (Quarters)
+        """
+        if quarters is None:
+            return
+        group = self._file.create_group(group_name)
+
+        self.write_dataset(group, "id", quarters.id + 1)
+        self.write_dataset(group, "quarters_line", quarters.line.T + 1)
+        self.write_dataset(group, "quarters_neighbour_node", quarters.neighbour_node.T + 1)
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")

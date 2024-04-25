@@ -227,4 +227,190 @@ module m_cells
     end subroutine set_2d_computational_lines
 
 
+    subroutine set_quarter_admin(nodk, nodm, nodn, line, kcu, quarter_line, quarter_neighbour, liutot, livtot, n2dtot, n2dobc)
+
+        use parameters, only : LINE_2D_BOUNDARY_EAST, LINE_2D_BOUNDARY_WEST, LINE_2D_BOUNDARY_SOUTH, LINE_2D_BOUNDARY_NORTH
+
+        integer, intent(in) :: nodk(1:n2dtot+n2dobc)
+        integer, intent(in) :: nodm(1:n2dtot+n2dobc)
+        integer, intent(in) :: nodn(1:n2dtot+n2dobc)
+        integer, intent(in) :: line(1:liutot+livtot+n2dobc, 2)
+        integer, intent(in) :: kcu(1:liutot+livtot+n2dobc)
+        integer, intent(inout) :: quarter_line(1:4*n2dtot, 2)
+        integer, intent(inout) :: quarter_neighbour(1:4*n2dtot, 2)
+        integer, intent(in) :: liutot
+        integer, intent(in) :: livtot
+        integer, intent(in) :: n2dtot
+        integer, intent(in) :: n2dobc
+        integer :: l
+        integer :: quarter
+        integer :: nodd
+        integer :: nodu
+        integer :: kd
+        integer :: ku
+        integer :: md
+        integer :: mu
+        integer :: nd
+        integer :: nu
+        integer :: nb
+
+
+        !!!!!!!!!!!!!!!!
+        !!  3  !!  4  !!
+        !!!!!!!!!!!!!!!!
+        !!  1  !!  2  !!
+        !!!!!!!!!!!!!!!!
+        do l=1, liutot
+            nodd = line(l, 1) + 1 ! This is a 0-based python index, therefore +1
+            nodu = line(l, 2) + 1
+            kd = nodk(nodd)
+            ku = nodk(nodu)
+            md = nodm(nodd) 
+            mu = nodm(nodu)
+            nd = nodn(nodd)
+            nu = nodn(nodu)
+            if (ku==kd) then
+                quarter_line(get_quarter_idx(nodd, 2), 1) = l - 1 ! This needs to be an index in Python again.
+                quarter_line(get_quarter_idx(nodd, 4), 1) = l - 1
+                quarter_line(get_quarter_idx(nodu, 1), 1) = l - 1
+                quarter_line(get_quarter_idx(nodu, 3), 1) = l - 1
+                quarter_neighbour(get_quarter_idx(nodd, 2), 1) = nodu - 1
+                quarter_neighbour(get_quarter_idx(nodd, 4), 1) = nodu - 1
+                quarter_neighbour(get_quarter_idx(nodu, 1), 1) = nodd - 1
+                quarter_neighbour(get_quarter_idx(nodu, 3), 1) = nodd - 1
+            elseif (ku == kd + 1) then
+                if (nd == 2 * nu - 1) then
+                    quarter_line(get_quarter_idx(nodd, 2), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodd, 4), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 1), 1) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 2), 1) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 4), 1) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 1), 1) = nodd - 1
+                endif
+                if (nd == 2 * nu) then
+                    quarter_line(get_quarter_idx(nodd, 2), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodd, 4), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 3), 1) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 2), 1) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 4), 1) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 3), 1) = nodd - 1
+                endif
+            else if (kd == ku + 1) then
+                if (nu == 2 * nd - 1) then
+                    quarter_line(get_quarter_idx(nodd, 2), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 1), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 3), 1) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 2), 1) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 1), 1) = nodd - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 3), 1) = nodd - 1
+                elseif (nu == 2 * nd) then
+                    quarter_line(get_quarter_idx(nodd, 4), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 1), 1) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 3), 1) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 4), 1) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 1), 1) = nodd - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 3), 1) = nodd - 1
+                endif
+            endif
+        enddo
+
+        do l=liutot + 1, liutot+livtot
+            nodd = line(l,1) + 1
+            nodu = line(l,2) + 1 
+            kd = nodk(nodd)
+            ku = nodk(nodu)
+            md = nodm(nodd) 
+            mu = nodm(nodu)
+            nd = nodn(nodd)
+            nu = nodn(nodu)
+            if (ku==kd) then
+                quarter_line(get_quarter_idx(nodd, 3), 2) = l - 1
+                quarter_line(get_quarter_idx(nodd, 4), 2) = l - 1
+                quarter_line(get_quarter_idx(nodu, 1), 2) = l - 1
+                quarter_line(get_quarter_idx(nodu, 2), 2) = l - 1
+                quarter_neighbour(get_quarter_idx(nodd, 3), 2) = nodu - 1
+                quarter_neighbour(get_quarter_idx(nodd, 4), 2) = nodu - 1
+                quarter_neighbour(get_quarter_idx(nodu, 1), 2) = nodd - 1
+                quarter_neighbour(get_quarter_idx(nodu, 2), 2) = nodd - 1
+            elseif (ku == kd + 1) then
+                if (md == 2 * mu - 1) then
+                    quarter_line(get_quarter_idx(nodd, 3), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodd, 4), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 1), 2) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 3), 2) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 4), 2) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 1), 2) = nodd - 1
+                endif
+                if (md == 2 * mu) then
+                    quarter_line(get_quarter_idx(nodd, 3), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodd, 4), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 2), 2) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 3), 2) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 4), 2) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 2), 2) = nodd - 1
+                endif
+            else if (kd == ku + 1) then
+                if (mu == 2 * md - 1) then
+                    quarter_line(get_quarter_idx(nodd, 3), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 1), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 2), 2) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 3), 2) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 1), 2) = nodd - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 2), 2) = nodd - 1
+                elseif (mu == 2 * md) then
+                    quarter_line(get_quarter_idx(nodd, 4), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 1), 2) = l - 1
+                    quarter_line(get_quarter_idx(nodu, 2), 2) = l - 1
+                    quarter_neighbour(get_quarter_idx(nodd, 4), 2) = nodu - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 1), 2) = nodd - 1
+                    quarter_neighbour(get_quarter_idx(nodu, 2), 2) = nodd - 1
+                endif
+            endif
+        enddo
+
+        do nb=1,n2dobc  !nodobc
+            l = liutot + livtot + nb
+            nodd = line(l, 1) + 1
+            nodu = line(l, 2) + 1
+            select case(kcu(l))
+            case(LINE_2D_BOUNDARY_WEST)
+                quarter_line(get_quarter_idx(nodu, 1), 1) = l - 1
+                quarter_line(get_quarter_idx(nodu, 3), 1) = l
+                quarter_neighbour(get_quarter_idx(nodu, 1), 1) = nodd - 1
+                quarter_neighbour(get_quarter_idx(nodu, 3), 1) = nodd - 1
+            case(LINE_2D_BOUNDARY_EAST)
+                quarter_line(get_quarter_idx(nodd, 2), 1) = l - 1
+                quarter_line(get_quarter_idx(nodd, 4), 1) = l - 1
+                quarter_neighbour(get_quarter_idx(nodd, 2), 1) = nodu - 1
+                quarter_neighbour(get_quarter_idx(nodd, 4), 1) = nodu - 1
+            case(LINE_2D_BOUNDARY_SOUTH)
+                quarter_line(get_quarter_idx(nodu, 1), 2) = l - 1
+                quarter_line(get_quarter_idx(nodu, 2), 2) = l - 1
+                quarter_neighbour(get_quarter_idx(nodu, 1), 2) = nodd - 1
+                quarter_neighbour(get_quarter_idx(nodu, 2), 2) = nodd - 1
+            case(LINE_2D_BOUNDARY_NORTH)
+                quarter_line(get_quarter_idx(nodd, 3), 2) = l - 1
+                quarter_line(get_quarter_idx(nodd, 4), 2) = l - 1
+                quarter_neighbour(get_quarter_idx(nodd, 3), 2) = nodu - 1
+                quarter_neighbour(get_quarter_idx(nodd, 4), 2) = nodu - 1
+            end select
+        enddo
+
+    end subroutine set_quarter_admin
+
+
+    function get_quarter_idx(nod, quadrant) result(idx)
+        !!!!!!!!!!!!!!!!
+        !!  3  !!  4  !!
+        !!!!!!!!!!!!!!!!
+        !!  1  !!  2  !!
+        !!!!!!!!!!!!!!!!
+        integer, intent(in) :: nod
+        integer, intent(in) :: quadrant
+        integer :: idx
+
+        idx = 4 * (nod - 1) + quadrant
+    
+    end function get_quarter_idx
+
 end module m_cells

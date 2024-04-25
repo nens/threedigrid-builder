@@ -93,6 +93,9 @@ def _make_gridadmin(
             node_id_counter,
             line_id_counter,
         )
+
+        grid.set_quarter_administration(quadtree)
+
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)
 
@@ -225,6 +228,7 @@ def make_gridadmin(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     upgrade: bool = False,
     convert_to_geopackage: bool = False,
+    create_triangulation: bool = False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
