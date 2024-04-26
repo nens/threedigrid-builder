@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.14.1 (unreleased)
+1.14.1 (2024-04-26)
 -------------------
 
 - Fix 1D vegetation empty string bug
