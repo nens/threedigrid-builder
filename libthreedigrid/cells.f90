@@ -78,7 +78,7 @@ module m_cells
             deallocate(area_mask_padded)
         endif
         write(*,*) '** INFO: Number of 2D nodes is: ', nod - 1
-        write(*,*) '** INFO: Number of 2D lines is: ', l_u + l_v
+        write(*,*) '** INFO: Number of 2D lines is: ', l_u + (l_v - l_u)
         write(*,*) '** INFO: Done setting 2D calculation cells.'
 
     end subroutine set_2d_computational_nodes_lines
@@ -253,6 +253,8 @@ module m_cells
         integer :: nd
         integer :: nu
         integer :: nb
+
+        write(*,*) "liutot: ", liutot, "livtot: ", livtot, "n2dtot: ", n2dtot, "n2dobc: ", n2dobc, "line: ", shape(line), "kcu: ", shape(kcu)
 
 
         !!!!!!!!!!!!!!!!
