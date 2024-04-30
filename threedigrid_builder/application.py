@@ -82,7 +82,7 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
         )
         grid.set_quarter_administration(quadtree)
-        
+
         if grid.meta.has_groundwater:
             grid.add_groundwater(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
