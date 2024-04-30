@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.14.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Create quarter administration.
 
 
 1.14.0 (2024-03-12)
