@@ -257,25 +257,30 @@ class QuadTree:
           Quarters object
         """
 
-        n_2d_nodes = np.count_nonzero(np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER))
-        n_2d_bnd_nodes = np.count_nonzero(np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES))
+        n_2d_nodes = np.count_nonzero(
+            np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)
+        )
+        n_2d_bnd_nodes = np.count_nonzero(
+            np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES)
+        )
 
-        quarter_line = np.full((n_2d_nodes * 4, 2), -9999, dtype=np.int32, order="F")
-        neighbour_node = np.full((n_2d_nodes * 4, 2), -9999, dtype=np.int32, order="F")
-
-        print(f"u: {self.n_lines_u}, v: {self.n_lines_v}, line: {lines.line.shape}, kcu: {lines.kcu.shape}, nodes: {n_2d_nodes}, bnd_nodes: {n_2d_bnd_nodes}")
+        quarter_line = np.full(
+            (4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F"
+        )
+        neighbour_node = np.full(
+            (4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F"
+        )
 
         m_cells.set_quarter_admin(
             nodes.nodk,
             nodes.nodm,
             nodes.nodn,
-            lines.line[:, :],
+            lines.line,
             lines.kcu,
             quarter_line,
             neighbour_node,
             self.n_lines_u,
             self.n_lines_v,
-            n_2d_nodes,
             n_2d_bnd_nodes,
         )
 

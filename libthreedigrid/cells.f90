@@ -227,20 +227,19 @@ module m_cells
     end subroutine set_2d_computational_lines
 
 
-    subroutine set_quarter_admin(nodk, nodm, nodn, line, kcu, quarter_line, quarter_neighbour, liutot, livtot, n2dtot, n2dobc)
+    subroutine set_quarter_admin(nodk, nodm, nodn, line, kcu, quarter_line, quarter_neighbour, liutot, livtot, n2dobc)
 
         use parameters, only : LINE_2D_BOUNDARY_EAST, LINE_2D_BOUNDARY_WEST, LINE_2D_BOUNDARY_SOUTH, LINE_2D_BOUNDARY_NORTH
 
-        integer, intent(in) :: nodk(1:n2dtot+n2dobc)
-        integer, intent(in) :: nodm(1:n2dtot+n2dobc)
-        integer, intent(in) :: nodn(1:n2dtot+n2dobc)
-        integer, intent(in) :: line(1:liutot+livtot+n2dobc, 2)
-        integer, intent(in) :: kcu(1:liutot+livtot+n2dobc)
-        integer, intent(inout) :: quarter_line(1:4*n2dtot, 2)
-        integer, intent(inout) :: quarter_neighbour(1:4*n2dtot, 2)
+        integer, intent(in) :: nodk(:)
+        integer, intent(in) :: nodm(:)
+        integer, intent(in) :: nodn(:)
+        integer, intent(in) :: line(:, :)
+        integer, intent(in) :: kcu(:)
+        integer, intent(inout) :: quarter_line(:, :)
+        integer, intent(inout) :: quarter_neighbour(:, :)
         integer, intent(in) :: liutot
         integer, intent(in) :: livtot
-        integer, intent(in) :: n2dtot
         integer, intent(in) :: n2dobc
         integer :: l
         integer :: quarter
@@ -253,8 +252,6 @@ module m_cells
         integer :: nd
         integer :: nu
         integer :: nb
-
-        write(*,*) "liutot: ", liutot, "livtot: ", livtot, "n2dtot: ", n2dtot, "n2dobc: ", n2dobc, "line: ", shape(line), "kcu: ", shape(kcu)
 
 
         !!!!!!!!!!!!!!!!
@@ -317,8 +314,8 @@ module m_cells
         enddo
 
         do l=liutot + 1, liutot+livtot
-            nodd = line(l,1) + 1
-            nodu = line(l,2) + 1 
+            nodd = line(l, 1) + 1
+            nodu = line(l, 2) + 1 
             kd = nodk(nodd)
             ku = nodk(nodu)
             md = nodm(nodd) 
