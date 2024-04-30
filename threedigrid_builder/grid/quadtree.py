@@ -269,7 +269,7 @@ class QuadTree:
             nodes.nodk,
             nodes.nodm,
             nodes.nodn,
-            lines.line,
+            lines.line[:, :],
             lines.kcu,
             quarter_line,
             neighbour_node,
