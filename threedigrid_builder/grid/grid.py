@@ -11,9 +11,9 @@ import threedigrid_builder
 from threedigrid_builder.base import (
     Lines,
     Nodes,
-    Quarters,
     PointsOnLine,
     Pumps,
+    Quarters,
     SurfaceMaps,
     Surfaces,
 )
