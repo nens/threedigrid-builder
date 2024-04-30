@@ -339,6 +339,7 @@ def test_quarter_administration(quadtree_line_refinement, subgrid_meta):
 
     quarters = quadtree_line_refinement.get_quarters_admin(nodes, lines)
 
+    # fmt: off
     neighbours = np.array(
         [[-9999, -9999],
          [    5, -9999],
@@ -520,6 +521,7 @@ def test_quarter_administration(quadtree_line_refinement, subgrid_meta):
          [   18, -9999],
          [-9999, -9999]], dtype=np.int32
     )
+    # fmt: on
     assert_array_equal(quarters.line, lines)
     assert_array_equal(quarters.neighbour_node, neighbours)
 
