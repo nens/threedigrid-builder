@@ -615,8 +615,7 @@ class Grid:
         self.lines += lines
 
     def set_quarter_administration(self, quadtree):
-        """Sets the quarter cell administration for lines and neighbouring calculation cells.
-        """
+        """Sets the quarter cell administration for lines and neighbouring calculation cells."""
         self.quarters = quadtree.get_quarters_admin(self.nodes, self.lines)
 
     def set_pumps(self, pumps):

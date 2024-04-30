@@ -576,7 +576,9 @@ class GridAdminOut(OutputInterface):
 
         self.write_dataset(group, "id", quarters.id + 1)
         self.write_dataset(group, "quarters_line", quarters.line.T + 1)
-        self.write_dataset(group, "quarters_neighbour_node", quarters.neighbour_node.T + 1)
+        self.write_dataset(
+            group, "quarters_neighbour_node", quarters.neighbour_node.T + 1
+        )
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")

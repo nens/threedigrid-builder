@@ -1,4 +1,5 @@
 from typing import Tuple
+
 from .array import Array
 
 __all__ = ["Quarters"]
@@ -12,4 +13,5 @@ class Quarter:
 
 class Quarters(Array[Quarter]):
     """Calculation quarters."""
+
     pass

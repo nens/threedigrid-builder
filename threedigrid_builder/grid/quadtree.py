@@ -264,12 +264,8 @@ class QuadTree:
             np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES)
         )
 
-        quarter_line = np.full(
-            (4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F"
-        )
-        neighbour_node = np.full(
-            (4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F"
-        )
+        quarter_line = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
+        neighbour_node = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
 
         m_cells.set_quarter_admin(
             nodes.nodk,
@@ -287,5 +283,5 @@ class QuadTree:
         return Quarters(
             id=np.arange(0, 4 * n_2d_nodes),
             line=quarter_line,
-            neighbour_node=neighbour_node
+            neighbour_node=neighbour_node,
         )
