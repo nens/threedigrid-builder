@@ -258,7 +258,7 @@ class QuadTree:
         """
 
         n_2d_nodes = np.count_nonzero(np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER))
-        n_2d_bnd_nodes = np.count_nonzero(np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES))\
+        n_2d_bnd_nodes = np.count_nonzero(np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES))
 
         quarter_line = np.full((n_2d_nodes * 4, 2), -9999, dtype=np.int32, order="F")
         neighbour_node = np.full((n_2d_nodes * 4, 2), -9999, dtype=np.int32, order="F")
