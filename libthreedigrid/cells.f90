@@ -259,6 +259,11 @@ module m_cells
         !!!!!!!!!!!!!!!!
         !!  1  !!  2  !!
         !!!!!!!!!!!!!!!!
+        ! Here we try to find all horizontal flow lines associated with a cell quarter. 
+        ! For two adjacent cells of samen size both neighbouring quadrants have same flow line. 
+        ! When adjacent cells differ in size due to refinement, each quadrant is associated with its own line for the larger cell. The smaller cell will have the same flow line for both quadrants. Hence the "if" structure.
+        ! Same logic applies to finding neighbouring nodes for quarters.
+        ! The cell quadrant index is illustrated above.
         do l=1, liutot
             nodd = line(l, 1) + 1 ! This is a 0-based python index, therefore +1
             nodu = line(l, 2) + 1
@@ -313,6 +318,11 @@ module m_cells
             endif
         enddo
 
+        ! Here we try to find all vertical flow lines associated with a cell quarter. 
+        ! For two adjacent cells of samen size both neighbouring quadrants have same flow line. 
+        ! When adjacent cells differ in size due to refinement, each quadrant is associated with its own line for the larger cell. The smaller cell will have the same flow line for both quadrants. Hence the "if" structure.
+        ! Same logic applies to finding neighbouring nodes for quarters.
+        ! The cell quadrant index is illustrated above.
         do l=liutot + 1, liutot+livtot
             nodd = line(l, 1) + 1
             nodu = line(l, 2) + 1 
@@ -399,6 +409,7 @@ module m_cells
 
 
     function get_quarter_idx(nod, quadrant) result(idx)
+        ! This function returns the quarter index based on the node and its quadrant index.
         !!!!!!!!!!!!!!!!
         !!  3  !!  4  !!
         !!!!!!!!!!!!!!!!

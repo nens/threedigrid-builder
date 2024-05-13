@@ -228,7 +228,6 @@ def make_gridadmin(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     upgrade: bool = False,
     convert_to_geopackage: bool = False,
-    create_triangulation: bool = False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
