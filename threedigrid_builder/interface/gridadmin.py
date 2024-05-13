@@ -573,12 +573,17 @@ class GridAdminOut(OutputInterface):
         if quarters is None:
             return
         group = self._file.create_group(group_name)
+        mask = quarters.id != -9999
+        quarters.id[mask] = quarters.id[mask] + 1
+        self.write_dataset(group, "id", quarters.id)
 
-        self.write_dataset(group, "id", quarters.id + 1)
-        self.write_dataset(group, "quarters_line", quarters.line.T + 1)
-        self.write_dataset(
-            group, "quarters_neighbour_node", quarters.neighbour_node.T + 1
-        )
+        mask = quarters.line != -9999
+        quarters.line[mask] = quarters.line[mask] + 1
+        self.write_dataset(group, "line", quarters.line.T)
+
+        mask = quarters.neighbour_node != -9999
+        quarters.neighbour_node[mask] = quarters.neighbour_node[mask] + 1
+        self.write_dataset(group, "neighbour_node", quarters.neighbour_node.T)
 
     def write_pumps(self, pumps):
         group = self._file.create_group("pumps")
