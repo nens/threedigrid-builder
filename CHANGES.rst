@@ -4,7 +4,8 @@ Changelog of threedigrid-builder
 1.14.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed bug where yz data wasn't tabulated correctly in case of an open
+  profile with different heights for the left and right side.
 
 
 1.14.1 (2024-04-26)

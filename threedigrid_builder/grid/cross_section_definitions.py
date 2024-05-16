@@ -319,6 +319,17 @@ def tabulate_yz(shape, width, height):
         seen.add(x)
         zs[i] = x
 
+    # For open profiles, if left and right sides are not equal in Z, we envision a
+    # vertical line from the left or right most point depending on which is lower.
+    # This is to ensure that the width is non-decreasing for the remaining profile.
+    if not is_closed and zs[0] != zs[-1]:
+        if zs[0] < zs[-1]:
+            zs = np.concatenate(([zs[-1]], zs))
+            ys = np.concatenate(([ys[0]], ys))
+        else:
+            zs = np.concatenate((zs, [zs[0]]))
+            ys = np.concatenate((ys, [ys[-1]]))
+
     # shapely will automatically close an open profile
     profile = shapely.make_valid(shapely.polygons(np.array([ys, zs]).T))
 
@@ -332,11 +343,6 @@ def tabulate_yz(shape, width, height):
         width = shapely.length(cross_section_line)
         table[i, 0] = height
         table[i, 1] = width
-
-    # For open profiles, if the end coordinate is closed, that means that left
-    # and right sides are not equal in Z. We take the max width in that case.
-    if not is_closed and table[-1, 1] == 0.0:
-        table[-1, 1] = y_max - y_min
 
     # Eliminate duplicates and get rid of the epsilon introduced earlier
     # NB: Calccore allows a dicontinuity like [[0, 1], [1, 2], [1, 3]]
