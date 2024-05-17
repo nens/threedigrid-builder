@@ -303,40 +303,81 @@ def test_tabulate_inverted_egg():
             [[0, 1], [0.5, 0], [1, 1], [1, 0]],
             None,
         ),
-        (
-            "0 28 38 40 45 48 50 55 66 70 100",
-            "19 17 12.5 2 1 0 0 4 15 21 22",
+        (  # Open profile left side higher than right side
+            "0 1 2 3 4",
+            "1 0 0 0 2",
             None,
             None,
             None,
             None,
             None,
-            100,
-            22,
+            4.0,
+            2.0,
             np.column_stack(
                 (
-                    [0.0, 1.0, 2.0, 4.0, 12.5, 15.0, 17.0, 19.0, 21.0, 22.0],
-                    [
-                        2.0,
-                        6.25,
-                        12.5,
-                        15.381,
-                        25.5,
-                        33.556,
-                        39.333,
-                        68.667,
-                        70.0,
-                        100.0,
-                    ],
+                    [0.0, 1.0, 2.0],
+                    [2.0, 3.5, 4.0],
                 )
             ),
             np.column_stack(
                 (
-                    [0.0, 28.0, 38.0, 40.0, 45.0, 48.0, 50.0, 55.0, 66.0, 70.0, 100.0],
-                    [19.0, 17.0, 12.5, 2.0, 1.0, 0.0, 0.0, 4.0, 15.0, 21.0, 22.0],
-                    np.zeros(11, dtype=float),
-                    np.zeros(11, dtype=float),
-                    np.zeros(11, dtype=float),
+                    [0.0, 1.0, 2.0, 3.0, 4.0],
+                    [1.0, 0.0, 0.0, 0.0, 2.0],
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                )
+            ),
+        ),
+        (  # Open profile right side higher than left side
+            "1 2 3 4 5",
+            "3 1 0 1 2",
+            None,
+            None,
+            None,
+            None,
+            None,
+            4.0,
+            3.0,
+            np.column_stack(
+                (
+                    [0.0, 1.0, 2.0, 3.0],
+                    [0.0, 2.0, 3.5, 4.0],
+                )
+            ),
+            np.column_stack(
+                (
+                    [1.0, 2.0, 3.0, 4.0, 5.0],
+                    [3.0, 1.0, 0.0, 1.0, 2.0],
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                )
+            ),
+        ),
+        (  # Open profile same height left and right
+            "1 2 3 4 5",
+            "3 1 0 1 3",
+            None,
+            None,
+            None,
+            None,
+            None,
+            4.0,
+            3.0,
+            np.column_stack(
+                (
+                    [0.0, 1.0, 3.0],
+                    [0.0, 2.0, 4.0],
+                )
+            ),
+            np.column_stack(
+                (
+                    [1.0, 2.0, 3.0, 4.0, 5.0],
+                    [3.0, 1.0, 0.0, 1.0, 3.0],
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
                 )
             ),
         ),

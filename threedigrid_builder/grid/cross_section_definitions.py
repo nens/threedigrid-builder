@@ -322,11 +322,11 @@ def tabulate_yz(shape, width, height):
     # For open profiles, if left and right sides are not equal in Z, we envision a
     # vertical line from the left or right most point depending on which is lower.
     # This is to ensure that the width is non-decreasing for the remaining profile.
-    if not is_closed and zs[0] != zs[-1]:
+    if not is_closed:
         if zs[0] < zs[-1]:
             zs = np.concatenate(([zs[-1]], zs))
             ys = np.concatenate(([ys[0]], ys))
-        else:
+        if zs[0] > zs[-1]:
             zs = np.concatenate((zs, [zs[0]]))
             ys = np.concatenate((ys, [ys[-1]]))
 
