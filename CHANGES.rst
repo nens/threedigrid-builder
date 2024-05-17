@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.14.2 (unreleased)
+1.14.2 (2024-05-17)
 -------------------
 
 - Fixed bug where yz data wasn't tabulated correctly in case of an open
