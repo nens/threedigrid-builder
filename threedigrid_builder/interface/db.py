@@ -160,8 +160,6 @@ class SQLite:
                 infiltration = _object_as_dict(
                     session.query(models.SimpleInfiltration).one()
                 )
-                # older sqlites have no max_infiltration_capacity field
-                infiltration.setdefault("max_infiltration_volume", None)
             else:
                 infiltration = {}
             if model_settings.use_vegetation_drag_2d:
