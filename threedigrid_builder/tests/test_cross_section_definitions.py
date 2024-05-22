@@ -303,6 +303,84 @@ def test_tabulate_inverted_egg():
             [[0, 1], [0.5, 0], [1, 1], [1, 0]],
             None,
         ),
+        (  # Open profile left side higher than right side
+            "0 1 2 3 4",
+            "1 0 0 0 2",
+            None,
+            None,
+            None,
+            None,
+            None,
+            4.0,
+            2.0,
+            np.column_stack(
+                (
+                    [0.0, 1.0, 2.0],
+                    [2.0, 3.5, 4.0],
+                )
+            ),
+            np.column_stack(
+                (
+                    [0.0, 1.0, 2.0, 3.0, 4.0],
+                    [1.0, 0.0, 0.0, 0.0, 2.0],
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                )
+            ),
+        ),
+        (  # Open profile right side higher than left side
+            "1 2 3 4 5",
+            "3 1 0 1 2",
+            None,
+            None,
+            None,
+            None,
+            None,
+            4.0,
+            3.0,
+            np.column_stack(
+                (
+                    [0.0, 1.0, 2.0, 3.0],
+                    [0.0, 2.0, 3.5, 4.0],
+                )
+            ),
+            np.column_stack(
+                (
+                    [1.0, 2.0, 3.0, 4.0, 5.0],
+                    [3.0, 1.0, 0.0, 1.0, 2.0],
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                )
+            ),
+        ),
+        (  # Open profile same height left and right
+            "1 2 3 4 5",
+            "3 1 0 1 3",
+            None,
+            None,
+            None,
+            None,
+            None,
+            4.0,
+            3.0,
+            np.column_stack(
+                (
+                    [0.0, 1.0, 3.0],
+                    [0.0, 2.0, 4.0],
+                )
+            ),
+            np.column_stack(
+                (
+                    [1.0, 2.0, 3.0, 4.0, 5.0],
+                    [3.0, 1.0, 0.0, 1.0, 3.0],
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                    np.zeros(5, dtype=float),
+                )
+            ),
+        ),
     ],
 )
 def test_tabulate_yz(

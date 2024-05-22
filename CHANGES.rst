@@ -1,20 +1,37 @@
 Changelog of threedigrid-builder
 ================================
 
-1.14.1 (unreleased)
+1.14.3 (unreleased)
 -------------------
 
 - Nothing changed yet.
+
+
+1.14.2 (2024-05-17)
+-------------------
+
+- Fixed bug where yz data wasn't tabulated correctly in case of an open
+  profile with different heights for the left and right side.
+
+
+1.14.1 (2024-04-26)
+-------------------
+
+- Fix 1D vegetation empty string bug
 
 
 1.14.0 (2024-03-12)
 -------------------
 
 - Make package compatible with Python 3.12
+
 - Make package compatible with GDAL 3.4 and 3.6. Note that in GDAL 3.6 refinements where the area exactly matches
   the grid may slightly differ from those in GDAL 3.4 and older.
+
 - Add geopackage schematisation to test data
+
 - Use geopackage, instead of spatialite, for tests
+
 - Add geopackage to schematisations tested in integration test
 
 
