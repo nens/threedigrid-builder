@@ -1,7 +1,7 @@
 Changelog of threedigrid-builder
 ================================
 
-1.15.0 (unreleased)
+1.15.0 (2024-05-22)
 -------------------
 
 - Adapt gridbuilder to work with schema upgrades for model settings (0.222)
