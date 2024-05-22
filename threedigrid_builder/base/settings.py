@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 from dataclasses import fields
 from threedigrid_builder.base import is_int_enum
@@ -7,7 +8,7 @@ from threedigrid_builder.constants import InfiltrationSurfaceOption
 from threedigrid_builder.constants import InitializationType
 from threedigrid_builder.constants import InterflowType
 from threedigrid_builder.exceptions import SchematisationError
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -19,6 +20,10 @@ def greater_zero_check(obj, attr):
     value = getattr(obj, attr, None)
     if value is not None and value <= 0:
         raise SchematisationError(f"'{attr}' must be greater than 0.")
+
+
+def replace_keys(dict: Dict[str, Any], key_map: Dict[str, str]) -> Dict[str, Any]:
+    return {key if key not in key_map else key_map[key] : val for key, val in dict.items()}
 
 
 @dataclass
@@ -39,6 +44,10 @@ class GridSettings:
     @classmethod
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
+        schema_to_builder_map = {'minimum_cell_size': 'grid_space',
+                                 'calculation_point_distance_1d': 'dist_calc_points',
+                                 'nr_grid_levels': 'kmax'}
+        dct = replace_keys(copy.copy(dct), schema_to_builder_map)
         class_fields = {f.name for f in fields(cls)}
         return cls(
             **{k: v for k, v in dct.items() if k in class_fields and v is not None}
@@ -47,7 +56,7 @@ class GridSettings:
     def __post_init__(self):
         # validations
         if self.use_2d:
-            for field in ["grid_space", "kmax"]:
+            for field in ["grid_sminimum_cell_sizepace", "nr_grid_levels"]:
                 greater_zero_check(self, field)
 
 
@@ -55,15 +64,17 @@ class GridSettings:
 class TablesSettings:
     """Settings necessary for threedi-tables."""
 
-    ## from GlobalSettings
+    ## from ModelSettings
     table_step_size: float
     frict_coef: float
     frict_coef_type: InitializationType
     frict_type: FrictionType = FrictionType.MANNING
-    interception_global: Optional[float] = None
-    interception_type: Optional[InitializationType] = None
     table_step_size_1d: float = None  # actual default is set in __post_init__
     maximum_table_step_size: float = None  # actual default  is set in __post_init__
+
+    ## From Interception
+    interception_global: Optional[float] = None
+    interception_type: Optional[InitializationType] = None
 
     # TODO --> https://github.com/nens/threedigrid-builder/issues/86
     manhole_storage_area: Optional[float] = None
@@ -150,6 +161,22 @@ class TablesSettings:
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
         class_fields = {f.name for f in fields(cls)}
+        schema_to_builder_map = {"groundwater_hydraulic_conductivity": "groundwater_hydro_connectivity",
+                                 "groundwater_hydraulic_conductivity_aggregation": "groundwater_hydro_connectivity_type",
+                                 "groundwater_impervious_layer_level_aggregation": "groundwater_impervious_layer_level_type",
+                                 "infiltration_decay_period_aggregation": "infiltration_decay_period_type",
+                                 "initial_infiltration_rate_aggregation": "initial_infiltration_rate_type",
+                                 "phreatic_storage_capacity_aggregation": "phreatic_storage_capacity_type",
+                                 "max_infiltration_volume": "max_infiltration_capacity",
+                                 "max_infiltration_volume_type": "max_infiltration_capacity_type",
+                                 "manhole_aboveground_storage_area": "manhole_storage_area",
+                                 "friction_coefficient": "frict_coef",
+                                 "minimum_table_step_size": "table_step_size",
+                                 "friction_type": "frict_type",
+                                 "friction_coefficient_type": "frict_coef_type",
+                                 "interception": "interception_global",
+                                 }
+        dct = replace_keys(copy.copy(dct), schema_to_builder_map)
         return cls(
             **{k: v for k, v in dct.items() if k in class_fields and v is not None}
         )
