@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.15.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Adapt grid-builder to work with schema upgrades for inflow (0.223)
 
 
 1.15.0 (2024-05-22)
