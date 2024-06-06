@@ -8,7 +8,7 @@ from threedigrid_builder.base import Array, surfaces
 from threedigrid_builder.base.nodes import Nodes
 from threedigrid_builder.constants import ContentType, SurfaceClass
 
-__all__ = ["Surfaces", "ImperviousSurfaces"]
+__all__ = ["Surfaces"]
 
 
 SURFACE_TYPE_PROPERTIES = {
@@ -207,10 +207,9 @@ class BaseSurface:
     surface_id: int
     code: str
     display_name: str
-    nr_of_inhabitants: float
     area: float
-    dry_weather_flow: float
-    the_geom: shapely.Geometry
+    # NOTE: changed attribute name; take care of downstream effects!
+    geom: shapely.Geometry
 
     connection_node_id: int
     connection_node_the_geom: shapely.Geometry
@@ -219,11 +218,10 @@ class BaseSurface:
 
 class Surface(BaseSurface):
     """
-    Datamodel based on "v2_surface" table
+    Datamodel based on "surface" table
     """
 
     id: int
-    function: str
     outflow_delay: float
     surface_layer_thickness: float
     infiltration: float
@@ -231,17 +229,6 @@ class Surface(BaseSurface):
     min_infiltration_capacity: float
     infiltration_decay_constant: float
     infiltration_recovery_constant: float
-
-
-class ImperviousSurface(BaseSurface):
-    """
-    Datamodel based on "v2_impervious_surface" table
-    """
-
-    id: int
-    surface_inclination: str
-    surface_class: SurfaceClass
-    surface_sub_class: str
 
 
 def fill_missing_centroids(
@@ -281,7 +268,7 @@ class BaseSurfaces:
         if extra_fields is None:
             extra_fields = {}
 
-        centroids = shapely.centroid(self.the_geom)
+        centroids = shapely.centroid(self.geom)
         no_centroid_mask = shapely.is_missing(centroids)
 
         if np.any(no_centroid_mask):
@@ -377,32 +364,6 @@ class Surfaces(Array[Surface], BaseSurfaces):
             fe=fe,
             ka=ka,
             kh=kh,
-        )
-
-        return super().as_grid_surfaces(extra_fields)
-
-
-class ImperviousSurfaces(Array[ImperviousSurface], BaseSurfaces):
-    def as_grid_surfaces(self) -> surfaces.Surfaces:
-        params = SurfaceParams.from_surface_class_and_inclination(
-            self.surface_class[self.unique_surfaces_mask],
-            self.surface_inclination[self.unique_surfaces_mask],
-        )
-        surface_sub_class = self.surface_sub_class[self.unique_surfaces_mask]
-        surface_sub_class[shapely.is_missing(surface_sub_class)] = b""
-
-        extra_fields = dict(
-            surface_inclination=self.surface_inclination[self.unique_surfaces_mask],
-            surface_class=self.surface_class[self.unique_surfaces_mask],
-            surface_sub_class=surface_sub_class,
-            function=np.full(len(self.unique_surfaces_mask), b""),
-            outflow_delay=params.outflow_delay,
-            storage_limit=params.surface_storage,
-            infiltration_flag=params.infiltration,
-            fb=params.fb,
-            fe=params.fe,
-            ka=params.ka,
-            kh=params.kh,
         )
 
         return super().as_grid_surfaces(extra_fields)

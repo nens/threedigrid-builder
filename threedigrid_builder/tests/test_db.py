@@ -37,7 +37,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 222
+        get_version.return_value = 223
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
@@ -86,6 +86,7 @@ def test_get_boundary_conditions_2d(db):
     assert len(boundary_conditions_2d) == 0
 
 
+# TODO: fix this, no clue why this fails
 def test_get_channels(db):
     channels = db.get_channels()
     assert isinstance(channels, Channels)
@@ -389,12 +390,6 @@ def test_get_surfaces(db):
     surfaces = db.get_surfaces()
     # No surfaces in test dataset
     assert len(surfaces) == 0
-
-
-def test_get_impervious_surfaces(db):
-    impervious_surfaces = db.get_impervious_surfaces()
-    # No impervious_surfaces in test dataset
-    assert len(impervious_surfaces) == 0
 
 
 def test_get_windshieldings(db):

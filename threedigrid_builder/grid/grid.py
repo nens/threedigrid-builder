@@ -756,9 +756,9 @@ class Grid:
         breach_points.assign_to_connection_nodes(self.nodes, self.lines)
         breach_points.match_breach_ids_with_calculation_types(self.nodes)
 
-    def add_0d(self, surfaces: Union[zero_d.Surfaces, zero_d.ImperviousSurfaces]):
+    def add_0d(self, surfaces: zero_d.Surfaces):
         """
-        Zero dimension admin derived from 'v2_surfaces' and 'v2_impervious_surfaces'.
+        Zero dimension admin derived from 'surfaces'.
         """
         self.surfaces = surfaces.as_grid_surfaces()
         self.surface_maps = surfaces.as_surface_maps(self.nodes, self.nodes_embedded)
