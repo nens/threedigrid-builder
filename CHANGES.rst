@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.15.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Force numpy < 2.0
 
 
 1.15.0 (2024-05-22)
