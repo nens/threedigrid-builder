@@ -224,7 +224,7 @@ class Surface(BaseSurface):
     id: int
     outflow_delay: float
     surface_layer_thickness: float
-    infiltration: float
+    infiltration: bool
     max_infiltration_capacity: float
     min_infiltration_capacity: float
     infiltration_decay_constant: float
@@ -285,8 +285,6 @@ class BaseSurfaces:
             area=self.area[self.unique_surfaces_mask],
             centroid_x=centroid_coords[:, 0][self.unique_surfaces_mask],
             centroid_y=centroid_coords[:, 1][self.unique_surfaces_mask],
-            dry_weather_flow=self.dry_weather_flow[self.unique_surfaces_mask],
-            nr_of_inhabitants=self.nr_of_inhabitants[self.unique_surfaces_mask],
             **extra_fields
         )
 
@@ -359,7 +357,6 @@ class Surfaces(Array[Surface], BaseSurfaces):
             outflow_delay=self.outflow_delay[unique_surfaces_mask] / 60.0,
             storage_limit=self.surface_layer_thickness[unique_surfaces_mask] / 1000.0,
             infiltration_flag=self.infiltration[unique_surfaces_mask].astype("bool"),
-            function=self.function[unique_surfaces_mask],
             fb=fb,
             fe=fe,
             ka=ka,
