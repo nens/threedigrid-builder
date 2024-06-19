@@ -13,6 +13,7 @@ from threedigrid_builder.base import (
     Nodes,
     PointsOnLine,
     Pumps,
+    Quarters,
     SurfaceMaps,
     Surfaces,
 )
@@ -172,6 +173,7 @@ class Grid:
         breaches=None,
         meta=None,
         quadtree_stats=None,
+        quarters: Optional[Quarters] = None,
     ):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
@@ -206,8 +208,15 @@ class Grid:
             raise TypeError(f"Expected Obstacles instance, got {type(obstacles)}")
         if breaches is not None and not isinstance(breaches, PotentialBreaches):
             raise TypeError(f"Expected Breaches instance, got {type(breaches)}")
+
+        if quarters is None:
+            quarters = Quarters(id=[])
+        elif not isinstance(quarters, Quarters):
+            raise TypeError(f"Expected Quarters instance, got {type(quarters)}")
+
         self.nodes = nodes
         self.lines = lines
+        self.quarters = quarters
         self.meta = meta
         self.surfaces = surfaces
         self.surface_maps = surface_maps
@@ -604,6 +613,10 @@ class Grid:
         )
         self.nodes += nodes
         self.lines += lines
+
+    def set_quarter_administration(self, quadtree):
+        """Sets the quarter cell administration for lines and neighbouring calculation cells."""
+        self.quarters = quadtree.get_quarters_admin(self.nodes, self.lines)
 
     def set_pumps(self, pumps):
         """Set the pumps on this grid object
