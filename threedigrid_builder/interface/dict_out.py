@@ -290,7 +290,7 @@ class DictOut(OutputInterface):
         Returns:
             breaches dict of 1D ndarrays
         """
-        if len(breaches) == 0:
+        if breaches is None or len(breaches) == 0:
             return
 
         # sort by id
