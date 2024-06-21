@@ -1,6 +1,12 @@
 Changelog of threedigrid-builder
 ================================
 
+1.14.3 (unreleased)
+-------------------
+
+- Fix error for schematisation without any breaches
+
+
 1.14.2 (2024-05-17)
 -------------------
 
