@@ -208,7 +208,6 @@ class BaseSurface:
     code: str
     display_name: str
     area: float
-    # NOTE: changed attribute name; take care of downstream effects!
     geom: shapely.Geometry
 
     connection_node_id: int
