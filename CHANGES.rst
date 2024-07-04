@@ -1,6 +1,13 @@
 Changelog of threedigrid-builder
 ================================
 
+
+1.14.4 (unreleased)
+-------------------
+
+- Accept threedi-schema 0.219.* and 0.220.* as dependencies
+
+
 1.14.3 (2024-06-21)
 -------------------
 
