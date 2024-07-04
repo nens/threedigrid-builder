@@ -2,6 +2,18 @@ Changelog of threedigrid-builder
 ================================
 
 
+1.15.1 (unreleased)
+-------------------
+
+- Create quarter administration.
+
+
+1.15.0 (2024-05-22)
+-------------------
+
+- Adapt gridbuilder to work with schema upgrades for model settings (0.222)
+
+
 1.14.4 (unreleased)
 -------------------
 
