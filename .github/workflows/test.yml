@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - fixes_*
   pull_request:
 
 jobs:
