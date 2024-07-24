@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-from threedigrid_builder.base import Lines, Nodes
+from threedigrid_builder.base import Lines, Nodes, Quarters
 from threedigrid_builder.constants import LineType, NodeType
 from threedigrid_builder.exceptions import SchematisationError
 
@@ -247,3 +247,41 @@ class QuadTree:
         )
 
         return nodes, lines
+
+    def get_quarters_admin(self, nodes, lines):
+        """Compute 2D openwater quarter administration based on computed Quadtree.
+        Determine the connecting flowlines for a quarter in u and v direction.
+        Determine the adjacent calculation nodes for a quarter in u and v direction.
+
+        Return:
+          Quarters object
+        """
+
+        n_2d_nodes = np.count_nonzero(
+            np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)
+        )
+        n_2d_bnd_nodes = np.count_nonzero(
+            np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES)
+        )
+
+        quarter_line = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
+        neighbour_node = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
+
+        m_cells.set_quarter_admin(
+            nodes.nodk,
+            nodes.nodm,
+            nodes.nodn,
+            lines.line,
+            lines.kcu,
+            quarter_line,
+            neighbour_node,
+            self.n_lines_u,
+            self.n_lines_v,
+            n_2d_bnd_nodes,
+        )
+
+        return Quarters(
+            id=np.arange(0, 4 * n_2d_nodes),
+            line=quarter_line,
+            neighbour_node=neighbour_node,
+        )

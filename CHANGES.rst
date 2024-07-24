@@ -1,16 +1,25 @@
 Changelog of threedigrid-builder
 ================================
 
+
 1.15.1 (unreleased)
 -------------------
 
 - Adapt grid-builder to work with schema upgrades for inflow (0.223)
+- Create quarter administration.
 
 
 1.15.0 (2024-05-22)
 -------------------
 
 - Adapt gridbuilder to work with schema upgrades for model settings (0.222)
+
+
+
+1.14.3 (2024-06-21)
+-------------------
+
+- Fix error for schematisation without any breaches
 
 
 1.14.2 (2024-05-17)
