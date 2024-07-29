@@ -47,6 +47,13 @@ jobs:
             display_name: "2022"
             pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
             extras: "[test,gridadmin]"
+          - python: '3.10'
+            os: ubuntu-22.04
+            setuptools: setuptools==63.*
+            numpy: numpy==2.0.1
+            pins: ""
+            display_name: "2022 - numpy 2"
+            extras: "[test,gridadmin]"
           # 2023
           - python: '3.11'
             os: ubuntu-22.04
