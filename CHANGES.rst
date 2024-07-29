@@ -6,6 +6,7 @@ Changelog of threedigrid-builder
 -------------------
 
 - Create quarter administration.
+- Pin NumPy to <2.
 
 
 1.15.0 (2024-05-22)
