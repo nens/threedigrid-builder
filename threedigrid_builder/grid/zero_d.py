@@ -6,7 +6,7 @@ import shapely
 
 from threedigrid_builder.base import Array, surfaces
 from threedigrid_builder.base.nodes import Nodes
-from threedigrid_builder.constants import ContentType, SurfaceClass
+from threedigrid_builder.constants import ContentType
 
 __all__ = ["Surfaces"]
 

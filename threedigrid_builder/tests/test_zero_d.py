@@ -117,5 +117,3 @@ def test_surfaces(grid_all):
         value = getattr(grid_surface_maps, name)
         assert value.shape == shape
         assert value.dtype == np.dtype(dtype)
-
-

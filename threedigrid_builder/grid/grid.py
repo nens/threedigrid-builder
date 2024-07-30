@@ -1,5 +1,5 @@
 from dataclasses import dataclass, fields
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 import shapely
