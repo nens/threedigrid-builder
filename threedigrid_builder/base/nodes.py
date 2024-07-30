@@ -112,7 +112,7 @@ class Nodes(Array[Node]):
         pks = self.content_pk[where]
         return ", ".join(
             [
-                f"{pretty_name} {sorted(set(pks[types == content_type]))}"
+                f"{pretty_name} {sorted(set(int(pk) for pk in pks[types == content_type]))}"
                 for content_type, pretty_name in PRETTY_NAMES.items()
                 if np.any(types == content_type)
             ]

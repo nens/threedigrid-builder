@@ -7,6 +7,7 @@ Changelog of threedigrid-builder
 
 - Adapt grid-builder to work with schema upgrades for inflow (0.223)
 - Create quarter administration.
+- Add support for NumPy 2.
 
 
 1.15.0 (2024-05-22)
