@@ -33,7 +33,7 @@ data_path = pathlib.Path(__file__).resolve().parents[0] / "data"
 @pytest.fixture(scope="session")
 def db(tmp_path_factory):
     """Yields a threedigrid_builder.interface.db.SQLite object with access
-    to the test v2_bergermeer.sqlite."""
+    to the test v2_bergermeer.gpkg."""
     fn = tmp_path_factory.mktemp("data") / "v2_bergermeer.gpkg"
     sqlite_path = data_path / "v2_bergermeer.gpkg"
     shutil.copyfile(sqlite_path, fn)

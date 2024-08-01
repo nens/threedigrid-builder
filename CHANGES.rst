@@ -5,6 +5,7 @@ Changelog of threedigrid-builder
 1.15.1 (unreleased)
 -------------------
 
+- Adapt grid-builder to work with schema upgrades for inflow (0.223)
 - Create quarter administration.
 - Add support for NumPy 2.
 

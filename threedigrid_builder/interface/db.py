@@ -29,7 +29,6 @@ from threedigrid_builder.grid import (
     DemAverageAreas,
     ExchangeLines,
     GridRefinements,
-    ImperviousSurfaces,
     Obstacles,
     Orifices,
     Pipes,
@@ -44,7 +43,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 222
+MIN_SQLITE_VERSION = 223
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -299,13 +298,10 @@ class SQLite:
             arr = (
                 session.query(
                     models.Surface.id.label("surface_id"),
-                    models.Surface.function,
                     models.Surface.code,
                     models.Surface.display_name,
-                    models.Surface.nr_of_inhabitants,
                     models.Surface.area,
-                    models.Surface.dry_weather_flow,
-                    models.Surface.the_geom,
+                    models.Surface.geom,
                     models.SurfaceParameter.outflow_delay,
                     models.SurfaceParameter.surface_layer_thickness,
                     models.SurfaceParameter.infiltration,
@@ -331,56 +327,12 @@ class SQLite:
             )
 
         # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["geom"] = self.reproject(arr["geom"])
         arr["connection_node_the_geom"] = self.reproject(
             arr["connection_node_the_geom"]
         )
 
         return Surfaces(
-            id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
-            **{name: arr[name] for name in arr.dtype.names},
-        )
-
-    def get_impervious_surfaces(self) -> ImperviousSurfaces:
-        with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.ImperviousSurface.id.label("surface_id"),
-                    models.ImperviousSurface.code,
-                    models.ImperviousSurface.display_name,
-                    models.ImperviousSurface.surface_inclination,
-                    models.ImperviousSurface.surface_class,
-                    models.ImperviousSurface.surface_sub_class,
-                    models.ImperviousSurface.nr_of_inhabitants,
-                    models.ImperviousSurface.area,
-                    models.ImperviousSurface.dry_weather_flow,
-                    models.ImperviousSurface.the_geom,
-                    models.ConnectionNode.id.label("connection_node_id"),
-                    models.ConnectionNode.the_geom.label("connection_node_the_geom"),
-                    models.ImperviousSurfaceMap.percentage,
-                )
-                .select_from(models.ImperviousSurface)
-                .join(models.ImperviousSurfaceMap)
-                .join(
-                    models.ConnectionNode,
-                    models.ImperviousSurfaceMap.connection_node_id
-                    == models.ConnectionNode.id,
-                )
-                .order_by(models.ImperviousSurface.id)
-                .as_structarray()
-            )
-
-        # convert enums to values
-        arr["surface_class"] = [x.value for x in arr["surface_class"]]
-        arr["surface_inclination"] = [x.value for x in arr["surface_inclination"]]
-
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["connection_node_the_geom"] = self.reproject(
-            arr["connection_node_the_geom"]
-        )
-
-        return ImperviousSurfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
             **{name: arr[name] for name in arr.dtype.names},
         )
