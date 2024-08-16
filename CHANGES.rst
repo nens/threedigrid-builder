@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.17.0 (unreleased)
+1.17.0 (2024-08-16)
 -------------------
 
 - Bump threedi-schema to 0.224 (updated structure control)
