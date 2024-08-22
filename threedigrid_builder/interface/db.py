@@ -360,12 +360,12 @@ class SQLite:
                 session.query(
                     models.BoundaryConditions2D.id,
                     models.BoundaryConditions2D.type,
-                    models.BoundaryConditions2D.the_geom,
+                    models.BoundaryConditions2D.geom,
                 )
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["geom"] = self.reproject(arr["geom"])
 
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
