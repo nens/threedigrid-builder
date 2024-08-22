@@ -97,7 +97,7 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
 
 class BoundaryCondition2D:
     id: int
-    boundary_type: BoundaryType
+    type: BoundaryType
     geom: shapely.Geometry
 
 

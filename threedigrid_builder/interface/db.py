@@ -343,7 +343,7 @@ class SQLite:
             arr = (
                 session.query(
                     models.BoundaryCondition1D.id,
-                    models.BoundaryCondition1D.boundary_type,
+                    models.BoundaryCondition1D.type,
                     models.BoundaryCondition1D.connection_node_id,
                 )
                 .order_by(models.BoundaryCondition1D.id)
