@@ -296,7 +296,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
             itertools.islice(node_id_counter, len(boundary_cells))
         )
         boundary_cells.boundary_id[:] = self.id[idx]
-        boundary_cells.boundary_type[:] = self.boundary_type[idx]
+        boundary_cells.boundary_type[:] = self.type[idx]
         boundary_cells.node_type[:] = (
             NodeType.NODE_2D_GROUNDWATER_BOUNDARIES
             if self.is_groundwater(kcu)
