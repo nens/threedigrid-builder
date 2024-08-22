@@ -359,7 +359,7 @@ class SQLite:
             arr = (
                 session.query(
                     models.BoundaryConditions2D.id,
-                    models.BoundaryConditions2D.boundary_type,
+                    models.BoundaryConditions2D.type,
                     models.BoundaryConditions2D.the_geom,
                 )
                 .order_by(models.BoundaryConditions2D.id)

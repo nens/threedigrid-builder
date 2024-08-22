@@ -24,7 +24,7 @@ GROUNDWATER_BOUNDARY_TYPES = frozenset(
 
 class BoundaryCondition1D:
     id: int
-    boundary_type: BoundaryType
+    type: BoundaryType
     connection_node_id: int
 
 
@@ -35,7 +35,7 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
         Fields on nodes/lines that have a boundary condition be adjusted:
         - nodes.calculation_type: set (overridden) to BOUNDARY_NODE
         - nodes.boundary_id: from BoundaryConditions1D.id
-        - nodes.boundary_type: from BoundaryConditions1D.boundary_type
+        - nodes.boundary_type: from BoundaryConditions1D.type
         - nodes.node_type: set to NODE_1D_BOUNDARIES
         - lines.boundary_id: from BoundaryConditions1D.id
 
@@ -89,7 +89,7 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
         # set node attributes
         grid.nodes.calculation_type[idx] = CalculationType.BOUNDARY_NODE
         grid.nodes.boundary_id[idx] = self.id
-        grid.nodes.boundary_type[idx] = self.boundary_type
+        grid.nodes.boundary_type[idx] = self.type
         grid.nodes.node_type[idx] = NodeType.NODE_1D_BOUNDARIES
         # set line attributes
         grid.lines.is_1d_boundary[line_idx] = 1
