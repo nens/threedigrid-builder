@@ -75,7 +75,7 @@ def test_get_boundary_conditions_1d(db):
     # some test samples
     assert len(boundary_conditions_1d) == 4
     assert boundary_conditions_1d.id[1] == 2
-    assert boundary_conditions_1d.boundary_type[2] == BoundaryType.DISCHARGE
+    assert boundary_conditions_1d.type[2] == BoundaryType.DISCHARGE
     assert boundary_conditions_1d.connection_node_id[3] == 59
 
 

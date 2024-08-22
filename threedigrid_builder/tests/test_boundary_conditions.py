@@ -39,7 +39,7 @@ def grid1d():
 def test_1d_apply(grid1d):
     boundary_conditions_1d = BoundaryConditions1D(
         id=[10, 22],
-        boundary_type=[2, 3],
+        type=[2, 3],
         connection_node_id=[9, 5],
     )
     boundary_conditions_1d.apply(grid1d)
@@ -278,7 +278,7 @@ def test_2d_boundary_condition(
 ):
     boundary_conditions_2d = BoundaryConditions2D(
         id=range(len(bc_coords)),
-        boundary_type=[3] * len(bc_coords),
+        type=[3] * len(bc_coords),
         the_geom=shapely.linestrings(bc_coords),
     )
 
@@ -319,7 +319,7 @@ def test_2d_boundary_condition(
 def test_2d_boundary_condition_err(grid2d, bc_coords, expected_message):
     boundary_conditions_2d = BoundaryConditions2D(
         id=range(len(bc_coords)),
-        boundary_type=[3] * len(bc_coords),
+        type=[3] * len(bc_coords),
         the_geom=shapely.linestrings(bc_coords),
     )
 
@@ -383,7 +383,7 @@ def grid2d_gw():
 def test_2d_boundary_condition_types(grid2d_gw, boundary_type, node_type, kcu, line):
     boundary_conditions_2d = BoundaryConditions2D(
         id=[1],
-        boundary_type=[boundary_type],
+        type=[boundary_type],
         the_geom=[shapely.linestrings([(12.0, 3.0), (12.0, 8.0)])],
     )
     nodes, lines = boundary_conditions_2d.get_nodes_and_lines(
@@ -411,7 +411,7 @@ def test_2d_boundary_condition_types(grid2d_gw, boundary_type, node_type, kcu, l
 def test_2d_boundary_condition_combined(grid2d_gw):
     boundary_conditions_2d = BoundaryConditions2D(
         id=[1, 2],
-        boundary_type=[BoundaryType.WATERLEVEL, BoundaryType.GROUNDWATERLEVEL],
+        type=[BoundaryType.WATERLEVEL, BoundaryType.GROUNDWATERLEVEL],
         the_geom=[shapely.linestrings([(12.0, 3.0), (12.0, 8.0)])] * 2,
     )
 
