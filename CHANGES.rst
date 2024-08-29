@@ -7,7 +7,6 @@ Changelog of threedigrid-builder
 
 - Fix for adding grid objects to include quarters attribute.
 - Rename groundwater.equilibrium_infiltration_rate_type to equilibrium_infiltration_rate_aggregation
-- Rename control_measure_location.object_id to connection_node_id
 
 
 1.17.0 (2024-08-16)
