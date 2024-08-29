@@ -2,7 +2,6 @@ from typing import Tuple
 
 from .array import Array
 
-
 __all__ = ["Quarters"]
 
 
