@@ -215,9 +215,11 @@ class SQLite:
                 "phreatic_storage_capacity",
                 type_field="phreatic_storage_capacity_aggregation",
             )
-            _set_initialization_type(groundwater,
-                                     "equilibrium_infiltration_rate",
-                                     type_field="equilibrium_infiltration_rate_aggregation")
+            _set_initialization_type(
+                groundwater,
+                "equilibrium_infiltration_rate",
+                type_field="equilibrium_infiltration_rate_aggregation",
+            )
             _set_initialization_type(
                 groundwater,
                 "initial_infiltration_rate",
