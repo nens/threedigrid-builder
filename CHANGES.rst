@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.17.1 (unreleased)
+1.17.1 (2024-09-02)
 -------------------
 
 - Fix for adding grid objects to include quarters attribute.
