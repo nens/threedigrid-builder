@@ -803,8 +803,8 @@ class SQLite:
 
         if self.get_version() >= 212:
             cols += [
-                models.PotentialBreach.exchange_level,
-                models.PotentialBreach.maximum_breach_depth,
+                models.PotentialBreach.initial_exchange_level,
+                models.PotentialBreach.final_exchange_level,
                 models.PotentialBreach.levee_material,
             ]
 
@@ -817,7 +817,19 @@ class SQLite:
 
         # reproject
         arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
+        # derive maximum_breach_depth from initial and final exchange level
+        # and overwrite final_exchange_level because adding a field is more work
+        arr["final_exchange_level"] = (
+            arr["initial_exchange_level"] - arr["final_exchange_level"]
+        )
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "geom": "the_geom",
+                "initial_exchange_level": "exchange_level",
+                "final_exchange_level": "maximum_breach_depth",
+            },
+        )
         return PotentialBreaches(**attr_dict)
 
 
