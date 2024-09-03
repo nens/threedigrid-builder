@@ -94,7 +94,9 @@ def _set_initialization_type(
         dct[type_field] = None
 
 
-def arr_to_attr_dict(arr: np.ndarray, rename_dict: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def arr_to_attr_dict(
+    arr: np.ndarray, rename_dict: Optional[Dict[str, str]] = None
+) -> Dict[str, str]:
     """
     Convert structured array to dict with optional rename of the keys
     """
