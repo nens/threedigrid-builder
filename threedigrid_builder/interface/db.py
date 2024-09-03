@@ -565,17 +565,17 @@ class SQLite:
         with self.get_session() as session:
             arr1 = (
                 session.query(
-                    models.GridRefinement.the_geom,
-                    models.GridRefinement.id,
-                    models.GridRefinement.code,
-                    models.GridRefinement.display_name,
-                    models.GridRefinement.refinement_level,
+                    models.GridRefinementLine.the_geom,
+                    models.GridRefinementLine.id,
+                    models.GridRefinementLine.code,
+                    models.GridRefinementLine.display_name,
+                    models.GridRefinementLine.refinement_level,
                 )
                 .filter(
-                    models.GridRefinement.the_geom.isnot(None),
-                    models.GridRefinement.refinement_level.isnot(None),
+                    models.GridRefinementLine.the_geom.isnot(None),
+                    models.GridRefinementLine.refinement_level.isnot(None),
                 )
-                .order_by(models.GridRefinement.id)
+                .order_by(models.GridRefinementLine.id)
                 .as_structarray()
             )
             arr2 = (
