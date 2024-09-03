@@ -94,6 +94,18 @@ def _set_initialization_type(
         dct[type_field] = None
 
 
+def arr_to_attr_dict(arr: np.ndarray, rename_dict: dict[str, str] = None) -> dict:
+    """
+    Convert structured array to dict with optional rename of the keys
+    """
+    if rename_dict is None:
+        rename_dict = {}
+    return {
+        rename_dict[name] if name in rename_dict else name: arr[name]
+        for name in arr.dtype.names
+    }
+
+
 class SQLite:
     def __init__(self, path: pathlib.Path, upgrade=False, convert_to_geopackage=False):
         if not path.exists():
@@ -548,47 +560,47 @@ class SQLite:
                 session.query(
                     models.ExchangeLine.id,
                     models.ExchangeLine.channel_id,
-                    models.ExchangeLine.the_geom,
+                    models.ExchangeLine.geom,
                     models.ExchangeLine.exchange_level,
                 )
                 .order_by(models.ExchangeLine.id)
                 .as_structarray()
             )
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
+        arr["geom"] = self.reproject(arr["geom"])
+        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
         # transform to a Channels object
-        return ExchangeLines(**{name: arr[name] for name in arr.dtype.names})
+        return ExchangeLines(**attr_dict)
 
     def get_grid_refinements(self) -> GridRefinements:
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
             arr1 = (
                 session.query(
-                    models.GridRefinementLine.the_geom,
+                    models.GridRefinementLine.geom,
                     models.GridRefinementLine.id,
                     models.GridRefinementLine.code,
                     models.GridRefinementLine.display_name,
-                    models.GridRefinementLine.refinement_level,
+                    models.GridRefinementLine.grid_level,
                 )
                 .filter(
-                    models.GridRefinementLine.the_geom.isnot(None),
-                    models.GridRefinementLine.refinement_level.isnot(None),
+                    models.GridRefinementLine.geom.isnot(None),
+                    models.GridRefinementLine.grid_level.isnot(None),
                 )
                 .order_by(models.GridRefinementLine.id)
                 .as_structarray()
             )
             arr2 = (
                 session.query(
-                    models.GridRefinementArea.the_geom,
+                    models.GridRefinementArea.geom,
                     models.GridRefinementArea.id,
                     models.GridRefinementArea.code,
                     models.GridRefinementArea.display_name,
-                    models.GridRefinementArea.refinement_level,
+                    models.GridRefinementArea.grid_level,
                 )
                 .filter(
-                    models.GridRefinementArea.the_geom.isnot(None),
-                    models.GridRefinementArea.refinement_level.isnot(None),
+                    models.GridRefinementArea.geom.isnot(None),
+                    models.GridRefinementArea.grid_level.isnot(None),
                 )
                 .order_by(models.GridRefinementArea.id)
                 .as_structarray()
@@ -596,10 +608,13 @@ class SQLite:
             arr = np.concatenate((arr1, arr2))
 
         # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-        arr["id"] = np.arange(len(arr["refinement_level"]))
+        arr["geom"] = self.reproject(arr["geom"])
+        arr["id"] = np.arange(len(arr["grid_level"]))
 
-        return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
+        attr_dict = arr_to_attr_dict(
+            arr, {"geom": "the_geom", "grid_level": "refinement_level"}
+        )
+        return GridRefinements(**attr_dict)
 
     def get_dem_average_areas(self) -> DemAverageAreas:
         """Return DemAverageAreas"""
@@ -607,20 +622,20 @@ class SQLite:
             arr = (
                 session.query(
                     models.DemAverageArea.id,
-                    models.DemAverageArea.the_geom,
+                    models.DemAverageArea.geom,
                 )
                 .order_by(models.DemAverageArea.id)
                 .as_structarray()
             )
-            arr["the_geom"] = self.reproject(arr["the_geom"])
-
-        return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
+            arr["geom"] = self.reproject(arr["geom"])
+        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
+        return DemAverageAreas(**attr_dict)
 
     def get_obstacles(self) -> Obstacles:
         with self.get_session() as session:
             arr = (
                 session.query(
-                    models.Obstacle.the_geom,
+                    models.Obstacle.geom,
                     models.Obstacle.id,
                     models.Obstacle.crest_level,
                 )
@@ -629,9 +644,10 @@ class SQLite:
             )
 
         # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
-        return Obstacles(**{name: arr[name] for name in arr.dtype.names})
+        arr["geom"] = self.reproject(arr["geom"])
+        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
+        # transform to a Channels object
+        return Obstacles(**attr_dict)
 
     def get_orifices(self) -> Orifices:
         """Return Orifices"""
@@ -781,7 +797,7 @@ class SQLite:
             models.PotentialBreach.id,
             models.PotentialBreach.code,
             models.PotentialBreach.display_name,
-            models.PotentialBreach.the_geom,
+            models.PotentialBreach.geom,
             models.PotentialBreach.channel_id,
         ]
 
@@ -800,9 +816,9 @@ class SQLite:
             )
 
         # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
-        return PotentialBreaches(**{name: arr[name] for name in arr.dtype.names})
+        arr["geom"] = self.reproject(arr["geom"])
+        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
+        return PotentialBreaches(**attr_dict)
 
 
 # Constructing a Transformer takes quite long, so we use caching here. The
