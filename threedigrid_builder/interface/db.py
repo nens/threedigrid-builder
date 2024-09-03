@@ -4,7 +4,7 @@ import pathlib
 from contextlib import contextmanager
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, ContextManager
+from typing import Callable, ContextManager, Dict, Optional
 
 import numpy as np
 import shapely
@@ -94,7 +94,7 @@ def _set_initialization_type(
         dct[type_field] = None
 
 
-def arr_to_attr_dict(arr: np.ndarray, rename_dict: dict[str, str] = None) -> dict:
+def arr_to_attr_dict(arr: np.ndarray, rename_dict: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """
     Convert structured array to dict with optional rename of the keys
     """
