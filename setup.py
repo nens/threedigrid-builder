@@ -53,7 +53,7 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15,<3.0",
-    "threedi-schema==0.224.*",
+    "threedi-schema @ https://github.com/nens/threedi-schema/archive/eli-laterals-and-boundary-conditions.zip",
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
