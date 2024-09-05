@@ -187,7 +187,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         return node_idx[before if is_before else after], is_before
 
     def adapt_node_idx_groundwater(self, idx: int, nodes: Nodes, node_idx):
-        is_groundwater = self.type_is_groundwater(self.type[idx])
+        is_groundwater = self.boundary_type_is_groundwater(self.type[idx])
         if is_groundwater:
             n_groundwater_cells = nodes.n_groundwater_cells
             if n_groundwater_cells == 0:
