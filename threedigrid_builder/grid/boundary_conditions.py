@@ -266,7 +266,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         }
 
     @staticmethod
-    def type_is_groundwater(type: BoundaryType) -> bool:
+    def boundary_type_is_groundwater(type: BoundaryType) -> bool:
         return type in {
             BoundaryType.GROUNDWATERLEVEL,
             BoundaryType.GROUNDWATERDISCHARGE,
