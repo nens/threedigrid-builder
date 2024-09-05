@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.17.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Support 225 schema migration (boundary conditions and laterals).
 
 
 1.17.0 (2024-08-16)
