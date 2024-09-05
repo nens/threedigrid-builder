@@ -37,7 +37,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 225
+        get_version.return_value = 226
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
@@ -65,7 +65,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 225
+    assert db.get_version() == 226
 
 
 def test_get_boundary_conditions_1d(db):
