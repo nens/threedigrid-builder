@@ -24,7 +24,7 @@ GROUNDWATER_BOUNDARY_TYPES = frozenset(
 
 class BoundaryCondition1D:
     id: int
-    boundary_type: BoundaryType
+    type: BoundaryType
     connection_node_id: int
 
 
@@ -35,7 +35,7 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
         Fields on nodes/lines that have a boundary condition be adjusted:
         - nodes.calculation_type: set (overridden) to BOUNDARY_NODE
         - nodes.boundary_id: from BoundaryConditions1D.id
-        - nodes.boundary_type: from BoundaryConditions1D.boundary_type
+        - nodes.boundary_type: from BoundaryConditions1D.type
         - nodes.node_type: set to NODE_1D_BOUNDARIES
         - lines.boundary_id: from BoundaryConditions1D.id
 
@@ -89,7 +89,7 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
         # set node attributes
         grid.nodes.calculation_type[idx] = CalculationType.BOUNDARY_NODE
         grid.nodes.boundary_id[idx] = self.id
-        grid.nodes.boundary_type[idx] = self.boundary_type
+        grid.nodes.boundary_type[idx] = self.type
         grid.nodes.node_type[idx] = NodeType.NODE_1D_BOUNDARIES
         # set line attributes
         grid.lines.is_1d_boundary[line_idx] = 1
@@ -97,15 +97,15 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
 
 class BoundaryCondition2D:
     id: int
-    boundary_type: BoundaryType
-    the_geom: shapely.Geometry
+    type: BoundaryType
+    geom: shapely.Geometry
 
 
 class BoundaryConditions2D(Array[BoundaryCondition2D]):
     def get_intersecting_node_idx(
         self, idx: int, cell_tree: shapely.STRtree
     ) -> np.ndarray:
-        bc_geom = self.the_geom[idx]
+        bc_geom = self.geom[idx]
 
         x1, y1, x2, y2 = shapely.bounds(bc_geom)
         is_horizontal = (x2 - x1) > (y2 - y1)
@@ -187,7 +187,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         return node_idx[before if is_before else after], is_before
 
     def adapt_node_idx_groundwater(self, idx: int, nodes: Nodes, node_idx):
-        is_groundwater = self.boundary_type_is_groundwater(self.boundary_type[idx])
+        is_groundwater = self.boundary_type_is_groundwater(self.type[idx])
         if is_groundwater:
             n_groundwater_cells = nodes.n_groundwater_cells
             if n_groundwater_cells == 0:
@@ -266,8 +266,8 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         }
 
     @staticmethod
-    def boundary_type_is_groundwater(boundary_type: BoundaryType) -> bool:
-        return boundary_type in {
+    def boundary_type_is_groundwater(type: BoundaryType) -> bool:
+        return type in {
             BoundaryType.GROUNDWATERLEVEL,
             BoundaryType.GROUNDWATERDISCHARGE,
         }
@@ -296,7 +296,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
             itertools.islice(node_id_counter, len(boundary_cells))
         )
         boundary_cells.boundary_id[:] = self.id[idx]
-        boundary_cells.boundary_type[:] = self.boundary_type[idx]
+        boundary_cells.boundary_type[:] = self.type[idx]
         boundary_cells.node_type[:] = (
             NodeType.NODE_2D_GROUNDWATER_BOUNDARIES
             if self.is_groundwater(kcu)

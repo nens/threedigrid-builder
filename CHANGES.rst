@@ -2,10 +2,16 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.17.2 (unreleased)
+1.18.1 (unreleased)
 -------------------
 
 - Adapt for changes in schema upgrade for 2d and 1d2d
+
+
+1.18.0 (2024-09-09)
+-------------------
+
+- Support 225 schema migration (boundary conditions and laterals).
 
 
 1.17.1 (2024-09-02)
