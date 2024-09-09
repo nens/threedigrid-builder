@@ -43,7 +43,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 224
+MIN_SQLITE_VERSION = 225
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -347,7 +347,7 @@ class SQLite:
             arr = (
                 session.query(
                     models.BoundaryCondition1D.id,
-                    models.BoundaryCondition1D.boundary_type,
+                    models.BoundaryCondition1D.type,
                     models.BoundaryCondition1D.connection_node_id,
                 )
                 .order_by(models.BoundaryCondition1D.id)
@@ -363,13 +363,13 @@ class SQLite:
             arr = (
                 session.query(
                     models.BoundaryConditions2D.id,
-                    models.BoundaryConditions2D.boundary_type,
-                    models.BoundaryConditions2D.the_geom,
+                    models.BoundaryConditions2D.type,
+                    models.BoundaryConditions2D.geom,
                 )
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["geom"] = self.reproject(arr["geom"])
 
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
