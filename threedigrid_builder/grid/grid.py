@@ -236,7 +236,7 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines", "nodes_embedded", "surfaces"):
+        for name in ("nodes", "lines", "nodes_embedded", "surfaces", "quarters"):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in (
             "meta",

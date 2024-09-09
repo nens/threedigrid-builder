@@ -167,6 +167,7 @@ class TablesSettings:
                                  "infiltration_decay_period_aggregation": "infiltration_decay_period_type",
                                  "initial_infiltration_rate_aggregation": "initial_infiltration_rate_type",
                                  "phreatic_storage_capacity_aggregation": "phreatic_storage_capacity_type",
+                                 "equilibrium_infiltration_rate_aggregation": "equilibrium_infiltration_rate_type",
                                  "max_infiltration_volume": "max_infiltration_capacity",
                                  "max_infiltration_volume_type": "max_infiltration_capacity_type",
                                  "manhole_aboveground_storage_area": "manhole_storage_area",

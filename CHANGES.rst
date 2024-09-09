@@ -2,10 +2,17 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.17.1 (unreleased)
+1.17.2 (unreleased)
 -------------------
 
 - Support 225 schema migration (boundary conditions and laterals).
+
+
+1.17.1 (2024-09-02)
+-------------------
+
+- Fix for adding grid objects to include quarters attribute.
+- Rename groundwater.equilibrium_infiltration_rate_type to equilibrium_infiltration_rate_aggregation
 
 
 1.17.0 (2024-08-16)

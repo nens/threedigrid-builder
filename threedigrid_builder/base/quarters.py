@@ -13,5 +13,3 @@ class Quarter:
 
 class Quarters(Array[Quarter]):
     """Calculation quarters."""
-
-    pass

@@ -220,6 +220,7 @@ class Array(Generic[T]):
             name: np.concatenate((getattr(self, name), getattr(other, name)))
             for name in typing.get_type_hints(self.data_class).keys()
         }
+
         for scalar_arg in self.scalars:
             new_fields[scalar_arg] = getattr(self, scalar_arg)
         return self.__class__(**new_fields)
