@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.18.1 (unreleased)
+1.19.0 (2024-09-10)
 -------------------
 
 - Adapt for changes in schema upgrade for 2d and 1d2d
