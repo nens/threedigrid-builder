@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.14.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Define new boundary condition types.
 
 
 1.14.0 (2024-03-12)
