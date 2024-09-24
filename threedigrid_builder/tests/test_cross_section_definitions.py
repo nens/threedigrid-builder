@@ -381,6 +381,32 @@ def test_tabulate_inverted_egg():
                 )
             ),
         ),
+        (  # Open profile, left side rises then falls
+            "0 5 10 15 20 25 30 35 40",
+            "5.2 5.26 5.25 5.2 5.1 5.1 0 5 5",
+            None,
+            None,
+            None,
+            None,
+            None,
+            40.0,
+            5.26,
+            np.column_stack(
+                (
+                    [0.0, 5.0,   5.0,    5.1,  5.1,    5.2,    5.2,    5.25,   5.26],
+                    [0.0, 9.902, 14.902, 15.0, 20.005, 24.995, 25.008, 34.167, 40.0],
+                )
+            ),
+            np.column_stack(
+                (
+                    [0.0, 5.0,  10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0],
+                    [5.2, 5.26, 5.25, 5.2,  5.1,  5.1,  0.0,  5.0,  5.0],
+                    np.zeros(9, dtype=float),
+                    np.zeros(9, dtype=float),
+                    np.zeros(9, dtype=float),
+                )
+            ),
+        ),
     ],
 )
 def test_tabulate_yz(
