@@ -319,6 +319,19 @@ def tabulate_yz(shape, width, height):
         seen.add(x)
         zs[i] = x
 
+    # For open profiles where the left or right sides are not the maximum Z,
+    # we add a vertical line at each end such that the left and right sides are
+    # now the maximum Z. This ensures that the profile is not inverted by
+    # shapely when calculating the widths.
+    if not is_closed:
+        highest_z = np.max(zs)
+        if zs[0] < highest_z:
+            zs = np.concatenate(([highest_z], zs))
+            ys = np.concatenate(([ys[0]], ys))
+        if zs[-1] < highest_z:
+            zs = np.concatenate((zs, [highest_z]))
+            ys = np.concatenate((ys, [ys[-1]]))
+
     # For open profiles, if left and right sides are not equal in Z, we envision a
     # vertical line from the left or right most point depending on which is lower.
     # This is to ensure that the width is non-decreasing for the remaining profile.
