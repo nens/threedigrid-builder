@@ -6,6 +6,7 @@ Changelog of threedigrid-builder
 -------------------
 
 - Define new boundary condition types.
+- Add boundaries to quadtree line administration. 
 
 
 1.19.0 (2024-09-10)
