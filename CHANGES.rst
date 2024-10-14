@@ -2,10 +2,17 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.19.1 (unreleased)
+1.19.2 (unreleased)
+-------------------
+
+- Nothing changed yet.
+
+
+1.19.1 (2024-09-30)
 -------------------
 
 - Define new boundary condition types.
+- Handle open YZ profiles correctly when the middle is higher than the sides.
 
 
 1.19.0 (2024-09-10)
