@@ -78,24 +78,36 @@ Development
 -----------
 
 Clone the repo and fetch the LFS objects: 
-  # git lfs fetch origin refs/remotes/origin/master
 
-Create and activate a virtual environment
+  $ git lfs fetch origin refs/remotes/origin/master
+
+Install the build tools::
+
+  $ sudo apt install cmake gfortran
+
+Install platform dependencies::
+  
+  $ sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
+
+Create and activate a virtual environment::
+
   $ python -m venv ./venv
   $ source ./venv/bin/activate
 
-Install the build tools:
-  $ sudo apt install cmake gfortran
+Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example, for Python 3.10 with numpy 1::
 
-Install platform dependencies
-  $ sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
-
-Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example, for Python 3.10 with numpy 1:
-  $ pip install --disable-pip-version-check --upgrade pip wheel scikit-build
+  $ pip install --upgrade pip wheel scikit-build
   $ pip install setuptools==63.*
-  # pip install numpy==1.23.*
-  # pip install -e .[test,gridadmin] --no-build-isolation h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.* "pygdal==$(gdal-config --version).*"
+  $ pip install numpy==1.23.*
+  $ pip install -e .[test,gridadmin] --no-build-isolation h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.* "pygdal==$(gdal-config --version).*"
 
-In case the Fortan code needs to be recompiled: 
+In case the Fortan code needs to be recompiled::
 
   $ python setup.py develop
+
+Now you should be able to run the tests::
+
+  $ pytest
+  $ pytest integration_tests
+
+For VSCode, Optionally select the python interpreter corresponding to the virtual environment.
