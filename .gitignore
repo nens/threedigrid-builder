@@ -301,3 +301,5 @@ docker-compose.devcontainer.yml
 # Coverage
 .coverage
 coverage.xml
+venv/lib64
+venv/pyvenv.cfg

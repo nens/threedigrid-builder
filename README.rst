@@ -54,6 +54,10 @@ One option is to install gdal using apt-get, and then pygdal with a matching ver
   $ sudo apt-get libgdal-dev
   $ pip install pygdal=={your gdal version}.*
 
+The current platform version of GDAL can be retrieved by:
+
+  $ gdalinfo --version
+
 Install the threedigrid-builder::
 
   $ pip install threedigrid-builder
@@ -69,3 +73,29 @@ For output into Geopackage for display in e.g. QGis, enable gpkg output::
 The command line interface requires Typer::
 
   $ pip install threedigrid-builder[cli]
+
+Development
+-----------
+
+Clone the repo and fetch the LFS objects: 
+  # git lfs fetch origin refs/remotes/origin/master
+
+Create and activate a virtual environment
+  $ python -m venv ./venv
+  $ source ./venv/bin/activate
+
+Install the build tools:
+  $ sudo apt install cmake gfortran
+
+Install platform dependencies
+  $ sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
+
+Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example, for Python 3.10 with numpy 1:
+  $ pip install --disable-pip-version-check --upgrade pip wheel scikit-build
+  $ pip install setuptools==63.*
+  # pip install numpy==1.23.*
+  # pip install -e .[test,gridadmin] --no-build-isolation h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.* "pygdal==$(gdal-config --version).*"
+
+In case the Fortan code needs to be recompiled: 
+
+  $ python setup.py develop
