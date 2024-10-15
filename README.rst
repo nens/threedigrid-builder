@@ -77,7 +77,7 @@ The command line interface requires Typer::
 Development
 -----------
 
-Clone the repo and fetch the LFS objects: 
+Clone the repo and fetch the LFS objects::
 
   $ git lfs fetch origin refs/remotes/origin/master
 
@@ -110,4 +110,4 @@ Now you should be able to run the tests::
   $ pytest
   $ pytest integration_tests
 
-For VSCode, Optionally select the python interpreter corresponding to the virtual environment.
+For VSCode, optionally select the python interpreter corresponding to the virtual environment.
