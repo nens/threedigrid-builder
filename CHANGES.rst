@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.20.1 (unreleased)
+1.20.1 (2024-10-23)
 -------------------
 
 - Fix interception file settings not being read properly in new schema version.
