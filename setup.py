@@ -53,7 +53,7 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15,<3.0",
-    "threedi-schema==0.227.*",
+    "threedi-schema @ git+https://github.com/nens/threedi-schema.git@margriet_89_schema_300_1D",
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
