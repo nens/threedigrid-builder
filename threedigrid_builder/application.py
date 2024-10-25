@@ -94,8 +94,8 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        # We'll ignore obstacles for now
-        # grid.set_obstacles(db.get_obstacles())
+        # We'll ignore obstacles for now. TODO: commented out
+        grid.set_obstacles(db.get_obstacles())
 
         # Cutlines should not be applied on 2D boundary cells. There is no information there.
         grid.set_boundary_conditions_2d(
