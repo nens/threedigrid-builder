@@ -65,11 +65,12 @@ class QuadTree:
                 f"Smallest 2D grid cell size: {min_gridsize}m. Pixel size: {pixel_size}m."
             )
 
-        # Maximum number of active grid levels in quadtree.
+        # Maximum number of active grid levels in quadtree, note that this is 1 when there are no refinements.
         self.kmax = reduce_refinement_levels(refinements, num_refine_levels)
+        # Number of pixels that fit along an edge of the smallest cell
         self.lgrmin *= 2 ** (num_refine_levels - self.kmax)
 
-        # Array with cell widths at every active grid level [0:kmax]
+        # Array with column dimensions at every active grid level [0:kmax]
         self.mmax = np.empty((self.kmax,), dtype=np.int32, order="F")
         # Array with row dimensions of every active grid level [0:kmax].
         self.nmax = np.empty((self.kmax,), dtype=np.int32, order="F")
@@ -81,7 +82,7 @@ class QuadTree:
         lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
 
         # Determine number of largest cells that fit over subgrid extent.
-        max_pix_largest_cell = self.min_cell_pixels * lvl_multiplr[0]
+        max_pix_largest_cell = self.lgrmin * lvl_multiplr[0]
         max_large_cells_col = int(
             math.ceil(subgrid_meta["width"] / (max_pix_largest_cell))
         )
@@ -111,7 +112,7 @@ class QuadTree:
             self.kmax,
             self.mmax,
             self.nmax,
-            self.min_cell_pixels,
+            self.lgrmin,
             use_2d_flow,
             subgrid_meta["area_mask"],
             self.lg,
@@ -128,11 +129,6 @@ class QuadTree:
 
     def __repr__(self):
         return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>"  # NOQA
-
-    @property
-    def min_cell_pixels(self):
-        """Returns minimum number of pixels in smallles computational_cell."""
-        return self.lgrmin
 
     def _apply_refinements(self, refinements):
         """Set active grid levels for based on refinements and
@@ -156,7 +152,7 @@ class QuadTree:
             height=self.nmax[0],
             width=self.mmax[0],
             cell_size=self.dx[0],
-            no_data_value=self.kmax,
+            no_data_value=self.kmax,  # ?
         )
         return np.asfortranarray(lg.T)
 
@@ -196,7 +192,7 @@ class QuadTree:
 
         m_cells.set_2d_computational_nodes_lines(
             np.array([self.origin[0], self.origin[1]], dtype=np.float64),
-            self.min_cell_pixels,
+            self.lgrmin,
             self.kmax,
             self.mmax,
             self.nmax,

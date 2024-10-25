@@ -70,7 +70,7 @@ def _make_gridadmin(
         quadtree = QuadTree(
             subgrid_meta,
             grid_settings.kmax,
-            grid_settings.grid_space,
+            grid_settings.grid_space,  # min gridsize in meters
             grid_settings.use_2d_flow,
             refinements,
         )
@@ -80,14 +80,24 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
+
+        # This computes auxiliary values that are of no interest for cutting.
         grid.set_quarter_administration(quadtree)
+
+        # As groundwater nodes and lines are a direct copy of the current ones, we
+        # need to apply the cutting now (before grid.add_groundwater()).
+
+        # CUT HERE!
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        grid.set_obstacles(db.get_obstacles())
+        # We'll ignore obstacles for now
+        # grid.set_obstacles(db.get_obstacles())
+
+        # Cutlines should not be applied on 2D boundary cells. There is no information there.
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -95,6 +105,7 @@ def _make_gridadmin(
             line_id_counter,
         )
 
+        # This marks the nodes intersecting the dem_average geometries.
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)
 
