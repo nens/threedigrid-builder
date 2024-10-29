@@ -48,7 +48,6 @@ class Node:
     breach_ids: Tuple[int, int]  # referring to 1 or 2 ids of potential breaches
     has_dem_averaged: int  # Boolean attribute to tell if dem is averaged for node.
     boundary_type: BoundaryType
-    manhole_id: int  # referring to the id of a manhole
     is_manhole: bool  # node represents a manhole
     drain_level: float  # Drain level entered for manholes
     initial_waterlevel: float

@@ -126,12 +126,10 @@ def test_get_connection_nodes(db):
     assert connection_nodes.code[494] == ""
     assert connection_nodes.initial_waterlevel[169] == -0.4
     # manhole fields
-    # TODO: fix this
-    # assert connection_nodes.manhole_id[10] == 11
-    # assert connection_nodes.manhole_id[100] == -9999
     assert connection_nodes.calculation_type[1] == CalculationType.CONNECTED
     assert connection_nodes.manhole_indicator[6] == 1
     assert connection_nodes.bottom_level[9] == -3.51
+    assert np.isnan(connection_nodes.bottom_level[100])
     assert connection_nodes.drain_level[1] == -0.82
     assert connection_nodes.surface_level[35] == -0.54
     # TODO:
