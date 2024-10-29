@@ -35,7 +35,6 @@ def connection_nodes():
         id=np.array([1, 3, 4, 9, 10]),
         code=np.array(["one", "two", "", "", ""]),
         storage_area=np.array([15, np.nan, np.nan, np.nan, 0]),
-        manhole_id=np.array([42, 11, -9999, -9999, -9999]),
         calculation_type=np.array([1, 2, 5, 2, 2]),
         bottom_level=np.array([2.1, 2.1, np.nan, np.nan, 2.1]),
         drain_level=[1.2, np.nan, np.nan, np.nan, np.nan],
@@ -200,7 +199,7 @@ def test_bottom_levels_above_invert_level(structure_type, caplog):
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         dmax=[10.0, 20.0],
         content_pk=[52, 22],
-        manhole_id=[3, 6],
+        is_manhole=[True, True],
     )
     lines = Lines(
         id=[1],
@@ -213,7 +212,7 @@ def test_bottom_levels_above_invert_level(structure_type, caplog):
 
     # setting the bottom levels emits a warning
     set_bottom_levels(nodes, lines)
-    assert caplog.messages[0].startswith("Manholes [3] have a bottom_level")
+    assert caplog.messages[0].startswith("Nodes [1] have a bottom_level")
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, [3.0, 20.0])
