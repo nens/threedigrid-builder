@@ -37,7 +37,7 @@ def connection_nodes():
         storage_area=np.array([15, np.nan, np.nan, np.nan, 0]),
         manhole_id=np.array([42, 11, -9999, -9999, -9999]),
         calculation_type=np.array([1, 2, 5, 2, 2]),
-        bottom_level=np.array([2.1, np.nan, np.nan, np.nan, 2.1]),
+        bottom_level=np.array([2.1, np.nan, -9999, -9999, 2.1]),
         drain_level=[1.2, np.nan, np.nan, np.nan, np.nan],
     )
 
@@ -267,10 +267,9 @@ def test_get_1d2d_exchange_levels(connection_nodes: ConnectionNodes, caplog):
     )
 
     assert_array_equal(actual, [1.2, np.nan, np.nan, 1.0])
-
     assert (
         caplog.record_tuples[0][2]
-        == "Manholes [42] have a bottom_level that is above drain_level."
+        == "ConnectionNode [1] have a bottom_level that is above drain_level."
     )
 
 

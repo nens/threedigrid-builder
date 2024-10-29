@@ -109,17 +109,16 @@ class ConnectionNodes(Array[ConnectionNode]):
         """
         # get the corresponding connection_node ids and indexes
         connection_node_idx = self.id_to_index(content_pk)
-        is_manhole = self.manhole_id[connection_node_idx] != -9999
+        is_manhole = self.bottom_level[connection_node_idx] != -9999
         is_manhole_idx = connection_node_idx[is_manhole]
-
         # Check if manhole has drain_level below bottom_level
         has_lower_drn_lvl = (
             self.drain_level[is_manhole_idx] < self.bottom_level[is_manhole_idx]
         )
         if np.any(has_lower_drn_lvl):
-            ids = self.manhole_id[is_manhole_idx[has_lower_drn_lvl]]
+            ids = self.id[is_manhole_idx[has_lower_drn_lvl]]
             logger.warning(
-                f"Manholes {sorted(ids.tolist())} have a "
+                f"ConnectionNode {sorted(ids.tolist())} have a "
                 f"bottom_level that is above drain_level."
             )
 
@@ -143,7 +142,6 @@ class ConnectionNodes(Array[ConnectionNode]):
             _put_if_less(dpumax, cn_idx_with_channel, drain_level)
         # filter out connection nodes that were not in node_idx (non-connected ones)
         dpumax = dpumax[connection_node_idx]
-
         # for manholes: put in the drain level
         dpumax[is_manhole] = self.drain_level[is_manhole_idx]
         return dpumax
@@ -270,7 +268,9 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
     dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node)
 
     # Check if the new node dmax is below the original manhole dmax
+    # TODO: fix this, class Nodes does not have bottom_level
     is_manhole = nodes.manhole_id[node_idx] != -9999
+    # is_manhole = nodes.bottom_level[node_idx] != -9999
     has_lower_dmax = dmax[is_manhole] < nodes.dmax[node_idx[is_manhole]]
     if np.any(has_lower_dmax):
         ids = nodes.manhole_id[node_idx[is_manhole][has_lower_dmax]]
