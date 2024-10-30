@@ -58,14 +58,19 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
 
         for i, self_i in enumerate(idx):
             shape = self.shape[self_i]
-            tabulator = tabulators[shape]
+            if shape.is_tabulated:
+                continue
+                # width, height = _parse_tabulated(self.cross_section_table[self_i], shape)
+            else:
+                width = self.width[self_i]
+                height = self.height[self_i]
             (
                 result.shape[i],
                 result.width_1d[i],
                 result.height_1d[i],
                 table,
                 yz,
-            ) = tabulator(shape, self.width[self_i], self.height[self_i])
+            ) = tabulators[shape](shape, width, height)
             if table is not None:
                 result.count[i] = len(table)
                 tables.append(table)
@@ -191,26 +196,30 @@ def tabulate_closed_rectangle(shape, width: float, height: float):
     return CrossSectionShape.TABULATED_RECTANGLE, width, height, table, None
 
 
-def _parse_tabulated(width, height):
+def _parse_tabulated(cross_section_table, shape):
     try:
-        heights = np.array([float(x) for x in height.split(" ")])
-        widths = np.array([float(x) for x in width.split(" ")])
+        left, right = zip(
+            *[
+                [float(item) for item in line.split(",")]
+                for line in cross_section_table.splitlines()
+            ]
+        )
     except ValueError:
         raise SchematisationError(
-            f"Unable to parse cross section definition width and/or height "
-            f"(got: '{width}', '{height}')."
+            f"Unable to parse cross section definition table "
+            f"(got: '{cross_section_table}')."
         )
-    if len(heights) == 0:
+    if len(left) == 0:
         raise SchematisationError(
             f"Cross section definitions of tabulated or profile type must have at least one "
-            f"height element (got: {height})."
+            f"height element (got: {cross_section_table})."
         )
-    if len(heights) != len(widths):
-        raise SchematisationError(
-            f"Cross section definitions of tabulated or profile type must have equal number of "
-            f"height and width elements (got: {height}, {width})."
-        )
-    return widths, heights
+    if shape == CrossSectionShape.TABULATED_YZ:
+        # for tabulated_yz, cross section table is y,z
+        return np.array(left), np.array(right)
+    else:
+        # for other tabulated, cross seciton table is height, width
+        return np.array(right), np.array(left)
 
 
 def tabulate_tabulated(shape, width, height):
@@ -225,14 +234,13 @@ def tabulate_tabulated(shape, width, height):
         tuple:  shape, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), None
     """
-    widths, heights = _parse_tabulated(width, height)
-    if len(heights) > 1 and np.any(np.diff(heights) < 0.0):
+    if len(height) > 1 and np.any(np.diff(height) < 0.0):
         raise SchematisationError(
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
         )
 
-    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
+    return shape, np.max(width), np.max(height), np.array([height, width]).T, None
 
 
 def tabulate_yz(shape, width, height):
@@ -247,7 +255,8 @@ def tabulate_yz(shape, width, height):
         tuple:  shape, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), yz (ndarray of shape (M, 4))
     """
-    ys, zs = _parse_tabulated(width, height)
+    ys = width
+    zs = height
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
     if is_closed and len(zs) < 4:
         raise SchematisationError(

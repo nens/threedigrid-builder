@@ -8,6 +8,7 @@ from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import CrossSectionDefinitions, CrossSections
 from threedigrid_builder.grid.cross_section_definitions import (
+    _parse_tabulated,
     set_friction_vegetation_values,
     tabulate_builtin,
     tabulate_closed_rectangle,
@@ -138,10 +139,12 @@ def test_tabulate_egg():
 
 
 def test_tabulate_tabulated():
-    shape, width_1d, height_1d, table, yz = tabulate_tabulated(
-        "my-shape", "1 2 3", "0 1 2"
+    width, height = _parse_tabulated(
+        "0,1\n1,2\n2,3", CrossSectionShape.TABULATED_RECTANGLE
     )
-
+    shape, width_1d, height_1d, table, yz = tabulate_tabulated(
+        "my-shape", width, height
+    )
     assert shape == "my-shape"
     assert width_1d == 3.0  # the max
     assert height_1d == 2.0
@@ -200,11 +203,23 @@ def test_tabulate_inverted_egg():
 
 
 @pytest.mark.parametrize(
-    "width,height,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width,exp_height,exp_table,exp_yz",
+    "shape, expected_width, expected_height",
+    [
+        (CrossSectionShape.TABULATED_YZ, [1, 3, 5], [2, 4, 6]),
+        (CrossSectionShape.TABULATED_RECTANGLE, [2, 4, 6], [1, 3, 5]),
+    ],
+)
+def test_parse_tabulated(shape, expected_width, expected_height):
+    width, height = _parse_tabulated("1,2\n3,4\n5,6", shape)
+    np.testing.assert_array_equal(width, expected_width)
+    np.testing.assert_array_equal(height, expected_height)
+
+
+@pytest.mark.parametrize(
+    "cross_section_table,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width,exp_height,exp_table,exp_yz",
     [
         (
-            "0 0.5 1 1.5",
-            "0.5 0 0 0.5",
+            "0,0.5\n0.5,0\n1,0\n1.5,0.5",
             None,
             None,
             None,
@@ -221,8 +236,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 0.5 1 1.5",
-            "0.5 0 0 0.25",
+            "0,0.5\n0.5,0\n1,0\n1.5,0.25",
             "1 1 1",
             "0.5 1 1",
             "1 1 1",
@@ -239,8 +253,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 1 2 3 4 5",
-            "1 0 0.5 0.5 0 1",
+            "0,1\n1,0\n2,0.5\n3,0.5\n4,0\n5,1",
             "1 1 1 1 1",
             "1 1 1 1 1",
             "1 1 1 1 1",
@@ -259,8 +272,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 1 2 2 0 0",
-            "0.5 0 0.5 1.5 1.5 0.5",
+            "0,0.5\n1,0\n2,0.5\n2,1.5\n0,1.5\n0,0.5",
             "1 1 1 1",
             "1 1 1 1",
             "1 1 1 1",
@@ -272,8 +284,7 @@ def test_tabulate_inverted_egg():
             None,
         ),
         (
-            "0 0.5 0.75 1.0 1.5",
-            "0.5 0 0 0 0.5",
+            "0,0.5\n0.5,0\n0.75,0\n1.0,0\n1.5,0.5",
             "1 1 1 1",
             "1 0.1 1 1",
             "2 1 1 1",
@@ -291,8 +302,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 1 0 1 0",
-            "0 1 1 0 0",
+            "0,0\n1,1\n0,1\n1,0\n0,0",
             "1 1 1 1",
             "1 1 1 1",
             "1 1 1 1",
@@ -304,8 +314,7 @@ def test_tabulate_inverted_egg():
             None,
         ),
         (  # Open profile left side higher than right side
-            "0 1 2 3 4",
-            "1 0 0 0 2",
+            "0,1\n1,0\n2,0\n3,0\n4,2",
             None,
             None,
             None,
@@ -330,8 +339,7 @@ def test_tabulate_inverted_egg():
             ),
         ),
         (  # Open profile right side higher than left side
-            "1 2 3 4 5",
-            "3 1 0 1 2",
+            "1,3\n2,1\n3,0\n4,1\n5,2",
             None,
             None,
             None,
@@ -356,8 +364,7 @@ def test_tabulate_inverted_egg():
             ),
         ),
         (  # Open profile same height left and right
-            "1 2 3 4 5",
-            "3 1 0 1 3",
+            "1,3\n2,1\n3,0\n4,1\n5,3",
             None,
             None,
             None,
@@ -382,8 +389,7 @@ def test_tabulate_inverted_egg():
             ),
         ),
         (  # Open profile, left side rises then falls
-            "0 5 10 15 20 25 30 35 40",
-            "5.2 5.26 5.25 5.2 5.1 5.1 0 5 5",
+            "0,5.2\n5,5.26\n10,5.25\n15,5.2\n20,5.1\n25,5.1\n30,0\n35,5\n40,5",
             None,
             None,
             None,
@@ -410,8 +416,7 @@ def test_tabulate_inverted_egg():
     ],
 )
 def test_tabulate_yz(
-    width,
-    height,
+    cross_section_table,
     friction_values,
     vegetation_stem_densities,
     vegetation_stem_diameters,
@@ -422,6 +427,9 @@ def test_tabulate_yz(
     exp_table,
     exp_yz,
 ):
+    width, height = _parse_tabulated(
+        cross_section_table, CrossSectionShape.TABULATED_YZ
+    )
     shape, width_1d, height_1d, table, yz = tabulate_yz(
         "my-shape",
         width,
