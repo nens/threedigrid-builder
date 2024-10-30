@@ -138,17 +138,19 @@ def test_get_connection_nodes(db):
     assert connection_nodes.display_name[33] == "71512"
 
 
-@pytest.mark.skip(reason="CrossSectionDefinition has been removed from schema")
 def test_get_cross_section_definitions(db):
     definitions = db.get_cross_section_definitions()
     assert isinstance(definitions, CrossSectionDefinitions)
+    breakpoint()
 
     # some test samples
+    # TODO: do we really want this???
+    # Massive multiplication of data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     assert len(definitions.id) == 13
     assert definitions.id[8] == 97
     assert definitions.shape[7] == CrossSectionShape.RECTANGLE
-    assert definitions.height[10] == "0.4"
-    assert definitions.width[2] == "0.315"
+    assert definitions.height[10] == 0.4
+    assert definitions.width[2] == 0.315
 
 
 def test_get_cross_section_locations(db):

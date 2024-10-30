@@ -11,7 +11,7 @@ import shapely
 from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import cast, func, inspect, Integer
+from sqlalchemy import cast, func, inspect, Integer, literal
 from sqlalchemy.orm import Session
 from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
 
@@ -462,35 +462,89 @@ class SQLite:
 
         return ConnectionNodes(**attr_dict)
 
+    def get_cross_section_definition_for_table(self, table) -> np.ndarray:
+        with self.get_session() as session:
+            cols = [
+                literal(table.__tablename__).label("origin_table"),
+                table.id.label("origin_id"),
+                table.cross_section_shape.label("shape"),
+                table.cross_section_width.label("width"),
+                table.cross_section_height.label("height"),
+                table.cross_section_table,
+            ]
+            if table == models.CrossSectionLocation:
+                cols += [
+                    table.cross_section_friction_values.label("friction_values"),
+                    table.cross_section_vegetation_table,
+                ]
+            arr = session.query(*cols).select_from(table).as_structarray()
+            # map shape 10 to 1 (circle) to match CrossSectionShape enum
+            arr["shape"][arr["shape"] == 10] = 1
+            # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
+            arr["shape"][arr["shape"] == 11] = 5
+            # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
+            arr["shape"][arr["shape"] == 12] = 6
+        return arr
+
     def get_cross_section_definitions(self) -> CrossSectionDefinitions:
         """Return CrossSectionDefinitions"""
-        with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.CrossSectionDefinition.id,
-                    models.CrossSectionDefinition.code,
-                    models.CrossSectionDefinition.shape,
-                    models.CrossSectionDefinition.width,
-                    models.CrossSectionDefinition.height,
-                    models.CrossSectionDefinition.friction_values,
-                    models.CrossSectionDefinition.vegetation_stem_densities,
-                    models.CrossSectionDefinition.vegetation_stem_diameters,
-                    models.CrossSectionDefinition.vegetation_heights,
-                    models.CrossSectionDefinition.vegetation_drag_coefficients,
-                )
-                .order_by(models.CrossSectionDefinition.id)
-                .as_structarray()
-            )
+        attr_dict = {
+            "id": np.empty(0, dtype="i4"),
+            "origin_table": np.empty(0, dtype="O"),
+            "origin_id": np.empty(0, dtype="i4"),
+            "shape": np.empty(0, dtype="i4"),
+            "width": np.empty(0, dtype="f8"),
+            "height": np.empty(0, dtype="f8"),
+            "cross_section_table": np.empty(0, dtype="O"),
+            "friction_values": np.empty(0, dtype="O"),
+            "cross_section_vegetation_table": np.empty(0, dtype="O"),
+        }
+        for table in [
+            models.CrossSectionLocation,
+            models.Culvert,
+            models.Orifice,
+            models.Pipe,
+            models.Weir,
+        ]:
+            arr = self.get_cross_section_definition_for_table(table)
+            if len(arr) == 0:
+                continue
+            for name in attr_dict.keys():
+                if name == "id":
+                    data = len(attr_dict["id"]) + np.arange(len(arr))
+                elif name in arr.dtype.names:
+                    data = arr[name]
+                else:
+                    data = np.empty(len(arr), attr_dict[name].dtype)
+                attr_dict[name] = np.concatenate((attr_dict[name], data))
 
-        # map shape 10 to 1 (circle) to match CrossSectionShape enum
-        arr["shape"][arr["shape"] == 10] = 1
-        # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
-        arr["shape"][arr["shape"] == 11] = 5
-        # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
-        arr["shape"][arr["shape"] == 12] = 6
+        # breakpoint()
+        #     arr = (
+        #         session.query(
+        #             models.CrossSectionDefinition.id,
+        #             models.CrossSectionDefinition.code,
+        #             models.CrossSectionDefinition.shape,
+        #             models.CrossSectionDefinition.width,
+        #             models.CrossSectionDefinition.height,
+        #             models.CrossSectionDefinition.friction_values,
+        #             models.CrossSectionDefinition.vegetation_stem_densities,
+        #             models.CrossSectionDefinition.vegetation_stem_diameters,
+        #             models.CrossSectionDefinition.vegetation_heights,
+        #             models.CrossSectionDefinition.vegetation_drag_coefficients,
+        #         )
+        #         .order_by(models.CrossSectionDefinition.id)
+        #         .as_structarray()
+        #     )
 
+        # # map shape 10 to 1 (circle) to match CrossSectionShape enum
+        # arr["shape"][arr["shape"] == 10] = 1
+        # # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
+        # arr["shape"][arr["shape"] == 11] = 5
+        # # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
+        # arr["shape"][arr["shape"] == 12] = 6
         # transform to a CrossSectionDefinitions object
-        return CrossSectionDefinitions(**{name: arr[name] for name in arr.dtype.names})
+        # breakpoint()
+        return CrossSectionDefinitions(**attr_dict)
 
     def get_cross_section_locations(self) -> CrossSectionLocations:
         """Return CrossSectionLocations"""

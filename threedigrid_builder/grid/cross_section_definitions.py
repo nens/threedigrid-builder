@@ -23,6 +23,9 @@ class CrossSectionDefinition:
     vegetation_heights: str  # space-separated list of floats
     vegetation_drag_coefficients: str  # space-separated list of floats
     cross_section_table: str  # csv table defining the shape of a tabulated shape
+    cross_section_vegetation_table: str  # csv table with cross section vegetation table
+    origin_table: str  # table definition originates from
+    origin_id: int  # id in origin_table where definition originates from
 
 
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
