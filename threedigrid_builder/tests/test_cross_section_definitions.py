@@ -95,7 +95,7 @@ def test_tabulate_builtin():
 
 def test_tabulate_closed_rectangle():
     shape, width_1d, height_1d, table, yz = tabulate_closed_rectangle(
-        "my-shape", "1.52", "5.2"
+        "my-shape", 1.52, 5.2
     )
 
     assert shape == CrossSectionShape.TABULATED_RECTANGLE

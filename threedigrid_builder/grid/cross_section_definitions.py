@@ -175,26 +175,18 @@ def tabulate_inverted_egg(shape, width, height):
     return type_, width, height, table, None
 
 
-def tabulate_closed_rectangle(shape, width, height):
+def tabulate_closed_rectangle(shape, width: float, height: float):
     """Tabulate the closed rectangle shape.
 
     Args:
         shape (CrossSectionShape): ignored
-        width (str): the width of the rectangle
-        height (str): the height of the rectangle
+        width (float): the width of the rectangle
+        height (float): the height of the rectangle
 
     Returns:
         tuple:  TABULATED_RECTANGLE, width_1d (float),
                 height (float), table (ndarray of shape (M, 2)), None
     """
-    try:
-        width = float(width)
-        height = float(height)
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width and/or height "
-            f"(got: '{width}', '{height}')."
-        )
     table = np.array([[0.0, width], [height, 0.0]], order="F")
     return CrossSectionShape.TABULATED_RECTANGLE, width, height, table, None
 
