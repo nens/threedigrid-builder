@@ -134,27 +134,19 @@ def tabulate_builtin(shape, width: float, height: float):
     return shape, width, None, None, None
 
 
-def tabulate_egg(shape, width, height):
+def tabulate_egg(shape, width: float, height: float):
     """Tabulate the egg shape.
 
     Args:
         shape (CrossSectionShape): ignored
-        width (str): the width of the egg, defines height and increment
-        height (str): ignored; height is set to 1.5 * width
+        width (float): the width of the egg, defines height and increment
+        height (float): ignored; height is set to 1.5 * width
 
     Returns:
         tuple:  TABULATED_TRAPEZIUM, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), None
     """
     NUM_INCREMENTS = 16
-
-    # width is the only constant; height derives from width
-    try:
-        width = float(width)
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width (got: '{width}')."
-        )
 
     height = width * 1.5
     position = height / 3.0  # some parameter for the 'egg' curve

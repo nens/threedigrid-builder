@@ -106,7 +106,7 @@ def test_tabulate_closed_rectangle():
 
 
 def test_tabulate_egg():
-    shape, width_1d, height_1d, table, yz = tabulate_egg("my-shape", "1.52", "ignored")
+    shape, width_1d, height_1d, table, yz = tabulate_egg("my-shape", 1.52, 0)
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
     assert width_1d == 1.52
