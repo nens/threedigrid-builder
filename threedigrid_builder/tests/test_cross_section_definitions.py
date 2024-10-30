@@ -215,6 +215,12 @@ def test_parse_tabulated(shape, expected_width, expected_height):
     np.testing.assert_array_equal(height, expected_height)
 
 
+@pytest.mark.parametrize("cross_section_table", ["", "1,2\n3", "1,2\n3,"])
+def test_parse_tabulated_invalid(cross_section_table):
+    with pytest.raises(SchematisationError):
+        _parse_tabulated(cross_section_table, CrossSectionShape.TABULATED_RECTANGLE)
+
+
 @pytest.mark.parametrize(
     "cross_section_table,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width,exp_height,exp_table,exp_yz",
     [
