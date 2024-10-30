@@ -118,26 +118,19 @@ class CrossSections(Array[CrossSection]):
     tables_yz = None
 
 
-def tabulate_builtin(shape, width, height):
+def tabulate_builtin(shape, width: float, height: float):
     """Tabulate built-in shapes (rectangle, circle)
 
     Built-in geometries only require a width to be fully specified.
 
     Args:
         shape (CrossSectionShape): returned as is
-        width (str): fully specifies the shape
-        height (str): ignored
+        width (float): fully specifies the shape
+        height (float): ignored
 
     Returns:
         tuple:  shape, width_1d (float), None, None, None
     """
-    try:
-        width = float(width)
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width (got: '{width}')."
-        )
-
     return shape, width, None, None, None
 
 

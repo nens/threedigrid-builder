@@ -89,7 +89,7 @@ def test_convert_empty(cross_section_definitions):
 
 
 def test_tabulate_builtin():
-    actual = tabulate_builtin("my-shape", "1.52", "1.33")
+    actual = tabulate_builtin("my-shape", 1.52, 1.33)
     assert actual == ("my-shape", 1.52, None, None, None)
 
 
