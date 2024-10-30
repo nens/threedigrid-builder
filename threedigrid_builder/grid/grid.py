@@ -370,6 +370,10 @@ class Grid:
             - nodes.content_pk: the user-supplied id
             - nodes.node_type: NODE_1D_NO_STORAGE / NODE_1D_STORAGE
             - nodes.calculation_type: only if set on Manhole
+            - nodes.dmax: from bottom_level (which comes from manhole)
+            - nodes.is_manhole: node is a manhole
+            - nodes.drain_level: drain_level of associated manhole.
+            - nodes.storage_area: area of connection_node.
         """
         return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
 
