@@ -22,6 +22,7 @@ class CrossSectionDefinition:
     vegetation_stem_diameters: str  # space-separated list of floats
     vegetation_heights: str  # space-separated list of floats
     vegetation_drag_coefficients: str  # space-separated list of floats
+    cross_section_table: str  # csv table defining the shape of a tabulated shape
 
 
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
@@ -58,9 +59,14 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
 
         for i, self_i in enumerate(idx):
             shape = self.shape[self_i]
-            if shape.is_tabulated:
-                continue
-                # width, height = _parse_tabulated(self.cross_section_table[self_i], shape)
+            if shape in [
+                CrossSectionShape.TABULATED_YZ,
+                CrossSectionShape.TABULATED_RECTANGLE,
+                CrossSectionShape.TABULATED_TRAPEZIUM,
+            ]:
+                width, height = _parse_tabulated(
+                    self.cross_section_table[self_i], shape
+                )
             else:
                 width = self.width[self_i]
                 height = self.height[self_i]

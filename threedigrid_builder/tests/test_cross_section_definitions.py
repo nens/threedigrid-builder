@@ -27,8 +27,9 @@ def cross_section_definitions():
         id=[1, 3, 9],
         code=["1", "3", "9"],
         shape=[SHP.CIRCLE, SHP.TABULATED_TRAPEZIUM, SHP.TABULATED_RECTANGLE],
-        width=["1.22", "3.7 5.0", "5.0 6.0"],
-        height=["", "1 2", "1 2"],
+        width=[1.22, None, None],
+        height=[None, None, None],
+        cross_section_table=[None, "1,3.7\n2,5.0", "1,5\n2,6"],
     )
 
 
