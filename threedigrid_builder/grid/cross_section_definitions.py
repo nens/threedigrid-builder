@@ -1,5 +1,6 @@
 import numpy as np
 import shapely
+from threedi_schema import constants
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CrossSectionShape
@@ -29,6 +30,56 @@ class CrossSectionDefinition:
 
 
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
+    def get_unique(self):
+        """
+        Returns a tuple of unique cross section definitions and their mapping to original cross section definitions.
+
+        Returns:
+            Tuple[CrossSectionDefinitions, Dict[str, Dict[int, int]]]: A tuple where the first element is
+            a dictionary of unique cross section definitions and the second element is a dictionary mapping
+            the original tables and rows where these definitions are used.
+        """
+        cross_section_attributes = {
+            constants.CrossSectionShape.CLOSED_RECTANGLE.value: ["width", "height"],
+            constants.CrossSectionShape.RECTANGLE.value: ["width"],
+            constants.CrossSectionShape.CIRCLE.value: ["width"],
+            constants.CrossSectionShape.EGG.value: ["width"],
+            constants.CrossSectionShape.TABULATED_RECTANGLE.value: [
+                "cross_section_table"
+            ],
+            constants.CrossSectionShape.TABULATED_TRAPEZIUM.value: [
+                "cross_section_table"
+            ],
+            constants.CrossSectionShape.TABULATED_YZ.value: ["cross_section_table"],
+            constants.CrossSectionShape.INVERTED_EGG.value: ["width"],
+        }
+        definition_map = {name: {} for name in np.unique(self.origin_table)}
+        new_csd_dict = {
+            key: np.empty(0, dtype=data.dtype) for key, data in vars(self).items()
+        }
+        for shape in np.unique(self.shape):
+            mask = self.shape == shape
+            attr_arr = np.column_stack(
+                [getattr(self, attr)[mask] for attr in cross_section_attributes[shape]]
+            )
+            u_arr, u_idx = np.unique(attr_arr, return_index=True)
+            # create new csd
+            new_id = np.arange(len(u_idx)) + len(new_csd_dict["id"])
+            for key in new_csd_dict:
+                if key == "id":
+                    new_csd_dict[key] = np.concatenate([new_csd_dict[key], new_id])
+                else:
+                    new_csd_dict[key] = np.concatenate(
+                        [new_csd_dict[key], getattr(self, key)[mask][u_idx]]
+                    )
+            # create mapping
+            for i, row in enumerate(u_arr):
+                for idx in np.where(attr_arr == row)[0]:
+                    definition_map[self.origin_table[mask][idx]][
+                        self.origin_id[mask][idx]
+                    ] = new_id[i]
+        return CrossSectionDefinitions(**new_csd_dict), definition_map
+
     def convert(self, ids):
         """Convert to CrossSections.
 

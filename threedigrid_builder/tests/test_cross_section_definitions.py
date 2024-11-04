@@ -3,6 +3,7 @@ from unittest import mock
 import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
+from threedi_schema import constants
 
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
@@ -477,3 +478,96 @@ def test_tabulate_yz(
 def test_tabulate_yz_err(width, height, match):
     with pytest.raises(SchematisationError, match=match):
         tabulate_yz("my-shape", width, height)
+
+
+class TestCrossSectionDefinitionGetUnique:
+    def test_for_closed_rectangle(self):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200],
+            shape=[
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+            ],
+            width=[1, 1],
+            height=[1, 1],
+            cross_section_table=["foo", "bar"],
+            origin_table=["pipe", "weir"],
+            origin_id=[10, 20],
+        )
+        unique_definition, _ = csd_in.get_unique()
+        assert unique_definition.id == [
+            0,
+        ]
+        assert unique_definition.width == [
+            1,
+        ]
+        assert unique_definition.height == [
+            1,
+        ]
+
+    @pytest.mark.parametrize(
+        "shape",
+        [
+            constants.CrossSectionShape.RECTANGLE.value,
+            constants.CrossSectionShape.CIRCLE.value,
+            constants.CrossSectionShape.EGG.value,
+            constants.CrossSectionShape.INVERTED_EGG.value,
+        ],
+    )
+    def test_for_tabulated_shape(self, shape):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200],
+            shape=[shape, shape],
+            width=[1, 1],
+            height=[1, 2],
+            cross_section_table=["foo", "bar"],
+            origin_table=["pipe", "weir"],
+            origin_id=[10, 20],
+        )
+        unique_definition, _ = csd_in.get_unique()
+        assert unique_definition.id == [
+            0,
+        ]
+        assert unique_definition.width == [
+            1,
+        ]
+
+    @pytest.mark.parametrize(
+        "shape",
+        [
+            constants.CrossSectionShape.TABULATED_YZ.value,
+            constants.CrossSectionShape.TABULATED_RECTANGLE.value,
+            constants.CrossSectionShape.TABULATED_TRAPEZIUM.value,
+        ],
+    )
+    def test_for_other_shapes(self, shape):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200],
+            shape=[shape, shape],
+            width=[1, 1],
+            height=[10, 21],
+            cross_section_table=["foo", "foo"],
+            origin_table=["pipe", "weir"],
+            origin_id=[10, 20],
+        )
+        unique_definition, _ = csd_in.get_unique()
+        assert unique_definition.id == [
+            0,
+        ]
+        assert unique_definition.cross_section_table == ["foo"]
+
+    def test_mapping(self):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200, 300],
+            shape=[
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.RECTANGLE.value,
+            ],
+            width=[1, 1, 3],
+            height=[1, 1, 10],
+            origin_table=["pipe", "weir", "pipe"],
+            origin_id=[10, 20, 20],
+        )
+        _, mapping = csd_in.get_unique()
+        assert mapping == {"pipe": {10: 0, 20: 1}, "weir": {20: 0}}

@@ -492,7 +492,7 @@ class SQLite:
             "id": np.empty(0, dtype="i4"),
             "origin_table": np.empty(0, dtype="O"),
             "origin_id": np.empty(0, dtype="i4"),
-            "shape": np.empty(0, dtype="i4"),
+            "shape": np.empty(0, dtype="O"),
             "width": np.empty(0, dtype="f8"),
             "height": np.empty(0, dtype="f8"),
             "cross_section_table": np.empty(0, dtype="O"),
@@ -518,32 +518,6 @@ class SQLite:
                     data = np.empty(len(arr), attr_dict[name].dtype)
                 attr_dict[name] = np.concatenate((attr_dict[name], data))
 
-        # breakpoint()
-        #     arr = (
-        #         session.query(
-        #             models.CrossSectionDefinition.id,
-        #             models.CrossSectionDefinition.code,
-        #             models.CrossSectionDefinition.shape,
-        #             models.CrossSectionDefinition.width,
-        #             models.CrossSectionDefinition.height,
-        #             models.CrossSectionDefinition.friction_values,
-        #             models.CrossSectionDefinition.vegetation_stem_densities,
-        #             models.CrossSectionDefinition.vegetation_stem_diameters,
-        #             models.CrossSectionDefinition.vegetation_heights,
-        #             models.CrossSectionDefinition.vegetation_drag_coefficients,
-        #         )
-        #         .order_by(models.CrossSectionDefinition.id)
-        #         .as_structarray()
-        #     )
-
-        # # map shape 10 to 1 (circle) to match CrossSectionShape enum
-        # arr["shape"][arr["shape"] == 10] = 1
-        # # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
-        # arr["shape"][arr["shape"] == 11] = 5
-        # # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
-        # arr["shape"][arr["shape"] == 12] = 6
-        # transform to a CrossSectionDefinitions object
-        # breakpoint()
         return CrossSectionDefinitions(**attr_dict)
 
     def get_cross_section_locations(self) -> CrossSectionLocations:
