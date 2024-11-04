@@ -22,6 +22,7 @@ from threedigrid_builder.interface import (
     GridAdminOut,
     SQLite,
 )
+from threedigrid_builder.interface.db import map_cross_section_definition
 
 __all__ = ["make_grid", "make_gridadmin"]
 
@@ -179,7 +180,15 @@ def _make_gridadmin(
             culverts=culverts,
         )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
-        grid.set_cross_sections(db.get_cross_section_definitions())
+        cross_section_definitions = db.get_cross_section_definitions()
+        (
+            cross_section_definitions_unique,
+            mapping,
+        ) = cross_section_definitions.get_unique()
+        map_cross_section_definition(
+            [locations, orifices, pipes, culverts, weirs], mapping
+        )
+        grid.set_cross_sections(cross_section_definitions_unique)
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:

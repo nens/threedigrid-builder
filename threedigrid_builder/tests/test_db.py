@@ -28,6 +28,7 @@ from threedigrid_builder.grid import (
     Weirs,
 )
 from threedigrid_builder.interface import SQLite
+from threedigrid_builder.interface.db import map_cross_section_definition
 
 
 def test_init(tmp_path):
@@ -410,3 +411,15 @@ def test_get_exchange_lines(db):
     exchange_lines = db.get_exchange_lines()
     # No exchange lines in test dataset
     assert len(exchange_lines) == 0
+
+
+def test_map_cross_section_definition():
+    mapping = {"pipe": {0: 0, 1: 1}, "weir": {1: 0}, "cross_section_location": {0: 10}}
+    pipes = Pipes(id=[0, 1], cross_section_definition_id=[10, 20])
+    weirs = Weirs(id=[0, 1], cross_section_definition_id=[10, 20])
+    cross_section_locations = CrossSectionLocations(id=[0], definition_id=[100])
+    objects = [pipes, weirs, cross_section_locations]
+    map_cross_section_definition(objects, mapping)
+    np.testing.assert_array_equal(pipes.cross_section_definition_id, [0, 1])
+    np.testing.assert_array_equal(weirs.cross_section_definition_id, [10, 0])
+    np.testing.assert_array_equal(cross_section_locations.definition_id, [10])

@@ -108,6 +108,35 @@ def arr_to_attr_dict(
     }
 
 
+def map_cross_section_definition(objects, definition_map):
+    """
+    Set cross section definition ids for cross_section_locations,
+    pipes, weirs, orifices and culverts to match the unique
+    cross section locations.
+    """
+    # TODO: is
+    object_map = {
+        CrossSectionLocations: "cross_section_location",
+        Pipes: "pipe",
+        Weirs: "weir",
+        Orifices: "orifice",
+        Culverts: "culvert",
+    }
+    for object in objects:
+        object_name = object_map.get(type(object))
+        if object_name is None:
+            raise ValueError(f"Object of type {type(object)} cannot be mapped")
+        mapping = definition_map.get(object_name)
+        if mapping is None:
+            continue
+        idx = object.id_to_index(list(mapping.keys()))
+        vals = np.array(list(mapping.values()), dtype=int)
+        if isinstance(object, CrossSectionLocations):
+            object.definition_id[idx] = vals
+        else:
+            object.cross_section_definition_id[idx] = vals
+
+
 class SQLite:
     def __init__(self, path: pathlib.Path, upgrade=False, convert_to_geopackage=False):
         if not path.exists():
