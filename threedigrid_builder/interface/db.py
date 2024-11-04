@@ -114,7 +114,6 @@ def map_cross_section_definition(objects, definition_map):
     pipes, weirs, orifices and culverts to match the unique
     cross section locations.
     """
-    # TODO: is
     object_map = {
         CrossSectionLocations: "cross_section_location",
         Pipes: "pipe",

@@ -142,16 +142,13 @@ def test_get_connection_nodes(db):
 def test_get_cross_section_definitions(db):
     definitions = db.get_cross_section_definitions()
     assert isinstance(definitions, CrossSectionDefinitions)
-    breakpoint()
 
     # some test samples
-    # TODO: do we really want this???
-    # Massive multiplication of data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    assert len(definitions.id) == 13
-    assert definitions.id[8] == 97
+    assert len(definitions.id) == 1365
+    assert definitions.id[8] == 8
     assert definitions.shape[7] == CrossSectionShape.RECTANGLE
     assert definitions.height[10] == 0.4
-    assert definitions.width[2] == 0.315
+    assert definitions.width[2] == 3
 
 
 def test_get_cross_section_locations(db):
