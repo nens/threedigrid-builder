@@ -261,8 +261,8 @@ def tabulate_yz(shape, width, height):
         tuple:  shape, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), yz (ndarray of shape (M, 4))
     """
-    ys = width
-    zs = height
+    ys = np.array(width)
+    zs = np.array(height)
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
     if is_closed and len(zs) < 4:
         raise SchematisationError(

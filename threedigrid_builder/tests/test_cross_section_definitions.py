@@ -153,25 +153,16 @@ def test_tabulate_tabulated():
     assert yz is None
 
 
-@pytest.mark.parametrize(
-    "width,height,match",
-    [
-        ("", "1", r"Unable to parse cross section definition.*"),
-        ("1", "", r"Unable to parse cross section definition.*"),
-        ("", "", r"Unable to parse cross section definition.*"),
-        ("1", "1 2", r".*of tabulated or profile type must have equal number.*"),
-        ("1 2", "1", r".*of tabulated or profile type must have equal number.*"),
-        ("1 1", "2 1", r".*of tabulated type must have increasing heights.*"),
-    ],
-)
-def test_tabulate_tabulated_err(width, height, match):
-    with pytest.raises(SchematisationError, match=match):
-        tabulate_tabulated(CrossSectionShape.TABULATED_RECTANGLE, width, height)
+def test_tabulate_tabulated_err():
+    with pytest.raises(
+        SchematisationError, match=r".*of tabulated type must have increasing heights.*"
+    ):
+        tabulate_tabulated(CrossSectionShape.TABULATED_RECTANGLE, [1, 1], [2, 1])
 
 
 def test_tabulate_inverted_egg():
     shape, width_1d, height_1d, table, yz = tabulate_inverted_egg(
-        "my-shape", "1.52", "ignored"
+        "my-shape", 1.52, "ignored"
     )
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
@@ -464,20 +455,23 @@ def test_tabulate_yz(
 @pytest.mark.parametrize(
     "width,height,match",
     [
-        ("", "1", r"Unable to parse cross section definition.*"),
-        ("1", "", r"Unable to parse cross section definition.*"),
-        ("", "", r"Unable to parse cross section definition.*"),
-        ("1", "1 2", r".*of tabulated or profile type must have equal number.*"),
-        ("1 2", "1", r".*of tabulated or profile type must have equal number.*"),
         (
-            "0 0.5 0",
-            "0 1 0",
+            [0, 0.5, 0],
+            [0, 1, 0],
             r".*of closed profiles must have at least 4 coordinates.*",
         ),
-        ("0 0.5", "0 1", r".*of open profiles must have at least 3 coordinates.*"),
-        ("0 0.5 1.0", "0 1 -1", r".*cannot have negative height coordinate.*"),
-        ("0 0.5 1.0", "1 2 1", r".*must have at least one height coordinate at 0.*"),
-        ("0 0.5 1.0 0.5", "0 1 2 3", r".*should be closed or have increasing widths.*"),
+        ([0, 0.5], [0, 1], r".*of open profiles must have at least 3 coordinates.*"),
+        ([0, 0.5, 1.0], [0, 1, -1], r".*cannot have negative height coordinate.*"),
+        (
+            [0, 0.5, 1.0],
+            [1, 2, 1],
+            r".*must have at least one height coordinate at 0.*",
+        ),
+        (
+            [0, 0.5, 1.0, 0.5],
+            [0, 1, 2, 3],
+            r".*should be closed or have increasing widths.*",
+        ),
     ],
 )
 def test_tabulate_yz_err(width, height, match):
