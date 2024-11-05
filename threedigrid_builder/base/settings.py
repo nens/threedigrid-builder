@@ -40,6 +40,8 @@ class GridSettings:
     kmax: int
     embedded_cutoff_threshold: float = 0.05
     max_angle_1d_advection: float = 0.4 * np.pi
+    # TODO: make sure this default and type are correct!
+    node_open_water_detection: int = 1
 
     @classmethod
     def from_dict(cls, dct):

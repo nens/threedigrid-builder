@@ -84,12 +84,15 @@ class ConnectionNodes(Array[ConnectionNode]):
             has_groundwater_exchange=self.has_groundwater_exchange,
         )
 
-    def is_closed(self, content_pk):
+    def is_closed(self, content_pk, node_open_water_detection, has_channels):
         """Whether object are 'closed' or 'open water' object.
 
         This is relevant for 1D-2D connections.
         """
-        return self.storage_area[self.id_to_index(content_pk)] >= 0
+        if node_open_water_detection == 0:
+            return has_channels * np.ones_like(content_pk, dtype=np.bool_)
+        else:
+            return self.storage_area[self.id_to_index(content_pk)] >= 0
 
     def get_1d2d_exchange_levels(self, content_pk, channels, locations, **kwargs):
         """Compute the exchange level (dpumax) for 1D-2D flowlines.
