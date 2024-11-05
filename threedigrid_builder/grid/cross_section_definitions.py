@@ -39,6 +39,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
             a dictionary of unique cross section definitions and the second element is a dictionary mapping
             the original tables and rows where these definitions are used.
         """
+        # Map attributes used to define a cross section for each shape
         cross_section_attributes = {
             constants.CrossSectionShape.CLOSED_RECTANGLE.value: ["width", "height"],
             constants.CrossSectionShape.RECTANGLE.value: ["width"],
@@ -59,11 +60,12 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
         }
         for shape in np.unique(self.shape):
             mask = self.shape == shape
+            # collect cross section definition in array
             attr_arr = np.column_stack(
                 [getattr(self, attr)[mask] for attr in cross_section_attributes[shape]]
             )
+            # Find unique rows and add these to the new_csd_dict with new id's
             u_arr, u_idx = np.unique(attr_arr, return_index=True)
-            # create new csd
             new_id = np.arange(len(u_idx)) + len(new_csd_dict["id"])
             for key in new_csd_dict:
                 if key == "id":
@@ -72,7 +74,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                     new_csd_dict[key] = np.concatenate(
                         [new_csd_dict[key], getattr(self, key)[mask][u_idx]]
                     )
-            # create mapping
+            # Map unique cross section definition to table and row of origin
             for i, row in enumerate(u_arr):
                 for idx in np.where(attr_arr == row)[0]:
                     definition_map[self.origin_table[mask][idx]][

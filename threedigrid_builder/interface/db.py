@@ -4,7 +4,7 @@ import pathlib
 from contextlib import contextmanager
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, ContextManager, Dict, Optional
+from typing import Callable, ContextManager, Dict, Optional, List, Tuple, Union
 
 import numpy as np
 import shapely
@@ -108,12 +108,18 @@ def arr_to_attr_dict(
     }
 
 
-def map_cross_section_definition(objects, definition_map):
+def map_cross_section_definition(objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
+                                 definition_map: Dict[str, Dict[int, int]]) -> None:
     """
     Set cross section definition ids for cross_section_locations,
     pipes, weirs, orifices and culverts to match the unique
     cross section locations.
+
+    Args:
+        objects: List of objects (CrossSectionLocations, Pipes, Weirs, Orifices, Culverts) to map the definition to
+        definition_map: Mapping of object names to their definition IDs
     """
+    # Map shapes to key in definition_map
     object_map = {
         CrossSectionLocations: "cross_section_location",
         Pipes: "pipe",
@@ -129,11 +135,11 @@ def map_cross_section_definition(objects, definition_map):
         if mapping is None:
             continue
         idx = object.id_to_index(list(mapping.keys()))
-        vals = np.array(list(mapping.values()), dtype=int)
+        # set correct cross section definition id's for mapped object
         if isinstance(object, CrossSectionLocations):
-            object.definition_id[idx] = vals
+            object.definition_id[idx] = np.array(list(mapping.values()), dtype=int)
         else:
-            object.cross_section_definition_id[idx] = vals
+            object.cross_section_definition_id[idx] = np.array(list(mapping.values()), dtype=int)
 
 
 class SQLite:
@@ -556,7 +562,6 @@ class SQLite:
                     models.CrossSectionLocation.id,
                     models.CrossSectionLocation.code,
                     models.CrossSectionLocation.geom,
-                    # models.CrossSectionLocation.definition_id,
                     models.CrossSectionLocation.channel_id,
                     models.CrossSectionLocation.reference_level,
                     models.CrossSectionLocation.bank_level,
@@ -592,7 +597,6 @@ class SQLite:
                     models.Culvert.connection_node_id_start,
                     models.Culvert.connection_node_id_end,
                     models.Culvert.exchange_type,
-                    # models.Culvert.cross_section_definition_id,
                     models.Culvert.invert_level_start,
                     models.Culvert.invert_level_end,
                     models.Culvert.discharge_coefficient_negative,
@@ -738,7 +742,6 @@ class SQLite:
                     models.Orifice.connection_node_id_end,
                     models.Orifice.crest_level,
                     models.Orifice.crest_type,
-                    # models.Orifice.cross_section_definition_id,
                     models.Orifice.discharge_coefficient_negative,
                     models.Orifice.discharge_coefficient_positive,
                     models.Orifice.friction_type,
@@ -778,7 +781,6 @@ class SQLite:
             models.Pipe.calculation_point_distance,
             models.Pipe.connection_node_id_start,
             models.Pipe.connection_node_id_end,
-            # models.Pipe.cross_section_definition_id,
             models.Pipe.display_name,
             # models.Pipe.material_id,
             models.Pipe.exchange_thickness,
@@ -851,7 +853,6 @@ class SQLite:
                     models.Weir.connection_node_id_end,
                     models.Weir.crest_level,
                     models.Weir.crest_type,
-                    # models.Weir.cross_section_definition_id,
                     models.Weir.discharge_coefficient_negative,
                     models.Weir.discharge_coefficient_positive,
                     models.Weir.friction_type,
