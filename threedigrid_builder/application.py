@@ -207,6 +207,7 @@ def _make_gridadmin(
             culverts=culverts,
             potential_breaches=potential_breaches,
             line_id_counter=line_id_counter,
+            node_open_water_detection=settings.node_open_water_detection,
         )
         # handle obstacle.affects...
         # use Obstacle.compute_dpumax ?

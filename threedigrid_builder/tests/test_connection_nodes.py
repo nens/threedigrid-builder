@@ -278,6 +278,23 @@ def test_is_closed(connection_nodes):
 
 
 @pytest.mark.parametrize(
+    "start_id, end_id, content_pk, expected",
+    [
+        ([1, 3], [9, 10], np.arange(5, dtype=int), [True, True, False, True, True]),
+        ([1, 3], [9, 10], [0, 1], [True, True]),
+    ],
+)
+def test_has_channel(connection_nodes, start_id, end_id, content_pk, expected):
+    channels = Channels(
+        id=np.arange(len(start_id), dtype=int),
+        connection_node_start_id=start_id,
+        connection_node_end_id=end_id,
+    )
+    has_channel = connection_nodes.has_channel(content_pk, channels)
+    np.testing.assert_array_equal(has_channel, expected)
+
+
+@pytest.mark.parametrize(
     "area,thickness,hc_out,hc_in,expected",
     [
         (9.0, 0.1, 3.0, 2.0, True),

@@ -99,6 +99,7 @@ def grid_all():
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,
+            node_open_water_detection=1,
         ),
         tables_settings=TablesSettings(
             table_step_size=0.05,

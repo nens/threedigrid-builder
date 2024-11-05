@@ -20,7 +20,7 @@ from threedigrid_builder.base import (
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import zero_d
+from threedigrid_builder.grid import ConnectionNodes, zero_d
 
 from . import connection_nodes as connection_nodes_module
 from . import dem_average_area as dem_average_area_module
@@ -697,6 +697,7 @@ class Grid:
         culverts,
         potential_breaches,
         line_id_counter,
+        node_open_water_detection,
     ) -> Lines1D2D:
         """Connect 1D and 2D elements by computing 1D-2D lines.
 
@@ -730,7 +731,13 @@ class Grid:
         for objects in (channels, connection_nodes, pipes, culverts):
             mask = self.nodes.content_type[node_idx] == objects.content_type
             content_pk = self.nodes.content_pk[node_idx[mask]]
-            lines_1d2d.assign_kcu(mask, objects.is_closed(content_pk))
+            if node_open_water_detection == 0 and isinstance(objects, ConnectionNodes):
+                mask = self.nodes.content_type[node_idx] == objects.content_type
+                content_pk = self.nodes.content_pk[node_idx[mask]]
+                is_closed = objects.has_channel(content_pk, channels)
+            else:
+                is_closed = objects.is_closed(content_pk)
+            lines_1d2d.assign_kcu(mask, is_closed=is_closed)
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
         lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
