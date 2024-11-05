@@ -141,10 +141,11 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                 yz = set_friction_vegetation_values(
                     yz,
                     self.friction_values[self_i],
-                    self.vegetation_stem_densities[self_i],
-                    self.vegetation_stem_diameters[self_i],
-                    self.vegetation_heights[self_i],
-                    self.vegetation_drag_coefficients[self_i],
+                    self.vegetation_stem_density[self_i],
+                    self.vegetation_stem_diameter[self_i],
+                    self.vegetation_height[self_i],
+                    self.vegetation_drag_coefficient[self_i],
+                    self.cross_section_vegetation_table[self_i],
                 )
                 tables_yz.append(yz)
 
@@ -425,23 +426,33 @@ tabulators = {
 def set_friction_vegetation_values(
     yz,
     friction_values,
-    vegetation_stem_densities,
-    vegetation_stem_diameters,
-    vegetation_heights,
-    vegetation_drag_coefficients,
+    vegetation_stem_density,
+    vegetation_stem_diameter,
+    vegetation_height,
+    vegetation_drag_coefficient,
+    cross_section_vegetation_table,
 ):
     """Convert friction and vegetation properties from list into arrays, if available,
     and add to yz"""
     if friction_values:
-        fric = np.array([float(x) for x in friction_values.split(" ")])
+        fric = np.array([float(x) for x in friction_values.split(",")])
         yz[:-1, 2] = fric
-
-    if vegetation_drag_coefficients:
-        veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
-        veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
-        veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
-        veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
-        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_drag
-        yz[:-1, 4] = veg_hght
-
+    if cross_section_vegetation_table:
+        parsed = np.array(
+            [
+                np.fromstring(row, sep=",")
+                for row in cross_section_vegetation_table.splitlines()
+            ]
+        )
+        vegetation_stem_density = parsed[:, 0]
+        vegetation_stem_diameter = parsed[:, 1]
+        vegetation_height = parsed[:, 2]
+        vegetation_drag_coefficient = parsed[:, 3]
+    if vegetation_drag_coefficient is not None:
+        yz[:-1, 3] = (
+            vegetation_stem_density
+            * vegetation_stem_diameter
+            * vegetation_drag_coefficient
+        )
+        yz[:-1, 4] = vegetation_height
     return yz

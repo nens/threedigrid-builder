@@ -439,18 +439,50 @@ def test_tabulate_yz(
     assert height_1d == exp_height
     assert_almost_equal(table, np.array(exp_table, dtype=float))
     if yz is not None:
-        yz_1d = set_friction_vegetation_values(
-            yz,
-            friction_values,
-            vegetation_stem_densities,
-            vegetation_stem_diameters,
-            vegetation_heights,
-            vegetation_drag_coefficients,
-        )
-        assert_almost_equal(yz_1d, np.array(exp_yz, dtype=float))
         assert shape == CrossSectionShape.TABULATED_YZ
     else:
         assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
+
+
+class TestSetFrictionVegetationValues:
+    def test_set_friction_values(self):
+        friction_values = "0.5, 0.6"
+        yz = np.zeros((3, 5), dtype=float)
+        result = set_friction_vegetation_values(
+            yz, friction_values, None, None, None, None, None
+        )
+        expected = np.zeros_like(yz)
+        expected[:, 2] = [0.5, 0.6, 0]
+        np.testing.assert_array_equal(result, expected)
+
+    def test_set_with_cross_section_vegetation_table(self):
+        vegetation_table = "1,2,3,4\n10,20,30,40"
+        yz = np.zeros((3, 5), dtype=float)
+        result = set_friction_vegetation_values(
+            yz, None, None, None, None, None, vegetation_table
+        )
+        expected = np.zeros_like(yz)
+        expected[:, 3] = [8, 8000, 0]
+        expected[:, 4] = [3, 30, 0]
+        np.testing.assert_array_equal(result, expected)
+
+    def test_with_cross_section_vegetation_values(self):
+        vegetation_stem_density = 2.0
+        vegetation_stem_diameter = 3.0
+        vegetation_drag_coefficient = 0.5
+        vegetation_height = 1.0
+        yz = np.zeros((2, 5), dtype=float)
+        result = set_friction_vegetation_values(
+            yz,
+            None,
+            vegetation_stem_density,
+            vegetation_stem_diameter,
+            vegetation_height,
+            vegetation_drag_coefficient,
+            None,
+        )
+        expected = [[0, 0, 0, 3, 1], [0, 0, 0, 0, 0]]
+        np.testing.assert_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(

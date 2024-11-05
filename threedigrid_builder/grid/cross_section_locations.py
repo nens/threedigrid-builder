@@ -70,9 +70,9 @@ class CrossSectionLocations(Array[CrossSectionLocation]):
 
         lines.frict_type1 = self.friction_type[idx1]
         lines.frict_type2 = self.friction_type[idx2]
+        # TODO: I think this needs to be fixed - is ignored maybe
         lines.frict_value1 = self.friction_value[idx1]
         lines.frict_value2 = self.friction_value[idx2]
-
         lines.veg_coef1 = (
             self.vegetation_stem_density[idx1]
             * self.vegetation_stem_diameter[idx1]
