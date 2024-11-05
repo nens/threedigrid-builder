@@ -199,13 +199,14 @@ class SQLite:
             "friction_coefficient",
             default=AVERAGE if model_settings["friction_averaging"] else NO_AGG,
         )
-        _set_initialization_type(
-            interception,
-            "interception",
-            file_field="interception_file",
-            type_field="interception_type",
-            default=NO_AGG,
-        )
+        if interception:
+            _set_initialization_type(
+                interception,
+                "interception",
+                file_field="interception_file",
+                type_field="interception_type",
+                default=NO_AGG,
+            )
         if interflow:
             _set_initialization_type(interflow, "porosity", default=NO_AGG)
             _set_initialization_type(
