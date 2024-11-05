@@ -267,6 +267,7 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
 
     # Check if the new node dmax is below the original manhole dmax
     is_manhole = nodes.is_manhole[node_idx]
+
     has_lower_dmax = dmax[is_manhole] < nodes.dmax[node_idx[is_manhole]]
     if np.any(has_lower_dmax):
         ids = nodes.id[node_idx[is_manhole][has_lower_dmax]]
