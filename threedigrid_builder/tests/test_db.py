@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import shapely
 from shapely.testing import assert_geometries_equal
+from threedi_schema import constants
 
 from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import (
@@ -149,6 +150,18 @@ def test_get_cross_section_definitions(db):
     assert definitions.shape[7] == CrossSectionShape.RECTANGLE
     assert definitions.height[10] == 0.4
     assert definitions.width[2] == 3
+    mask_tabulated_yz = (
+        definitions.shape == constants.CrossSectionShape.TABULATED_YZ.value
+    )
+    idx_tabulated_yz = definitions.id_to_index(definitions.id[mask_tabulated_yz])[0]
+    assert (
+        definitions.cross_section_table[idx_tabulated_yz]
+        == "0,2\n1,1\n2,0.5\n3,0\n4,1\n5,1.5\n6,2"
+    )
+    assert (
+        definitions.cross_section_vegetation_table[idx_tabulated_yz]
+        == "10,0.2,1,7\n5,0.1,0.5,7\n5,0.1,0.5,7\n5,0.3,0.5,7\n15,0.4,1,7\n20,0.1,1.5,7"
+    )
 
 
 def test_get_cross_section_locations(db):

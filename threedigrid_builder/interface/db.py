@@ -4,7 +4,7 @@ import pathlib
 from contextlib import contextmanager
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, ContextManager, Dict, Optional, List, Tuple, Union
+from typing import Callable, ContextManager, Dict, List, Optional, Union
 
 import numpy as np
 import shapely
@@ -108,8 +108,10 @@ def arr_to_attr_dict(
     }
 
 
-def map_cross_section_definition(objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
-                                 definition_map: Dict[str, Dict[int, int]]) -> None:
+def map_cross_section_definition(
+    objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
+    definition_map: Dict[str, Dict[int, int]],
+) -> None:
     """
     Set cross section definition ids for cross_section_locations,
     pipes, weirs, orifices and culverts to match the unique
@@ -139,7 +141,9 @@ def map_cross_section_definition(objects: List[Union[CrossSectionLocations, Pipe
         if isinstance(object, CrossSectionLocations):
             object.definition_id[idx] = np.array(list(mapping.values()), dtype=int)
         else:
-            object.cross_section_definition_id[idx] = np.array(list(mapping.values()), dtype=int)
+            object.cross_section_definition_id[idx] = np.array(
+                list(mapping.values()), dtype=int
+            )
 
 
 class SQLite:
@@ -510,6 +514,10 @@ class SQLite:
                 cols += [
                     table.cross_section_friction_values.label("friction_values"),
                     table.cross_section_vegetation_table,
+                    table.vegetation_stem_density,
+                    table.vegetation_stem_diameter,
+                    table.vegetation_height,
+                    table.vegetation_drag_coefficient,
                 ]
             arr = session.query(*cols).select_from(table).as_structarray()
             # map shape 10 to 1 (circle) to match CrossSectionShape enum

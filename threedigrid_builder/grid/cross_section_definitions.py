@@ -16,13 +16,13 @@ class CrossSectionDefinition:
     id: int
     code: str
     shape: CrossSectionShape
-    height: str  # space-separated list of floats
-    width: str  # space-separated list of floats
-    friction_values: str  # space-separated list of floats
-    vegetation_stem_densities: str  # space-separated list of floats
-    vegetation_stem_diameters: str  # space-separated list of floats
-    vegetation_heights: str  # space-separated list of floats
-    vegetation_drag_coefficients: str  # space-separated list of floats
+    height: float
+    width: float
+    friction_values: str  # comma-separated list of floats
+    vegetation_stem_density: float
+    vegetation_stem_diameter: float
+    vegetation_height: float
+    vegetation_drag_coefficient: float
     cross_section_table: str  # csv table defining the shape of a tabulated shape
     cross_section_vegetation_table: str  # csv table with cross section vegetation table
     origin_table: str  # table definition originates from
