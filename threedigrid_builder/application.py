@@ -109,7 +109,24 @@ def _make_gridadmin(
         connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
         grid += cn_grid
 
+        locations = db.get_cross_section_locations()
+        pipes = db.get_pipes()
+        weirs = db.get_weirs()
+        culverts = db.get_culverts()
+        orifices = db.get_orifices()
+
+        cross_section_definitions = db.get_cross_section_definitions()
+        (
+            cross_section_definitions_unique,
+            mapping,
+        ) = cross_section_definitions.get_unique()
+        map_cross_section_definition(
+            [locations, orifices, pipes, culverts, weirs], mapping
+        )
+        grid.set_cross_sections(cross_section_definitions_unique)
+
         channels = db.get_channels()
+
         potential_breaches = db.get_potential_breaches()
         breach_points = potential_breaches.project_on_channels(channels).merge()
 
@@ -126,13 +143,11 @@ def _make_gridadmin(
             connection_node_offset=connection_node_first_id,
         )
 
-        locations = db.get_cross_section_locations()
         locations.apply_to_lines(channel_grid.lines, channels)
         windshieldings = db.get_windshieldings()
         windshieldings.apply_to_lines(channel_grid.lines)
         grid += channel_grid
 
-        pipes = db.get_pipes()
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=pipes,
@@ -146,7 +161,6 @@ def _make_gridadmin(
             connection_node_offset=connection_node_first_id,
         )
 
-        culverts = db.get_culverts()
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=culverts,
@@ -160,8 +174,6 @@ def _make_gridadmin(
             connection_node_offset=connection_node_first_id,
         )
 
-        weirs = db.get_weirs()
-        orifices = db.get_orifices()
         grid += grid.from_structures(
             connection_nodes=connection_nodes,
             weirs=weirs,
@@ -180,15 +192,6 @@ def _make_gridadmin(
             culverts=culverts,
         )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
-        cross_section_definitions = db.get_cross_section_definitions()
-        (
-            cross_section_definitions_unique,
-            mapping,
-        ) = cross_section_definitions.get_unique()
-        map_cross_section_definition(
-            [locations, orifices, pipes, culverts, weirs], mapping
-        )
-        grid.set_cross_sections(cross_section_definitions_unique)
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
@@ -205,7 +208,8 @@ def _make_gridadmin(
             potential_breaches=potential_breaches,
             line_id_counter=line_id_counter,
         )
-
+        # handle obstacle.affects...
+        # use Obstacle.compute_dpumax ?
         if grid.meta.has_groundwater:
             channels.apply_has_groundwater_exchange(grid.nodes, grid.lines)
             pipes.apply_has_groundwater_exchange(grid.nodes, grid.lines)
