@@ -272,22 +272,9 @@ def test_get_1d2d_exchange_levels(connection_nodes: ConnectionNodes, caplog):
     )
 
 
-@pytest.mark.parametrize(
-    "node_open_water_detection, has_channels, expected",
-    [
-        (0, False, 5 * [False]),
-        (0, True, 5 * [True]),
-        (1, False, [True, False, False, False, True]),
-        (1, True, [True, False, False, False, True]),
-    ],
-)
-def test_is_closed(connection_nodes, node_open_water_detection, has_channels, expected):
-    actual = connection_nodes.is_closed(
-        content_pk=[1, 3, 4, 9, 10],
-        node_open_water_detection=node_open_water_detection,
-        has_channels=has_channels,
-    )
-    assert_array_equal(actual, expected)
+def test_is_closed(connection_nodes):
+    actual = connection_nodes.is_closed(content_pk=[1, 3, 4, 9, 10])
+    assert_array_equal(actual, [True, False, False, False, True])
 
 
 @pytest.mark.parametrize(
