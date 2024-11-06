@@ -303,31 +303,47 @@ def test_assign_dpumax_from_breaches(assign_dpumax):
 
 @mock.patch.object(Lines1D2D, "assign_dpumax")
 @mock.patch.object(Lines1D2D, "assign_ds1d_half_from_obstacles")
+@pytest.mark.parametrize("test_case", ["open", "closed"])
 def test_assign_dpumax_from_obstacles(
     assign_ds1d_half_from_obstacles,
     assign_dpumax,
+    test_case,
 ):
     obstacles = mock.Mock()
+
     obstacles.compute_dpumax.return_value = (
         np.array([1.2, np.nan]),
         np.array([1, -9999]),
     )
-
-    lines = Lines1D2D(
-        id=range(3),
-        kcu=[
-            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
-            LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
-        ],
-    )
-
-    lines.assign_dpumax_from_obstacles(obstacles)
+    if test_case == "open":
+        obstacles.affects_1d2d_open_water = np.array([True, True, True])
+        obstacles.affects_1d2d_closed = np.array([False, False, False])
+        lines = Lines1D2D(
+            id=range(3),
+            kcu=[
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+            ],
+        )
+        lines.assign_dpumax_from_obstacles_open(obstacles)
+    elif test_case == "closed":
+        obstacles.affects_1d2d_closed = np.array([True, True, True])
+        obstacles.affects_1d2d_open_water = np.array([False, False, False])
+        lines = Lines1D2D(
+            id=range(3),
+            kcu=[
+                LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+            ],
+        )
+        lines.assign_dpumax_from_obstacles_closed(obstacles)
 
     args, kwargs = obstacles.compute_dpumax.call_args
     assert len(args) == 1
     assert args[0] is lines
-    assert len(kwargs) == 1
+    assert len(kwargs) == 2
     assert_array_equal(kwargs["where"], [0, 2])
 
     (actual_mask, actual_dpumax), _ = assign_dpumax.call_args

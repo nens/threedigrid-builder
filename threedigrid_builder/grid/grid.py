@@ -607,7 +607,6 @@ class Grid:
     def set_obstacles_1d2d(
         self,
         obstacles: Obstacles,
-
     ):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
@@ -767,7 +766,8 @@ class Grid:
             lines_1d2d.assign_kcu(mask, is_closed=is_closed)
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
-        lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
+        lines_1d2d.assign_dpumax_from_obstacles_open(self.obstacles)
+        lines_1d2d.assign_dpumax_from_obstacles_closed(self.obstacles)
         # Go through objects and dispatch to get_1d2d_properties
         for objects in (channels, connection_nodes, pipes, culverts):
             mask = self.nodes.content_type[node_idx] == objects.content_type

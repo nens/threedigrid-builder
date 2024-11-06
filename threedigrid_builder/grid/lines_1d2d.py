@@ -11,7 +11,7 @@ from threedigrid_builder.exceptions import SchematisationError
 
 from .connection_nodes import ConnectionNodes
 from .exchange_lines import ExchangeLines
-from .obstacles import Obstacles
+from .obstacles import ObstacleAffectsType, Obstacles
 from .potential_breaches import PotentialBreaches
 
 logger = logging.getLogger(__name__)
@@ -340,26 +340,46 @@ class Lines1D2D(Lines):
             ],
         )
 
-    def assign_dpumax_from_obstacles(self, obstacles: Obstacles):
-        """Set the dpumax based on intersected obstacles
-
-        Only for open connections. Requires line_geometries.
-        """
-        is_open_water = np.isin(
-            self.kcu,
-            [
+    def assign_dpumax_from_obstacles_open(self, obstacles: Obstacles):
+        self._assign_dpumax_from_obstacles(
+            obstacles,
+            affects_type=ObstacleAffectsType.AFFECTS_1D2D_OPEN_WATER,
+            line_types=[
                 LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
                 LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
             ],
         )
-        is_open_water_idx = np.where(is_open_water)[0]
-        obstacle_crest_levels, obstacle_idx = obstacles.compute_dpumax(
-            self, where=is_open_water_idx
+
+    def assign_dpumax_from_obstacles_closed(self, obstacles: Obstacles):
+        self._assign_dpumax_from_obstacles(
+            obstacles,
+            affects_type=ObstacleAffectsType.AFFECTS_1D2D_CLOSED,
+            line_types=[
+                LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+            ],
         )
-        self.assign_dpumax(is_open_water, obstacle_crest_levels)
+
+    def _assign_dpumax_from_obstacles(
+        self,
+        obstacles: Obstacles,
+        affects_type: ObstacleAffectsType,
+        line_types: list[LineType],
+    ):
+        """Set the dpumax based on intersected obstacles
+
+        Only for open connections. Requires line_geometries.
+        """
+        is_included = np.isin(self.kcu, line_types)
+        is_included_idx = np.where(is_included)[0]
+        obstacle_crest_levels, obstacle_idx = obstacles.compute_dpumax(
+            self, where=is_included_idx, affects_type=affects_type
+        )
+        self.assign_dpumax(is_included, obstacle_crest_levels)
         mask = obstacle_idx != -9999
+
         self.assign_ds1d_half_from_obstacles(
-            obstacles, is_open_water_idx[mask], obstacle_idx[mask]
+            obstacles, is_included_idx[mask], obstacle_idx[mask]
         )
 
     def assign_ds1d_half_from_obstacles(
