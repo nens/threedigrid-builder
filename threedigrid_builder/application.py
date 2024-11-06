@@ -102,19 +102,11 @@ def _make_gridadmin(
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
         progress_callback(0.8, "Constructing 1D computational grid...")
-        cn_grid = Grid.from_connection_nodes(
-            connection_nodes=connection_nodes,
-            node_id_counter=node_id_counter,
-        )
-        connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
-        grid += cn_grid
-
         locations = db.get_cross_section_locations()
         pipes = db.get_pipes()
         weirs = db.get_weirs()
         culverts = db.get_culverts()
         orifices = db.get_orifices()
-
         cross_section_definitions = db.get_cross_section_definitions()
         (
             cross_section_definitions_unique,
@@ -123,7 +115,13 @@ def _make_gridadmin(
         map_cross_section_definition(
             [locations, orifices, pipes, culverts, weirs], mapping
         )
-        grid.set_cross_sections(cross_section_definitions_unique)
+
+        cn_grid = Grid.from_connection_nodes(
+            connection_nodes=connection_nodes,
+            node_id_counter=node_id_counter,
+        )
+        connection_node_first_id = cn_grid.nodes.id[0] if len(cn_grid.nodes) > 0 else 0
+        grid += cn_grid
 
         channels = db.get_channels()
 
@@ -181,6 +179,7 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
+        grid.set_cross_sections(cross_section_definitions_unique)
 
         grid.set_calculation_types()
         grid.set_bottom_levels()
@@ -207,9 +206,8 @@ def _make_gridadmin(
             culverts=culverts,
             potential_breaches=potential_breaches,
             line_id_counter=line_id_counter,
-            node_open_water_detection=settings.node_open_water_detection,
+            node_open_water_detection=grid_settings.node_open_water_detection,
         )
-        # handle obstacle.affects...
         # use Obstacle.compute_dpumax ?
         if grid.meta.has_groundwater:
             channels.apply_has_groundwater_exchange(grid.nodes, grid.lines)

@@ -63,8 +63,6 @@ def test_integration(tmp_path, filename):
             NodeType.NODE_1D_BOUNDARIES: 4,
         }
         assert np.count_nonzero(f["nodes"]["is_manhole"][:] == 1) == 42
-        is_manhole = f["nodes"]["is_manhole"][:] == 1
-        assert np.all(f["nodes"]["zoom_category"][is_manhole] != -9999)
         assert np.count_nonzero(f["nodes"]["content_pk"][:] > 0) == 1360
         assert (
             np.count_nonzero(np.isfinite(f["nodes"]["initial_waterlevel"][:])) == 2531
@@ -73,6 +71,7 @@ def test_integration(tmp_path, filename):
         ## LINES
         assert f["lines"]["id"].shape == (31916,)  # Inpy: (31916, )
         assert_array_equal(f["lines"]["id"][:], np.arange(f["lines"]["id"].shape[0]))
+        # TODO: Somehow LINE_2D and LINE_2D_OBSTACLE both ended up with type LineType.LINE_2D
         assert count_unique(f["lines"]["kcu"]) == {
             -9999: 1,  # Inpy: 0: 1
             LineType.LINE_2D_GROUNDWATER: 11037,

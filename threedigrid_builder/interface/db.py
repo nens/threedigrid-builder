@@ -728,6 +728,7 @@ class SQLite:
                     models.Obstacle.geom,
                     models.Obstacle.id,
                     models.Obstacle.crest_level,
+                    models.Obstacle.affects_2d,
                     models.Obstacle.affects_1d2d_closed,
                     models.Obstacle.affects_1d2d_open_water,
                 )
