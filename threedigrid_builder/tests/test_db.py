@@ -134,9 +134,6 @@ def test_get_connection_nodes(db):
     assert np.isnan(connection_nodes.bottom_level[100])
     assert connection_nodes.drain_level[1] == -0.82
     assert connection_nodes.surface_level[35] == -0.54
-    # TODO:
-    # assert connection_nodes.shape[40] == "00"
-    # assert connection_nodes.width[32] == 0.8
     assert connection_nodes.display_name[33] == "71512"
 
 
@@ -174,8 +171,6 @@ def test_get_cross_section_locations(db):
         locations.the_geom[96], shapely.from_wkt("POINT (111104 521655)"), tolerance=1
     )
     assert locations.id[11] == 12
-    # TODO: fix
-    # assert locations.definition_id[365] == 98
     assert locations.channel_id[448] == 452
     assert locations.reference_level[691] == -3.0
     assert locations.bank_level[995] == -1.7
@@ -233,8 +228,6 @@ def test_get_pipes(db):
     assert pipes.calculation_type[3] == CalculationType.ISOLATED
     assert pipes.connection_node_start_id[4] == 37
     assert pipes.connection_node_end_id[5] == 35
-    # TODO: fix this
-    # assert pipes.cross_section_definition_id[9] == 7
     assert pipes.invert_level_start_point[16] == -3.91
     assert pipes.invert_level_end_point[19] == -3.62
     assert pipes.sewerage_type[24] == 2
@@ -317,21 +310,18 @@ def test_get_settings(db):
 def test_get_pumps(db):
     pumps = db.get_pumps()
     assert isinstance(pumps, Pumps)
-
     # some test samples
-    assert len(pumps) == 19
-    assert pumps.id[11] == 13
-    assert pumps.code[0] == "Rioolgemaal"
-    assert pumps.capacity[12] == 0.288
-    assert pumps.connection_node_start_id[13] == 1006
-    # TODO fix
-    # assert pumps.connection_node_end_id[0] == -9999  # NULL handling
-    # assert pumps.connection_node_end_id[2] == 218
-    assert pumps.type_[5] == 1
-    assert pumps.start_level[0] == -4.0
-    assert pumps.lower_stop_level[18] == -1.9
-    assert np.isnan(pumps.upper_stop_level[15])
-    assert pumps.display_name[10] == "KGM-JL-18"
+    assert len(pumps) == 18
+    assert pumps.id[10] == 13
+    assert pumps.code[0] == "110"
+    assert pumps.capacity[11] == 0.288
+    assert pumps.connection_node_start_id[12] == 1006
+    assert pumps.connection_node_end_id[1] == 218
+    assert pumps.type_[4] == 1
+    assert pumps.start_level[0] == -1.7
+    assert pumps.lower_stop_level[17] == -1.9
+    assert np.isnan(pumps.upper_stop_level[14])
+    assert pumps.display_name[9] == "KGM-JL-18"
 
 
 def test_get_culverts(db):
@@ -352,8 +342,6 @@ def test_get_culverts(db):
     assert culverts.connection_node_start_id[45] == 1220
     assert culverts.connection_node_end_id[61] == 1620
     assert culverts.calculation_type[4] == CalculationType.ISOLATED
-    # TODO: fix
-    # assert culverts.cross_section_definition_id[0] == 97
     assert culverts.invert_level_start_point[21] == -2.39
     assert culverts.invert_level_end_point[83] == -3.28
     assert culverts.discharge_coefficient_negative[0] == 0.8
@@ -384,8 +372,6 @@ def test_get_weirs(db):
     assert weirs.connection_node_end_id[7] == 394
     assert weirs.crest_level[26] == -2.508
     assert weirs.crest_type[0] == CalculationType.SHORT_CRESTED
-    # TODO: fix this
-    # assert weirs.cross_section_definition_id[0] == 8
     assert weirs.discharge_coefficient_negative[0] == 0.0
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING

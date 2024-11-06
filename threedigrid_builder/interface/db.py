@@ -832,22 +832,28 @@ class SQLite:
                     models.Pump.code,
                     models.Pump.capacity,
                     models.Pump.connection_node_id,
-                    # models.Pumpstation.connection_node_id_end,
+                    models.PumpMap.connection_node_id_end,
                     models.Pump.type_,
                     models.Pump.start_level,
                     models.Pump.lower_stop_level,
                     models.Pump.upper_stop_level,
                     models.Pump.display_name,
                 )
+                .join(models.PumpMap, models.Pump.id == models.PumpMap.pump_id)
                 .order_by(models.Pump.id)
                 .as_structarray()
             )
-        # TODO get connection_node_id_end
-        # Pump capicity is entered as L/s but we need m3/s.
+
+        # Pump capacity is entered as L/s but we need m3/s.
         arr["capacity"] = arr["capacity"] / 1000
 
         attr_dict = arr_to_attr_dict(
-            arr, {"connection_node_id": "connection_node_start_id", "geom": "the_geom"}
+            arr,
+            {
+                "connection_node_id": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+                "geom": "the_geom",
+            },
         )
 
         # transform to a Pumps object
