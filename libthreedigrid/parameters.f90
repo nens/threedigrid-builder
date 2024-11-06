@@ -3,6 +3,7 @@ module parameters
     integer, parameter :: STRINGLEN = 1024
     double precision, parameter   :: NODATA = -9999.0d0
     real, parameter   :: NODATA_R = -9999.0
+    integer, parameter :: CLONE_NUMBERS = 4
     
     integer, parameter :: CHUNK_SIZE = 1024
     integer, parameter :: COMPRESSION_LEVEL = 9    
