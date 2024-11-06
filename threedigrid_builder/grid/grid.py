@@ -30,7 +30,7 @@ from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .linear import BaseLinear
 from .lines_1d2d import Lines1D2D
-from .obstacles import Obstacles
+from .obstacles import ObstacleAffectsType, Obstacles
 from .potential_breaches import PotentialBreaches, PotentialBreachPoints
 
 osr.UseExceptions()
@@ -584,17 +584,44 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles: Obstacles):
+    def set_obstacles_2d(
+        self,
+        obstacles: Obstacles,
+    ):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Args:
             obstacles (Obstacles)
+            affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
         """
         line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
         selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
-        crest_level = obstacles.compute_dpumax(self.lines, where=selection)[0]
+        crest_level = obstacles.compute_dpumax(
+            self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
+        )[0]
+        self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.obstacles = obstacles
+
+    def set_obstacles_1d2d(
+        self,
+        obstacles: Obstacles,
+
+    ):
+        """Set obstacles on 2D lines by determining intersection between
+           line_coords (these must be knows at this point) and obstacle geometry.
+           Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
+
+        Args:
+            obstacles (Obstacles)
+            affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
+        """
+        line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
+        selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
+        crest_level = obstacles.compute_dpumax(
+            self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
+        )[0]
         self.lines.set_2d_crest_levels(crest_level, where=selection)
         self.obstacles = obstacles
 
