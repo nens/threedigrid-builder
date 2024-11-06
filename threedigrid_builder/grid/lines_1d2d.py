@@ -1,6 +1,6 @@
 import itertools
 import logging
-from typing import Iterator
+from typing import Iterator, List
 
 import numpy as np
 import shapely
@@ -364,7 +364,7 @@ class Lines1D2D(Lines):
         self,
         obstacles: Obstacles,
         affects_type: ObstacleAffectsType,
-        line_types: list[LineType],
+        line_types: List[LineType],
     ):
         """Set the dpumax based on intersected obstacles
 
