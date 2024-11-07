@@ -881,6 +881,11 @@ class Grid:
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
+    def apply_cutlines(self, obstacles):
+        """Treat obstacles as cutlines"""
+
+        pass
+
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
         self.sort()

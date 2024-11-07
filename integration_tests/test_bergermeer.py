@@ -20,6 +20,28 @@ def count_unique(arr):
     return dict(zip(*np.unique(arr, return_counts=True)))
 
 
+def test_clone_integration(tmp_path):
+    unittests_clone_data_path = unittests_data_path / "clone"
+    schematisation_file = "fuerthen.sqlite"
+
+    shutil.copyfile(
+        unittests_clone_data_path / schematisation_file, tmp_path / schematisation_file
+    )
+    make_grid(
+        tmp_path / schematisation_file,
+        unittests_clone_data_path / "dem.tif",
+        tmp_path / "gridadmin.h5",
+        meta={
+            "model_slug": "slug-123abc",
+            "revision_hash": "123abc",
+            "revision_nr": 24,
+            "threedi_version": "1.2.3.dev",
+        },
+        progress_callback=Mock(),
+        upgrade=True,
+    )
+
+
 @pytest.mark.parametrize(
     "filename",
     ["v2_bergermeer.sqlite"],
