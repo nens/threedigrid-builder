@@ -11,7 +11,7 @@ import shapely
 from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import cast, func, inspect, Integer, literal
+from sqlalchemy import case, cast, func, inspect, Integer, literal
 from sqlalchemy.orm import Session
 from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
 
@@ -592,23 +592,44 @@ class SQLite:
 
     def get_culverts(self) -> Culverts:
         """Return Culverts"""
+        cols = [
+            models.Culvert.id,
+            models.Culvert.code,
+            models.Culvert.geom,
+            models.Culvert.calculation_point_distance,
+            models.Culvert.connection_node_id_start,
+            models.Culvert.connection_node_id_end,
+            models.Culvert.exchange_type,
+            models.Culvert.invert_level_start,
+            models.Culvert.invert_level_end,
+            models.Culvert.discharge_coefficient_negative,
+            models.Culvert.discharge_coefficient_positive,
+            models.Culvert.display_name,
+            case(
+                {
+                    models.Culvert.friction_value.isnot(None)
+                    & models.Culvert.friction_type.isnot(
+                        None
+                    ): models.Culvert.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Culvert.friction_value.isnot(None)
+                    & models.Culvert.friction_type.isnot(
+                        None
+                    ): models.Culvert.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
+        ]
+
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.Culvert.id,
-                    models.Culvert.code,
-                    models.Culvert.geom,
-                    models.Culvert.calculation_point_distance,
-                    models.Culvert.connection_node_id_start,
-                    models.Culvert.connection_node_id_end,
-                    models.Culvert.exchange_type,
-                    models.Culvert.invert_level_start,
-                    models.Culvert.invert_level_end,
-                    models.Culvert.discharge_coefficient_negative,
-                    models.Culvert.discharge_coefficient_positive,
-                    models.Culvert.friction_type,
-                    models.Culvert.friction_value,
-                    models.Culvert.display_name,
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Culvert.material_id == models.Material.id
                 )
                 .order_by(models.Culvert.id)
                 .as_structarray()
@@ -740,21 +761,41 @@ class SQLite:
 
     def get_orifices(self) -> Orifices:
         """Return Orifices"""
+        cols = [
+            models.Orifice.id,
+            models.Orifice.code,
+            models.Orifice.connection_node_id_start,
+            models.Orifice.connection_node_id_end,
+            models.Orifice.crest_level,
+            models.Orifice.crest_type,
+            models.Orifice.discharge_coefficient_negative,
+            models.Orifice.discharge_coefficient_positive,
+            models.Orifice.display_name,
+            models.Orifice.sewerage,
+            case(
+                {
+                    models.Orifice.friction_value.isnot(None)
+                    & models.Orifice.friction_type.isnot(
+                        None
+                    ): models.Orifice.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Orifice.friction_value.isnot(None)
+                    & models.Orifice.friction_type.isnot(
+                        None
+                    ): models.Orifice.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
+        ]
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.Orifice.id,
-                    models.Orifice.code,
-                    models.Orifice.connection_node_id_start,
-                    models.Orifice.connection_node_id_end,
-                    models.Orifice.crest_level,
-                    models.Orifice.crest_type,
-                    models.Orifice.discharge_coefficient_negative,
-                    models.Orifice.discharge_coefficient_positive,
-                    models.Orifice.friction_type,
-                    models.Orifice.friction_value,
-                    models.Orifice.display_name,
-                    models.Orifice.sewerage,
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Orifice.material_id == models.Material.id
                 )
                 .order_by(models.Orifice.id)
                 .as_structarray()
@@ -782,20 +823,37 @@ class SQLite:
             models.Pipe.exchange_type,
             models.Pipe.invert_level_start,
             models.Pipe.invert_level_end,
-            models.Pipe.friction_type,
-            models.Pipe.friction_value,
             models.Pipe.calculation_point_distance,
             models.Pipe.connection_node_id_start,
             models.Pipe.connection_node_id_end,
             models.Pipe.display_name,
-            # models.Pipe.material_id,
             models.Pipe.exchange_thickness,
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
+            case(
+                {
+                    models.Pipe.friction_value.isnot(None)
+                    & models.Pipe.friction_type.isnot(None): models.Pipe.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Pipe.friction_value.isnot(None)
+                    & models.Pipe.friction_type.isnot(None): models.Pipe.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
         ]
-        # TODO: handle material
         with self.get_session() as session:
-            arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
+            arr = (
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Pipe.material_id == models.Material.id
+                )
+                .order_by(models.Pipe.id)
+                .as_structarray()
+            )
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
@@ -820,7 +878,6 @@ class SQLite:
         return Pipes(**attr_dict)
 
     def get_pumps(self) -> Pumps:
-
         with self.get_session() as session:
             arr = (
                 session.query(
@@ -857,21 +914,37 @@ class SQLite:
 
     def get_weirs(self) -> Weirs:
         """Return Weirs"""
+        cols = [
+            models.Weir.id,
+            models.Weir.code,
+            models.Weir.connection_node_id_start,
+            models.Weir.connection_node_id_end,
+            models.Weir.crest_level,
+            models.Weir.crest_type,
+            models.Weir.discharge_coefficient_negative,
+            models.Weir.discharge_coefficient_positive,
+            models.Weir.display_name,
+            models.Weir.sewerage,
+            case(
+                {
+                    models.Weir.friction_value.isnot(None)
+                    & models.Weir.friction_type.isnot(None): models.Weir.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Weir.friction_value.isnot(None)
+                    & models.Weir.friction_type.isnot(None): models.Weir.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
+        ]
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.Weir.id,
-                    models.Weir.code,
-                    models.Weir.connection_node_id_start,
-                    models.Weir.connection_node_id_end,
-                    models.Weir.crest_level,
-                    models.Weir.crest_type,
-                    models.Weir.discharge_coefficient_negative,
-                    models.Weir.discharge_coefficient_positive,
-                    models.Weir.friction_type,
-                    models.Weir.friction_value,
-                    models.Weir.display_name,
-                    models.Weir.sewerage,
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Weir.material_id == models.Material.id
                 )
                 .order_by(models.Weir.id)
                 .as_structarray()
