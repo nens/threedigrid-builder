@@ -886,6 +886,8 @@ class Grid:
         """Treat obstacles as cutlines for now"""
         # TODO: add unit test for multiline cutting
 
+        # TODO: what to do with individual connected cutlines?
+
         # Map of node idx to fragment list
         node_fragment = {}
 
