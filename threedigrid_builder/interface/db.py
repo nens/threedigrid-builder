@@ -583,8 +583,6 @@ class SQLite:
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()
             )
-        # TODO: fix definition
-        # TODO: handle vegetation table
         arr["geom"] = self.reproject(arr["geom"])
 
         attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
@@ -594,7 +592,6 @@ class SQLite:
 
     def get_culverts(self) -> Culverts:
         """Return Culverts"""
-        # TODO: cross section info -> downstream
         with self.get_session() as session:
             arr = (
                 session.query(
@@ -623,7 +620,6 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
         # When no calculation type is provides we default to isolated
-        # TODO: I don't understand this
         arr["exchange_type"][arr["exchange_type"] == -9999] = LineType.LINE_1D_ISOLATED
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
@@ -763,7 +759,6 @@ class SQLite:
                 .order_by(models.Orifice.id)
                 .as_structarray()
             )
-        # TODO fix cross section
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
         attr_dict = arr_to_attr_dict(
@@ -798,7 +793,7 @@ class SQLite:
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
         ]
-        # TODO: handel material and cross_section
+        # TODO: handle material
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
 
@@ -881,7 +876,6 @@ class SQLite:
                 .order_by(models.Weir.id)
                 .as_structarray()
             )
-        # TODO cross section
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
         attr_dict = arr_to_attr_dict(
