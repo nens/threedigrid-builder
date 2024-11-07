@@ -6,6 +6,7 @@ import shapely
 from osgeo import osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
+from shapely.ops import split
 
 import threedigrid_builder
 from threedigrid_builder.base import (
@@ -881,10 +882,51 @@ class Grid:
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
-    def apply_cutlines(self, obstacles):
-        """Treat obstacles as cutlines"""
+    def apply_cutlines(self, cutlines):
+        """Treat obstacles as cutlines for now"""
+        # TODO: add unit test for multiline cutting
 
-        pass
+        # Map of node idx to fragment list
+        node_fragment = {}
+
+        for node_idx in range(len(self.nodes)):
+            # create the geometry of the corresponding cell
+            node_polygon = shapely.box(
+                self.nodes.bounds[node_idx][0],
+                self.nodes.bounds[node_idx][1],
+                self.nodes.bounds[node_idx][2],
+                self.nodes.bounds[node_idx][3],
+                ccw=False,
+            )
+            assert node_polygon.is_valid
+
+            # check for intersection with cutlines
+            fragment_collection = [
+                node_polygon
+            ]  # list of all fragments of the cell (each cutline can cause new fragments), initially the cell itself
+
+            for cutline_linestring in cutlines.the_geom:
+                new_fragments = []  # List of fragments that have been recut
+                # iterate over the fragments
+                for fragment in fragment_collection:
+                    intermediate_fragments = split(fragment, cutline_linestring)
+
+                    # According to docs: If the splitter does not split the geometry, a collection with a single geometry equal to the input geometry is returned.
+                    # Note that the original input geometry does not need to be returned, we'll explicitely add that one again.
+                    if len(intermediate_fragments.geoms) == 1:
+                        assert intermediate_fragments.geoms[0].equals(fragment)
+                        new_fragments.append(fragment)
+                    elif len(intermediate_fragments.geoms) > 1:
+                        for intermediate_fragment in intermediate_fragments.geoms:
+                            assert intermediate_fragment.geom_type == "Polygon"
+                            new_fragments.append(intermediate_fragment)
+                    else:
+                        raise RuntimeError("No resulting geometry")
+
+                # set new fragment collection and move to the next cutline
+                fragment_collection = new_fragments
+
+            node_fragment[node_idx] = fragment_collection
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
