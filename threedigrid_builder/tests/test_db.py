@@ -311,17 +311,18 @@ def test_get_pumps(db):
     pumps = db.get_pumps()
     assert isinstance(pumps, Pumps)
     # some test samples
-    assert len(pumps) == 18
-    assert pumps.id[10] == 13
-    assert pumps.code[0] == "110"
-    assert pumps.capacity[11] == 0.288
-    assert pumps.connection_node_start_id[12] == 1006
-    assert pumps.connection_node_end_id[1] == 218
-    assert pumps.type_[4] == 1
-    assert pumps.start_level[0] == -1.7
-    assert pumps.lower_stop_level[17] == -1.9
-    assert np.isnan(pumps.upper_stop_level[14])
-    assert pumps.display_name[9] == "KGM-JL-18"
+    assert len(pumps) == 19
+    assert pumps.id[11] == 13
+    assert pumps.code[0] == "Rioolgemaal"
+    assert pumps.capacity[12] == 0.288
+    assert pumps.connection_node_start_id[13] == 1006
+    assert pumps.connection_node_end_id[0] == -9999  # NULL handling
+    assert pumps.connection_node_end_id[2] == 218
+    assert pumps.type_[5] == 1
+    assert pumps.start_level[0] == -4.0
+    assert pumps.lower_stop_level[18] == -1.9
+    assert np.isnan(pumps.upper_stop_level[15])
+    assert pumps.display_name[10] == "KGM-JL-18"
 
 
 def test_get_culverts(db):

@@ -825,6 +825,7 @@ class SQLite:
         return Pipes(**attr_dict)
 
     def get_pumps(self) -> Pumps:
+
         with self.get_session() as session:
             arr = (
                 session.query(
@@ -839,7 +840,7 @@ class SQLite:
                     models.Pump.upper_stop_level,
                     models.Pump.display_name,
                 )
-                .join(models.PumpMap, models.Pump.id == models.PumpMap.pump_id)
+                .outerjoin(models.PumpMap, models.Pump.id == models.PumpMap.pump_id)
                 .order_by(models.Pump.id)
                 .as_structarray()
             )
