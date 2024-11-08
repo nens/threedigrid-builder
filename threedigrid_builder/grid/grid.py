@@ -6,7 +6,7 @@ import shapely
 from osgeo import osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
-from shapely.ops import split
+from shapely.ops import linemerge, split
 
 import threedigrid_builder
 from threedigrid_builder.base import (
@@ -883,14 +883,20 @@ class Grid:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
     def apply_cutlines(self, cutlines):
-        """Treat obstacles as cutlines for now"""
-        # TODO: add unit test for multiline cutting
-        # TODO: what to do with individual connected cutlines? shapely.linemerge
+        """Apply the cutlines to generate clone cells"""
+
+        # Note that we want to merge lines in case they are connected to a single segment.
+        cutlinestrings = [cutline for cutline in cutlines.the_geom]
+        merged_multiline = linemerge(shapely.MultiLineString(cutlinestrings))
+        if merged_multiline.geom_type == "MultiLineString":
+            merged_cutlines = [linestring for linestring in merged_multiline.geoms]
+        elif merged_multiline.geom_type == "LineString":
+            merged_cutlines = [merged_multiline]
+        else:
+            raise RuntimeError("Unable to merge the cutlines")
 
         # Map of node idx to fragment list
         node_fragment = {}
-        cutlinestrings = [cutline for cutline in cutlines.the_geom]
-
         for node_idx in range(len(self.nodes)):
             # create the geometry of the corresponding cell
             node_polygon = shapely.box(
@@ -901,8 +907,7 @@ class Grid:
                 ccw=False,
             )
             assert node_polygon.is_valid
-
-            node_fragment[node_idx] = Grid.split(node_polygon, cutlinestrings)
+            node_fragment[node_idx] = Grid.split(node_polygon, merged_cutlines)
 
     @staticmethod
     def split(
