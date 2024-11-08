@@ -381,6 +381,13 @@ def test_split_single_cut(cell_polygon):
     )  # upper-left triangle
 
 
+def test_split_partial_cut(cell_polygon):
+    cutlines = [shapely.LineString([(0, 0), (5, 5)])]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 1
+    assert fragments[0].equals_exact(cell_polygon, tolerance=0.0)
+
+
 def test_split_double_cut(cell_polygon):
     cutlines = [
         shapely.LineString([(0, 0), (10, 10)]),
