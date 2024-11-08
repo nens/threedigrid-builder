@@ -88,7 +88,7 @@ def _make_gridadmin(
         # need to apply the cutting now (before grid.add_groundwater()).
 
         # CUT HERE!
-        grid.apply_cutlines(db.get_obstacles())
+        grid.apply_cutlines(db.get_obstacles(), dem_path)
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
