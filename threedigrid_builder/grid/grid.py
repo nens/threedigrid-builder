@@ -1,5 +1,5 @@
 from dataclasses import dataclass, fields
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import shapely
@@ -885,11 +885,11 @@ class Grid:
     def apply_cutlines(self, cutlines):
         """Treat obstacles as cutlines for now"""
         # TODO: add unit test for multiline cutting
-
-        # TODO: what to do with individual connected cutlines?
+        # TODO: what to do with individual connected cutlines? shapely.linemerge
 
         # Map of node idx to fragment list
         node_fragment = {}
+        cutlinestrings = [cutline for cutline in cutlines.the_geom]
 
         for node_idx in range(len(self.nodes)):
             # create the geometry of the corresponding cell
@@ -902,33 +902,38 @@ class Grid:
             )
             assert node_polygon.is_valid
 
-            # check for intersection with cutlines
-            fragment_collection = [
-                node_polygon
-            ]  # list of all fragments of the cell (each cutline can cause new fragments), initially the cell itself
+            node_fragment[node_idx] = Grid.split(node_polygon, cutlinestrings)
 
-            for cutline_linestring in cutlines.the_geom:
-                new_fragments = []  # List of fragments that have been recut
-                # iterate over the fragments
-                for fragment in fragment_collection:
-                    intermediate_fragments = split(fragment, cutline_linestring)
+    @staticmethod
+    def split(
+        polygon: shapely.Polygon, cutlines: List[shapely.LineString]
+    ) -> List[shapely.Polygon]:
+        """Sequentially applies cutlines to the polygon"""
+        fragment_collection = [
+            polygon
+        ]  # List of all fragments of the cell (each cutline can cause new fragments), initially the cell itself
 
-                    # According to docs: If the splitter does not split the geometry, a collection with a single geometry equal to the input geometry is returned.
-                    # Note that the original input geometry does not need to be returned, we'll explicitely add that one again.
-                    if len(intermediate_fragments.geoms) == 1:
-                        assert intermediate_fragments.geoms[0].equals(fragment)
-                        new_fragments.append(fragment)
-                    elif len(intermediate_fragments.geoms) > 1:
-                        for intermediate_fragment in intermediate_fragments.geoms:
-                            assert intermediate_fragment.geom_type == "Polygon"
-                            new_fragments.append(intermediate_fragment)
-                    else:
-                        raise RuntimeError("No resulting geometry")
+        for cutline_linestring in cutlines:
+            new_fragments = []  # List of newly cut fragments (might include original)
+            # Iterate over the fragments
+            for fragment in fragment_collection:
+                intermediate_fragments = split(fragment, cutline_linestring)
+                # According to docs: If the splitter does not split the geometry, a collection with a single geometry equal to the input geometry is returned.
+                # Note that the original input geometry does not need to be returned, we'll explicitely add that one again.
+                if len(intermediate_fragments.geoms) == 1:
+                    assert intermediate_fragments.geoms[0].equals(fragment)
+                    new_fragments.append(fragment)
+                elif len(intermediate_fragments.geoms) > 1:
+                    for intermediate_fragment in intermediate_fragments.geoms:
+                        assert intermediate_fragment.geom_type == "Polygon"
+                        new_fragments.append(intermediate_fragment)
+                else:
+                    raise RuntimeError("No resulting geometry after cutting")
 
-                # set new fragment collection and move to the next cutline
-                fragment_collection = new_fragments
+            # Set new fragment collection and move to the next cutline
+            fragment_collection = new_fragments
 
-            node_fragment[node_idx] = fragment_collection
+        return fragment_collection
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
