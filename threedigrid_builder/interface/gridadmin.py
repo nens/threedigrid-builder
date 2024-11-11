@@ -579,7 +579,7 @@ class GridAdminOut(OutputInterface):
         quarters.line[mask] = quarters.line[mask] + 1
         self.write_dataset(group, "line", quarters.line.T)
 
-        mask = quarters.neighbour_node != -9999
+        mask = quarters.neighbour_node != 0
         quarters.neighbour_node[mask] = quarters.neighbour_node[mask] + 1
         self.write_dataset(group, "neighbour_node", quarters.neighbour_node.T)
 
