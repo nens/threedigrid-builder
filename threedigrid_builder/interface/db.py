@@ -365,12 +365,14 @@ class SQLite:
                     models.SurfaceParameter.infiltration_recovery_constant,
                     models.SurfaceMap.connection_node_id,
                     models.SurfaceMap.percentage,
+                    models.ConnectionNode.geom.label("connection_node_the_geom"),
                 )
                 .select_from(models.Surface)
                 .join(models.SurfaceParameter)
                 .join(
                     models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id
                 )
+                .join(models.ConnectionNode, models.SurfaceMap.connection_node_id == models.ConnectionNode.id)
                 .order_by(models.Surface.id)
                 .as_structarray()
             )
