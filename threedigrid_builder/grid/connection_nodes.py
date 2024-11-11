@@ -113,7 +113,7 @@ class ConnectionNodes(Array[ConnectionNode]):
         Returns:
             exchange levels a.k.a. dpumax (array of float)
         """
-        # get  the corresponding connection_node ids and indexes
+        # get the corresponding connection_node ids and indexes
         connection_node_idx = self.id_to_index(content_pk)
         is_manhole = ~np.isnan(self.bottom_level[connection_node_idx])
         is_manhole_idx = connection_node_idx[is_manhole]

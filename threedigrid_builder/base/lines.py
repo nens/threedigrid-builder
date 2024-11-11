@@ -121,9 +121,6 @@ class Lines(Array[Line]):
         new_line_idx[line_idx] = new_line_idx[line_idx][sorter]
         self.reorder(new_line_idx)
 
-    def set_1d2d_crest_levels(self, crest_levels, where):
-        self.dpumax[where] = crest_levels
-
     def set_2d_crest_levels(self, crest_levels, where):
         """Set obstacle crest levels to 2D lines
 

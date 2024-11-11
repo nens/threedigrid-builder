@@ -208,7 +208,6 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
             node_open_water_detection=grid_settings.node_open_water_detection,
         )
-        # use Obstacle.compute_dpumax ?
         if grid.meta.has_groundwater:
             channels.apply_has_groundwater_exchange(grid.nodes, grid.lines)
             pipes.apply_has_groundwater_exchange(grid.nodes, grid.lines)
