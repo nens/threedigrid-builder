@@ -373,7 +373,10 @@ class SQLite:
                 .join(
                     models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id
                 )
-                .join(models.ConnectionNode, models.SurfaceMap.connection_node_id == models.ConnectionNode.id)
+                .join(
+                    models.ConnectionNode,
+                    models.SurfaceMap.connection_node_id == models.ConnectionNode.id,
+                )
                 .order_by(models.Surface.id)
                 .as_structarray()
             )
@@ -833,6 +836,7 @@ class SQLite:
             models.Pipe.exchange_thickness,
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
+            models.Pipe.material_id,
             case(
                 {
                     models.Pipe.friction_value.isnot(None)
