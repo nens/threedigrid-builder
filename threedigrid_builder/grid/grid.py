@@ -934,9 +934,8 @@ class Grid:
         )
         layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
         defn = layer.GetLayerDefn()
-
         count = itertools.count()
-        for _, fragments in node_fragment.items():
+        for node_id, fragments in node_fragment.items():
             for fragment in fragments:
                 feature = ogr.Feature(defn)
                 feature.SetField("id", next(count))
@@ -976,6 +975,7 @@ class Grid:
         with Dataset(array, **dataset_kwargs) as dataset:
             gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
 
+        _ = np.asfortranarray(array[0].T)
         assert True
 
     @staticmethod
