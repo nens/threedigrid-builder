@@ -23,6 +23,7 @@ from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
+from threedigrid_builder.utils import Dataset
 
 from . import connection_nodes as connection_nodes_module
 from . import dem_average_area as dem_average_area_module
@@ -920,23 +921,10 @@ class Grid:
         # Now we have the list of all cut cells and their corresponding fragments
         print([idx + 1 for idx in node_fragment.keys()])  # QGIS idx start at 1
 
-        # Generate mask
-
+        # read DEM to retrieve properties
         raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
-        # array = np.full(shape=(1, subgrid_meta["height"], subgrid_meta["width"]), fill_value=-1, dtype=np.int32)
-        target_ds = gdal.GetDriverByName("GTiff").Create(
-            "test2.tif",
-            raster_dataset.RasterXSize,
-            raster_dataset.RasterYSize,
-            1,
-            gdal.GDT_Int32,
-        )
-        target_ds.SetGeoTransform(raster_dataset.GetGeoTransform())
-        target_ds.SetProjection(raster_dataset.GetProjection())
 
-        band = target_ds.GetRasterBand(1)
-        band.SetNoDataValue(-9999)
-
+        # Create an OGR memory layer with the geometry
         driver = ogr.GetDriverByName("Memory")
         data_source = driver.CreateDataSource("")
         layer = data_source.CreateLayer(
@@ -956,7 +944,38 @@ class Grid:
                 feature.SetGeometry(polygon)
                 layer.CreateFeature(feature)
 
-        gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
+        no_data_value = -9999
+        # Write to tiff
+        export_tiff = False
+        if export_tiff:
+            target_ds = gdal.GetDriverByName("GTiff").Create(
+                "test.tif",
+                raster_dataset.RasterXSize,
+                raster_dataset.RasterYSize,
+                1,
+                gdal.GDT_Int32,
+            )
+            target_ds.SetGeoTransform(raster_dataset.GetGeoTransform())
+            target_ds.SetProjection(raster_dataset.GetProjection())
+
+            band = target_ds.GetRasterBand(1)
+            band.SetNoDataValue(no_data_value)
+            gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
+
+        # Write to array
+        array = np.full(
+            shape=(1, raster_dataset.RasterYSize, raster_dataset.RasterXSize),
+            fill_value=no_data_value,
+            dtype=np.int32,
+        )
+        dataset_kwargs = {
+            "no_data_value": no_data_value,
+            "geo_transform": raster_dataset.GetGeoTransform(),
+        }
+
+        with Dataset(array, **dataset_kwargs) as dataset:
+            gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
+
         assert True
 
     @staticmethod
