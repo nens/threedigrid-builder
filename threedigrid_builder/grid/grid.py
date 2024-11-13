@@ -898,7 +898,7 @@ class Grid:
             raise RuntimeError("Unable to merge the cutlines")
 
         # Map of node idx to fragment list
-        node_fragment = {}
+        node_fragments = {}
         for node_idx in self.nodes.id:
             # create the geometry of the corresponding cell
             node_polygon = shapely.box(
@@ -916,13 +916,10 @@ class Grid:
                 # The original cell polygon is returned, no cutting has taken place
                 assert fragments[0].equals_exact(node_polygon, tolerance=0.0)
             else:
-                node_fragment[node_idx] = fragments
+                node_fragments[node_idx] = fragments
 
         # Now we have the list of all cut cells and their corresponding fragments
-        print([idx + 1 for idx in node_fragment.keys()])  # QGIS idx start at 1
-
-        # read DEM to retrieve properties
-        raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+        print([idx + 1 for idx in node_fragments.keys()])  # QGIS idx start at 1
 
         # Create an OGR memory layer with the geometry
         driver = ogr.GetDriverByName("Memory")
@@ -934,16 +931,35 @@ class Grid:
         )
         layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
         defn = layer.GetLayerDefn()
+
+        no_data_value = -9999
+
+        # Add the geometries to this OGR layer
         count = itertools.count()
-        for node_id, fragments in node_fragment.items():
-            for fragment in fragments:
+        max_nr_of_fragments = (
+            4  # This array contains up to 4 fragment ids for each node.
+        )
+        node_fragment_array = np.full(
+            shape=(len(self.nodes.id), max_nr_of_fragments),
+            fill_value=no_data_value,
+            dtype=np.int32,
+        )
+        for node_id, fragments in node_fragments.items():
+            for fragment_idx, fragment in enumerate(fragments):
+                fragment_id = next(count)
                 feature = ogr.Feature(defn)
-                feature.SetField("id", next(count))
+                feature.SetField("id", fragment_id)
                 polygon = ogr.CreateGeometryFromWkb(fragment.wkb)
                 feature.SetGeometry(polygon)
                 layer.CreateFeature(feature)
+                if fragment_idx < max_nr_of_fragments:
+                    node_fragment_array[node_id][fragment_idx] = fragment_id
+                else:
+                    raise RuntimeError(f"Node {node_id} has too many fragments")
 
-        no_data_value = -9999
+        # Read DEM to retrieve properties such as number of pixels etc.
+        raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+
         # Write to tiff
         export_tiff = False
         if export_tiff:
@@ -975,7 +991,15 @@ class Grid:
         with Dataset(array, **dataset_kwargs) as dataset:
             gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
 
-        _ = np.asfortranarray(array[0].T)
+        fortran_fragment_mask = np.asfortranarray(array[0].T)
+        assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
+
+        print(node_fragment_array)
+        fortran_node_fragment_array = np.asfortranarray(node_fragment_array.T)
+        assert (
+            fortran_node_fragment_array.min() == no_data_value
+        )  # temp assert for mypy
+
         assert True
 
     @staticmethod
