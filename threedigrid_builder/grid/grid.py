@@ -7,7 +7,7 @@ import shapely
 from osgeo import gdal, ogr, osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
-from shapely.ops import linemerge, split
+from shapely.ops import linemerge, polygonize
 
 import threedigrid_builder
 from threedigrid_builder.base import (
@@ -1006,32 +1006,27 @@ class Grid:
     def split(
         polygon: shapely.Polygon, cutlines: List[shapely.LineString]
     ) -> List[shapely.Polygon]:
-        """Sequentially applies cutlines to the polygon"""
-        fragment_collection = [
-            polygon
-        ]  # List of all fragments of the cell (each cutline can cause new fragments), initially the cell itself
+        """Integral cutting, derived from shapely.ops.cut"""
 
-        for cutline_linestring in cutlines:
-            new_fragments = []  # List of newly cut fragments (might include original)
-            # Iterate over the fragments
-            for fragment in fragment_collection:
-                intermediate_fragments = split(fragment, cutline_linestring)
-                # According to docs: If the splitter does not split the geometry, a collection with a single geometry equal to the input geometry is returned.
-                # Note that the original input geometry does not need to be returned, we'll explicitely add that one again.
-                if len(intermediate_fragments.geoms) == 1:
-                    assert intermediate_fragments.geoms[0].equals(fragment)
-                    new_fragments.append(fragment)
-                elif len(intermediate_fragments.geoms) > 1:
-                    for intermediate_fragment in intermediate_fragments.geoms:
-                        assert intermediate_fragment.geom_type == "Polygon"
-                        new_fragments.append(intermediate_fragment)
-                else:
-                    raise RuntimeError("No resulting geometry after cutting")
+        union = shapely.unary_union([polygon.boundary] + cutlines)
 
-            # Set new fragment collection and move to the next cutline
-            fragment_collection = new_fragments
+        # Some polygonized geometries may be holes, we do not want them
+        # # that's why we test if the original polygon (poly) contains
+        # an inner point of polygonized geometry (pg)
+        result = [
+            pg
+            for pg in polygonize(union)
+            if polygon.contains(pg.representative_point())
+        ]
 
-        return fragment_collection
+        # In case there is no cut, the resulting polygon is an equal shape, but not
+        # numerical the same (different order, additional points). In this case we
+        # explicitely return the original polygon
+        if len(result) == 1:
+            assert result[0].equals(polygon)
+            return [polygon]
+
+        return result
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
