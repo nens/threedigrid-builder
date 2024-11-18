@@ -462,7 +462,7 @@ class SQLite:
         return Channels(**attr_dict)
 
     def get_connection_nodes(self) -> ConnectionNodes:
-        """Return ConnectionNodes (which are enriched using the manhole table)"""
+        """Return ConnectionNodes"""
         cols = [
             models.ConnectionNode.geom,
             models.ConnectionNode.id,
