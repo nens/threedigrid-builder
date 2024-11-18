@@ -91,7 +91,7 @@ class ConnectionNodes(Array[ConnectionNode]):
         """
         return self.storage_area[self.id_to_index(content_pk)] >= 0
 
-    def has_channel(self, content_pk, channels):
+    def is_channel(self, content_pk, channels):
         """Whether object is connected to a channel"""
         has_channel = np.logical_or(
             np.isin(self.id, channels.connection_node_start_id),

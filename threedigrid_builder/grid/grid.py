@@ -760,7 +760,7 @@ class Grid:
             if node_open_water_detection == 0 and isinstance(objects, ConnectionNodes):
                 mask = self.nodes.content_type[node_idx] == objects.content_type
                 content_pk = self.nodes.content_pk[node_idx[mask]]
-                is_closed = objects.has_channel(content_pk, channels)
+                is_closed = objects.is_channel(content_pk, channels)
             else:
                 is_closed = objects.is_closed(content_pk)
             lines_1d2d.assign_kcu(mask, is_closed=is_closed)

@@ -290,7 +290,7 @@ def test_has_channel(connection_nodes, start_id, end_id, content_pk, expected):
         connection_node_start_id=start_id,
         connection_node_end_id=end_id,
     )
-    has_channel = connection_nodes.has_channel(content_pk, channels)
+    has_channel = connection_nodes.is_channel(content_pk, channels)
     np.testing.assert_array_equal(has_channel, expected)
 
 
