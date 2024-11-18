@@ -7,6 +7,7 @@ import shapely
 from osgeo import gdal, ogr, osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
+from shapely import contains
 from shapely.ops import linemerge, polygonize
 
 import threedigrid_builder
@@ -1010,13 +1011,13 @@ class Grid:
 
         union = shapely.unary_union([polygon.boundary] + cutlines)
 
-        # Some polygonized geometries may be holes, we do not want them
-        # # that's why we test if the original polygon (poly) contains
-        # an inner point of polygonized geometry (pg)
+        # Some polygonized geometries might be outsize the cell,
+        # that's why we test if the original polygon (poly) contains
+        # the polygonized geometry (pg).
         result = [
             pg
             for pg in polygonize(union)
-            if polygon.contains(pg.representative_point())
+            if contains(polygon, pg)  # contains allows common boundary points
         ]
 
         # In case there is no cut, the resulting polygon is an equal shape, but not
