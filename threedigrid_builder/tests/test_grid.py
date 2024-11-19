@@ -362,3 +362,128 @@ def test_set_cross_sections(grid):
 
     assert_array_equal(definitions.convert.call_args[0][0], [2, 3, 4, 5])
     assert grid.cross_sections is definitions.convert.return_value
+
+
+@pytest.fixture
+def cell_polygon():
+    return shapely.box(0, 0, 10, 10)
+
+
+def test_split_single_cut(cell_polygon):
+    cutlines = [shapely.LineString([(0, 0), (10, 10)])]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 2
+    assert shapely.Polygon(((10, 10), (10, 0), (0, 0), (10, 10))).equals(
+        fragments[0]
+    )  # lower-right triangle
+    assert shapely.Polygon(((0, 0), (0, 10), (10, 10), (0, 0))).equals(
+        fragments[1]
+    )  # upper-left triangle
+
+
+def test_split_partial_cut(cell_polygon):
+    cutlines = [shapely.LineString([(0, 0), (5, 5)])]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 1
+    assert fragments[0].equals_exact(cell_polygon, tolerance=0.0)
+
+
+def test_split_order(cell_polygon):
+    # This test is to indicate that the cutline order does not matter
+    cutlines_2 = [
+        shapely.LineString([(5, 0), (5, 5)]),
+        shapely.LineString([(0, 0), (10, 10)]),
+    ]
+    fragments = Grid.split(cell_polygon, cutlines_2)
+    assert len(fragments) == 3
+
+    cutlines_3 = [
+        shapely.LineString([(0, 0), (10, 10)]),
+        shapely.LineString([(5, 0), (5, 5)]),
+    ]
+    fragments = Grid.split(cell_polygon, cutlines_3)
+    assert len(fragments) == 3
+
+
+def test_split_double_cut(cell_polygon):
+    cutlines = [
+        shapely.LineString([(0, 0), (10, 10)]),
+        shapely.LineString([(0, 10), (10, 0)]),
+    ]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 4
+    assert shapely.Polygon(((10, 10), (10, 0), (5, 5), (10, 10))).equals(fragments[0])
+    assert shapely.Polygon(((10, 0), (0, 0), (5, 5), (10, 0))).equals(fragments[3])
+    assert shapely.Polygon(((0, 0), (0, 10), (5, 5), (0, 0))).equals(fragments[2])
+    assert shapely.Polygon(((0, 10), (10, 10), (5, 5), (0, 10))).equals(fragments[1])
+
+
+def test_split_double_cut_outer_intersection(cell_polygon):
+    # these cutlines meet outside the clone cell, potentially yielding an
+    # additional cell in polygonize()
+
+    cutlines = [
+        shapely.LineString([(0, 0), (5, 15)]),
+        shapely.LineString([(5, 15), (10, 0)]),
+    ]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 3
+    assert shapely.Polygon(
+        ((6.666666666666667, 10), (10, 10), (10, 0), (6.666666666666667, 10))
+    ).equals(
+        fragments[0]  # right triangle
+    )
+    assert shapely.Polygon(
+        (
+            (3.3333333333333335, 10),
+            (6.666666666666667, 10),
+            (10, 0),
+            (0, 0),
+            (3.3333333333333335, 10),
+        )
+    ).equals(
+        fragments[1]  # trapezium
+    )
+    assert shapely.Polygon(((0, 0), (0, 10), (3.3333333333333335, 10), (0, 0))).equals(
+        fragments[2]  # left triangle
+    )
+
+
+def test_split_double_cut_miss(cell_polygon):
+    # add a non-intersecting line to the cutlines
+    cutlines = [
+        shapely.LineString([(0, 0), (10, 10)]),
+        shapely.LineString([(0, 10), (10, 0)]),
+        shapely.LineString([(40, 10), (40, 0)]),
+    ]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 4
+    assert shapely.Polygon(((10, 10), (10, 0), (5, 5), (10, 10))).equals(fragments[0])
+    assert shapely.Polygon(((10, 0), (0, 0), (5, 5), (10, 0))).equals(fragments[3])
+    assert shapely.Polygon(((0, 0), (0, 10), (5, 5), (0, 0))).equals(fragments[2])
+    assert shapely.Polygon(((0, 10), (10, 10), (5, 5), (0, 10))).equals(fragments[1])
+
+
+def test_split_triple_cut_miss(cell_polygon):
+    cutlines = [
+        shapely.LineString([(0, 0), (10, 10)]),
+        shapely.LineString([(0, 10), (10, 0)]),
+        shapely.LineString([(40, 10), (40, 0)]),
+        shapely.LineString([(5, 0), (5, 5)]),
+    ]
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 5
+    assert shapely.Polygon(((10, 10), (10, 0), (5, 5), (10, 10))).equals(fragments[0])
+    assert shapely.Polygon(((10, 0), (5, 0), (5, 5), (10, 0))).equals(fragments[4])
+    assert shapely.Polygon(((5, 0), (0, 0), (5, 5), (5, 0))).equals(fragments[3])
+    assert shapely.Polygon(((0, 0), (0, 10), (5, 5), (0, 0))).equals(fragments[2])
+    assert shapely.Polygon(((0, 10), (10, 10), (5, 5), (0, 10))).equals(fragments[1])
+
+    cutlines.reverse()
+    fragments = Grid.split(cell_polygon, cutlines)
+    assert len(fragments) == 5
+    assert shapely.Polygon(((10, 10), (10, 0), (5, 5), (10, 10))).equals(fragments[0])
+    assert shapely.Polygon(((10, 0), (5, 0), (5, 5), (10, 0))).equals(fragments[4])
+    assert shapely.Polygon(((5, 0), (0, 0), (5, 5), (5, 0))).equals(fragments[3])
+    assert shapely.Polygon(((0, 0), (0, 10), (5, 5), (0, 0))).equals(fragments[2])
+    assert shapely.Polygon(((0, 10), (10, 10), (5, 5), (0, 10))).equals(fragments[1])

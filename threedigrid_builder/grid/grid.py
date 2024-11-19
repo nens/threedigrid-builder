@@ -1,11 +1,14 @@
+import itertools
 from dataclasses import dataclass, fields
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import shapely
-from osgeo import osr
+from osgeo import gdal, ogr, osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
+from shapely import contains
+from shapely.ops import linemerge, polygonize
 
 import threedigrid_builder
 from threedigrid_builder.base import (
@@ -21,6 +24,7 @@ from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import zero_d
+from threedigrid_builder.utils import Dataset
 
 from . import connection_nodes as connection_nodes_module
 from . import dem_average_area as dem_average_area_module
@@ -880,6 +884,150 @@ class Grid:
             )
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
+
+    def apply_cutlines(self, cutlines, dem_path):
+        """Apply the cutlines to generate clone cells"""
+
+        # Note that we want to merge lines in case they are connected to a single segment.
+        cutlinestrings = [cutline for cutline in cutlines.the_geom]
+        merged_multiline = linemerge(shapely.MultiLineString(cutlinestrings))
+        if merged_multiline.geom_type == "MultiLineString":
+            merged_cutlines = [linestring for linestring in merged_multiline.geoms]
+        elif merged_multiline.geom_type == "LineString":
+            merged_cutlines = [merged_multiline]
+        else:
+            raise RuntimeError("Unable to merge the cutlines")
+
+        # Map of node idx to fragment list
+        node_fragments = {}
+        for node_idx in self.nodes.id:
+            # create the geometry of the corresponding cell
+            node_polygon = shapely.box(
+                self.nodes.bounds[node_idx][0],
+                self.nodes.bounds[node_idx][1],
+                self.nodes.bounds[node_idx][2],
+                self.nodes.bounds[node_idx][3],
+                ccw=False,
+            )
+            assert node_polygon.is_valid
+
+            fragments = Grid.split(node_polygon, merged_cutlines)
+            assert len(fragments) > 0
+            if len(fragments) == 1:
+                # The original cell polygon is returned, no cutting has taken place
+                assert fragments[0].equals_exact(node_polygon, tolerance=0.0)
+            else:
+                node_fragments[node_idx] = fragments
+
+        # Now we have the list of all cut cells and their corresponding fragments
+        print([idx + 1 for idx in node_fragments.keys()])  # QGIS idx start at 1
+
+        # Create an OGR memory layer with the geometry
+        driver = ogr.GetDriverByName("Memory")
+        data_source = driver.CreateDataSource("")
+        layer = data_source.CreateLayer(
+            "",
+            osr.SpatialReference(""),
+            ogr.wkbPolygon,
+        )
+        layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
+        defn = layer.GetLayerDefn()
+
+        no_data_value = -9999
+
+        # Add the geometries to this OGR layer
+        count = itertools.count()
+        max_nr_of_fragments = (
+            4  # This array contains up to 4 fragment ids for each node.
+        )
+        node_fragment_array = np.full(
+            shape=(len(self.nodes.id), max_nr_of_fragments),
+            fill_value=no_data_value,
+            dtype=np.int32,
+        )
+        for node_id, fragments in node_fragments.items():
+            for fragment_idx, fragment in enumerate(fragments):
+                fragment_id = next(count)
+                feature = ogr.Feature(defn)
+                feature.SetField("id", fragment_id)
+                polygon = ogr.CreateGeometryFromWkb(fragment.wkb)
+                feature.SetGeometry(polygon)
+                layer.CreateFeature(feature)
+                if fragment_idx < max_nr_of_fragments:
+                    node_fragment_array[node_id][fragment_idx] = fragment_id
+                else:
+                    raise RuntimeError(f"Node {node_id} has too many fragments")
+
+        # Read DEM to retrieve properties such as number of pixels etc.
+        raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+
+        # Write to tiff
+        export_tiff = False
+        if export_tiff:
+            target_ds = gdal.GetDriverByName("GTiff").Create(
+                "test.tif",
+                raster_dataset.RasterXSize,
+                raster_dataset.RasterYSize,
+                1,
+                gdal.GDT_Int32,
+            )
+            target_ds.SetGeoTransform(raster_dataset.GetGeoTransform())
+            target_ds.SetProjection(raster_dataset.GetProjection())
+
+            band = target_ds.GetRasterBand(1)
+            band.SetNoDataValue(no_data_value)
+            gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
+
+        # Write to array
+        array = np.full(
+            shape=(1, raster_dataset.RasterYSize, raster_dataset.RasterXSize),
+            fill_value=no_data_value,
+            dtype=np.int32,
+        )
+        dataset_kwargs = {
+            "no_data_value": no_data_value,
+            "geo_transform": raster_dataset.GetGeoTransform(),
+        }
+
+        with Dataset(array, **dataset_kwargs) as dataset:
+            gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
+
+        fortran_fragment_mask = np.asfortranarray(array[0])
+        assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
+
+        print(node_fragment_array)
+        fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
+        assert (
+            fortran_node_fragment_array.min() == no_data_value
+        )  # temp assert for mypy
+
+        assert True
+
+    @staticmethod
+    def split(
+        polygon: shapely.Polygon, cutlines: List[shapely.LineString]
+    ) -> List[shapely.Polygon]:
+        """Integral cutting, derived from shapely.ops.cut"""
+
+        union = shapely.unary_union([polygon.boundary] + cutlines)
+
+        # Some polygonized geometries might be outsize the cell,
+        # that's why we test if the original polygon (poly) contains
+        # the polygonized geometry (pg).
+        result = [
+            pg
+            for pg in polygonize(union)
+            if contains(polygon, pg)  # contains allows common boundary points
+        ]
+
+        # In case there is no cut, the resulting polygon is an equal shape, but not
+        # numerical the same (different order, additional points). In this case we
+        # explicitely return the original polygon
+        if len(result) == 1:
+            assert result[0].equals(polygon)
+            return [polygon]
+
+        return result
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
