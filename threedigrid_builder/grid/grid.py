@@ -992,11 +992,11 @@ class Grid:
         with Dataset(array, **dataset_kwargs) as dataset:
             gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
 
-        fortran_fragment_mask = np.asfortranarray(array[0].T)
+        fortran_fragment_mask = np.asfortranarray(array[0])
         assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
 
         print(node_fragment_array)
-        fortran_node_fragment_array = np.asfortranarray(node_fragment_array.T)
+        fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
         assert (
             fortran_node_fragment_array.min() == no_data_value
         )  # temp assert for mypy
