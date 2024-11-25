@@ -7,6 +7,8 @@ Changelog of threedigrid-builder
 
 - Set nodata value for neighbour nodes to 0 in quarters admin.
 
+- Adapt for schema changes for 1D (schema 228)
+
 
 1.20.1 (2024-10-23)
 -------------------
