@@ -20,7 +20,7 @@ from threedigrid_builder.base import (
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import zero_d
+from threedigrid_builder.grid import ConnectionNodes, zero_d
 
 from . import connection_nodes as connection_nodes_module
 from . import dem_average_area as dem_average_area_module
@@ -30,7 +30,7 @@ from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
 from .linear import BaseLinear
 from .lines_1d2d import Lines1D2D
-from .obstacles import Obstacles
+from .obstacles import ObstacleAffectsType, Obstacles
 from .potential_breaches import PotentialBreaches, PotentialBreachPoints
 
 osr.UseExceptions()
@@ -370,6 +370,10 @@ class Grid:
             - nodes.content_pk: the user-supplied id
             - nodes.node_type: NODE_1D_NO_STORAGE / NODE_1D_STORAGE
             - nodes.calculation_type: only if set on Manhole
+            - nodes.dmax: from bottom_level (which comes from manhole)
+            - nodes.is_manhole: node is a manhole
+            - nodes.drain_level: drain_level of associated manhole.
+            - nodes.storage_area: area of connection_node.
         """
         return cls(connection_nodes.get_nodes(node_id_counter), Lines(id=[]))
 
@@ -580,17 +584,43 @@ class Grid:
             culverts=culverts,
         )
 
-    def set_obstacles(self, obstacles: Obstacles):
+    def set_obstacles_2d(
+        self,
+        obstacles: Obstacles,
+    ):
         """Set obstacles on 2D lines by determining intersection between
            line_coords (these must be knows at this point) and obstacle geometry.
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Args:
             obstacles (Obstacles)
+            affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
         """
         line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
         selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
-        crest_level = obstacles.compute_dpumax(self.lines, where=selection)[0]
+        crest_level = obstacles.compute_dpumax(
+            self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
+        )[0]
+        self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.obstacles = obstacles
+
+    def set_obstacles_1d2d(
+        self,
+        obstacles: Obstacles,
+    ):
+        """Set obstacles on 2D lines by determining intersection between
+           line_coords (these must be knows at this point) and obstacle geometry.
+           Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
+
+        Args:
+            obstacles (Obstacles)
+            affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
+        """
+        line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
+        selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
+        crest_level = obstacles.compute_dpumax(
+            self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
+        )[0]
         self.lines.set_2d_crest_levels(crest_level, where=selection)
         self.obstacles = obstacles
 
@@ -693,6 +723,7 @@ class Grid:
         culverts,
         potential_breaches,
         line_id_counter,
+        node_open_water_detection,
     ) -> Lines1D2D:
         """Connect 1D and 2D elements by computing 1D-2D lines.
 
@@ -726,10 +757,15 @@ class Grid:
         for objects in (channels, connection_nodes, pipes, culverts):
             mask = self.nodes.content_type[node_idx] == objects.content_type
             content_pk = self.nodes.content_pk[node_idx[mask]]
-            lines_1d2d.assign_kcu(mask, objects.is_closed(content_pk))
+            if node_open_water_detection == 0 and isinstance(objects, ConnectionNodes):
+                is_closed = objects.is_channel(content_pk, channels)
+            else:
+                is_closed = objects.is_closed(content_pk)
+            lines_1d2d.assign_kcu(mask, is_closed=is_closed)
         lines_1d2d.assign_dpumax_from_breaches(potential_breaches)
         lines_1d2d.assign_dpumax_from_exchange_lines(exchange_lines)
-        lines_1d2d.assign_dpumax_from_obstacles(self.obstacles)
+        lines_1d2d.assign_dpumax_from_obstacles_open(self.obstacles)
+        lines_1d2d.assign_dpumax_from_obstacles_closed(self.obstacles)
         # Go through objects and dispatch to get_1d2d_properties
         for objects in (channels, connection_nodes, pipes, culverts):
             mask = self.nodes.content_type[node_idx] == objects.content_type

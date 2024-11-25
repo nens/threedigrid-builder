@@ -4,14 +4,14 @@ import pathlib
 from contextlib import contextmanager
 from enum import Enum
 from functools import lru_cache
-from typing import Callable, ContextManager, Dict, Optional
+from typing import Callable, ContextManager, Dict, List, Optional, Union
 
 import numpy as np
 import shapely
 from condenser import NumpyQuery
 from pyproj import Transformer
 from pyproj.crs import CRS
-from sqlalchemy import cast, func, inspect, Integer
+from sqlalchemy import case, cast, func, inspect, Integer, literal
 from sqlalchemy.orm import Session
 from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
 
@@ -43,7 +43,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 227
+MIN_SQLITE_VERSION = 228
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -108,6 +108,44 @@ def arr_to_attr_dict(
     }
 
 
+def map_cross_section_definition(
+    objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
+    definition_map: Dict[str, Dict[int, int]],
+) -> None:
+    """
+    Set cross section definition ids for cross_section_locations,
+    pipes, weirs, orifices and culverts to match the unique
+    cross section locations.
+
+    Args:
+        objects: List of objects (CrossSectionLocations, Pipes, Weirs, Orifices, Culverts) to map the definition to
+        definition_map: Mapping of object names to their definition IDs
+    """
+    # Map shapes to key in definition_map
+    object_map = {
+        CrossSectionLocations: "cross_section_location",
+        Pipes: "pipe",
+        Weirs: "weir",
+        Orifices: "orifice",
+        Culverts: "culvert",
+    }
+    for object in objects:
+        object_name = object_map.get(type(object))
+        if object_name is None:
+            raise ValueError(f"Object of type {type(object)} cannot be mapped")
+        mapping = definition_map.get(object_name)
+        if mapping is None:
+            continue
+        idx = object.id_to_index(list(mapping.keys()))
+        # set correct cross section definition id's for mapped object
+        if isinstance(object, CrossSectionLocations):
+            object.definition_id[idx] = np.array(list(mapping.values()), dtype=int)
+        else:
+            object.cross_section_definition_id[idx] = np.array(
+                list(mapping.values()), dtype=int
+            )
+
+
 class SQLite:
     def __init__(self, path: pathlib.Path, upgrade=False, convert_to_geopackage=False):
         if not path.exists():
@@ -129,9 +167,7 @@ class SQLite:
 
     def upgrade(self, convert_to_geopackage=False):
         schema = ModelSchema(self.db)
-        schema.upgrade(
-            backup=False, set_views=False, convert_to_geopackage=convert_to_geopackage
-        )
+        schema.upgrade(backup=False, convert_to_geopackage=convert_to_geopackage)
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
@@ -328,9 +364,9 @@ class SQLite:
                     models.SurfaceParameter.min_infiltration_capacity,
                     models.SurfaceParameter.infiltration_decay_constant,
                     models.SurfaceParameter.infiltration_recovery_constant,
-                    models.ConnectionNode.id.label("connection_node_id"),
-                    models.ConnectionNode.the_geom.label("connection_node_the_geom"),
+                    models.SurfaceMap.connection_node_id,
                     models.SurfaceMap.percentage,
+                    models.ConnectionNode.geom.label("connection_node_the_geom"),
                 )
                 .select_from(models.Surface)
                 .join(models.SurfaceParameter)
@@ -347,9 +383,6 @@ class SQLite:
 
         # reproject
         arr["geom"] = self.reproject(arr["geom"])
-        arr["connection_node_the_geom"] = self.reproject(
-            arr["connection_node_the_geom"]
-        )
 
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
@@ -392,15 +425,14 @@ class SQLite:
     def get_channels(self) -> Channels:
         """Return Channels"""
         cols = [
-            models.Channel.the_geom,
-            models.Channel.dist_calc_points,
+            models.Channel.geom,
+            models.Channel.calculation_point_distance,
             models.Channel.id,
             models.Channel.code,
-            models.Channel.connection_node_start_id,
-            models.Channel.connection_node_end_id,
-            models.Channel.calculation_type,
+            models.Channel.connection_node_id_start,
+            models.Channel.connection_node_id_end,
+            models.Channel.exchange_type,
             models.Channel.display_name,
-            models.Channel.zoom_category,
             models.Channel.exchange_thickness,
             models.Channel.hydraulic_conductivity_out,
             models.Channel.hydraulic_conductivity_in,
@@ -409,84 +441,132 @@ class SQLite:
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["geom"] = self.reproject(arr["geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
-        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
+        arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "geom": "the_geom",
+                "exchange_type": "calculation_type",
+                "calculation_point_distance": "dist_calc_points",
+                "connection_node_id_start": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+            },
+        )
+
         # transform to a Channels object
-        return Channels(**{name: arr[name] for name in arr.dtype.names})
+        return Channels(**attr_dict)
 
     def get_connection_nodes(self) -> ConnectionNodes:
-        """Return ConnectionNodes (which are enriched using the manhole table)"""
+        """Return ConnectionNodes"""
         cols = [
-            models.ConnectionNode.the_geom,
+            models.ConnectionNode.geom,
             models.ConnectionNode.id,
             models.ConnectionNode.code,
             models.ConnectionNode.storage_area,
-            models.ConnectionNode.initial_waterlevel,
-            models.Manhole.id.label("manhole_id"),
-            models.Manhole.calculation_type,
-            models.Manhole.bottom_level,
-            models.Manhole.drain_level,
-            models.Manhole.manhole_indicator,
-            models.Manhole.surface_level,
-            models.Manhole.shape,
-            models.Manhole.width,
-            models.Manhole.display_name,
-            models.Manhole.zoom_category,
-            models.Manhole.exchange_thickness,
-            models.Manhole.hydraulic_conductivity_out,
-            models.Manhole.hydraulic_conductivity_in,
+            models.ConnectionNode.initial_water_level,
+            models.ConnectionNode.exchange_type,
+            models.ConnectionNode.bottom_level,
+            models.ConnectionNode.exchange_level,
+            models.ConnectionNode.visualisation,
+            models.ConnectionNode.manhole_surface_level,
+            models.ConnectionNode.display_name,
+            models.ConnectionNode.exchange_thickness,
+            models.ConnectionNode.hydraulic_conductivity_out,
+            models.ConnectionNode.hydraulic_conductivity_in,
         ]
 
         with self.get_session() as session:
             arr = (
-                session.query(*cols)
-                .join(models.ConnectionNode.manholes, isouter=True)
-                .order_by(models.ConnectionNode.id)
-                .as_structarray()
+                session.query(*cols).order_by(models.ConnectionNode.id).as_structarray()
             )
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["geom"] = self.reproject(arr["geom"])
 
-        # replace -9999.0 with NaN in initial_waterlevel
-        arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
+        # replace -9999.0 with NaN in initial_water_level
+        arr["initial_water_level"][arr["initial_water_level"] == -9999.0] = np.nan
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
-        return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "geom": "the_geom",
+                "initial_water_level": "initial_waterlevel",
+                "exchange_type": "calculation_type",
+                "exchange_level": "drain_level",
+                "visualisation": "manhole_indicator",
+                "manhole_surface_level": "surface_level",
+            },
+        )
+
+        return ConnectionNodes(**attr_dict)
+
+    def get_cross_section_definition_for_table(self, table) -> np.ndarray:
+        with self.get_session() as session:
+            cols = [
+                literal(table.__tablename__).label("origin_table"),
+                table.id.label("origin_id"),
+                table.cross_section_shape.label("shape"),
+                table.cross_section_width.label("width"),
+                table.cross_section_height.label("height"),
+                table.cross_section_table,
+            ]
+            if table == models.CrossSectionLocation:
+                cols += [
+                    table.cross_section_friction_values.label("friction_values"),
+                    table.cross_section_vegetation_table,
+                    table.vegetation_stem_density,
+                    table.vegetation_stem_diameter,
+                    table.vegetation_height,
+                    table.vegetation_drag_coefficient,
+                ]
+            arr = session.query(*cols).select_from(table).as_structarray()
+            # map shape 10 to 1 (circle) to match CrossSectionShape enum
+            arr["shape"][arr["shape"] == 10] = 1
+            # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
+            arr["shape"][arr["shape"] == 11] = 5
+            # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
+            arr["shape"][arr["shape"] == 12] = 6
+        return arr
 
     def get_cross_section_definitions(self) -> CrossSectionDefinitions:
         """Return CrossSectionDefinitions"""
-        with self.get_session() as session:
-            arr = (
-                session.query(
-                    models.CrossSectionDefinition.id,
-                    models.CrossSectionDefinition.code,
-                    models.CrossSectionDefinition.shape,
-                    models.CrossSectionDefinition.width,
-                    models.CrossSectionDefinition.height,
-                    models.CrossSectionDefinition.friction_values,
-                    models.CrossSectionDefinition.vegetation_stem_densities,
-                    models.CrossSectionDefinition.vegetation_stem_diameters,
-                    models.CrossSectionDefinition.vegetation_heights,
-                    models.CrossSectionDefinition.vegetation_drag_coefficients,
-                )
-                .order_by(models.CrossSectionDefinition.id)
-                .as_structarray()
-            )
+        attr_dict = {
+            "id": np.empty(0, dtype="i4"),
+            "origin_table": np.empty(0, dtype="O"),
+            "origin_id": np.empty(0, dtype="i4"),
+            "shape": np.empty(0, dtype="O"),
+            "width": np.empty(0, dtype="f8"),
+            "height": np.empty(0, dtype="f8"),
+            "cross_section_table": np.empty(0, dtype="O"),
+            "friction_values": np.empty(0, dtype="O"),
+            "cross_section_vegetation_table": np.empty(0, dtype="O"),
+        }
+        for table in [
+            models.CrossSectionLocation,
+            models.Culvert,
+            models.Orifice,
+            models.Pipe,
+            models.Weir,
+        ]:
+            arr = self.get_cross_section_definition_for_table(table)
+            if len(arr) == 0:
+                continue
+            for name in attr_dict.keys():
+                if name == "id":
+                    data = len(attr_dict["id"]) + np.arange(len(arr))
+                elif name in arr.dtype.names:
+                    data = arr[name]
+                else:
+                    data = np.empty(len(arr), attr_dict[name].dtype)
+                attr_dict[name] = np.concatenate((attr_dict[name], data))
 
-        # map shape 10 to 1 (circle) to match CrossSectionShape enum
-        arr["shape"][arr["shape"] == 10] = 1
-        # map shape 11 to 5 (tabulated rectangle) to match CrossSectionShape enum
-        arr["shape"][arr["shape"] == 11] = 5
-        # map shape 12 to 6 (tabulated trapezium) to match CrossSectionShape enum
-        arr["shape"][arr["shape"] == 12] = 6
-
-        # transform to a CrossSectionDefinitions object
-        return CrossSectionDefinitions(**{name: arr[name] for name in arr.dtype.names})
+        return CrossSectionDefinitions(**attr_dict)
 
     def get_cross_section_locations(self) -> CrossSectionLocations:
         """Return CrossSectionLocations"""
@@ -495,8 +575,7 @@ class SQLite:
                 session.query(
                     models.CrossSectionLocation.id,
                     models.CrossSectionLocation.code,
-                    models.CrossSectionLocation.the_geom,
-                    models.CrossSectionLocation.definition_id,
+                    models.CrossSectionLocation.geom,
                     models.CrossSectionLocation.channel_id,
                     models.CrossSectionLocation.reference_level,
                     models.CrossSectionLocation.bank_level,
@@ -510,52 +589,83 @@ class SQLite:
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()
             )
+        arr["geom"] = self.reproject(arr["geom"])
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
 
         # transform to a CrossSectionLocations object
-        return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
+        return CrossSectionLocations(**attr_dict)
 
     def get_culverts(self) -> Culverts:
         """Return Culverts"""
+        cols = [
+            models.Culvert.id,
+            models.Culvert.code,
+            models.Culvert.geom,
+            models.Culvert.calculation_point_distance,
+            models.Culvert.connection_node_id_start,
+            models.Culvert.connection_node_id_end,
+            models.Culvert.exchange_type,
+            models.Culvert.invert_level_start,
+            models.Culvert.invert_level_end,
+            models.Culvert.discharge_coefficient_negative,
+            models.Culvert.discharge_coefficient_positive,
+            models.Culvert.display_name,
+            case(
+                {
+                    models.Culvert.friction_value.isnot(None)
+                    & models.Culvert.friction_type.isnot(
+                        None
+                    ): models.Culvert.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Culvert.friction_value.isnot(None)
+                    & models.Culvert.friction_type.isnot(
+                        None
+                    ): models.Culvert.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
+        ]
+
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.Culvert.id,
-                    models.Culvert.code,
-                    models.Culvert.the_geom,
-                    models.Culvert.dist_calc_points,
-                    models.Culvert.connection_node_start_id,
-                    models.Culvert.connection_node_end_id,
-                    models.Culvert.calculation_type,
-                    models.Culvert.cross_section_definition_id,
-                    models.Culvert.invert_level_start_point,
-                    models.Culvert.invert_level_end_point,
-                    models.Culvert.discharge_coefficient_negative,
-                    models.Culvert.discharge_coefficient_positive,
-                    models.Culvert.friction_type,
-                    models.Culvert.friction_value,
-                    models.Culvert.display_name,
-                    models.Culvert.zoom_category,
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Culvert.material_id == models.Material.id
                 )
                 .order_by(models.Culvert.id)
                 .as_structarray()
             )
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
+        arr["geom"] = self.reproject(arr["geom"])
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
         # When no calculation type is provides we default to isolated
-        arr["calculation_type"][
-            arr["calculation_type"] == -9999
-        ] = LineType.LINE_1D_ISOLATED
+        arr["exchange_type"][arr["exchange_type"] == -9999] = LineType.LINE_1D_ISOLATED
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
-        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
+        arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
+
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "exchange_type": "calculation_type",
+                "calculation_point_distance": "dist_calc_points",
+                "invert_level_start": "invert_level_start_point",
+                "invert_level_end": "invert_level_end_point",
+                "geom": "the_geom",
+                "connection_node_id_start": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+            },
+        )
 
         # transform to a CrossSectionLocations object
-        return Culverts(**{name: arr[name] for name in arr.dtype.names})
+        return Culverts(**attr_dict)
 
     def get_exchange_lines(self) -> ExchangeLines:
         with self.get_session() as session:
@@ -641,6 +751,9 @@ class SQLite:
                     models.Obstacle.geom,
                     models.Obstacle.id,
                     models.Obstacle.crest_level,
+                    models.Obstacle.affects_2d,
+                    models.Obstacle.affects_1d2d_closed,
+                    models.Obstacle.affects_1d2d_open_water,
                 )
                 .order_by(models.Obstacle.id)
                 .as_structarray()
@@ -654,32 +767,58 @@ class SQLite:
 
     def get_orifices(self) -> Orifices:
         """Return Orifices"""
+        cols = [
+            models.Orifice.id,
+            models.Orifice.code,
+            models.Orifice.connection_node_id_start,
+            models.Orifice.connection_node_id_end,
+            models.Orifice.crest_level,
+            models.Orifice.crest_type,
+            models.Orifice.discharge_coefficient_negative,
+            models.Orifice.discharge_coefficient_positive,
+            models.Orifice.display_name,
+            models.Orifice.sewerage,
+            case(
+                {
+                    models.Orifice.friction_value.isnot(None)
+                    & models.Orifice.friction_type.isnot(
+                        None
+                    ): models.Orifice.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Orifice.friction_value.isnot(None)
+                    & models.Orifice.friction_type.isnot(
+                        None
+                    ): models.Orifice.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
+        ]
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.Orifice.id,
-                    models.Orifice.code,
-                    models.Orifice.connection_node_start_id,
-                    models.Orifice.connection_node_end_id,
-                    models.Orifice.crest_level,
-                    models.Orifice.crest_type,
-                    models.Orifice.cross_section_definition_id,
-                    models.Orifice.discharge_coefficient_negative,
-                    models.Orifice.discharge_coefficient_positive,
-                    models.Orifice.friction_type,
-                    models.Orifice.friction_value,
-                    models.Orifice.display_name,
-                    models.Orifice.zoom_category,
-                    models.Orifice.sewerage,
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Orifice.material_id == models.Material.id
                 )
                 .order_by(models.Orifice.id)
                 .as_structarray()
             )
-
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-
-        return Orifices(**{name: arr[name] for name in arr.dtype.names})
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "exchange_type": "calculation_type",
+                "calculation_point_distance": "dist_calc_points",
+                "connection_node_id_start": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+                "geom": "the_geom",
+            },
+        )
+        return Orifices(**attr_dict)
 
     def get_pipes(self) -> Pipes:
         """Return Pipes"""
@@ -687,88 +826,149 @@ class SQLite:
             models.Pipe.id,
             models.Pipe.code,
             models.Pipe.sewerage_type,
-            models.Pipe.calculation_type,
-            models.Pipe.invert_level_start_point,
-            models.Pipe.invert_level_end_point,
-            models.Pipe.friction_type,
-            models.Pipe.friction_value,
-            models.Pipe.dist_calc_points,
-            models.Pipe.connection_node_start_id,
-            models.Pipe.connection_node_end_id,
-            models.Pipe.cross_section_definition_id,
+            models.Pipe.exchange_type,
+            models.Pipe.invert_level_start,
+            models.Pipe.invert_level_end,
+            models.Pipe.calculation_point_distance,
+            models.Pipe.connection_node_id_start,
+            models.Pipe.connection_node_id_end,
             models.Pipe.display_name,
-            models.Pipe.zoom_category,
-            models.Pipe.material,
             models.Pipe.exchange_thickness,
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
+            models.Pipe.material_id,
+            case(
+                {
+                    models.Pipe.friction_value.isnot(None)
+                    & models.Pipe.friction_type.isnot(None): models.Pipe.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Pipe.friction_value.isnot(None)
+                    & models.Pipe.friction_type.isnot(None): models.Pipe.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
         ]
-
         with self.get_session() as session:
-            arr = session.query(*cols).order_by(models.Pipe.id).as_structarray()
+            arr = (
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Pipe.material_id == models.Material.id
+                )
+                .order_by(models.Pipe.id)
+                .as_structarray()
+            )
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "exchange_type": "calculation_type",
+                "calculation_point_distance": "dist_calc_points",
+                "material_id": "material",
+                "invert_level_start": "invert_level_start_point",
+                "invert_level_end": "invert_level_end_point",
+                "connection_node_id_start": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+                "geom": "the_geom",
+            },
+        )
+
         # transform to a Pipes object
-        return Pipes(**{name: arr[name] for name in arr.dtype.names})
+        return Pipes(**attr_dict)
 
     def get_pumps(self) -> Pumps:
         with self.get_session() as session:
             arr = (
                 session.query(
-                    models.Pumpstation.id,
-                    models.Pumpstation.code,
-                    models.Pumpstation.capacity,
-                    models.Pumpstation.connection_node_start_id,
-                    models.Pumpstation.connection_node_end_id,
-                    models.Pumpstation.type_,
-                    models.Pumpstation.start_level,
-                    models.Pumpstation.lower_stop_level,
-                    models.Pumpstation.upper_stop_level,
-                    models.Pumpstation.display_name,
-                    models.Pumpstation.zoom_category,
+                    models.Pump.id,
+                    models.Pump.code,
+                    models.Pump.capacity,
+                    models.Pump.connection_node_id,
+                    models.PumpMap.connection_node_id_end,
+                    models.Pump.type_,
+                    models.Pump.start_level,
+                    models.Pump.lower_stop_level,
+                    models.Pump.upper_stop_level,
+                    models.Pump.display_name,
                 )
-                .order_by(models.Pumpstation.id)
+                .outerjoin(models.PumpMap, models.Pump.id == models.PumpMap.pump_id)
+                .order_by(models.Pump.id)
                 .as_structarray()
             )
 
-        # Pump capicity is entered as L/s but we need m3/s.
+        # Pump capacity is entered as L/s but we need m3/s.
         arr["capacity"] = arr["capacity"] / 1000
 
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "connection_node_id": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+                "geom": "the_geom",
+            },
+        )
+
         # transform to a Pumps object
-        return Pumps(**{name: arr[name] for name in arr.dtype.names})
+        return Pumps(**attr_dict)
 
     def get_weirs(self) -> Weirs:
         """Return Weirs"""
+        cols = [
+            models.Weir.id,
+            models.Weir.code,
+            models.Weir.connection_node_id_start,
+            models.Weir.connection_node_id_end,
+            models.Weir.crest_level,
+            models.Weir.crest_type,
+            models.Weir.discharge_coefficient_negative,
+            models.Weir.discharge_coefficient_positive,
+            models.Weir.display_name,
+            models.Weir.sewerage,
+            case(
+                {
+                    models.Weir.friction_value.isnot(None)
+                    & models.Weir.friction_type.isnot(None): models.Weir.friction_value
+                },
+                else_=models.Material.friction_coefficient,
+            ).label("friction_value"),
+            case(
+                {
+                    models.Weir.friction_value.isnot(None)
+                    & models.Weir.friction_type.isnot(None): models.Weir.friction_type
+                },
+                else_=models.Material.friction_type,
+            ).label("friction_type"),
+        ]
         with self.get_session() as session:
             arr = (
-                session.query(
-                    models.Weir.id,
-                    models.Weir.code,
-                    models.Weir.connection_node_start_id,
-                    models.Weir.connection_node_end_id,
-                    models.Weir.crest_level,
-                    models.Weir.crest_type,
-                    models.Weir.cross_section_definition_id,
-                    models.Weir.discharge_coefficient_negative,
-                    models.Weir.discharge_coefficient_positive,
-                    models.Weir.friction_type,
-                    models.Weir.friction_value,
-                    models.Weir.display_name,
-                    models.Weir.zoom_category,
-                    models.Weir.sewerage,
+                session.query(*cols)
+                .outerjoin(
+                    models.Material, models.Weir.material_id == models.Material.id
                 )
                 .order_by(models.Weir.id)
                 .as_structarray()
             )
-
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-
-        return Weirs(**{name: arr[name] for name in arr.dtype.names})
+        attr_dict = arr_to_attr_dict(
+            arr,
+            {
+                "exchange_type": "calculation_type",
+                "calculation_point_distance": "dist_calc_points",
+                "connection_node_id_start": "connection_node_start_id",
+                "connection_node_id_end": "connection_node_end_id",
+                "geom": "the_geom",
+            },
+        )
+        return Weirs(**attr_dict)
 
     def get_windshieldings(self) -> Windshieldings:
         with self.get_session() as session:

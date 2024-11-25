@@ -3,11 +3,13 @@ from unittest import mock
 import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal, assert_array_equal
+from threedi_schema import constants
 
 from threedigrid_builder.constants import CrossSectionShape
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import CrossSectionDefinitions, CrossSections
 from threedigrid_builder.grid.cross_section_definitions import (
+    _parse_tabulated,
     set_friction_vegetation_values,
     tabulate_builtin,
     tabulate_closed_rectangle,
@@ -26,8 +28,9 @@ def cross_section_definitions():
         id=[1, 3, 9],
         code=["1", "3", "9"],
         shape=[SHP.CIRCLE, SHP.TABULATED_TRAPEZIUM, SHP.TABULATED_RECTANGLE],
-        width=["1.22", "3.7 5.0", "5.0 6.0"],
-        height=["", "1 2", "1 2"],
+        width=[1.22, None, None],
+        height=[None, None, None],
+        cross_section_table=[None, "1,3.7\n2,5.0", "1,5\n2,6"],
     )
 
 
@@ -89,13 +92,13 @@ def test_convert_empty(cross_section_definitions):
 
 
 def test_tabulate_builtin():
-    actual = tabulate_builtin("my-shape", "1.52", "1.33")
+    actual = tabulate_builtin("my-shape", 1.52, 1.33)
     assert actual == ("my-shape", 1.52, None, None, None)
 
 
 def test_tabulate_closed_rectangle():
     shape, width_1d, height_1d, table, yz = tabulate_closed_rectangle(
-        "my-shape", "1.52", "5.2"
+        "my-shape", 1.52, 5.2
     )
 
     assert shape == CrossSectionShape.TABULATED_RECTANGLE
@@ -106,7 +109,7 @@ def test_tabulate_closed_rectangle():
 
 
 def test_tabulate_egg():
-    shape, width_1d, height_1d, table, yz = tabulate_egg("my-shape", "1.52", "ignored")
+    shape, width_1d, height_1d, table, yz = tabulate_egg("my-shape", 1.52, 0)
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
     assert width_1d == 1.52
@@ -138,10 +141,12 @@ def test_tabulate_egg():
 
 
 def test_tabulate_tabulated():
-    shape, width_1d, height_1d, table, yz = tabulate_tabulated(
-        "my-shape", "1 2 3", "0 1 2"
+    width, height = _parse_tabulated(
+        "0,1\n1,2\n2,3", CrossSectionShape.TABULATED_RECTANGLE
     )
-
+    shape, width_1d, height_1d, table, yz = tabulate_tabulated(
+        "my-shape", width, height
+    )
     assert shape == "my-shape"
     assert width_1d == 3.0  # the max
     assert height_1d == 2.0
@@ -149,25 +154,16 @@ def test_tabulate_tabulated():
     assert yz is None
 
 
-@pytest.mark.parametrize(
-    "width,height,match",
-    [
-        ("", "1", r"Unable to parse cross section definition.*"),
-        ("1", "", r"Unable to parse cross section definition.*"),
-        ("", "", r"Unable to parse cross section definition.*"),
-        ("1", "1 2", r".*of tabulated or profile type must have equal number.*"),
-        ("1 2", "1", r".*of tabulated or profile type must have equal number.*"),
-        ("1 1", "2 1", r".*of tabulated type must have increasing heights.*"),
-    ],
-)
-def test_tabulate_tabulated_err(width, height, match):
-    with pytest.raises(SchematisationError, match=match):
-        tabulate_tabulated(CrossSectionShape.TABULATED_RECTANGLE, width, height)
+def test_tabulate_tabulated_err():
+    with pytest.raises(
+        SchematisationError, match=r".*of tabulated type must have increasing heights.*"
+    ):
+        tabulate_tabulated(CrossSectionShape.TABULATED_RECTANGLE, [1, 1], [2, 1])
 
 
 def test_tabulate_inverted_egg():
     shape, width_1d, height_1d, table, yz = tabulate_inverted_egg(
-        "my-shape", "1.52", "ignored"
+        "my-shape", 1.52, "ignored"
     )
 
     assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
@@ -200,11 +196,29 @@ def test_tabulate_inverted_egg():
 
 
 @pytest.mark.parametrize(
-    "width,height,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width,exp_height,exp_table,exp_yz",
+    "shape, expected_width, expected_height",
+    [
+        (CrossSectionShape.TABULATED_YZ, [1, 3, 5], [2, 4, 6]),
+        (CrossSectionShape.TABULATED_RECTANGLE, [2, 4, 6], [1, 3, 5]),
+    ],
+)
+def test_parse_tabulated(shape, expected_width, expected_height):
+    width, height = _parse_tabulated("1,2\n3,4\n5,6", shape)
+    np.testing.assert_array_equal(width, expected_width)
+    np.testing.assert_array_equal(height, expected_height)
+
+
+@pytest.mark.parametrize("cross_section_table", ["", "1,2\n3", "1,2\n3,"])
+def test_parse_tabulated_invalid(cross_section_table):
+    with pytest.raises(SchematisationError):
+        _parse_tabulated(cross_section_table, CrossSectionShape.TABULATED_RECTANGLE)
+
+
+@pytest.mark.parametrize(
+    "cross_section_table,friction_values,vegetation_stem_densities,vegetation_stem_diameters,vegetation_heights,vegetation_drag_coefficients,exp_width,exp_height,exp_table,exp_yz",
     [
         (
-            "0 0.5 1 1.5",
-            "0.5 0 0 0.5",
+            "0,0.5\n0.5,0\n1,0\n1.5,0.5",
             None,
             None,
             None,
@@ -221,8 +235,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 0.5 1 1.5",
-            "0.5 0 0 0.25",
+            "0,0.5\n0.5,0\n1,0\n1.5,0.25",
             "1 1 1",
             "0.5 1 1",
             "1 1 1",
@@ -239,8 +252,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 1 2 3 4 5",
-            "1 0 0.5 0.5 0 1",
+            "0,1\n1,0\n2,0.5\n3,0.5\n4,0\n5,1",
             "1 1 1 1 1",
             "1 1 1 1 1",
             "1 1 1 1 1",
@@ -259,8 +271,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 1 2 2 0 0",
-            "0.5 0 0.5 1.5 1.5 0.5",
+            "0,0.5\n1,0\n2,0.5\n2,1.5\n0,1.5\n0,0.5",
             "1 1 1 1",
             "1 1 1 1",
             "1 1 1 1",
@@ -272,8 +283,7 @@ def test_tabulate_inverted_egg():
             None,
         ),
         (
-            "0 0.5 0.75 1.0 1.5",
-            "0.5 0 0 0 0.5",
+            "0,0.5\n0.5,0\n0.75,0\n1.0,0\n1.5,0.5",
             "1 1 1 1",
             "1 0.1 1 1",
             "2 1 1 1",
@@ -291,8 +301,7 @@ def test_tabulate_inverted_egg():
             ],
         ),
         (
-            "0 1 0 1 0",
-            "0 1 1 0 0",
+            "0,0\n1,1\n0,1\n1,0\n0,0",
             "1 1 1 1",
             "1 1 1 1",
             "1 1 1 1",
@@ -304,8 +313,7 @@ def test_tabulate_inverted_egg():
             None,
         ),
         (  # Open profile left side higher than right side
-            "0 1 2 3 4",
-            "1 0 0 0 2",
+            "0,1\n1,0\n2,0\n3,0\n4,2",
             None,
             None,
             None,
@@ -330,8 +338,7 @@ def test_tabulate_inverted_egg():
             ),
         ),
         (  # Open profile right side higher than left side
-            "1 2 3 4 5",
-            "3 1 0 1 2",
+            "1,3\n2,1\n3,0\n4,1\n5,2",
             None,
             None,
             None,
@@ -356,8 +363,7 @@ def test_tabulate_inverted_egg():
             ),
         ),
         (  # Open profile same height left and right
-            "1 2 3 4 5",
-            "3 1 0 1 3",
+            "1,3\n2,1\n3,0\n4,1\n5,3",
             None,
             None,
             None,
@@ -382,8 +388,7 @@ def test_tabulate_inverted_egg():
             ),
         ),
         (  # Open profile, left side rises then falls
-            "0 5 10 15 20 25 30 35 40",
-            "5.2 5.26 5.25 5.2 5.1 5.1 0 5 5",
+            "0,5.2\n5,5.26\n10,5.25\n15,5.2\n20,5.1\n25,5.1\n30,0\n35,5\n40,5",
             None,
             None,
             None,
@@ -410,8 +415,7 @@ def test_tabulate_inverted_egg():
     ],
 )
 def test_tabulate_yz(
-    width,
-    height,
+    cross_section_table,
     friction_values,
     vegetation_stem_densities,
     vegetation_stem_diameters,
@@ -422,6 +426,9 @@ def test_tabulate_yz(
     exp_table,
     exp_yz,
 ):
+    width, height = _parse_tabulated(
+        cross_section_table, CrossSectionShape.TABULATED_YZ
+    )
     shape, width_1d, height_1d, table, yz = tabulate_yz(
         "my-shape",
         width,
@@ -432,39 +439,167 @@ def test_tabulate_yz(
     assert height_1d == exp_height
     assert_almost_equal(table, np.array(exp_table, dtype=float))
     if yz is not None:
-        yz_1d = set_friction_vegetation_values(
-            yz,
-            friction_values,
-            vegetation_stem_densities,
-            vegetation_stem_diameters,
-            vegetation_heights,
-            vegetation_drag_coefficients,
-        )
-        assert_almost_equal(yz_1d, np.array(exp_yz, dtype=float))
         assert shape == CrossSectionShape.TABULATED_YZ
     else:
         assert shape == CrossSectionShape.TABULATED_TRAPEZIUM
 
 
+class TestSetFrictionVegetationValues:
+    def test_set_friction_values(self):
+        friction_values = "0.5, 0.6"
+        yz = np.zeros((3, 5), dtype=float)
+        result = set_friction_vegetation_values(
+            yz, friction_values, None, None, None, None, None
+        )
+        expected = np.zeros_like(yz)
+        expected[:, 2] = [0.5, 0.6, 0]
+        np.testing.assert_array_equal(result, expected)
+
+    def test_set_with_cross_section_vegetation_table(self):
+        vegetation_table = "1,2,3,4\n10,20,30,40"
+        yz = np.zeros((3, 5), dtype=float)
+        result = set_friction_vegetation_values(
+            yz, None, None, None, None, None, vegetation_table
+        )
+        expected = np.zeros_like(yz)
+        expected[:, 3] = [8, 8000, 0]
+        expected[:, 4] = [3, 30, 0]
+        np.testing.assert_array_equal(result, expected)
+
+    def test_with_cross_section_vegetation_values(self):
+        vegetation_stem_density = 2.0
+        vegetation_stem_diameter = 3.0
+        vegetation_drag_coefficient = 0.5
+        vegetation_height = 1.0
+        yz = np.zeros((2, 5), dtype=float)
+        result = set_friction_vegetation_values(
+            yz,
+            None,
+            vegetation_stem_density,
+            vegetation_stem_diameter,
+            vegetation_height,
+            vegetation_drag_coefficient,
+            None,
+        )
+        expected = [[0, 0, 0, 3, 1], [0, 0, 0, 0, 0]]
+        np.testing.assert_array_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     "width,height,match",
     [
-        ("", "1", r"Unable to parse cross section definition.*"),
-        ("1", "", r"Unable to parse cross section definition.*"),
-        ("", "", r"Unable to parse cross section definition.*"),
-        ("1", "1 2", r".*of tabulated or profile type must have equal number.*"),
-        ("1 2", "1", r".*of tabulated or profile type must have equal number.*"),
         (
-            "0 0.5 0",
-            "0 1 0",
+            [0, 0.5, 0],
+            [0, 1, 0],
             r".*of closed profiles must have at least 4 coordinates.*",
         ),
-        ("0 0.5", "0 1", r".*of open profiles must have at least 3 coordinates.*"),
-        ("0 0.5 1.0", "0 1 -1", r".*cannot have negative height coordinate.*"),
-        ("0 0.5 1.0", "1 2 1", r".*must have at least one height coordinate at 0.*"),
-        ("0 0.5 1.0 0.5", "0 1 2 3", r".*should be closed or have increasing widths.*"),
+        ([0, 0.5], [0, 1], r".*of open profiles must have at least 3 coordinates.*"),
+        ([0, 0.5, 1.0], [0, 1, -1], r".*cannot have negative height coordinate.*"),
+        (
+            [0, 0.5, 1.0],
+            [1, 2, 1],
+            r".*must have at least one height coordinate at 0.*",
+        ),
+        (
+            [0, 0.5, 1.0, 0.5],
+            [0, 1, 2, 3],
+            r".*should be closed or have increasing widths.*",
+        ),
     ],
 )
 def test_tabulate_yz_err(width, height, match):
     with pytest.raises(SchematisationError, match=match):
         tabulate_yz("my-shape", width, height)
+
+
+class TestCrossSectionDefinitionGetUnique:
+    def test_for_closed_rectangle(self):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200],
+            shape=[
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+            ],
+            width=[1, 1],
+            height=[1, 1],
+            cross_section_table=["foo", "bar"],
+            origin_table=["pipe", "weir"],
+            origin_id=[10, 20],
+        )
+        unique_definition, _ = csd_in.get_unique()
+        assert unique_definition.id == [
+            0,
+        ]
+        assert unique_definition.width == [
+            1,
+        ]
+        assert unique_definition.height == [
+            1,
+        ]
+
+    @pytest.mark.parametrize(
+        "shape",
+        [
+            constants.CrossSectionShape.RECTANGLE.value,
+            constants.CrossSectionShape.CIRCLE.value,
+            constants.CrossSectionShape.EGG.value,
+            constants.CrossSectionShape.INVERTED_EGG.value,
+        ],
+    )
+    def test_for_tabulated_shape(self, shape):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200],
+            shape=[shape, shape],
+            width=[1, 1],
+            height=[1, 2],
+            cross_section_table=["foo", "bar"],
+            origin_table=["pipe", "weir"],
+            origin_id=[10, 20],
+        )
+        unique_definition, _ = csd_in.get_unique()
+        assert unique_definition.id == [
+            0,
+        ]
+        assert unique_definition.width == [
+            1,
+        ]
+
+    @pytest.mark.parametrize(
+        "shape",
+        [
+            constants.CrossSectionShape.TABULATED_YZ.value,
+            constants.CrossSectionShape.TABULATED_RECTANGLE.value,
+            constants.CrossSectionShape.TABULATED_TRAPEZIUM.value,
+        ],
+    )
+    def test_for_other_shapes(self, shape):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200],
+            shape=[shape, shape],
+            width=[1, 1],
+            height=[10, 21],
+            cross_section_table=["foo", "foo"],
+            origin_table=["pipe", "weir"],
+            origin_id=[10, 20],
+        )
+        unique_definition, _ = csd_in.get_unique()
+        assert unique_definition.id == [
+            0,
+        ]
+        assert unique_definition.cross_section_table == ["foo"]
+
+    def test_mapping(self):
+        csd_in = CrossSectionDefinitions(
+            id=[100, 200, 300],
+            shape=[
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.RECTANGLE.value,
+            ],
+            width=[1, 1, 3],
+            height=[1, 1, 10],
+            origin_table=["pipe", "weir", "pipe"],
+            origin_id=[10, 20, 20],
+        )
+        _, mapping = csd_in.get_unique()
+        assert mapping == {"pipe": {10: 0, 20: 1}, "weir": {20: 0}}

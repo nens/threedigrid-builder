@@ -24,14 +24,12 @@ class ConnectionNode:
     the_geom: shapely.Geometry
     code: str
     storage_area: float
-    manhole_id: int
+    is_manhole: bool
     calculation_type: CalculationType
     manhole_indicator: int
     bottom_level: float
     drain_level: float
     surface_level: float
-    shape: str  # enum with classes "00", "01", "02"
-    width: float
     initial_waterlevel: float
     display_name: str
     zoom_category: int
@@ -59,7 +57,7 @@ class ConnectionNodes(Array[ConnectionNode]):
             - node_type: NODE_1D_STORAGE or NODE_1D_NO_STORAGE depending on storage_area
             - calculation_type: from calculation_type (which comes from manhole)
             - dmax: from bottom_level (which comes from manhole)
-            - manhole_id: id of associated manhole.
+            - is_manhole: node is a manhole
             - drain_level: drain_level of associated manhole.
             - storage_area: area of connection_node.
         """
@@ -77,7 +75,7 @@ class ConnectionNodes(Array[ConnectionNode]):
             node_type=node_type,
             calculation_type=self.calculation_type,
             dmax=self.bottom_level,
-            manhole_id=self.manhole_id,
+            is_manhole=~np.isnan(self.bottom_level),
             drain_level=self.drain_level,
             storage_area=self.storage_area,
             display_name=self.display_name,
@@ -92,6 +90,14 @@ class ConnectionNodes(Array[ConnectionNode]):
         This is relevant for 1D-2D connections.
         """
         return self.storage_area[self.id_to_index(content_pk)] >= 0
+
+    def is_channel(self, content_pk, channels):
+        """Whether object is connected to a channel"""
+        has_channel = np.logical_or(
+            np.isin(self.id, channels.connection_node_start_id),
+            np.isin(self.id, channels.connection_node_end_id),
+        )
+        return has_channel[content_pk]
 
     def get_1d2d_exchange_levels(self, content_pk, channels, locations, **kwargs):
         """Compute the exchange level (dpumax) for 1D-2D flowlines.
@@ -109,17 +115,16 @@ class ConnectionNodes(Array[ConnectionNode]):
         """
         # get the corresponding connection_node ids and indexes
         connection_node_idx = self.id_to_index(content_pk)
-        is_manhole = self.manhole_id[connection_node_idx] != -9999
+        is_manhole = ~np.isnan(self.bottom_level[connection_node_idx])
         is_manhole_idx = connection_node_idx[is_manhole]
-
         # Check if manhole has drain_level below bottom_level
         has_lower_drn_lvl = (
             self.drain_level[is_manhole_idx] < self.bottom_level[is_manhole_idx]
         )
         if np.any(has_lower_drn_lvl):
-            ids = self.manhole_id[is_manhole_idx[has_lower_drn_lvl]]
+            ids = self.id[is_manhole_idx[has_lower_drn_lvl]]
             logger.warning(
-                f"Manholes {sorted(ids.tolist())} have a "
+                f"ConnectionNode {sorted(ids.tolist())} have a "
                 f"bottom_level that is above drain_level."
             )
 
@@ -143,7 +148,6 @@ class ConnectionNodes(Array[ConnectionNode]):
             _put_if_less(dpumax, cn_idx_with_channel, drain_level)
         # filter out connection nodes that were not in node_idx (non-connected ones)
         dpumax = dpumax[connection_node_idx]
-
         # for manholes: put in the drain level
         dpumax[is_manhole] = self.drain_level[is_manhole_idx]
         return dpumax
@@ -270,12 +274,13 @@ def set_bottom_levels(nodes: Nodes, lines: Lines):
     dmax = np.fmin(nodes.dmax[node_idx], dmax_per_node)
 
     # Check if the new node dmax is below the original manhole dmax
-    is_manhole = nodes.manhole_id[node_idx] != -9999
+    is_manhole = nodes.is_manhole[node_idx]
+
     has_lower_dmax = dmax[is_manhole] < nodes.dmax[node_idx[is_manhole]]
     if np.any(has_lower_dmax):
-        ids = nodes.manhole_id[node_idx[is_manhole][has_lower_dmax]]
+        ids = nodes.id[node_idx[is_manhole][has_lower_dmax]]
         logger.warning(
-            f"Manholes {sorted(ids.tolist())} have a "
+            f"Nodes {sorted(ids.tolist())} have a "
             f"bottom_level that is above one ore more of the following connected "
             f"objects: channel reference level, pipe/culvert invert level, "
             f"weir/orifice crest level."
