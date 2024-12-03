@@ -940,8 +940,9 @@ class Grid:
         max_nr_of_fragments = (
             4  # This array contains up to 4 fragment ids for each node.
         )
+        max_node_id = max(self.nodes.id)
         node_fragment_array = np.full(
-            shape=(len(self.nodes.id), max_nr_of_fragments),
+            shape=(max_node_id + 1, max_nr_of_fragments),
             fill_value=no_data_value,
             dtype=np.int32,
         )
@@ -979,7 +980,7 @@ class Grid:
             gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
 
         # Write to array
-        array = np.full(
+        mask = np.full(
             shape=(1, raster_dataset.RasterYSize, raster_dataset.RasterXSize),
             fill_value=no_data_value,
             dtype=np.int32,
@@ -989,19 +990,28 @@ class Grid:
             "geo_transform": raster_dataset.GetGeoTransform(),
         }
 
-        with Dataset(array, **dataset_kwargs) as dataset:
+        with Dataset(mask, **dataset_kwargs) as dataset:
             gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
 
-        fortran_fragment_mask = np.asfortranarray(array[0])
-        assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
+        # Remove (small/thin) fragments not in the mask (so, no pixels)
+        nr_nodes, nr_of_fragments = node_fragment_array.shape
+        assert nr_of_fragments == max_nr_of_fragments
+        for n in range(nr_nodes):
+            for c in range(nr_of_fragments):
+                fragment_id = node_fragment_array[n][c]
+                if fragment_id != no_data_value:
+                    # check whether this is in the mask, if not, set to NODATA value
+                    if not np.any(mask[0] == fragment_id):
+                        node_fragment_array[n][c] = no_data_value
 
-        print(node_fragment_array)
+        # TODO: Remove fragments with only NODATA values
+
+        fortran_fragment_mask = np.asfortranarray(mask[0])
+        assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
         fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
         assert (
             fortran_node_fragment_array.min() == no_data_value
         )  # temp assert for mypy
-
-        assert True
 
     @staticmethod
     def split(
