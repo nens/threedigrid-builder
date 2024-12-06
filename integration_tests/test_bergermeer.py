@@ -39,6 +39,7 @@ def test_clone_integration(tmp_path):
         },
         progress_callback=Mock(),
         upgrade=True,
+        apply_cutlines=True,
     )
 
 

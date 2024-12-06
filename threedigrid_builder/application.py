@@ -39,6 +39,7 @@ def _make_gridadmin(
     progress_callback=None,
     upgrade=False,
     convert_to_geopackage=False,
+    apply_cutlines=False,
 ):
     """Compute interpolated channel nodes"""
     progress_callback(0.0, "Reading input schematisation...")
@@ -87,8 +88,8 @@ def _make_gridadmin(
         # As groundwater nodes and lines are a direct copy of the current ones, we
         # need to apply the cutting now (before grid.add_groundwater()).
 
-        # CUT HERE!
-        grid.apply_cutlines(db.get_obstacles(), dem_path)
+        if apply_cutlines:
+            grid.apply_cutlines(db.get_obstacles(), dem_path)
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
@@ -236,6 +237,7 @@ def make_gridadmin(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     upgrade: bool = False,
     convert_to_geopackage: bool = False,
+    apply_cutlines: bool = False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -252,6 +254,7 @@ def make_gridadmin(
         progress_callback: an optional function that updates the progress. The function
             should take an float in the range 0-1 and a message string.
         upgrade: whether to upgrade the sqlite (inplace) before processing
+        apply_cutlines: whether to apply (obstacles as) cutlines and create clone cells.
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -288,6 +291,7 @@ def make_gridadmin(
         progress_callback=progress_callback,
         upgrade=upgrade,
         convert_to_geopackage=convert_to_geopackage,
+        apply_cutlines=apply_cutlines,
     )
 
     progress_callback(0.99, "Writing gridadmin...")

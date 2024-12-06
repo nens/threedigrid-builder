@@ -963,10 +963,10 @@ class Grid:
                     raise RuntimeError(f"Node {node_id} has too many fragments")
 
         # Write to tiff
-        export_tiff = False
-        if export_tiff:
+        export_fragment_tiff = False
+        if export_fragment_tiff:
             target_ds = gdal.GetDriverByName("GTiff").Create(
-                "test.tif",
+                "fragments.tif",
                 dem_raster_dataset.RasterXSize,
                 dem_raster_dataset.RasterYSize,
                 1,
@@ -1003,6 +1003,7 @@ class Grid:
                     # check whether this is in the mask, if not, set to NODATA value
                     if not np.any(fragment_id_raster[0] == fragment_id):
                         node_fragment_array[n][c] = no_data_value
+                        fragment_id_raster[0]
 
         # Remove fragments that only contains no_data_value in the DEM
         dem_raster = dem_raster_dataset.ReadAsArray()
@@ -1010,14 +1011,27 @@ class Grid:
             for c in range(nr_of_fragments):
                 fragment_id = node_fragment_array[n][c]
                 if fragment_id != no_data_value:
-                    dem_fragment_pixels = dem_raster[
-                        fragment_id_raster[0] == fragment_id
-                    ]
-                    if (
-                        dem_fragment_pixels.min() == no_data_value
-                        and dem_fragment_pixels.max() == no_data_value
+                    if Grid.inactive(
+                        fragment_id, fragment_id_raster[0], dem_raster, no_data_value
                     ):
                         node_fragment_array[n][c] = no_data_value
+                        fragment_id_raster[
+                            fragment_id_raster == fragment_id
+                        ] = no_data_value
+
+        export_final_fragment_tiff = False
+        if export_final_fragment_tiff:
+            target_ds = gdal.GetDriverByName("GTiff").Create(
+                "final_fragments.tif",
+                dem_raster_dataset.RasterXSize,
+                dem_raster_dataset.RasterYSize,
+                1,
+                gdal.GDT_Int32,
+            )
+            target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
+            target_ds.SetProjection(dem_raster_dataset.GetProjection())
+            target_ds.GetRasterBand(1).SetNoDataValue(no_data_value)
+            target_ds.GetRasterBand(1).WriteArray(fragment_id_raster[0])
 
         fortran_fragment_mask = np.asfortranarray(fragment_id_raster[0])
         assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
@@ -1025,6 +1039,19 @@ class Grid:
         assert (
             fortran_node_fragment_array.min() == no_data_value
         )  # temp assert for mypy
+
+    @staticmethod
+    def inactive(
+        fragment_id: np.int32,
+        fragment_id_raster: np.ndarray,
+        dem_raster: np.ndarray,
+        no_data_value,
+    ) -> bool:
+        dem_fragment_pixels = dem_raster[fragment_id_raster == fragment_id]
+        return (
+            dem_fragment_pixels.min() == no_data_value
+            and dem_fragment_pixels.max() == no_data_value
+        )
 
     @staticmethod
     def split(
