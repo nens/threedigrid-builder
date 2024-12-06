@@ -99,7 +99,7 @@ Install the dependencies. For your distribution, check the dependency matrix in 
   $ pip install --upgrade pip wheel scikit-build
   $ pip install setuptools==63.*
   $ pip install numpy==1.23.*
-  $ pip install -e .[test,gridadmin] --no-build-isolation h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.* "pygdal==$(gdal-config --version).*"
+  $ pip install -e .[test,gridadmin,gpkg] --no-build-isolation h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.* "pygdal==$(gdal-config --version).*"
 
 In case the Fortan code needs to be recompiled::
 
