@@ -922,12 +922,15 @@ class Grid:
         # Now we have the list of all cut cells and their corresponding fragments
         print([idx + 1 for idx in node_fragments.keys()])  # QGIS idx start at 1
 
+        # Read DEM to retrieve properties such as number of pixels etc.
+        dem_raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+
         # Create an OGR memory layer with the geometry
         driver = ogr.GetDriverByName("Memory")
         data_source = driver.CreateDataSource("")
         layer = data_source.CreateLayer(
             "",
-            osr.SpatialReference(""),
+            osr.SpatialReference(dem_raster_dataset.GetProjection()),
             ogr.wkbPolygon,
         )
         layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
@@ -959,41 +962,38 @@ class Grid:
                 else:
                     raise RuntimeError(f"Node {node_id} has too many fragments")
 
-        # Read DEM to retrieve properties such as number of pixels etc.
-        raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
-
         # Write to tiff
         export_tiff = False
         if export_tiff:
             target_ds = gdal.GetDriverByName("GTiff").Create(
                 "test.tif",
-                raster_dataset.RasterXSize,
-                raster_dataset.RasterYSize,
+                dem_raster_dataset.RasterXSize,
+                dem_raster_dataset.RasterYSize,
                 1,
                 gdal.GDT_Int32,
             )
-            target_ds.SetGeoTransform(raster_dataset.GetGeoTransform())
-            target_ds.SetProjection(raster_dataset.GetProjection())
+            target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
+            target_ds.SetProjection(dem_raster_dataset.GetProjection())
 
             band = target_ds.GetRasterBand(1)
             band.SetNoDataValue(no_data_value)
             gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
 
         # Write to array
-        mask = np.full(
-            shape=(1, raster_dataset.RasterYSize, raster_dataset.RasterXSize),
+        fragment_id_raster = np.full(
+            shape=(1, dem_raster_dataset.RasterYSize, dem_raster_dataset.RasterXSize),
             fill_value=no_data_value,
             dtype=np.int32,
         )
         dataset_kwargs = {
             "no_data_value": no_data_value,
-            "geo_transform": raster_dataset.GetGeoTransform(),
+            "geo_transform": dem_raster_dataset.GetGeoTransform(),
         }
 
-        with Dataset(mask, **dataset_kwargs) as dataset:
+        with Dataset(fragment_id_raster, **dataset_kwargs) as dataset:
             gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
 
-        # Remove (small/thin) fragments not in the mask (so, no pixels)
+        # Remove (small/thin) fragments not in the fragment raster (so, no pixels)
         nr_nodes, nr_of_fragments = node_fragment_array.shape
         assert nr_of_fragments == max_nr_of_fragments
         for n in range(nr_nodes):
@@ -1001,12 +1001,25 @@ class Grid:
                 fragment_id = node_fragment_array[n][c]
                 if fragment_id != no_data_value:
                     # check whether this is in the mask, if not, set to NODATA value
-                    if not np.any(mask[0] == fragment_id):
+                    if not np.any(fragment_id_raster[0] == fragment_id):
                         node_fragment_array[n][c] = no_data_value
 
-        # TODO: Remove fragments with only NODATA values
+        # Remove fragments that only contains no_data_value in the DEM
+        dem_raster = dem_raster_dataset.ReadAsArray()
+        for n in range(nr_nodes):
+            for c in range(nr_of_fragments):
+                fragment_id = node_fragment_array[n][c]
+                if fragment_id != no_data_value:
+                    dem_fragment_pixels = dem_raster[
+                        fragment_id_raster[0] == fragment_id
+                    ]
+                    if (
+                        dem_fragment_pixels.min() == no_data_value
+                        and dem_fragment_pixels.max() == no_data_value
+                    ):
+                        node_fragment_array[n][c] = no_data_value
 
-        fortran_fragment_mask = np.asfortranarray(mask[0])
+        fortran_fragment_mask = np.asfortranarray(fragment_id_raster[0])
         assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
         fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
         assert (
