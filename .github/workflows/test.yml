@@ -15,28 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 2019
-          - python: 3.8
-            os: ubuntu-20.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.17.*
-            display_name: "2019"
-            pins: "h5py==2.10.* sqlalchemy==1.4.10 shapely==2.0.* pyproj==3.0.*"
-            extras: "[test,gridadmin]"
-          # 2020
+          # 2022 - 3.9
           - python: 3.9
-            os: ubuntu-20.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.19.*
-            display_name: "2020"
-            pins: "h5py==3.1.* sqlalchemy==1.4.20 shapely==2.0.* pyproj==3.0.*"
-            extras: "[test,gridadmin]"
-          # 2021
-          - python: 3.9
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             setuptools: setuptools==63.*
             numpy: numpy==1.21.*
-            display_name: "2021"
+            display_name: "2022 - python 3.9"
             pins: "h5py==3.3.* sqlalchemy==1.4.30 shapely==2.0.* pyproj==3.2.*"
             extras: "[test,gridadmin]"
           # 2022
