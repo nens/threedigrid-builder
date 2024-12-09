@@ -385,7 +385,7 @@ class SQLite:
         arr["the_geom"] = self.reproject(arr["the_geom"])
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
-            **{name: arr[name] for name in arr.dtype.names}
+            **{name: arr[name] for name in arr.dtype.names},
         )
 
     def get_boundary_conditions_1d(self) -> BoundaryConditions1D:
@@ -411,7 +411,7 @@ class SQLite:
                 session.query(
                     models.BoundaryConditions2D.id,
                     models.BoundaryConditions2D.type,
-                    models.BoundaryConditions2D.geom.label("the_geom")
+                    models.BoundaryConditions2D.geom.label("the_geom"),
                 )
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
@@ -493,7 +493,6 @@ class SQLite:
         attr_dict = arr_to_attr_dict(
             arr,
             {
-                "geom": "the_geom",
                 "initial_water_level": "initial_waterlevel",
                 "exchange_type": "calculation_type",
                 "exchange_level": "drain_level",
@@ -588,7 +587,6 @@ class SQLite:
                 .as_structarray()
             )
         arr["the_geom"] = self.reproject(arr["the_geom"])
-
 
         # transform to a CrossSectionLocations object
         return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
@@ -719,9 +717,7 @@ class SQLite:
         arr["the_geom"] = self.reproject(arr["the_geom"])
         arr["id"] = np.arange(len(arr["grid_level"]))
 
-        attr_dict = arr_to_attr_dict(
-            arr, {"grid_level": "refinement_level"}
-        )
+        attr_dict = arr_to_attr_dict(arr, {"grid_level": "refinement_level"})
         return GridRefinements(**attr_dict)
 
     def get_dem_average_areas(self) -> DemAverageAreas:
