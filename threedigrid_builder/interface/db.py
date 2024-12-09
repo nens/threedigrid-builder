@@ -356,7 +356,7 @@ class SQLite:
                     models.Surface.code,
                     models.Surface.display_name,
                     models.Surface.area,
-                    models.Surface.geom,
+                    models.Surface.geom.label("the_geom"),
                     models.SurfaceParameter.outflow_delay,
                     models.SurfaceParameter.surface_layer_thickness,
                     models.SurfaceParameter.infiltration,
@@ -382,11 +382,10 @@ class SQLite:
             )
 
         # reproject
-        arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr,{"geom": "the_geom"})
+        arr["the_geom"] = self.reproject(arr["the_geom"])
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
-            **attr_dict,
+            **{name: arr[name] for name in arr.dtype.names}
         )
 
     def get_boundary_conditions_1d(self) -> BoundaryConditions1D:
@@ -412,21 +411,20 @@ class SQLite:
                 session.query(
                     models.BoundaryConditions2D.id,
                     models.BoundaryConditions2D.type,
-                    models.BoundaryConditions2D.geom,
+                    models.BoundaryConditions2D.geom.label("the_geom")
                 )
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-        arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr,{"geom": "the_geom"})
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # transform to a BoundaryConditions1D object
-        return BoundaryConditions2D(**attr_dict)
+        return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
     def get_channels(self) -> Channels:
         """Return Channels"""
         cols = [
-            models.Channel.geom,
+            models.Channel.geom.label("the_geom"),
             models.Channel.calculation_point_distance,
             models.Channel.id,
             models.Channel.code,
@@ -442,7 +440,7 @@ class SQLite:
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
-        arr["geom"] = self.reproject(arr["geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
@@ -451,7 +449,6 @@ class SQLite:
         attr_dict = arr_to_attr_dict(
             arr,
             {
-                "geom": "the_geom",
                 "exchange_type": "calculation_type",
                 "calculation_point_distance": "dist_calc_points",
                 "connection_node_id_start": "connection_node_start_id",
@@ -465,7 +462,7 @@ class SQLite:
     def get_connection_nodes(self) -> ConnectionNodes:
         """Return ConnectionNodes"""
         cols = [
-            models.ConnectionNode.geom,
+            models.ConnectionNode.geom.label("the_geom"),
             models.ConnectionNode.id,
             models.ConnectionNode.code,
             models.ConnectionNode.storage_area,
@@ -486,7 +483,7 @@ class SQLite:
                 session.query(*cols).order_by(models.ConnectionNode.id).as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # replace -9999.0 with NaN in initial_water_level
         arr["initial_water_level"][arr["initial_water_level"] == -9999.0] = np.nan
@@ -576,7 +573,7 @@ class SQLite:
                 session.query(
                     models.CrossSectionLocation.id,
                     models.CrossSectionLocation.code,
-                    models.CrossSectionLocation.geom,
+                    models.CrossSectionLocation.geom.label("the_geom"),
                     models.CrossSectionLocation.channel_id,
                     models.CrossSectionLocation.reference_level,
                     models.CrossSectionLocation.bank_level,
@@ -590,19 +587,18 @@ class SQLite:
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()
             )
-        arr["geom"] = self.reproject(arr["geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
 
         # transform to a CrossSectionLocations object
-        return CrossSectionLocations(**attr_dict)
+        return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
 
     def get_culverts(self) -> Culverts:
         """Return Culverts"""
         cols = [
             models.Culvert.id,
             models.Culvert.code,
-            models.Culvert.geom,
+            models.Culvert.geom.label("the_geom"),
             models.Culvert.calculation_point_distance,
             models.Culvert.connection_node_id_start,
             models.Culvert.connection_node_id_end,
@@ -642,7 +638,7 @@ class SQLite:
                 .as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
@@ -659,7 +655,6 @@ class SQLite:
                 "calculation_point_distance": "dist_calc_points",
                 "invert_level_start": "invert_level_start_point",
                 "invert_level_end": "invert_level_end_point",
-                "geom": "the_geom",
                 "connection_node_id_start": "connection_node_start_id",
                 "connection_node_id_end": "connection_node_end_id",
             },
@@ -674,24 +669,23 @@ class SQLite:
                 session.query(
                     models.ExchangeLine.id,
                     models.ExchangeLine.channel_id,
-                    models.ExchangeLine.geom,
+                    models.ExchangeLine.geom.label("the_geom"),
                     models.ExchangeLine.exchange_level,
                 )
                 .order_by(models.ExchangeLine.id)
                 .as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
+        arr["the_geom"] = self.reproject(arr["the_geom"])
         # transform to a Channels object
-        return ExchangeLines(**attr_dict)
+        return ExchangeLines(**{name: arr[name] for name in arr.dtype.names})
 
     def get_grid_refinements(self) -> GridRefinements:
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
             arr1 = (
                 session.query(
-                    models.GridRefinementLine.geom,
+                    models.GridRefinementLine.geom.label("the_geom"),
                     models.GridRefinementLine.id,
                     models.GridRefinementLine.code,
                     models.GridRefinementLine.display_name,
@@ -706,7 +700,7 @@ class SQLite:
             )
             arr2 = (
                 session.query(
-                    models.GridRefinementArea.geom,
+                    models.GridRefinementArea.geom.label("the_geom"),
                     models.GridRefinementArea.id,
                     models.GridRefinementArea.code,
                     models.GridRefinementArea.display_name,
@@ -722,11 +716,11 @@ class SQLite:
             arr = np.concatenate((arr1, arr2))
 
         # reproject
-        arr["geom"] = self.reproject(arr["geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
         arr["id"] = np.arange(len(arr["grid_level"]))
 
         attr_dict = arr_to_attr_dict(
-            arr, {"geom": "the_geom", "grid_level": "refinement_level"}
+            arr, {"grid_level": "refinement_level"}
         )
         return GridRefinements(**attr_dict)
 
@@ -736,20 +730,19 @@ class SQLite:
             arr = (
                 session.query(
                     models.DemAverageArea.id,
-                    models.DemAverageArea.geom,
+                    models.DemAverageArea.geom.label("the_geom"),
                 )
                 .order_by(models.DemAverageArea.id)
                 .as_structarray()
             )
-            arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
-        return DemAverageAreas(**attr_dict)
+            arr["the_geom"] = self.reproject(arr["the_geom"])
+        return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:
         with self.get_session() as session:
             arr = (
                 session.query(
-                    models.Obstacle.geom,
+                    models.Obstacle.geom.label("the_geom"),
                     models.Obstacle.id,
                     models.Obstacle.crest_level,
                     models.Obstacle.affects_2d,
@@ -761,10 +754,9 @@ class SQLite:
             )
 
         # reproject
-        arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
+        arr["the_geom"] = self.reproject(arr["the_geom"])
         # transform to a Channels object
-        return Obstacles(**attr_dict)
+        return Obstacles(**{name: arr[name] for name in arr.dtype.names})
 
     def get_orifices(self) -> Orifices:
         """Return Orifices"""
@@ -816,7 +808,6 @@ class SQLite:
                 "calculation_point_distance": "dist_calc_points",
                 "connection_node_id_start": "connection_node_start_id",
                 "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
             },
         )
         return Orifices(**attr_dict)
@@ -878,7 +869,6 @@ class SQLite:
                 "invert_level_end": "invert_level_end_point",
                 "connection_node_id_start": "connection_node_start_id",
                 "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
             },
         )
 
@@ -913,7 +903,6 @@ class SQLite:
             {
                 "connection_node_id": "connection_node_start_id",
                 "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
             },
         )
 
@@ -966,7 +955,6 @@ class SQLite:
                 "calculation_point_distance": "dist_calc_points",
                 "connection_node_id_start": "connection_node_start_id",
                 "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
             },
         )
         return Weirs(**attr_dict)
@@ -1001,7 +989,7 @@ class SQLite:
             models.PotentialBreach.id,
             models.PotentialBreach.code,
             models.PotentialBreach.display_name,
-            models.PotentialBreach.geom,
+            models.PotentialBreach.geom.label("the_geom"),
             models.PotentialBreach.channel_id,
         ]
 
@@ -1020,7 +1008,7 @@ class SQLite:
             )
 
         # reproject
-        arr["geom"] = self.reproject(arr["geom"])
+        arr["the_geom"] = self.reproject(arr["the_geom"])
         # derive maximum_breach_depth from initial and final exchange level
         # and overwrite final_exchange_level because adding a field is more work
         arr["final_exchange_level"] = (
@@ -1029,7 +1017,6 @@ class SQLite:
         attr_dict = arr_to_attr_dict(
             arr,
             {
-                "geom": "the_geom",
                 "initial_exchange_level": "exchange_level",
                 "final_exchange_level": "maximum_breach_depth",
             },
