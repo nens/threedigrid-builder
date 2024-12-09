@@ -383,10 +383,10 @@ class SQLite:
 
         # reproject
         arr["geom"] = self.reproject(arr["geom"])
-
+        attr_dict = arr_to_attr_dict(arr,{"geom": "the_geom"})
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
-            **{name: arr[name] for name in arr.dtype.names},
+            **attr_dict,
         )
 
     def get_boundary_conditions_1d(self) -> BoundaryConditions1D:
@@ -418,9 +418,10 @@ class SQLite:
                 .as_structarray()
             )
         arr["geom"] = self.reproject(arr["geom"])
+        attr_dict = arr_to_attr_dict(arr,{"geom": "the_geom"})
 
         # transform to a BoundaryConditions1D object
-        return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
+        return BoundaryConditions2D(**attr_dict)
 
     def get_channels(self) -> Channels:
         """Return Channels"""
