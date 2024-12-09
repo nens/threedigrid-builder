@@ -208,7 +208,7 @@ class BaseSurface:
     code: str
     display_name: str
     area: float
-    geom: shapely.Geometry
+    the_geom: shapely.Geometry
 
     connection_node_id: int
     connection_node_the_geom: shapely.Geometry
@@ -267,7 +267,7 @@ class BaseSurfaces:
         if extra_fields is None:
             extra_fields = {}
 
-        centroids = shapely.centroid(self.geom)
+        centroids = shapely.centroid(self.the_geom)
         no_centroid_mask = shapely.is_missing(centroids)
 
         if np.any(no_centroid_mask):
