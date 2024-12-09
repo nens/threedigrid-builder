@@ -367,6 +367,12 @@ def grid2d_gw():
             (1, 9),
         ),
         (
+            BoundaryType.TOTAL_DISCHARGE_2D,
+            NodeType.NODE_2D_BOUNDARIES,
+            LineType.LINE_2D_BOUNDARY_EAST,
+            (1, 9),
+        ),
+        (
             BoundaryType.GROUNDWATERLEVEL,
             NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
             LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
@@ -374,6 +380,12 @@ def grid2d_gw():
         ),
         (
             BoundaryType.GROUNDWATERDISCHARGE,
+            NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
+            (3, 9),
+        ),
+        (
+            BoundaryType.GROUNDWATER_TOTAL_DISCHARGE_2D,
             NodeType.NODE_2D_GROUNDWATER_BOUNDARIES,
             LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
             (3, 9),

@@ -18,7 +18,11 @@ __all__ = ["BoundaryConditions1D", "BoundaryConditions2D"]
 
 
 GROUNDWATER_BOUNDARY_TYPES = frozenset(
-    {BoundaryType.GROUNDWATERLEVEL, BoundaryType.GROUNDWATERDISCHARGE}
+    {
+        BoundaryType.GROUNDWATERLEVEL,
+        BoundaryType.GROUNDWATERDISCHARGE,
+        BoundaryType.GROUNDWATER_TOTAL_DISCHARGE_2D,
+    }
 )
 
 
@@ -270,6 +274,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         return type in {
             BoundaryType.GROUNDWATERLEVEL,
             BoundaryType.GROUNDWATERDISCHARGE,
+            BoundaryType.GROUNDWATER_TOTAL_DISCHARGE_2D,
         }
 
     def check_edge_coord(
