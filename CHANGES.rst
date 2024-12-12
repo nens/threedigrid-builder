@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.21.1 (unreleased)
+1.21.1 (2024-12-12)
 -------------------
 
 - Fix total discharge boundary type for groundwater not being properly defined.
