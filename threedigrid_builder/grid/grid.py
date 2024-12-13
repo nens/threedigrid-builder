@@ -32,6 +32,7 @@ from . import embedded as embedded_module
 from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
+from .fragments import Fragments
 from .linear import BaseLinear
 from .lines_1d2d import Lines1D2D
 from .obstacles import Obstacles
@@ -178,6 +179,7 @@ class Grid:
         meta=None,
         quadtree_stats=None,
         quarters: Optional[Quarters] = None,
+        fragments: Optional[Fragments] = None,
     ):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
@@ -218,9 +220,15 @@ class Grid:
         elif not isinstance(quarters, Quarters):
             raise TypeError(f"Expected Quarters instance, got {type(quarters)}")
 
+        if fragments is None:
+            fragments = Fragments(id=[])
+        elif not isinstance(fragments, Fragments):
+            raise TypeError(f"Expected Fragments instance, got {type(fragments)}")
+
         self.nodes = nodes
         self.lines = lines
         self.quarters = quarters
+        self.fragments = fragments
         self.meta = meta
         self.surfaces = surfaces
         self.surface_maps = surface_maps
@@ -240,7 +248,14 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines", "nodes_embedded", "surfaces", "quarters"):
+        for name in (
+            "nodes",
+            "lines",
+            "nodes_embedded",
+            "surfaces",
+            "quarters",
+            "fragments",
+        ):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in (
             "meta",
@@ -949,11 +964,13 @@ class Grid:
             fill_value=no_data_value,
             dtype=np.int32,
         )
+        fragment_geometries = {}
         for node_id, fragments in node_fragments.items():
             for fragment_idx, fragment in enumerate(fragments):
                 fragment_id = next(count)
                 feature = ogr.Feature(defn)
                 feature.SetField("id", fragment_id)
+                fragment_geometries[fragment_id] = fragment
                 polygon = ogr.CreateGeometryFromWkb(fragment.wkb)
                 feature.SetGeometry(polygon)
                 layer.CreateFeature(feature)
@@ -1032,6 +1049,21 @@ class Grid:
             target_ds.SetProjection(dem_raster_dataset.GetProjection())
             target_ds.GetRasterBand(1).SetNoDataValue(no_data_value)
             target_ds.GetRasterBand(1).WriteArray(fragment_id_raster[0])
+
+        # Store resulting fragments for export
+        fragment_ids = []
+        node_ids = []
+        fragment_geoms = []
+        for n in range(nr_nodes):
+            for c in range(nr_of_fragments):
+                fragment_id = node_fragment_array[n][c]
+                if fragment_id != no_data_value:
+                    fragment_ids.append(fragment_id)
+                    fragment_geoms.append(fragment_geometries[fragment_id])
+                    node_ids.append(n)
+        self.fragments = Fragments(
+            id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
+        )
 
         fortran_fragment_mask = np.asfortranarray(fragment_id_raster[0])
         assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy

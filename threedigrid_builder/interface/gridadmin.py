@@ -14,6 +14,7 @@ from threedigrid_builder.base import (
 from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 from threedigrid_builder.constants import ContentType, LineType, NodeType
 from threedigrid_builder.grid import (
+    Fragments,
     Grid,
     GridMeta,
     Obstacles,
@@ -178,6 +179,7 @@ class GridAdminOut(OutputInterface):
         self.write_cross_sections(grid.cross_sections)
         self.write_obstacles(grid.obstacles)
         self.write_breaches(grid.breaches)
+        self.write_fragments(grid.fragments)
         if grid.meta.has_0d:
             self.write_surfaces(grid.surfaces, grid.surface_maps)
 
@@ -766,6 +768,17 @@ class GridAdminOut(OutputInterface):
             group, "display_name", to_bytes_array(breaches.display_name, 64)
         )
 
+    def write_fragments(self, fragments: Fragments):
+        if fragments is None:
+            return
+        group = self._file.create_group("fragments")
+
+        self.write_dataset(group, "id", fragments.id + 1)
+        self.write_dataset(group, "node_id", fragments.node_id + 1)
+        self.write_line_geometry_dataset(
+            group, "coords", fragments.the_geom, insert_dummy=True
+        )
+
     def write_dataset(
         self, group, name, values, fill=None, insert_dummy=True, fill_nan=None
     ):
@@ -819,6 +832,7 @@ class GridAdminOut(OutputInterface):
 
     def write_line_geometry_dataset(self, group, name, data, insert_dummy=True):
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
+        # In case of polygons: (x, x, x, x, ..., y, y, y y, ...)
         line_geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
         if insert_dummy:
             line_geometries.insert(0, np.array([np.nan, np.nan]))
