@@ -2,10 +2,12 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.20.2 (unreleased)
+1.21.0 (2024-11-25)
 -------------------
 
-- Nothing changed yet.
+- Set nodata value for neighbour nodes to 0 in quarters admin.
+
+- Adapt for schema changes for 1D (schema 228)
 
 
 1.20.1 (2024-10-23)

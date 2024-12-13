@@ -1,5 +1,6 @@
 import numpy as np
 import shapely
+from threedi_schema import constants
 
 from threedigrid_builder.base import Array
 from threedigrid_builder.constants import CrossSectionShape
@@ -15,16 +16,72 @@ class CrossSectionDefinition:
     id: int
     code: str
     shape: CrossSectionShape
-    height: str  # space-separated list of floats
-    width: str  # space-separated list of floats
-    friction_values: str  # space-separated list of floats
-    vegetation_stem_densities: str  # space-separated list of floats
-    vegetation_stem_diameters: str  # space-separated list of floats
-    vegetation_heights: str  # space-separated list of floats
-    vegetation_drag_coefficients: str  # space-separated list of floats
+    height: float
+    width: float
+    friction_values: str  # comma-separated list of floats
+    vegetation_stem_density: float
+    vegetation_stem_diameter: float
+    vegetation_height: float
+    vegetation_drag_coefficient: float
+    cross_section_table: str  # csv table defining the shape of a tabulated shape
+    cross_section_vegetation_table: str  # csv table with cross section vegetation table
+    origin_table: str  # table definition originates from
+    origin_id: int  # id in origin_table where definition originates from
 
 
 class CrossSectionDefinitions(Array[CrossSectionDefinition]):
+    def get_unique(self):
+        """
+        Returns a tuple of unique cross section definitions and their mapping to original cross section definitions.
+
+        Returns:
+            Tuple[CrossSectionDefinitions, Dict[str, Dict[int, int]]]: A tuple where the first element is
+            a dictionary of unique cross section definitions and the second element is a dictionary mapping
+            the original tables and rows where these definitions are used.
+        """
+        # Map attributes used to define a cross section for each shape
+        cross_section_attributes = {
+            constants.CrossSectionShape.CLOSED_RECTANGLE.value: ["width", "height"],
+            constants.CrossSectionShape.RECTANGLE.value: ["width"],
+            constants.CrossSectionShape.CIRCLE.value: ["width"],
+            constants.CrossSectionShape.EGG.value: ["width"],
+            constants.CrossSectionShape.TABULATED_RECTANGLE.value: [
+                "cross_section_table"
+            ],
+            constants.CrossSectionShape.TABULATED_TRAPEZIUM.value: [
+                "cross_section_table"
+            ],
+            constants.CrossSectionShape.TABULATED_YZ.value: ["cross_section_table"],
+            constants.CrossSectionShape.INVERTED_EGG.value: ["width"],
+        }
+        definition_map = {name: {} for name in np.unique(self.origin_table)}
+        new_csd_dict = {
+            key: np.empty(0, dtype=data.dtype) for key, data in vars(self).items()
+        }
+        for shape in np.unique(self.shape):
+            mask = self.shape == shape
+            # collect cross section definition in array
+            attr_arr = np.column_stack(
+                [getattr(self, attr)[mask] for attr in cross_section_attributes[shape]]
+            )
+            # Find unique rows and add these to the new_csd_dict with new id's
+            u_arr, u_idx = np.unique(attr_arr, return_index=True)
+            new_id = np.arange(len(u_idx)) + len(new_csd_dict["id"])
+            for key in new_csd_dict:
+                if key == "id":
+                    new_csd_dict[key] = np.concatenate([new_csd_dict[key], new_id])
+                else:
+                    new_csd_dict[key] = np.concatenate(
+                        [new_csd_dict[key], getattr(self, key)[mask][u_idx]]
+                    )
+            # Map unique cross section definition to table and row of origin
+            for i, row in enumerate(u_arr):
+                for idx in np.where(attr_arr == row)[0]:
+                    definition_map[self.origin_table[mask][idx]][
+                        self.origin_id[mask][idx]
+                    ] = new_id[i]
+        return CrossSectionDefinitions(**new_csd_dict), definition_map
+
     def convert(self, ids):
         """Convert to CrossSections.
 
@@ -58,14 +115,24 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
 
         for i, self_i in enumerate(idx):
             shape = self.shape[self_i]
-            tabulator = tabulators[shape]
+            if shape in [
+                CrossSectionShape.TABULATED_YZ,
+                CrossSectionShape.TABULATED_RECTANGLE,
+                CrossSectionShape.TABULATED_TRAPEZIUM,
+            ]:
+                width, height = _parse_tabulated(
+                    self.cross_section_table[self_i], shape
+                )
+            else:
+                width = self.width[self_i]
+                height = self.height[self_i]
             (
                 result.shape[i],
                 result.width_1d[i],
                 result.height_1d[i],
                 table,
                 yz,
-            ) = tabulator(shape, self.width[self_i], self.height[self_i])
+            ) = tabulators[shape](shape, width, height)
             if table is not None:
                 result.count[i] = len(table)
                 tables.append(table)
@@ -74,10 +141,11 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                 yz = set_friction_vegetation_values(
                     yz,
                     self.friction_values[self_i],
-                    self.vegetation_stem_densities[self_i],
-                    self.vegetation_stem_diameters[self_i],
-                    self.vegetation_heights[self_i],
-                    self.vegetation_drag_coefficients[self_i],
+                    self.vegetation_stem_density[self_i],
+                    self.vegetation_stem_diameter[self_i],
+                    self.vegetation_height[self_i],
+                    self.vegetation_drag_coefficient[self_i],
+                    self.cross_section_vegetation_table[self_i],
                 )
                 tables_yz.append(yz)
 
@@ -118,50 +186,35 @@ class CrossSections(Array[CrossSection]):
     tables_yz = None
 
 
-def tabulate_builtin(shape, width, height):
+def tabulate_builtin(shape, width: float, height: float):
     """Tabulate built-in shapes (rectangle, circle)
 
     Built-in geometries only require a width to be fully specified.
 
     Args:
         shape (CrossSectionShape): returned as is
-        width (str): fully specifies the shape
-        height (str): ignored
+        width (float): fully specifies the shape
+        height (float): ignored
 
     Returns:
         tuple:  shape, width_1d (float), None, None, None
     """
-    try:
-        width = float(width)
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width (got: '{width}')."
-        )
-
     return shape, width, None, None, None
 
 
-def tabulate_egg(shape, width, height):
+def tabulate_egg(shape, width: float, height: float):
     """Tabulate the egg shape.
 
     Args:
         shape (CrossSectionShape): ignored
-        width (str): the width of the egg, defines height and increment
-        height (str): ignored; height is set to 1.5 * width
+        width (float): the width of the egg, defines height and increment
+        height (float): ignored; height is set to 1.5 * width
 
     Returns:
         tuple:  TABULATED_TRAPEZIUM, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), None
     """
     NUM_INCREMENTS = 16
-
-    # width is the only constant; height derives from width
-    try:
-        width = float(width)
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width (got: '{width}')."
-        )
 
     height = width * 1.5
     position = height / 3.0  # some parameter for the 'egg' curve
@@ -190,50 +243,46 @@ def tabulate_inverted_egg(shape, width, height):
     return type_, width, height, table, None
 
 
-def tabulate_closed_rectangle(shape, width, height):
+def tabulate_closed_rectangle(shape, width: float, height: float):
     """Tabulate the closed rectangle shape.
 
     Args:
         shape (CrossSectionShape): ignored
-        width (str): the width of the rectangle
-        height (str): the height of the rectangle
+        width (float): the width of the rectangle
+        height (float): the height of the rectangle
 
     Returns:
         tuple:  TABULATED_RECTANGLE, width_1d (float),
                 height (float), table (ndarray of shape (M, 2)), None
     """
-    try:
-        width = float(width)
-        height = float(height)
-    except ValueError:
-        raise SchematisationError(
-            f"Unable to parse cross section definition width and/or height "
-            f"(got: '{width}', '{height}')."
-        )
     table = np.array([[0.0, width], [height, 0.0]], order="F")
     return CrossSectionShape.TABULATED_RECTANGLE, width, height, table, None
 
 
-def _parse_tabulated(width, height):
+def _parse_tabulated(cross_section_table, shape):
     try:
-        heights = np.array([float(x) for x in height.split(" ")])
-        widths = np.array([float(x) for x in width.split(" ")])
+        left, right = zip(
+            *[
+                [float(item) for item in line.split(",")]
+                for line in cross_section_table.splitlines()
+            ]
+        )
     except ValueError:
         raise SchematisationError(
-            f"Unable to parse cross section definition width and/or height "
-            f"(got: '{width}', '{height}')."
+            f"Unable to parse cross section definition table "
+            f"(got: '{cross_section_table}')."
         )
-    if len(heights) == 0:
+    if len(left) == 0:
         raise SchematisationError(
             f"Cross section definitions of tabulated or profile type must have at least one "
-            f"height element (got: {height})."
+            f"height element (got: {cross_section_table})."
         )
-    if len(heights) != len(widths):
-        raise SchematisationError(
-            f"Cross section definitions of tabulated or profile type must have equal number of "
-            f"height and width elements (got: {height}, {width})."
-        )
-    return widths, heights
+    if shape == CrossSectionShape.TABULATED_YZ:
+        # for tabulated_yz, cross section table is y,z
+        return np.array(left), np.array(right)
+    else:
+        # for other tabulated, cross seciton table is height, width
+        return np.array(right), np.array(left)
 
 
 def tabulate_tabulated(shape, width, height):
@@ -248,14 +297,13 @@ def tabulate_tabulated(shape, width, height):
         tuple:  shape, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), None
     """
-    widths, heights = _parse_tabulated(width, height)
-    if len(heights) > 1 and np.any(np.diff(heights) < 0.0):
+    if len(height) > 1 and np.any(np.diff(height) < 0.0):
         raise SchematisationError(
             f"Cross section definitions of tabulated type must have increasing heights "
             f"(got: {height})."
         )
 
-    return shape, np.max(widths), np.max(heights), np.array([heights, widths]).T, None
+    return shape, np.max(width), np.max(height), np.array([height, width]).T, None
 
 
 def tabulate_yz(shape, width, height):
@@ -270,7 +318,8 @@ def tabulate_yz(shape, width, height):
         tuple:  shape, width_1d (float),
                 height_1d (float), table (ndarray of shape (M, 2)), yz (ndarray of shape (M, 4))
     """
-    ys, zs = _parse_tabulated(width, height)
+    ys = np.array(width)
+    zs = np.array(height)
     is_closed = ys[0] == ys[-1] and zs[0] == zs[-1]
     if is_closed and len(zs) < 4:
         raise SchematisationError(
@@ -377,23 +426,33 @@ tabulators = {
 def set_friction_vegetation_values(
     yz,
     friction_values,
-    vegetation_stem_densities,
-    vegetation_stem_diameters,
-    vegetation_heights,
-    vegetation_drag_coefficients,
+    vegetation_stem_density,
+    vegetation_stem_diameter,
+    vegetation_height,
+    vegetation_drag_coefficient,
+    cross_section_vegetation_table,
 ):
     """Convert friction and vegetation properties from list into arrays, if available,
     and add to yz"""
     if friction_values:
-        fric = np.array([float(x) for x in friction_values.split(" ")])
+        fric = np.array([float(x) for x in friction_values.split(",")])
         yz[:-1, 2] = fric
-
-    if vegetation_drag_coefficients:
-        veg_stemden = np.array([float(x) for x in vegetation_stem_densities.split(" ")])
-        veg_stemdia = np.array([float(x) for x in vegetation_stem_diameters.split(" ")])
-        veg_hght = np.array([float(x) for x in vegetation_heights.split(" ")])
-        veg_drag = np.array([float(x) for x in vegetation_drag_coefficients.split(" ")])
-        yz[:-1, 3] = veg_stemden * veg_stemdia * veg_drag
-        yz[:-1, 4] = veg_hght
-
+    if cross_section_vegetation_table:
+        parsed = np.array(
+            [
+                np.fromstring(row, sep=",")
+                for row in cross_section_vegetation_table.splitlines()
+            ]
+        )
+        vegetation_stem_density = parsed[:, 0]
+        vegetation_stem_diameter = parsed[:, 1]
+        vegetation_height = parsed[:, 2]
+        vegetation_drag_coefficient = parsed[:, 3]
+    if vegetation_drag_coefficient is not None:
+        yz[:-1, 3] = (
+            vegetation_stem_density
+            * vegetation_stem_diameter
+            * vegetation_drag_coefficient
+        )
+        yz[:-1, 4] = vegetation_height
     return yz

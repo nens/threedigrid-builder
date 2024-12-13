@@ -99,6 +99,7 @@ def grid_all():
             grid_space=20.0,
             dist_calc_points=25.0,
             kmax=4,
+            node_open_water_detection=1,
         ),
         tables_settings=TablesSettings(
             table_step_size=0.05,
@@ -137,6 +138,9 @@ def grid_all():
             shapely.linestrings([[1, 1], [2, 2], [4, 4]]),
             shapely.linestrings([[1, 1], [2, 2], [3, 3]]),
         ],
+        affects_2d=[True, True],
+        affects_1d2d_open_water=[True, True],
+        affects_1d2d_closed=[True, True],
     )
     breaches = PotentialBreaches(
         id=[0, 1],

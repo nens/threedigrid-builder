@@ -38,6 +38,7 @@ class GridSettings:
     grid_space: float
     dist_calc_points: float
     kmax: int
+    node_open_water_detection: int
     embedded_cutoff_threshold: float = 0.05
     max_angle_1d_advection: float = 0.4 * np.pi
 

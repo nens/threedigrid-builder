@@ -264,6 +264,7 @@ module m_cells
         ! When adjacent cells differ in size due to refinement, each quadrant is associated with its own line for the larger cell. The smaller cell will have the same flow line for both quadrants. Hence the "if" structure.
         ! Same logic applies to finding neighbouring nodes for quarters.
         ! The cell quadrant index is illustrated above.
+
         do l=1, liutot
             nodd = line(l, 1) + 1 ! This is a 0-based python index, therefore +1
             nodu = line(l, 2) + 1

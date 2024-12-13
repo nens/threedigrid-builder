@@ -35,9 +35,8 @@ def connection_nodes():
         id=np.array([1, 3, 4, 9, 10]),
         code=np.array(["one", "two", "", "", ""]),
         storage_area=np.array([15, np.nan, np.nan, np.nan, 0]),
-        manhole_id=np.array([42, 11, -9999, -9999, -9999]),
         calculation_type=np.array([1, 2, 5, 2, 2]),
-        bottom_level=np.array([2.1, np.nan, np.nan, np.nan, 2.1]),
+        bottom_level=np.array([2.1, 2.1, np.nan, np.nan, 2.1]),
         drain_level=[1.2, np.nan, np.nan, np.nan, np.nan],
     )
 
@@ -200,7 +199,7 @@ def test_bottom_levels_above_invert_level(structure_type, caplog):
         content_type=ContentType.TYPE_V2_CONNECTION_NODES,
         dmax=[10.0, 20.0],
         content_pk=[52, 22],
-        manhole_id=[3, 6],
+        is_manhole=[True, True],
     )
     lines = Lines(
         id=[1],
@@ -213,7 +212,7 @@ def test_bottom_levels_above_invert_level(structure_type, caplog):
 
     # setting the bottom levels emits a warning
     set_bottom_levels(nodes, lines)
-    assert caplog.messages[0].startswith("Manholes [3] have a bottom_level")
+    assert caplog.messages[0].startswith("Nodes [1] have a bottom_level")
 
     # assert the resulting value of dmax
     assert_almost_equal(nodes.dmax, [3.0, 20.0])
@@ -267,16 +266,32 @@ def test_get_1d2d_exchange_levels(connection_nodes: ConnectionNodes, caplog):
     )
 
     assert_array_equal(actual, [1.2, np.nan, np.nan, 1.0])
-
     assert (
         caplog.record_tuples[0][2]
-        == "Manholes [42] have a bottom_level that is above drain_level."
+        == "ConnectionNode [1] have a bottom_level that is above drain_level."
     )
 
 
 def test_is_closed(connection_nodes):
     actual = connection_nodes.is_closed(content_pk=[1, 3, 4, 9, 10])
     assert_array_equal(actual, [True, False, False, False, True])
+
+
+@pytest.mark.parametrize(
+    "start_id, end_id, content_pk, expected",
+    [
+        ([1, 3], [9, 10], np.arange(5, dtype=int), [True, True, False, True, True]),
+        ([1, 3], [9, 10], [0, 1], [True, True]),
+    ],
+)
+def test_has_channel(connection_nodes, start_id, end_id, content_pk, expected):
+    channels = Channels(
+        id=np.arange(len(start_id), dtype=int),
+        connection_node_start_id=start_id,
+        connection_node_end_id=end_id,
+    )
+    has_channel = connection_nodes.is_channel(content_pk, channels)
+    np.testing.assert_array_equal(has_channel, expected)
 
 
 @pytest.mark.parametrize(

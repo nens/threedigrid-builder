@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import shapely
 from shapely.testing import assert_geometries_equal
+from threedi_schema import constants
 
 from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import (
@@ -28,6 +29,7 @@ from threedigrid_builder.grid import (
     Weirs,
 )
 from threedigrid_builder.interface import SQLite
+from threedigrid_builder.interface.db import map_cross_section_definition
 
 
 def test_init(tmp_path):
@@ -37,7 +39,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 227
+        get_version.return_value = 228
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
@@ -65,7 +67,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 227
+    assert db.get_version() == 228
 
 
 def test_get_boundary_conditions_1d(db):
@@ -86,7 +88,6 @@ def test_get_boundary_conditions_2d(db):
     assert len(boundary_conditions_2d) == 0
 
 
-# TODO: fix this, no clue why this fails
 def test_get_channels(db):
     channels = db.get_channels()
     assert isinstance(channels, Channels)
@@ -127,15 +128,12 @@ def test_get_connection_nodes(db):
     assert connection_nodes.code[494] == ""
     assert connection_nodes.initial_waterlevel[169] == -0.4
     # manhole fields
-    assert connection_nodes.manhole_id[10] == 11
-    assert connection_nodes.manhole_id[100] == -9999
     assert connection_nodes.calculation_type[1] == CalculationType.CONNECTED
     assert connection_nodes.manhole_indicator[6] == 1
     assert connection_nodes.bottom_level[9] == -3.51
+    assert np.isnan(connection_nodes.bottom_level[100])
     assert connection_nodes.drain_level[1] == -0.82
     assert connection_nodes.surface_level[35] == -0.54
-    assert connection_nodes.shape[40] == "00"
-    assert connection_nodes.width[32] == 0.8
     assert connection_nodes.display_name[33] == "71512"
 
 
@@ -144,11 +142,23 @@ def test_get_cross_section_definitions(db):
     assert isinstance(definitions, CrossSectionDefinitions)
 
     # some test samples
-    assert len(definitions.id) == 13
-    assert definitions.id[8] == 97
+    assert len(definitions.id) == 1365
+    assert definitions.id[8] == 8
     assert definitions.shape[7] == CrossSectionShape.RECTANGLE
-    assert definitions.height[10] == "0.4"
-    assert definitions.width[2] == "0.315"
+    assert definitions.height[10] == 0.4
+    assert definitions.width[2] == 3
+    mask_tabulated_yz = (
+        definitions.shape == constants.CrossSectionShape.TABULATED_YZ.value
+    )
+    idx_tabulated_yz = definitions.id_to_index(definitions.id[mask_tabulated_yz])[0]
+    assert (
+        definitions.cross_section_table[idx_tabulated_yz]
+        == "0,2\n1,1\n2,0.5\n3,0\n4,1\n5,1.5\n6,2"
+    )
+    assert (
+        definitions.cross_section_vegetation_table[idx_tabulated_yz]
+        == "10,0.2,1,7\n5,0.1,0.5,7\n5,0.1,0.5,7\n5,0.3,0.5,7\n15,0.4,1,7\n20,0.1,1.5,7"
+    )
 
 
 def test_get_cross_section_locations(db):
@@ -161,7 +171,6 @@ def test_get_cross_section_locations(db):
         locations.the_geom[96], shapely.from_wkt("POINT (111104 521655)"), tolerance=1
     )
     assert locations.id[11] == 12
-    assert locations.definition_id[365] == 98
     assert locations.channel_id[448] == 452
     assert locations.reference_level[691] == -3.0
     assert locations.bank_level[995] == -1.7
@@ -219,14 +228,12 @@ def test_get_pipes(db):
     assert pipes.calculation_type[3] == CalculationType.ISOLATED
     assert pipes.connection_node_start_id[4] == 37
     assert pipes.connection_node_end_id[5] == 35
-    assert pipes.cross_section_definition_id[9] == 7
     assert pipes.invert_level_start_point[16] == -3.91
     assert pipes.invert_level_end_point[19] == -3.62
     assert pipes.sewerage_type[24] == 2
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
     assert pipes.display_name[33] == "71518_71517"
-    assert pipes.zoom_category[15] == 3
 
 
 def test_get_settings(db):
@@ -303,7 +310,6 @@ def test_get_settings(db):
 def test_get_pumps(db):
     pumps = db.get_pumps()
     assert isinstance(pumps, Pumps)
-
     # some test samples
     assert len(pumps) == 19
     assert pumps.id[11] == 13
@@ -316,7 +322,6 @@ def test_get_pumps(db):
     assert pumps.start_level[0] == -4.0
     assert pumps.lower_stop_level[18] == -1.9
     assert np.isnan(pumps.upper_stop_level[15])
-    assert pumps.zoom_category[15] == 5
     assert pumps.display_name[10] == "KGM-JL-18"
 
 
@@ -338,7 +343,6 @@ def test_get_culverts(db):
     assert culverts.connection_node_start_id[45] == 1220
     assert culverts.connection_node_end_id[61] == 1620
     assert culverts.calculation_type[4] == CalculationType.ISOLATED
-    assert culverts.cross_section_definition_id[0] == 97
     assert culverts.invert_level_start_point[21] == -2.39
     assert culverts.invert_level_end_point[83] == -3.28
     assert culverts.discharge_coefficient_negative[0] == 0.8
@@ -346,7 +350,6 @@ def test_get_culverts(db):
     assert culverts.friction_type[28] == FrictionType.MANNING
     assert culverts.friction_value[36] == 0.03
     assert culverts.display_name[32] == "KDU-Q-18482"
-    assert culverts.zoom_category[15] == 2
 
 
 def test_get_orifices(db):
@@ -370,13 +373,11 @@ def test_get_weirs(db):
     assert weirs.connection_node_end_id[7] == 394
     assert weirs.crest_level[26] == -2.508
     assert weirs.crest_type[0] == CalculationType.SHORT_CRESTED
-    assert weirs.cross_section_definition_id[0] == 8
     assert weirs.discharge_coefficient_negative[0] == 0.0
     assert weirs.discharge_coefficient_positive[0] == 0.8
     assert weirs.friction_type[28] == FrictionType.MANNING
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
-    assert weirs.zoom_category[15] == 2
     assert weirs.sewerage[0] == 1
 
 
@@ -407,3 +408,15 @@ def test_get_exchange_lines(db):
     exchange_lines = db.get_exchange_lines()
     # No exchange lines in test dataset
     assert len(exchange_lines) == 0
+
+
+def test_map_cross_section_definition():
+    mapping = {"pipe": {0: 0, 1: 1}, "weir": {1: 0}, "cross_section_location": {0: 10}}
+    pipes = Pipes(id=[0, 1], cross_section_definition_id=[10, 20])
+    weirs = Weirs(id=[0, 1], cross_section_definition_id=[10, 20])
+    cross_section_locations = CrossSectionLocations(id=[0], definition_id=[100])
+    objects = [pipes, weirs, cross_section_locations]
+    map_cross_section_definition(objects, mapping)
+    np.testing.assert_array_equal(pipes.cross_section_definition_id, [0, 1])
+    np.testing.assert_array_equal(weirs.cross_section_definition_id, [10, 0])
+    np.testing.assert_array_equal(cross_section_locations.definition_id, [10])

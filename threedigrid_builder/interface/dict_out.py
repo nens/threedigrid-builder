@@ -28,7 +28,7 @@ NODE_FIELDS = (
     "storage_area",
     "boundary_id",  # referring to the id of the boundary condition
     "boundary_type",
-    "manhole_id",  # referring to the id of a manhole
+    "is_manhole",
     "initial_waterlevel",
 )
 

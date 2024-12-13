@@ -310,7 +310,6 @@ class GridAdminOut(OutputInterface):
         is_2d = np.isin(
             nodes.node_type, [NodeType.NODE_2D_OPEN_WATER, NodeType.NODE_2D_GROUNDWATER]
         )
-        is_manhole = nodes.manhole_id != -9999
 
         # Datasets that match directly to a nodes attribute:
         self.write_dataset(group, "id", nodes.id + 1)
@@ -337,11 +336,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(
             group,
             "is_manhole",
-            np.where(is_manhole, 1, -9999).astype("i4"),
+            np.where(nodes.is_manhole, 1, -9999).astype("i4"),
         )
         self.write_dataset(group, "dimp", nodes.dimp)
         self.write_dataset(
-            group, "bottom_level", np.where(is_manhole, nodes.dmax, np.nan)
+            group, "bottom_level", np.where(nodes.is_manhole, nodes.dmax, np.nan)
         )
         self.write_dataset(group, "z_coordinate", nodes.dmax)
 
@@ -360,7 +359,10 @@ class GridAdminOut(OutputInterface):
             group, "display_name", to_bytes_array(nodes.display_name, 64)
         )
         self.write_dataset(group, "zoom_category", nodes.zoom_category)
-        self.write_dataset(group, "manhole_id", nodes.manhole_id)
+        # Set manhole_id to match nodes.id when there is a manhole
+        self.write_dataset(
+            group, "manhole_id", np.where(nodes.is_manhole, nodes.id + 1, -9999)
+        )
         self.write_dataset(group, "manhole_indicator", nodes.manhole_indicator)
         self.write_dataset(group, "shape", to_bytes_array(nodes.shape, 4))
         self.write_dataset(group, "drain_level", nodes.drain_level)
@@ -583,7 +585,7 @@ class GridAdminOut(OutputInterface):
         quarters.line[mask] = quarters.line[mask] + 1
         self.write_dataset(group, "line", quarters.line.T)
 
-        mask = quarters.neighbour_node != -9999
+        mask = quarters.neighbour_node != 0
         quarters.neighbour_node[mask] = quarters.neighbour_node[mask] + 1
         self.write_dataset(group, "neighbour_node", quarters.neighbour_node.T)
 

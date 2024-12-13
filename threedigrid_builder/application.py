@@ -22,6 +22,7 @@ from threedigrid_builder.interface import (
     GridAdminOut,
     SQLite,
 )
+from threedigrid_builder.interface.db import map_cross_section_definition
 
 __all__ = ["make_grid", "make_gridadmin"]
 
@@ -96,10 +97,7 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        # We'll ignore obstacles for now. TODO: commented out
-        grid.set_obstacles(db.get_obstacles())
-
-        # Cutlines should not be applied on 2D boundary cells. There is no information there.
+        grid.set_obstacles_2d(db.get_obstacles())
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -114,6 +112,20 @@ def _make_gridadmin(
     connection_nodes = db.get_connection_nodes()
     if grid_settings.use_1d_flow and len(connection_nodes) > 0:
         progress_callback(0.8, "Constructing 1D computational grid...")
+        locations = db.get_cross_section_locations()
+        pipes = db.get_pipes()
+        weirs = db.get_weirs()
+        culverts = db.get_culverts()
+        orifices = db.get_orifices()
+        cross_section_definitions = db.get_cross_section_definitions()
+        (
+            cross_section_definitions_unique,
+            mapping,
+        ) = cross_section_definitions.get_unique()
+        map_cross_section_definition(
+            [locations, orifices, pipes, culverts, weirs], mapping
+        )
+
         cn_grid = Grid.from_connection_nodes(
             connection_nodes=connection_nodes,
             node_id_counter=node_id_counter,
@@ -122,6 +134,7 @@ def _make_gridadmin(
         grid += cn_grid
 
         channels = db.get_channels()
+
         potential_breaches = db.get_potential_breaches()
         breach_points = potential_breaches.project_on_channels(channels).merge()
 
@@ -138,13 +151,11 @@ def _make_gridadmin(
             connection_node_offset=connection_node_first_id,
         )
 
-        locations = db.get_cross_section_locations()
         locations.apply_to_lines(channel_grid.lines, channels)
         windshieldings = db.get_windshieldings()
         windshieldings.apply_to_lines(channel_grid.lines)
         grid += channel_grid
 
-        pipes = db.get_pipes()
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=pipes,
@@ -158,7 +169,6 @@ def _make_gridadmin(
             connection_node_offset=connection_node_first_id,
         )
 
-        culverts = db.get_culverts()
         grid += Grid.from_linear_objects(
             connection_nodes=connection_nodes,
             objects=culverts,
@@ -172,8 +182,6 @@ def _make_gridadmin(
             connection_node_offset=connection_node_first_id,
         )
 
-        weirs = db.get_weirs()
-        orifices = db.get_orifices()
         grid += grid.from_structures(
             connection_nodes=connection_nodes,
             weirs=weirs,
@@ -181,6 +189,7 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
             connection_node_offset=connection_node_first_id,
         )
+        grid.set_cross_sections(cross_section_definitions_unique)
 
         grid.set_calculation_types()
         grid.set_bottom_levels()
@@ -192,7 +201,6 @@ def _make_gridadmin(
             culverts=culverts,
         )
         grid.set_boundary_conditions_1d(db.get_boundary_conditions_1d())
-        grid.set_cross_sections(db.get_cross_section_definitions())
         grid.set_pumps(db.get_pumps())
 
     if grid.nodes.has_1d and grid.nodes.has_2d:
@@ -208,8 +216,8 @@ def _make_gridadmin(
             culverts=culverts,
             potential_breaches=potential_breaches,
             line_id_counter=line_id_counter,
+            node_open_water_detection=grid_settings.node_open_water_detection,
         )
-
         if grid.meta.has_groundwater:
             channels.apply_has_groundwater_exchange(grid.nodes, grid.lines)
             pipes.apply_has_groundwater_exchange(grid.nodes, grid.lines)
