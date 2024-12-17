@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.21.3 (unreleased)
+1.21.3 (2024-12-17)
 -------------------
 
 - Fix creating cross sections with schema 228
