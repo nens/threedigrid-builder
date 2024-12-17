@@ -65,7 +65,10 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                 [getattr(self, attr)[mask] for attr in cross_section_attributes[shape]]
             )
             # Find unique rows and add these to the new_csd_dict with new id's
-            u_arr, u_idx = np.unique(attr_arr, return_index=True)
+            if len(cross_section_attributes[shape]) > 1:
+                u_arr, u_idx = np.unique(attr_arr, axis=0, return_index=True)
+            else:
+                u_arr, u_idx = np.unique(attr_arr, return_index=True)
             new_id = np.arange(len(u_idx)) + len(new_csd_dict["id"])
             for key in new_csd_dict:
                 if key == "id":
