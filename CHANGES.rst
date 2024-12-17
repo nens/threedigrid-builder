@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.21.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Set MacOs release version to 13 to fix build
 
 
 1.21.1 (2024-12-12)
