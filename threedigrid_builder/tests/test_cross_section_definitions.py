@@ -515,27 +515,23 @@ def test_tabulate_yz_err(width, height, match):
 class TestCrossSectionDefinitionGetUnique:
     def test_for_closed_rectangle(self):
         csd_in = CrossSectionDefinitions(
-            id=[100, 200],
+            id=[100, 200, 300, 400],
             shape=[
                 constants.CrossSectionShape.CLOSED_RECTANGLE.value,
                 constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
+                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
             ],
-            width=[1, 1],
-            height=[1, 1],
-            cross_section_table=["foo", "bar"],
-            origin_table=["pipe", "weir"],
-            origin_id=[10, 20],
+            width=[1, 3, 1, 3],
+            height=[1, 2, 1, 2],
+            cross_section_table=["foo", "bar", "foo", "bar"],
+            origin_table=["pipe", "weir", "pipe", "pipe"],
+            origin_id=[10, 20, 30, 40],
         )
         unique_definition, _ = csd_in.get_unique()
-        assert unique_definition.id == [
-            0,
-        ]
-        assert unique_definition.width == [
-            1,
-        ]
-        assert unique_definition.height == [
-            1,
-        ]
+        np.testing.assert_array_equal(unique_definition.id, [0, 1])
+        np.testing.assert_array_equal(unique_definition.width, [1, 3])
+        np.testing.assert_array_equal(unique_definition.height, [1, 2])
 
     @pytest.mark.parametrize(
         "shape",
@@ -574,19 +570,19 @@ class TestCrossSectionDefinitionGetUnique:
     )
     def test_for_other_shapes(self, shape):
         csd_in = CrossSectionDefinitions(
-            id=[100, 200],
-            shape=[shape, shape],
-            width=[1, 1],
-            height=[10, 21],
-            cross_section_table=["foo", "foo"],
-            origin_table=["pipe", "weir"],
-            origin_id=[10, 20],
+            id=[100, 200, 300],
+            shape=[shape, shape, shape],
+            width=[1, 1, 100],
+            height=[10, 21, 100],
+            cross_section_table=["foo", "foo", "bar"],
+            origin_table=["pipe", "weir", "weir"],
+            origin_id=[10, 20, 30],
         )
         unique_definition, _ = csd_in.get_unique()
-        assert unique_definition.id == [
-            0,
-        ]
-        assert unique_definition.cross_section_table == ["foo"]
+        np.testing.assert_array_equal(unique_definition.id, [0, 1])
+        np.testing.assert_array_equal(
+            sorted(unique_definition.cross_section_table), sorted(["foo", "bar"])
+        )
 
     def test_mapping(self):
         csd_in = CrossSectionDefinitions(
