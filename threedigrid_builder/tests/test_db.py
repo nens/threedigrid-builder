@@ -67,7 +67,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 228
+    assert db.get_version() == 230
 
 
 def test_get_boundary_conditions_1d(db):
@@ -238,7 +238,6 @@ def test_get_pipes(db):
 
 def test_get_settings(db):
     result = db.get_settings()
-    assert result["epsg_code"] == 28992
     assert result["model_name"] == "simple_infil_no_grndwtr"
 
     g = result["grid_settings"]

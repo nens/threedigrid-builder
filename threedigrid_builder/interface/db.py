@@ -74,7 +74,7 @@ def _object_as_dict(obj) -> dict:
 
 
 def _set_initialization_type(
-    dct, global_field, file_field=None, type_field=None, default=None
+        dct, global_field, file_field=None, type_field=None, default=None
 ):
     """Set the InitializationType depending on global_field and file_field."""
     if not file_field:
@@ -95,7 +95,7 @@ def _set_initialization_type(
 
 
 def arr_to_attr_dict(
-    arr: np.ndarray, rename_dict: Optional[Dict[str, str]] = None
+        arr: np.ndarray, rename_dict: Optional[Dict[str, str]] = None
 ) -> Dict[str, str]:
     """
     Convert structured array to dict with optional rename of the keys
@@ -109,8 +109,8 @@ def arr_to_attr_dict(
 
 
 def map_cross_section_definition(
-    objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
-    definition_map: Dict[str, Dict[int, int]],
+        objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
+        definition_map: Dict[str, Dict[int, int]],
 ) -> None:
     """
     Set cross section definition ids for cross_section_locations,
@@ -151,14 +151,23 @@ class SQLite:
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         self.db = ThreediDatabase(path)
-        self._epsg_code = None  # for reproject()
-
+        self._epsg_code = None
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
             if upgrade:
                 self.upgrade(convert_to_geopackage=convert_to_geopackage)
             else:
                 raise SchematisationError(f"Too old sqlite version {version}.")
+
+    @property
+    def epsg_code(self) -> int:
+        if self._epsg_code is None:
+            self._epsg_code = self.db.schema.epsg_code
+        return self._epsg_code
+
+    @epsg_code.setter
+    def epsg_code(self, value: int):
+        self._epsg_code = value
 
     def get_version(self) -> int:
         # check version
@@ -195,8 +204,8 @@ class SQLite:
         with self.get_session() as session:
             model_settings = session.query(models.ModelSettings).order_by("id").first()
             if (
-                model_settings.use_groundwater_flow
-                or model_settings.use_groundwater_storage
+                    model_settings.use_groundwater_flow
+                    or model_settings.use_groundwater_storage
             ):
                 groundwater = _object_as_dict(session.query(models.GroundWater).one())
             else:
@@ -319,34 +328,10 @@ class SQLite:
             }
         )
         return {
-            "epsg_code": model_settings["epsg_code"],
             "model_name": model_settings["name"],
             "grid_settings": grid_settings,
             "tables_settings": tables_settings,
         }
-
-    @property
-    def epsg_code(self) -> int:
-        if self._epsg_code is None:
-            self._epsg_code = self.get_settings()["epsg_code"]
-        return self._epsg_code
-
-    @epsg_code.setter
-    def epsg_code(self, value: int):
-        self._epsg_code = value
-
-    def reproject(self, geometries: np.ndarray) -> np.ndarray:
-        """Reproject geometries from 4326 to the EPSG in the settings.
-
-        Notes:
-          shapely+pyproj is approx 2x faster than spatialite
-
-        Args:
-          geometries (ndarray of shapely.Geometry): geometries in EPSG 4326
-        """
-        target_epsg = self.epsg_code
-        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
-        return shapely.transform(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:
@@ -381,9 +366,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
-
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
             **{name: arr[name] for name in arr.dtype.names},
@@ -417,7 +399,6 @@ class SQLite:
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-        arr["geom"] = self.reproject(arr["geom"])
 
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
@@ -441,7 +422,6 @@ class SQLite:
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
-        arr["geom"] = self.reproject(arr["geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
@@ -484,8 +464,6 @@ class SQLite:
             arr = (
                 session.query(*cols).order_by(models.ConnectionNode.id).as_structarray()
             )
-
-        arr["geom"] = self.reproject(arr["geom"])
 
         # replace -9999.0 with NaN in initial_water_level
         arr["initial_water_level"][arr["initial_water_level"] == -9999.0] = np.nan
@@ -589,7 +567,6 @@ class SQLite:
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()
             )
-        arr["geom"] = self.reproject(arr["geom"])
 
         attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
 
@@ -641,8 +618,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
-
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
@@ -680,7 +655,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
         attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
         # transform to a Channels object
         return ExchangeLines(**attr_dict)
@@ -720,8 +694,6 @@ class SQLite:
             )
             arr = np.concatenate((arr1, arr2))
 
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
         arr["id"] = np.arange(len(arr["grid_level"]))
 
         attr_dict = arr_to_attr_dict(
@@ -740,7 +712,6 @@ class SQLite:
                 .order_by(models.DemAverageArea.id)
                 .as_structarray()
             )
-            arr["geom"] = self.reproject(arr["geom"])
         attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
         return DemAverageAreas(**attr_dict)
 
@@ -759,8 +730,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
         attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
         # transform to a Channels object
         return Obstacles(**attr_dict)
@@ -1018,12 +987,10 @@ class SQLite:
                 .as_structarray()
             )
 
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
         # derive maximum_breach_depth from initial and final exchange level
         # and overwrite final_exchange_level because adding a field is more work
         arr["final_exchange_level"] = (
-            arr["initial_exchange_level"] - arr["final_exchange_level"]
+                arr["initial_exchange_level"] - arr["final_exchange_level"]
         )
         attr_dict = arr_to_attr_dict(
             arr,
@@ -1034,20 +1001,3 @@ class SQLite:
             },
         )
         return PotentialBreaches(**attr_dict)
-
-
-# Constructing a Transformer takes quite long, so we use caching here. The
-# function is deterministic so this doesn't have any side effects.
-@lru_cache(maxsize=8)
-def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
-    transformer = Transformer.from_crs(
-        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
-    )
-
-    def func(coords):
-        if coords.shape[0] == 0:
-            return coords
-        x, y = transformer.transform(coords[:, 0], coords[:, 1])
-        return np.array([x, y]).T
-
-    return func
