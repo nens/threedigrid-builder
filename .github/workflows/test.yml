@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 2022
+          # 2022 - 3.9
           - python: 3.9
             os: ubuntu-22.04
             setuptools: setuptools==63.*
             numpy: numpy==1.21.*
-            display_name: "2022"
+            display_name: "2022 - python 3.9"
             pins: "h5py==3.3.* sqlalchemy==1.4.30 shapely==2.0.* pyproj==3.2.*"
             extras: "[test,gridadmin]"
           # 2022

@@ -39,7 +39,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 228
+        get_version.return_value = 229
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
