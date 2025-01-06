@@ -43,7 +43,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 228
+MIN_SQLITE_VERSION = 229
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -369,7 +369,10 @@ class SQLite:
                     models.ConnectionNode.geom.label("connection_node_the_geom"),
                 )
                 .select_from(models.Surface)
-                .join(models.SurfaceParameter)
+                .join(
+                    models.SurfaceParameter,
+                    models.Surface.surface_parameters_id == models.SurfaceParameter.id,
+                )
                 .join(
                     models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id
                 )
