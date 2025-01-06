@@ -2,10 +2,28 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.21.1 (unreleased)
+1.21.4 (unreleased)
 -------------------
 
 - Remove internal changes made for previous schema upgrades and limit changes to db interface
+
+
+1.21.3 (2024-12-17)
+-------------------
+
+- Fix creating cross sections with schema 228
+
+
+1.21.2 (2024-12-17)
+-------------------
+
+- Set MacOs release version to 13 to fix build
+
+
+1.21.1 (2024-12-12)
+-------------------
+
+- Fix total discharge boundary type for groundwater not being properly defined.
 
 
 1.21.0 (2024-11-25)
