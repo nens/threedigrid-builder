@@ -4,7 +4,7 @@ Changelog of threedigrid-builder
 1.23.0 (unreleased)
 -------------------
 
--
+- Remove transformations of geometries from schematisation
 
 
 1.22.0 (2025-01-08)
