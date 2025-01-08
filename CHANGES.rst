@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.21.4 (unreleased)
+1.22.0 (2025-01-08)
 -------------------
 
 - Remove internal changes made for previous schema upgrades and limit changes to db interface
