@@ -385,7 +385,6 @@ class SQLite:
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
@@ -657,6 +656,7 @@ class SQLite:
                 .order_by(models.DemAverageArea.id)
                 .as_structarray()
             )
+
         return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:
@@ -673,7 +673,6 @@ class SQLite:
                 .order_by(models.Obstacle.id)
                 .as_structarray()
             )
-
         return Obstacles(**{name: arr[name] for name in arr.dtype.names})
 
     def get_orifices(self) -> Orifices:
