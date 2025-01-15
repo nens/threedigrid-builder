@@ -774,6 +774,7 @@ class SQLite:
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
             models.Pipe.material_id.label("material"),
+            models.Pipe.geom.label("the_geom"),
             case(
                 {
                     models.Pipe.friction_value.isnot(None)
@@ -803,6 +804,7 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
