@@ -384,6 +384,11 @@ def test_get_weirs(db):
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
     assert weirs.sewerage[0] == 1
+    assert_geometries_equal(
+        weirs.the_geom[0],
+        shapely.from_wkt("LINESTRING (110278.3 517669.1, 110276.3 517669.8)"),
+        tolerance=1,
+    )
 
 
 def test_get_dem_average(db):

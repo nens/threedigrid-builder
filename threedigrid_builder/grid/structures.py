@@ -75,6 +75,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     zoom_category: int
     display_name: str
     sewerage: int
+    the_geom: shapely.Geometry
 
 
 class WeirOrifices(Array[WeirOrifice]):

@@ -724,6 +724,7 @@ class SQLite:
             models.Orifice.discharge_coefficient_positive,
             models.Orifice.display_name,
             models.Orifice.sewerage,
+            models.Orifice.geom.label("the_geom"),
             case(
                 {
                     models.Orifice.friction_value.isnot(None)
@@ -754,6 +755,7 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return Orifices(**{name: arr[name] for name in arr.dtype.names})
 
@@ -850,6 +852,7 @@ class SQLite:
             models.Weir.discharge_coefficient_positive,
             models.Weir.display_name,
             models.Weir.sewerage,
+            models.Weir.geom.label("the_geom"),
             case(
                 {
                     models.Weir.friction_value.isnot(None)
@@ -876,6 +879,7 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
+        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return Weirs(**{name: arr[name] for name in arr.dtype.names})
 
