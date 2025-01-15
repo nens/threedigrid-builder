@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.22.1 (unreleased)
 -------------------
 
-- Remove internal changes made for previous schema upgrades and limit changes to db interface
+- Use pipe.geom, weir.geom and orifice.weir to build gridadmin
 
 
 1.22.0 (2025-01-08)
