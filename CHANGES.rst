@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.22.1 (unreleased)
+1.22.1 (2025-01-16)
 -------------------
 
 - Use pipe.geom, weir.geom and orifice.weir to build gridadmin
