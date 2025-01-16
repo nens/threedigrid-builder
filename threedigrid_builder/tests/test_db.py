@@ -234,6 +234,11 @@ def test_get_pipes(db):
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
     assert pipes.display_name[33] == "71518_71517"
+    assert_geometries_equal(
+        pipes.the_geom[0],
+        shapely.from_wkt("LINESTRING (110267.3 517868.8, 110264.3 517863.5)"),
+        tolerance=1,
+    )
 
 
 def test_get_settings(db):
@@ -378,6 +383,11 @@ def test_get_weirs(db):
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
     assert weirs.sewerage[0] == 1
+    assert_geometries_equal(
+        weirs.the_geom[0],
+        shapely.from_wkt("LINESTRING (110278.3 517669.1, 110276.3 517669.8)"),
+        tolerance=1,
+    )
 
 
 def test_get_dem_average(db):
