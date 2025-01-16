@@ -3,14 +3,11 @@
 import pathlib
 from contextlib import contextmanager
 from enum import Enum
-from functools import lru_cache
-from typing import Callable, ContextManager, Dict, List, Union
+from typing import ContextManager, Dict, List, Union
 
 import numpy as np
 import shapely
 from condenser import NumpyQuery
-from pyproj import Transformer
-from pyproj.crs import CRS
 from sqlalchemy import case, cast, func, inspect, Integer, literal
 from sqlalchemy.orm import Session
 from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
@@ -137,14 +134,23 @@ class SQLite:
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         self.db = ThreediDatabase(path)
-        self._epsg_code = None  # for reproject()
-
+        self._epsg_code = None
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
             if upgrade:
                 self.upgrade(convert_to_geopackage=convert_to_geopackage)
             else:
                 raise SchematisationError(f"Too old sqlite version {version}.")
+
+    @property
+    def epsg_code(self) -> int:
+        if self._epsg_code is None:
+            self._epsg_code = self.db.schema.epsg_code
+        return self._epsg_code
+
+    @epsg_code.setter
+    def epsg_code(self, value: int):
+        self._epsg_code = value
 
     def get_version(self) -> int:
         # check version
@@ -305,34 +311,10 @@ class SQLite:
             }
         )
         return {
-            "epsg_code": model_settings["epsg_code"],
             "model_name": model_settings["name"],
             "grid_settings": grid_settings,
             "tables_settings": tables_settings,
         }
-
-    @property
-    def epsg_code(self) -> int:
-        if self._epsg_code is None:
-            self._epsg_code = self.get_settings()["epsg_code"]
-        return self._epsg_code
-
-    @epsg_code.setter
-    def epsg_code(self, value: int):
-        self._epsg_code = value
-
-    def reproject(self, geometries: np.ndarray) -> np.ndarray:
-        """Reproject geometries from 4326 to the EPSG in the settings.
-
-        Notes:
-          shapely+pyproj is approx 2x faster than spatialite
-
-        Args:
-          geometries (ndarray of shapely.Geometry): geometries in EPSG 4326
-        """
-        target_epsg = self.epsg_code
-        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
-        return shapely.transform(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:
@@ -370,8 +352,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
             **{name: arr[name] for name in arr.dtype.names},
@@ -405,8 +385,6 @@ class SQLite:
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
@@ -429,7 +407,6 @@ class SQLite:
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
@@ -461,8 +438,6 @@ class SQLite:
             arr = (
                 session.query(*cols).order_by(models.ConnectionNode.id).as_structarray()
             )
-
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # replace -9999.0 with NaN in initial_water_level
         arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
@@ -554,7 +529,6 @@ class SQLite:
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()
             )
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # transform to a CrossSectionLocations object
         return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
@@ -604,8 +578,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
@@ -632,7 +604,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        arr["the_geom"] = self.reproject(arr["the_geom"])
         # transform to a Channels object
         return ExchangeLines(**{name: arr[name] for name in arr.dtype.names})
 
@@ -671,10 +642,7 @@ class SQLite:
             )
             arr = np.concatenate((arr1, arr2))
 
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
         arr["id"] = np.arange(len(arr["refinement_level"]))
-
         return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
 
     def get_dem_average_areas(self) -> DemAverageAreas:
@@ -688,7 +656,7 @@ class SQLite:
                 .order_by(models.DemAverageArea.id)
                 .as_structarray()
             )
-            arr["the_geom"] = self.reproject(arr["the_geom"])
+
         return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:
@@ -705,10 +673,6 @@ class SQLite:
                 .order_by(models.Obstacle.id)
                 .as_structarray()
             )
-
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
-        # transform to a Obstacles object
         return Obstacles(**{name: arr[name] for name in arr.dtype.names})
 
     def get_orifices(self) -> Orifices:
@@ -755,7 +719,6 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return Orifices(**{name: arr[name] for name in arr.dtype.names})
 
@@ -806,7 +769,6 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
@@ -879,7 +841,6 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return Weirs(**{name: arr[name] for name in arr.dtype.names})
 
@@ -933,8 +894,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        # reproject
-        arr["the_geom"] = self.reproject(arr["the_geom"])
         # derive maximum_breach_depth from initial and final exchange level
         # and overwrite final_exchange_level because adding a field is more work
         arr["maximum_breach_depth"] = (
@@ -942,20 +901,3 @@ class SQLite:
         )
 
         return PotentialBreaches(**{name: arr[name] for name in arr.dtype.names})
-
-
-# Constructing a Transformer takes quite long, so we use caching here. The
-# function is deterministic so this doesn't have any side effects.
-@lru_cache(maxsize=8)
-def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
-    transformer = Transformer.from_crs(
-        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
-    )
-
-    def func(coords):
-        if coords.shape[0] == 0:
-            return coords
-        x, y = transformer.transform(coords[:, 0], coords[:, 1])
-        return np.array([x, y]).T
-
-    return func
