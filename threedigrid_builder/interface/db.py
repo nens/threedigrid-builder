@@ -719,7 +719,6 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return Orifices(**{name: arr[name] for name in arr.dtype.names})
 
@@ -770,7 +769,6 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         # transform to a Pipes object
         return Pipes(**{name: arr[name] for name in arr.dtype.names})
@@ -843,7 +841,6 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        arr["the_geom"] = self.reproject(arr["the_geom"])
 
         return Weirs(**{name: arr[name] for name in arr.dtype.names})
 
