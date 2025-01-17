@@ -159,7 +159,7 @@ class SQLite:
 
     def upgrade(self, convert_to_geopackage=False):
         schema = ModelSchema(self.db)
-        schema.upgrade(backup=False, convert_to_geopackage=convert_to_geopackage)
+        schema.upgrade(backup=False)
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
@@ -205,7 +205,7 @@ class SQLite:
                 infiltration = {}
             if model_settings.use_vegetation_drag_2d:
                 vegetation_drag = _object_as_dict(
-                    session.query(models.VegetationDrag).one()
+                    session.query(models.VegetationDrag2D).one()
                 )
             else:
                 vegetation_drag = {}
@@ -325,21 +325,21 @@ class SQLite:
                     models.Surface.display_name,
                     models.Surface.area,
                     models.Surface.geom.label("the_geom"),
-                    models.SurfaceParameter.outflow_delay,
-                    models.SurfaceParameter.surface_layer_thickness,
-                    models.SurfaceParameter.infiltration,
-                    models.SurfaceParameter.max_infiltration_capacity,
-                    models.SurfaceParameter.min_infiltration_capacity,
-                    models.SurfaceParameter.infiltration_decay_constant,
-                    models.SurfaceParameter.infiltration_recovery_constant,
+                    models.SurfaceParameters.outflow_delay,
+                    models.SurfaceParameters.surface_layer_thickness,
+                    models.SurfaceParameters.infiltration,
+                    models.SurfaceParameters.max_infiltration_capacity,
+                    models.SurfaceParameters.min_infiltration_capacity,
+                    models.SurfaceParameters.infiltration_decay_constant,
+                    models.SurfaceParameters.infiltration_recovery_constant,
                     models.SurfaceMap.connection_node_id,
                     models.SurfaceMap.percentage,
                     models.ConnectionNode.geom.label("connection_node_the_geom"),
                 )
                 .select_from(models.Surface)
                 .join(
-                    models.SurfaceParameter,
-                    models.Surface.surface_parameters_id == models.SurfaceParameter.id,
+                    models.SurfaceParameters,
+                    models.Surface.surface_parameters_id == models.SurfaceParameters.id,
                 )
                 .join(
                     models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id
@@ -848,18 +848,18 @@ class SQLite:
         with self.get_session() as session:
             arr = (
                 session.query(
-                    models.Windshielding.id,
-                    models.Windshielding.channel_id,
-                    models.Windshielding.north,
-                    models.Windshielding.northeast,
-                    models.Windshielding.east,
-                    models.Windshielding.southeast,
-                    models.Windshielding.south,
-                    models.Windshielding.southwest,
-                    models.Windshielding.west,
-                    models.Windshielding.northwest,
+                    models.Windshielding1D.id,
+                    models.Windshielding1D.channel_id,
+                    models.Windshielding1D.north,
+                    models.Windshielding1D.northeast,
+                    models.Windshielding1D.east,
+                    models.Windshielding1D.southeast,
+                    models.Windshielding1D.south,
+                    models.Windshielding1D.southwest,
+                    models.Windshielding1D.west,
+                    models.Windshielding1D.northwest,
                 )
-                .order_by(models.Windshielding.id)
+                .order_by(models.Windshielding1D.id)
                 .as_structarray()
             )
 
