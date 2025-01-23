@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.23.1 (unreleased)
+1.23.1 (2025-01-23)
 -------------------
 
 - Adapt to match some name changes in threedi-schema
