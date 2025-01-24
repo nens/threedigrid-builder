@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.0 (unreleased)
+1.24.0 (2025-01-24)
 -------------------
 
 - Bump schema version to 0.300
