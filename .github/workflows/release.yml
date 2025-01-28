@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -29,7 +29,7 @@ jobs:
           pip install build
           python -m build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./dist/*.tar.gz
           retention-days: 5
@@ -50,7 +50,7 @@ jobs:
         if: matrix.os == 'windows-2019'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.5
+        uses: pypa/cibuildwheel@v2.22.0
         # to supply options, put them in 'env', like:
         env:
           CIBW_SKIP: "pp* *musllinux* cp312" # skips pypy, musllinux and python3.12
@@ -65,7 +65,7 @@ jobs:
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_BUILD_VERBOSITY: 1
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
           retention-days: 5
@@ -77,13 +77,13 @@ jobs:
     # release on every tag
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: artifact
           path: dist
 
       - name: Upload Github release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
 
       - name: Upload Release Assets to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

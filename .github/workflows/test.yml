@@ -64,12 +64,12 @@ jobs:
             use_gdal_36: true
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           lfs: true
 
       - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
@@ -83,7 +83,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('setup.py') }}
