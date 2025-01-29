@@ -83,7 +83,6 @@ jobs:
         with:
           pattern: artifact-*
           merge-multiple: true
-          name: artifact
           path: dist
 
       # - name: Upload Github release
