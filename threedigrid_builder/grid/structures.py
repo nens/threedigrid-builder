@@ -75,6 +75,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     zoom_category: int
     display_name: str
     sewerage: int
+    the_geom: shapely.Geometry
 
 
 class WeirOrifices(Array[WeirOrifice]):
@@ -114,6 +115,7 @@ class WeirOrifices(Array[WeirOrifice]):
         return Lines(
             id=itertools.islice(line_id_counter, len(self)),
             line=line,
+            line_geometries=self.the_geom,
             content_type=self.content_type,
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType

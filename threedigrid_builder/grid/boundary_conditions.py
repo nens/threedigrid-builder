@@ -102,14 +102,14 @@ class BoundaryConditions1D(Array[BoundaryCondition1D]):
 class BoundaryCondition2D:
     id: int
     type: BoundaryType
-    geom: shapely.Geometry
+    the_geom: shapely.Geometry
 
 
 class BoundaryConditions2D(Array[BoundaryCondition2D]):
     def get_intersecting_node_idx(
         self, idx: int, cell_tree: shapely.STRtree
     ) -> np.ndarray:
-        bc_geom = self.geom[idx]
+        bc_geom = self.the_geom[idx]
 
         x1, y1, x2, y2 = shapely.bounds(bc_geom)
         is_horizontal = (x2 - x1) > (y2 - y1)
