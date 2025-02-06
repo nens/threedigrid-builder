@@ -53,7 +53,7 @@ def get_version():
 
 install_requires = [
     "numpy>=1.15,<3.0",
-    "threedi-schema==0.228.*",
+    "threedi-schema==0.300.*",
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
@@ -85,7 +85,7 @@ setup(
         "gpkg": ["geopandas", "fiona"],
         "cli": ["typer"],
     },
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",

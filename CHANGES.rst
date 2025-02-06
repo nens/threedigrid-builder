@@ -2,10 +2,52 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.21.2 (unreleased)
+1.24.1 (unreleased)
 -------------------
 
 - Nothing changed yet.
+
+
+1.24.0 (2025-01-24)
+-------------------
+
+- Bump schema version to 0.300
+
+
+1.23.1 (2025-01-23)
+-------------------
+
+- Adapt to match some name changes in threedi-schema
+
+
+1.23.0 (2025-01-16)
+-------------------
+
+- Remove transformations of geometries from schematisation
+
+
+1.22.1 (2025-01-16)
+-------------------
+
+- Use pipe.geom, weir.geom and orifice.weir to build gridadmin
+
+
+1.22.0 (2025-01-08)
+-------------------
+
+- Remove internal changes made for previous schema upgrades and limit changes to db interface
+
+
+1.21.3 (2024-12-17)
+-------------------
+
+- Fix creating cross sections with schema 228
+
+
+1.21.2 (2024-12-17)
+-------------------
+
+- Set MacOs release version to 13 to fix build
 
 
 1.21.1 (2024-12-12)

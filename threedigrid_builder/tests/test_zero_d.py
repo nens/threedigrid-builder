@@ -57,7 +57,7 @@ def test_surfaces(grid_all):
         # nr_of_inhabitants=[1000.0, 2000.0, 2000.0],
         area=[100.0, 200.0, 200.0],
         # dry_weather_flow=[1.0, 2.0, 2.0],
-        geom=[shapely.points([1.0, 2.0]), None, None],
+        the_geom=[shapely.points([1.0, 2.0]), None, None],
         connection_node_id=[1, 2, 1],
         connection_node_the_geom=[
             shapely.points([1.0, 2.0]),

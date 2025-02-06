@@ -3,14 +3,11 @@
 import pathlib
 from contextlib import contextmanager
 from enum import Enum
-from functools import lru_cache
-from typing import Callable, ContextManager, Dict, List, Optional, Union
+from typing import ContextManager, Dict, List, Union
 
 import numpy as np
 import shapely
 from condenser import NumpyQuery
-from pyproj import Transformer
-from pyproj.crs import CRS
 from sqlalchemy import case, cast, func, inspect, Integer, literal
 from sqlalchemy.orm import Session
 from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
@@ -43,7 +40,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 228
+MIN_SQLITE_VERSION = 229
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
@@ -94,20 +91,6 @@ def _set_initialization_type(
         dct[type_field] = None
 
 
-def arr_to_attr_dict(
-    arr: np.ndarray, rename_dict: Optional[Dict[str, str]] = None
-) -> Dict[str, str]:
-    """
-    Convert structured array to dict with optional rename of the keys
-    """
-    if rename_dict is None:
-        rename_dict = {}
-    return {
-        rename_dict[name] if name in rename_dict else name: arr[name]
-        for name in arr.dtype.names
-    }
-
-
 def map_cross_section_definition(
     objects: List[Union[CrossSectionLocations, Pipes, Weirs, Orifices, Culverts]],
     definition_map: Dict[str, Dict[int, int]],
@@ -151,14 +134,23 @@ class SQLite:
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         self.db = ThreediDatabase(path)
-        self._epsg_code = None  # for reproject()
-
+        self._epsg_code = None
         version = self.get_version()
         if version < MIN_SQLITE_VERSION:
             if upgrade:
                 self.upgrade(convert_to_geopackage=convert_to_geopackage)
             else:
                 raise SchematisationError(f"Too old sqlite version {version}.")
+
+    @property
+    def epsg_code(self) -> int:
+        if self._epsg_code is None:
+            self._epsg_code = self.db.schema.epsg_code
+        return self._epsg_code
+
+    @epsg_code.setter
+    def epsg_code(self, value: int):
+        self._epsg_code = value
 
     def get_version(self) -> int:
         # check version
@@ -167,7 +159,7 @@ class SQLite:
 
     def upgrade(self, convert_to_geopackage=False):
         schema = ModelSchema(self.db)
-        schema.upgrade(backup=False, convert_to_geopackage=convert_to_geopackage)
+        schema.upgrade(backup=False)
 
     @contextmanager
     def get_session(self) -> ContextManager[Session]:
@@ -213,7 +205,7 @@ class SQLite:
                 infiltration = {}
             if model_settings.use_vegetation_drag_2d:
                 vegetation_drag = _object_as_dict(
-                    session.query(models.VegetationDrag).one()
+                    session.query(models.VegetationDrag2D).one()
                 )
             else:
                 vegetation_drag = {}
@@ -319,34 +311,10 @@ class SQLite:
             }
         )
         return {
-            "epsg_code": model_settings["epsg_code"],
             "model_name": model_settings["name"],
             "grid_settings": grid_settings,
             "tables_settings": tables_settings,
         }
-
-    @property
-    def epsg_code(self) -> int:
-        if self._epsg_code is None:
-            self._epsg_code = self.get_settings()["epsg_code"]
-        return self._epsg_code
-
-    @epsg_code.setter
-    def epsg_code(self, value: int):
-        self._epsg_code = value
-
-    def reproject(self, geometries: np.ndarray) -> np.ndarray:
-        """Reproject geometries from 4326 to the EPSG in the settings.
-
-        Notes:
-          shapely+pyproj is approx 2x faster than spatialite
-
-        Args:
-          geometries (ndarray of shapely.Geometry): geometries in EPSG 4326
-        """
-        target_epsg = self.epsg_code
-        func = _get_reproject_func(SOURCE_EPSG, target_epsg)
-        return shapely.transform(geometries, func)
 
     def get_surfaces(self) -> Surfaces:
         with self.get_session() as session:
@@ -356,20 +324,23 @@ class SQLite:
                     models.Surface.code,
                     models.Surface.display_name,
                     models.Surface.area,
-                    models.Surface.geom,
-                    models.SurfaceParameter.outflow_delay,
-                    models.SurfaceParameter.surface_layer_thickness,
-                    models.SurfaceParameter.infiltration,
-                    models.SurfaceParameter.max_infiltration_capacity,
-                    models.SurfaceParameter.min_infiltration_capacity,
-                    models.SurfaceParameter.infiltration_decay_constant,
-                    models.SurfaceParameter.infiltration_recovery_constant,
+                    models.Surface.geom.label("the_geom"),
+                    models.SurfaceParameters.outflow_delay,
+                    models.SurfaceParameters.surface_layer_thickness,
+                    models.SurfaceParameters.infiltration,
+                    models.SurfaceParameters.max_infiltration_capacity,
+                    models.SurfaceParameters.min_infiltration_capacity,
+                    models.SurfaceParameters.infiltration_decay_constant,
+                    models.SurfaceParameters.infiltration_recovery_constant,
                     models.SurfaceMap.connection_node_id,
                     models.SurfaceMap.percentage,
                     models.ConnectionNode.geom.label("connection_node_the_geom"),
                 )
                 .select_from(models.Surface)
-                .join(models.SurfaceParameter)
+                .join(
+                    models.SurfaceParameters,
+                    models.Surface.surface_parameters_id == models.SurfaceParameters.id,
+                )
                 .join(
                     models.SurfaceMap, models.SurfaceMap.surface_id == models.Surface.id
                 )
@@ -380,9 +351,6 @@ class SQLite:
                 .order_by(models.Surface.id)
                 .as_structarray()
             )
-
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
 
         return Surfaces(
             id=np.arange(0, len(arr["surface_id"] + 1), dtype=int),
@@ -412,26 +380,24 @@ class SQLite:
                 session.query(
                     models.BoundaryConditions2D.id,
                     models.BoundaryConditions2D.type,
-                    models.BoundaryConditions2D.geom,
+                    models.BoundaryConditions2D.geom.label("the_geom"),
                 )
                 .order_by(models.BoundaryConditions2D.id)
                 .as_structarray()
             )
-        arr["geom"] = self.reproject(arr["geom"])
-
         # transform to a BoundaryConditions1D object
         return BoundaryConditions2D(**{name: arr[name] for name in arr.dtype.names})
 
     def get_channels(self) -> Channels:
         """Return Channels"""
         cols = [
-            models.Channel.geom,
-            models.Channel.calculation_point_distance,
+            models.Channel.geom.label("the_geom"),
+            models.Channel.calculation_point_distance.label("dist_calc_points"),
             models.Channel.id,
             models.Channel.code,
-            models.Channel.connection_node_id_start,
-            models.Channel.connection_node_id_end,
-            models.Channel.exchange_type,
+            models.Channel.connection_node_id_start.label("connection_node_start_id"),
+            models.Channel.connection_node_id_end.label("connection_node_end_id"),
+            models.Channel.exchange_type.label("calculation_type"),
             models.Channel.display_name,
             models.Channel.exchange_thickness,
             models.Channel.hydraulic_conductivity_out,
@@ -441,39 +407,27 @@ class SQLite:
         with self.get_session() as session:
             arr = session.query(*cols).order_by(models.Channel.id).as_structarray()
 
-        arr["geom"] = self.reproject(arr["geom"])
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
-        arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
+        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "geom": "the_geom",
-                "exchange_type": "calculation_type",
-                "calculation_point_distance": "dist_calc_points",
-                "connection_node_id_start": "connection_node_start_id",
-                "connection_node_id_end": "connection_node_end_id",
-            },
-        )
-
         # transform to a Channels object
-        return Channels(**attr_dict)
+        return Channels(**{name: arr[name] for name in arr.dtype.names})
 
     def get_connection_nodes(self) -> ConnectionNodes:
         """Return ConnectionNodes"""
         cols = [
-            models.ConnectionNode.geom,
+            models.ConnectionNode.geom.label("the_geom"),
             models.ConnectionNode.id,
             models.ConnectionNode.code,
             models.ConnectionNode.storage_area,
-            models.ConnectionNode.initial_water_level,
-            models.ConnectionNode.exchange_type,
+            models.ConnectionNode.initial_water_level.label("initial_waterlevel"),
+            models.ConnectionNode.exchange_type.label("calculation_type"),
             models.ConnectionNode.bottom_level,
-            models.ConnectionNode.exchange_level,
-            models.ConnectionNode.visualisation,
-            models.ConnectionNode.manhole_surface_level,
+            models.ConnectionNode.exchange_level.label("drain_level"),
+            models.ConnectionNode.visualisation.label("manhole_indicator"),
+            models.ConnectionNode.manhole_surface_level.label("surface_level"),
             models.ConnectionNode.display_name,
             models.ConnectionNode.exchange_thickness,
             models.ConnectionNode.hydraulic_conductivity_out,
@@ -485,26 +439,12 @@ class SQLite:
                 session.query(*cols).order_by(models.ConnectionNode.id).as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
-
         # replace -9999.0 with NaN in initial_water_level
-        arr["initial_water_level"][arr["initial_water_level"] == -9999.0] = np.nan
+        arr["initial_waterlevel"][arr["initial_waterlevel"] == -9999.0] = np.nan
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "geom": "the_geom",
-                "initial_water_level": "initial_waterlevel",
-                "exchange_type": "calculation_type",
-                "exchange_level": "drain_level",
-                "visualisation": "manhole_indicator",
-                "manhole_surface_level": "surface_level",
-            },
-        )
-
-        return ConnectionNodes(**attr_dict)
+        return ConnectionNodes(**{name: arr[name] for name in arr.dtype.names})
 
     def get_cross_section_definition_for_table(self, table) -> np.ndarray:
         with self.get_session() as session:
@@ -575,7 +515,7 @@ class SQLite:
                 session.query(
                     models.CrossSectionLocation.id,
                     models.CrossSectionLocation.code,
-                    models.CrossSectionLocation.geom,
+                    models.CrossSectionLocation.geom.label("the_geom"),
                     models.CrossSectionLocation.channel_id,
                     models.CrossSectionLocation.reference_level,
                     models.CrossSectionLocation.bank_level,
@@ -589,25 +529,22 @@ class SQLite:
                 .order_by(models.CrossSectionLocation.id)
                 .as_structarray()
             )
-        arr["geom"] = self.reproject(arr["geom"])
-
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
 
         # transform to a CrossSectionLocations object
-        return CrossSectionLocations(**attr_dict)
+        return CrossSectionLocations(**{name: arr[name] for name in arr.dtype.names})
 
     def get_culverts(self) -> Culverts:
         """Return Culverts"""
         cols = [
             models.Culvert.id,
             models.Culvert.code,
-            models.Culvert.geom,
-            models.Culvert.calculation_point_distance,
-            models.Culvert.connection_node_id_start,
-            models.Culvert.connection_node_id_end,
-            models.Culvert.exchange_type,
-            models.Culvert.invert_level_start,
-            models.Culvert.invert_level_end,
+            models.Culvert.geom.label("the_geom"),
+            models.Culvert.calculation_point_distance.label("dist_calc_points"),
+            models.Culvert.connection_node_id_start.label("connection_node_start_id"),
+            models.Culvert.connection_node_id_end.label("connection_node_end_id"),
+            models.Culvert.exchange_type.label("calculation_type"),
+            models.Culvert.invert_level_start.label("invert_level_start_point"),
+            models.Culvert.invert_level_end.label("invert_level_end_point"),
             models.Culvert.discharge_coefficient_negative,
             models.Culvert.discharge_coefficient_positive,
             models.Culvert.display_name,
@@ -641,31 +578,18 @@ class SQLite:
                 .as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
-
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
         # When no calculation type is provides we default to isolated
-        arr["exchange_type"][arr["exchange_type"] == -9999] = LineType.LINE_1D_ISOLATED
+        arr["calculation_type"][
+            arr["calculation_type"] == -9999
+        ] = LineType.LINE_1D_ISOLATED
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
-        arr["exchange_type"][arr["exchange_type"] >= 100] -= 100
+        arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
 
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "exchange_type": "calculation_type",
-                "calculation_point_distance": "dist_calc_points",
-                "invert_level_start": "invert_level_start_point",
-                "invert_level_end": "invert_level_end_point",
-                "geom": "the_geom",
-                "connection_node_id_start": "connection_node_start_id",
-                "connection_node_id_end": "connection_node_end_id",
-            },
-        )
-
-        # transform to a CrossSectionLocations object
-        return Culverts(**attr_dict)
+        # transform to a Culverts object
+        return Culverts(**{name: arr[name] for name in arr.dtype.names})
 
     def get_exchange_lines(self) -> ExchangeLines:
         with self.get_session() as session:
@@ -673,28 +597,26 @@ class SQLite:
                 session.query(
                     models.ExchangeLine.id,
                     models.ExchangeLine.channel_id,
-                    models.ExchangeLine.geom,
+                    models.ExchangeLine.geom.label("the_geom"),
                     models.ExchangeLine.exchange_level,
                 )
                 .order_by(models.ExchangeLine.id)
                 .as_structarray()
             )
 
-        arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
         # transform to a Channels object
-        return ExchangeLines(**attr_dict)
+        return ExchangeLines(**{name: arr[name] for name in arr.dtype.names})
 
     def get_grid_refinements(self) -> GridRefinements:
         """Return Gridrefinement and GridRefinementArea concatenated into one array."""
         with self.get_session() as session:
             arr1 = (
                 session.query(
-                    models.GridRefinementLine.geom,
+                    models.GridRefinementLine.geom.label("the_geom"),
                     models.GridRefinementLine.id,
                     models.GridRefinementLine.code,
                     models.GridRefinementLine.display_name,
-                    models.GridRefinementLine.grid_level,
+                    models.GridRefinementLine.grid_level.label("refinement_level"),
                 )
                 .filter(
                     models.GridRefinementLine.geom.isnot(None),
@@ -705,11 +627,11 @@ class SQLite:
             )
             arr2 = (
                 session.query(
-                    models.GridRefinementArea.geom,
+                    models.GridRefinementArea.geom.label("the_geom"),
                     models.GridRefinementArea.id,
                     models.GridRefinementArea.code,
                     models.GridRefinementArea.display_name,
-                    models.GridRefinementArea.grid_level,
+                    models.GridRefinementArea.grid_level.label("refinement_level"),
                 )
                 .filter(
                     models.GridRefinementArea.geom.isnot(None),
@@ -720,14 +642,8 @@ class SQLite:
             )
             arr = np.concatenate((arr1, arr2))
 
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
-        arr["id"] = np.arange(len(arr["grid_level"]))
-
-        attr_dict = arr_to_attr_dict(
-            arr, {"geom": "the_geom", "grid_level": "refinement_level"}
-        )
-        return GridRefinements(**attr_dict)
+        arr["id"] = np.arange(len(arr["refinement_level"]))
+        return GridRefinements(**{name: arr[name] for name in arr.dtype.names})
 
     def get_dem_average_areas(self) -> DemAverageAreas:
         """Return DemAverageAreas"""
@@ -735,20 +651,19 @@ class SQLite:
             arr = (
                 session.query(
                     models.DemAverageArea.id,
-                    models.DemAverageArea.geom,
+                    models.DemAverageArea.geom.label("the_geom"),
                 )
                 .order_by(models.DemAverageArea.id)
                 .as_structarray()
             )
-            arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
-        return DemAverageAreas(**attr_dict)
+
+        return DemAverageAreas(**{name: arr[name] for name in arr.dtype.names})
 
     def get_obstacles(self) -> Obstacles:
         with self.get_session() as session:
             arr = (
                 session.query(
-                    models.Obstacle.geom,
+                    models.Obstacle.geom.label("the_geom"),
                     models.Obstacle.id,
                     models.Obstacle.crest_level,
                     models.Obstacle.affects_2d,
@@ -758,26 +673,22 @@ class SQLite:
                 .order_by(models.Obstacle.id)
                 .as_structarray()
             )
-
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
-        attr_dict = arr_to_attr_dict(arr, {"geom": "the_geom"})
-        # transform to a Channels object
-        return Obstacles(**attr_dict)
+        return Obstacles(**{name: arr[name] for name in arr.dtype.names})
 
     def get_orifices(self) -> Orifices:
         """Return Orifices"""
         cols = [
             models.Orifice.id,
             models.Orifice.code,
-            models.Orifice.connection_node_id_start,
-            models.Orifice.connection_node_id_end,
+            models.Orifice.connection_node_id_start.label("connection_node_start_id"),
+            models.Orifice.connection_node_id_end.label("connection_node_end_id"),
             models.Orifice.crest_level,
             models.Orifice.crest_type,
             models.Orifice.discharge_coefficient_negative,
             models.Orifice.discharge_coefficient_positive,
             models.Orifice.display_name,
             models.Orifice.sewerage,
+            models.Orifice.geom.label("the_geom"),
             case(
                 {
                     models.Orifice.friction_value.isnot(None)
@@ -808,17 +719,8 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "exchange_type": "calculation_type",
-                "calculation_point_distance": "dist_calc_points",
-                "connection_node_id_start": "connection_node_start_id",
-                "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
-            },
-        )
-        return Orifices(**attr_dict)
+
+        return Orifices(**{name: arr[name] for name in arr.dtype.names})
 
     def get_pipes(self) -> Pipes:
         """Return Pipes"""
@@ -826,17 +728,18 @@ class SQLite:
             models.Pipe.id,
             models.Pipe.code,
             models.Pipe.sewerage_type,
-            models.Pipe.exchange_type,
-            models.Pipe.invert_level_start,
-            models.Pipe.invert_level_end,
-            models.Pipe.calculation_point_distance,
-            models.Pipe.connection_node_id_start,
-            models.Pipe.connection_node_id_end,
+            models.Pipe.exchange_type.label("calculation_type"),
+            models.Pipe.invert_level_start.label("invert_level_start_point"),
+            models.Pipe.invert_level_end.label("invert_level_end_point"),
+            models.Pipe.calculation_point_distance.label("dist_calc_points"),
+            models.Pipe.connection_node_id_start.label("connection_node_start_id"),
+            models.Pipe.connection_node_id_end.label("connection_node_end_id"),
             models.Pipe.display_name,
             models.Pipe.exchange_thickness,
             models.Pipe.hydraulic_conductivity_out,
             models.Pipe.hydraulic_conductivity_in,
-            models.Pipe.material_id,
+            models.Pipe.material_id.label("material"),
+            models.Pipe.geom.label("the_geom"),
             case(
                 {
                     models.Pipe.friction_value.isnot(None)
@@ -867,22 +770,8 @@ class SQLite:
         arr["hydraulic_conductivity_out"] /= DAY_IN_SECONDS
         arr["hydraulic_conductivity_in"] /= DAY_IN_SECONDS
 
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "exchange_type": "calculation_type",
-                "calculation_point_distance": "dist_calc_points",
-                "material_id": "material",
-                "invert_level_start": "invert_level_start_point",
-                "invert_level_end": "invert_level_end_point",
-                "connection_node_id_start": "connection_node_start_id",
-                "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
-            },
-        )
-
         # transform to a Pipes object
-        return Pipes(**attr_dict)
+        return Pipes(**{name: arr[name] for name in arr.dtype.names})
 
     def get_pumps(self) -> Pumps:
         with self.get_session() as session:
@@ -891,8 +780,10 @@ class SQLite:
                     models.Pump.id,
                     models.Pump.code,
                     models.Pump.capacity,
-                    models.Pump.connection_node_id,
-                    models.PumpMap.connection_node_id_end,
+                    models.Pump.connection_node_id.label("connection_node_start_id"),
+                    models.PumpMap.connection_node_id_end.label(
+                        "connection_node_end_id"
+                    ),
                     models.Pump.type_,
                     models.Pump.start_level,
                     models.Pump.lower_stop_level,
@@ -907,31 +798,23 @@ class SQLite:
         # Pump capacity is entered as L/s but we need m3/s.
         arr["capacity"] = arr["capacity"] / 1000
 
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "connection_node_id": "connection_node_start_id",
-                "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
-            },
-        )
-
         # transform to a Pumps object
-        return Pumps(**attr_dict)
+        return Pumps(**{name: arr[name] for name in arr.dtype.names})
 
     def get_weirs(self) -> Weirs:
         """Return Weirs"""
         cols = [
             models.Weir.id,
             models.Weir.code,
-            models.Weir.connection_node_id_start,
-            models.Weir.connection_node_id_end,
+            models.Weir.connection_node_id_start.label("connection_node_start_id"),
+            models.Weir.connection_node_id_end.label("connection_node_end_id"),
             models.Weir.crest_level,
             models.Weir.crest_type,
             models.Weir.discharge_coefficient_negative,
             models.Weir.discharge_coefficient_positive,
             models.Weir.display_name,
             models.Weir.sewerage,
+            models.Weir.geom.label("the_geom"),
             case(
                 {
                     models.Weir.friction_value.isnot(None)
@@ -958,34 +841,25 @@ class SQLite:
             )
         # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
         arr["friction_type"][arr["friction_type"] == 4] = 2
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "exchange_type": "calculation_type",
-                "calculation_point_distance": "dist_calc_points",
-                "connection_node_id_start": "connection_node_start_id",
-                "connection_node_id_end": "connection_node_end_id",
-                "geom": "the_geom",
-            },
-        )
-        return Weirs(**attr_dict)
+
+        return Weirs(**{name: arr[name] for name in arr.dtype.names})
 
     def get_windshieldings(self) -> Windshieldings:
         with self.get_session() as session:
             arr = (
                 session.query(
-                    models.Windshielding.id,
-                    models.Windshielding.channel_id,
-                    models.Windshielding.north,
-                    models.Windshielding.northeast,
-                    models.Windshielding.east,
-                    models.Windshielding.southeast,
-                    models.Windshielding.south,
-                    models.Windshielding.southwest,
-                    models.Windshielding.west,
-                    models.Windshielding.northwest,
+                    models.Windshielding1D.id,
+                    models.Windshielding1D.channel_id,
+                    models.Windshielding1D.north,
+                    models.Windshielding1D.northeast,
+                    models.Windshielding1D.east,
+                    models.Windshielding1D.southeast,
+                    models.Windshielding1D.south,
+                    models.Windshielding1D.southwest,
+                    models.Windshielding1D.west,
+                    models.Windshielding1D.northwest,
                 )
-                .order_by(models.Windshielding.id)
+                .order_by(models.Windshielding1D.id)
                 .as_structarray()
             )
 
@@ -1000,14 +874,16 @@ class SQLite:
             models.PotentialBreach.id,
             models.PotentialBreach.code,
             models.PotentialBreach.display_name,
-            models.PotentialBreach.geom,
+            models.PotentialBreach.geom.label("the_geom"),
             models.PotentialBreach.channel_id,
         ]
 
         if self.get_version() >= 212:
             cols += [
-                models.PotentialBreach.initial_exchange_level,
-                models.PotentialBreach.final_exchange_level,
+                models.PotentialBreach.initial_exchange_level.label("exchange_level"),
+                models.PotentialBreach.final_exchange_level.label(
+                    "maximum_breach_depth"
+                ),
                 models.PotentialBreach.levee_material,
             ]
 
@@ -1018,36 +894,10 @@ class SQLite:
                 .as_structarray()
             )
 
-        # reproject
-        arr["geom"] = self.reproject(arr["geom"])
         # derive maximum_breach_depth from initial and final exchange level
         # and overwrite final_exchange_level because adding a field is more work
-        arr["final_exchange_level"] = (
-            arr["initial_exchange_level"] - arr["final_exchange_level"]
+        arr["maximum_breach_depth"] = (
+            arr["exchange_level"] - arr["maximum_breach_depth"]
         )
-        attr_dict = arr_to_attr_dict(
-            arr,
-            {
-                "geom": "the_geom",
-                "initial_exchange_level": "exchange_level",
-                "final_exchange_level": "maximum_breach_depth",
-            },
-        )
-        return PotentialBreaches(**attr_dict)
 
-
-# Constructing a Transformer takes quite long, so we use caching here. The
-# function is deterministic so this doesn't have any side effects.
-@lru_cache(maxsize=8)
-def _get_reproject_func(source_epsg: int, target_epsg: int) -> Callable:
-    transformer = Transformer.from_crs(
-        CRS.from_epsg(source_epsg), CRS.from_epsg(target_epsg), always_xy=True
-    )
-
-    def func(coords):
-        if coords.shape[0] == 0:
-            return coords
-        x, y = transformer.transform(coords[:, 0], coords[:, 1])
-        return np.array([x, y]).T
-
-    return func
+        return PotentialBreaches(**{name: arr[name] for name in arr.dtype.names})

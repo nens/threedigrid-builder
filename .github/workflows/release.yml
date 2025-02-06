@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -29,8 +29,9 @@ jobs:
           pip install build
           python -m build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-sdist
           path: ./dist/*.tar.gz
           retention-days: 5
 
@@ -40,23 +41,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-12]
+        os: [ubuntu-24.04, windows-2022, macos-14]
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: msys2/setup-msys2@v2
-        if: matrix.os == 'windows-2019'
+        if: matrix.os == 'windows-2022'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.5
+        uses: pypa/cibuildwheel@v2.22.0
         # to supply options, put them in 'env', like:
         env:
-          CIBW_SKIP: "pp* *musllinux* cp312" # skips pypy, musllinux and python3.12
+          CIBW_SKIP: "pp* *musllinux* cp313*" # skips pypy, musllinux and python3.13
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
-            FC=gfortran-12
+            FC=gfortran-12 MACOSX_DEPLOYMENT_TARGET=14.0
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
@@ -65,8 +66,9 @@ jobs:
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_BUILD_VERBOSITY: 1
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
+          name: artifact-wheel-${{ matrix.os }}
           path: ./wheelhouse/*.whl
           retention-days: 5
 
@@ -77,13 +79,14 @@ jobs:
     # release on every tag
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
+          pattern: artifact-*
+          merge-multiple: true
           path: dist
 
       - name: Upload Github release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
 
       - name: Upload Release Assets to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

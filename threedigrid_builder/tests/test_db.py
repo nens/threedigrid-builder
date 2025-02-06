@@ -39,7 +39,7 @@ def test_init(tmp_path):
     with mock.patch(
         "threedigrid_builder.interface.db.ThreediDatabase"
     ) as db, mock.patch.object(SQLite, "get_version") as get_version:
-        get_version.return_value = 228
+        get_version.return_value = 229
         sqlite = SQLite(path)
 
     db.assert_called_with(path)
@@ -67,7 +67,7 @@ def test_init_bad_version(tmp_path):
 
 
 def test_get_version(db):
-    assert db.get_version() == 228
+    assert db.get_version() == 300
 
 
 def test_get_boundary_conditions_1d(db):
@@ -234,11 +234,15 @@ def test_get_pipes(db):
     assert pipes.friction_type[28] == FrictionType.MANNING
     assert pipes.friction_value[36] == 0.0145
     assert pipes.display_name[33] == "71518_71517"
+    assert_geometries_equal(
+        pipes.the_geom[0],
+        shapely.from_wkt("LINESTRING (110267.3 517868.8, 110264.3 517863.5)"),
+        tolerance=1,
+    )
 
 
 def test_get_settings(db):
     result = db.get_settings()
-    assert result["epsg_code"] == 28992
     assert result["model_name"] == "simple_infil_no_grndwtr"
 
     g = result["grid_settings"]
@@ -379,6 +383,11 @@ def test_get_weirs(db):
     assert weirs.friction_value[36] == 0.03
     assert weirs.display_name[33] == "KST-JL-76"
     assert weirs.sewerage[0] == 1
+    assert_geometries_equal(
+        weirs.the_geom[0],
+        shapely.from_wkt("LINESTRING (110278.3 517669.1, 110276.3 517669.8)"),
+        tolerance=1,
+    )
 
 
 def test_get_dem_average(db):
