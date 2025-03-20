@@ -63,7 +63,7 @@ jobs:
             extras: "[test,gridadmin]"
             use_gdal_36: true
           - python: '3.12'
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             setuptools: setuptools==69.*
             numpy: numpy==1.26.*
             pins: ""
