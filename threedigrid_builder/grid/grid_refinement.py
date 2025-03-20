@@ -4,6 +4,8 @@ from osgeo import gdal, gdal_array, ogr
 
 from threedigrid_builder.base import Array
 
+gdal.SetConfigOption("GDAL_MEM_ENABLE_OPEN", "YES")
+
 
 class GridRefinement:
     id: int
