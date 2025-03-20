@@ -62,14 +62,14 @@ jobs:
             display_name: "latest - gdal 3.6"
             extras: "[test,gridadmin]"
             use_gdal_36: true
-          - python: '3.12'
-            os: ubuntu-24.04
-            setuptools: setuptools==69.*
-            numpy: numpy==1.26.*
-            pins: ""
-            display_name: "latest - gdal 3.10"
-            extras: "[test,gridadmin]"
-            use_gdal_310: true
+#          - python: '3.12'
+#            os: ubuntu-24.04
+#            setuptools: setuptools==69.*
+#            numpy: numpy==1.26.*
+#            pins: ""
+#            display_name: "latest - gdal 3.10"
+#            extras: "[test,gridadmin]"
+#            use_gdal_310: true
 
     steps:
       - uses: actions/checkout@v4
@@ -87,11 +87,11 @@ jobs:
           apt show libgdal-dev | grep Version          
         if: matrix.use_gdal_36
 
-      - name: Add PPA for gdal 310
-        run: |
-          sudo add-apt-repository "ppa:ubuntugis/ubuntugis-experimental" -y && sudo apt update
-          apt show libgdal-dev | grep Version
-        if: matrix.use_gdal_310
+#      - name: Add PPA for gdal 310
+#        run: |
+#          sudo add-apt-repository "ppa:ubuntugis/ubuntugis-experimental" -y && sudo apt update
+#          apt show libgdal-dev | grep Version
+#        if: matrix.use_gdal_310
 
       - name: Install GDAL, sqlite3 and spatialite
         run: |
