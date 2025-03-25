@@ -42,26 +42,25 @@ jobs:
           - python: '3.11'
             os: ubuntu-22.04
             setuptools: setuptools==63.*
-            numpy: numpy==1.24.*
+            numpy: numpy==2.0.1
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
             display_name: "2023"
             extras: "[test,gridadmin]"
-          # current (using ubuntu 22.04 because latest will change to 24.04 with gdal 3.8 at some moment)
+          # 2024 
           - python: '3.12'
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             setuptools: setuptools==69.*
-            numpy: numpy==1.26.*
+            numpy: numpy==2.0.1
             pins: ""
-            display_name: "latest"
+            display_name: "2024"
             extras: "[test,gridadmin]"
-          - python: '3.12'
-            os: ubuntu-22.04
+          - python: '3.13'
+            os: ubuntu-24.04
             setuptools: setuptools==69.*
-            numpy: numpy==1.26.*
+            numpy: numpy==2.0.1
             pins: ""
-            display_name: "latest - gdal 3.6"
+            display_name: "2025"
             extras: "[test,gridadmin]"
-            use_gdal_36: true
 
     steps:
       - uses: actions/checkout@v4
@@ -72,12 +71,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-
-      - name: Add PPA
-        run: |
-          sudo add-apt-repository "ppa:ubuntugis/ppa" -y && sudo apt update
-          apt show libgdal-dev | grep Version          
-        if: matrix.use_gdal_36
 
       - name: Install GDAL, sqlite3 and spatialite
         run: |
