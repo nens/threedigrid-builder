@@ -1108,6 +1108,8 @@ class Grid:
             fortran_node_fragment_array.min() == no_data_value
         )  # temp assert for mypy
 
+        return fortran_fragment_mask, fortran_node_fragment_array
+
     @staticmethod
     def inactive(
         fragment_id: np.int32,

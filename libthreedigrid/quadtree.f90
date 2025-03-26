@@ -151,7 +151,6 @@ module m_quadtree
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
                         else
                             n_cells = n_cells + 1
-                            lg(mn(1):mn(3),mn(2):mn(4)) = k   !! DO WE OVERWRITE AND FAVOR LARGER CELLS  !! G.K. this is already the condition for this part, why do we overwrite the same thing?
                             quad_idx(mn(1):mn(3),mn(2):mn(4)) = n_cells
                             if (use_2d_flow) then
                                 call set_2d_computational_lines(&
@@ -169,32 +168,5 @@ module m_quadtree
 
     end subroutine find_active_2d_comp_cells
 
-    ! subroutine find_active_clone_cells(n_cells, cloned, area_mask_clone, n_clone_cells, clone_to_cell)
-    !     ! ! Finding clone cells based on the area mask specifically defined for clone cells
-        
-    !     use parameters, only : CLONE_NUMBERS
-    !     integer, intent(in) :: n_cells ! total number of active cells
-    !     integer, intent(in) :: cloned !! Identifier of the clone cells according to the mask
-    !     integer*1, intent(in) :: area_mask_clone   !! Identifier active 
-    !     integer, intent(inout) :: n_clone_cells     !! Total number of clone cells
-    !     integer, intent(inout) :: clone_to_cell         !! number of clones in each host cell
-    !     integer :: cell_counter, clone_counter
-
-    !     n_clone_cells = 0
-    !     do cell_counter = 1, n_cells
-    !         if (cloned(cell_counter, 1)) then
-    !             do clone_counter = 1, CLONE_NUMBERS
-    !                 if (cloned(cell_counter, clone_counter)) then
-    !                     n_clone_cells = n_clone_cells + 1
-    !                     clone_to_cell(cell_counter) = clone_to_cell(cell_counter) + 1
-    !                 end if
-    !             end do
-    !         end if
-    !     end do
-
-
-
-
-    ! end subroutine find_active_clone_cells
 
 end module m_quadtree

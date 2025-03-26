@@ -14,7 +14,7 @@ from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, QuadTree
+from threedigrid_builder.grid import Clone, Grid, QuadTree
 from threedigrid_builder.interface import (
     DictOut,
     GDALInterface,
@@ -90,7 +90,25 @@ def _make_gridadmin(
         # need to apply the cutting now (before grid.add_groundwater()).
 
         if apply_cutlines:
-            grid.apply_cutlines(db.get_obstacles(), dem_path)
+            fortran_fragment_mask, fortran_node_fragment_array = grid.apply_cutlines(
+                db.get_obstacles(), dem_path
+            )
+
+            clone = Clone(
+                # np.size(fortran_node_fragment_array, 1),
+                fortran_node_fragment_array,
+                fortran_fragment_mask,
+                quadtree,
+                area_mask=subgrid_meta["area_mask"],
+            )
+
+            grid += Grid.from_clone(
+                clone=clone,
+            )
+
+            # self.clone_to_cell = np.empty(
+            #     np.size(fortran_node_fragment_array, 1), dtype=np.int32, order="F"
+            # )
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
