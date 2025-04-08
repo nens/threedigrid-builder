@@ -246,7 +246,7 @@ def fill_missing_centroids(
         lookup = sort_idx[np.searchsorted(s_unique, empty_surface_ids, sorter=sort_idx)]
 
         computed_centroids = shapely.centroid(
-            shapely.multipoints(connection_node_the_geom[no_centroid_mask], lookup)
+            shapely.multipoints(geometries=connection_node_the_geom[no_centroid_mask], indices=lookup)
         )
 
         centroids[no_centroid_mask] = computed_centroids[lookup]
