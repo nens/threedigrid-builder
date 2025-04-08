@@ -99,6 +99,10 @@ def _make_gridadmin(
                 fortran_node_fragment_array,
                 fortran_fragment_mask,
                 quadtree,
+                grid.lines.line,
+                grid.nodes.nodk,
+                grid.nodes.nodm,
+                grid.nodes.nodn,
                 area_mask=subgrid_meta["area_mask"],
             )
 

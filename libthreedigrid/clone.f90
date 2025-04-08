@@ -6,46 +6,49 @@ module m_clone
 
     contains
 
-    subroutine find_active_clone_cells(n_cells, n_clone_cells, clone_array, cell_numbering, clone_numbering)  !!, n_clone_cells, clones_in_cell
+    subroutine find_active_clone_cells(n_cells, clone_array, cell_numbering, clone_numbering)  !!, n_clone_cells, clones_in_cell
         ! ! Finding clone cells based on the area mask specifically defined for clone cells
         
         use m_grid_utils, only : get_pix_corners
         use parameters, only : CLONE_NUMBERS
         integer, intent(inout) :: n_cells                  !! total number of active cells. in: without clone cells, out: with clone cells
-        integer, intent(inout) :: n_clone_cells            !! Total number of clone cells
         integer, intent(inout) :: clone_array(:,:)         !! Identifier of the clones within each host cell. in: matches the clone_mask, out: matches the new numbering
         integer, intent(inout) :: cell_numbering(:)            !! New numbering for quadtree cells
-        integer, intent(inout) :: clone_numbering(:)            !! New numbering for quadtree cells
-        integer :: clones_in_cell(:)                       !! Total number of clones in each host cell
+        integer, intent(inout) :: clone_numbering(:)            !! New numbering for clone cells
+        integer :: clones_in_cell(n_cells)                       !! Total number of clones in each host cell
         integer :: cell_counter, clone_counter, i, counter
         integer :: n_cells_new
 
         ! write(*,*) 'fortran', clone_array(107,0)
-        ! write(*,*) clone_array(0,:)
+        write(*,*) 'clone_array(n_cells,:)', clone_array(n_cells,:)
         ! write(*,*) 'a(1368,479) = ', clone_mask(1368,479)
         ! write(*,*) 'max(clone_array) = ', maxval(clone_array)
         ! write(*,*) 'a(481,1368) = ', clone_mask(481,1368)
-        ! do i = 1, n_cells
-        !     if (clone_array(1, i) >= 0) then
-        !         write(*,*) 'id of clone cells are ', clone_array(:,i)
-        !     end if
-        ! end do
+        do i = 1, n_cells
+            if (clone_array(i, 1) >= 0) then
+                write(*,*) 'id of clone cells are ', clone_array(i,:)
+            end if
+        end do
         counter = 0
-        n_clone_cells = maxval(clone_mask)
+        ! write(*,*) 'fortran - clone_array(0,0)', clone_array(0, 0)
+        ! write(*,*) 'fortran - clone_array(0,1)', clone_array(0, 1)
+        write(*,*) 'fortran - clone_array(1,1)', clone_array(1, 1)
+        write(*,*) 'max(clone_array) = ', maxval(clone_array)
+
+        ! n_clone_cells = maxval(clone_mask)
         n_cells_new = n_cells
-        do cell_counter = 0, n_cells-1
+        do cell_counter = 1, n_cells
             if (clone_array(cell_counter, 1) >= 0) then
                 do clone_counter = 1, CLONE_NUMBERS
                     if (clone_array(cell_counter, clone_counter) >= 0) then
                         counter = counter + 1
                         clone_numbering(clone_array(cell_counter, clone_counter)) = counter
-                        n_clone_cells = n_clone_cells + 1
                         clones_in_cell(cell_counter) = clones_in_cell(cell_counter) + 1
                     end if
                 end do
             else
                 counter = counter + 1
-                new_cells_numbering(cell_counter) = counter
+                cell_numbering(cell_counter) = counter
             end if
             if (clones_in_cell(cell_counter) > 0) then
                 n_cells_new = n_cells_new + clones_in_cell(cell_counter) - 1
@@ -66,15 +69,15 @@ module m_clone
         integer, intent(in) :: clone_array(:,:)              !! Updated identifier of the clones within each host cell (does not match the clone_mask)
         integer, intent(in) :: cell_numbering(:)             !! New numbering list for quadtree cells
         integer, intent(in) :: clone_numbering(:)            !! New numbering list for clone cells
-        integer, intent(in) :: line(:,:)
+        integer, intent(inout) :: line(:,:)
         integer, intent(in) :: nodk(:)
         integer, intent(in) :: nodm(:)
         integer, intent(in) :: nodn(:)
 
         integer :: new_line_u, new_line_v, n_cloneline_u, n_cloneline_v, nl
         integer :: host_1, host_2, k_host_1, k_host_2, m_host, n_host, clone_1, clone_2
-        integer :: i0, i1, j0, j1
-        integer, allocatable :: clone_line(:,:)      ! administration of clone lines
+        integer :: i0, i1, j0, j1, l_counter
+        integer, allocatable :: line_new(:,:)      ! administration of clone lines
 
         new_line_u = n_line_u
         n_cloneline_u = 0
@@ -102,7 +105,7 @@ module m_clone
                 clone_1 = clone_mask(i1,j0)
                 clone_2 = clone_mask(i1 + 1, j0)
                 
-                call find_active_clone_lines(1, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_u, n_cloneline_u)   !! Only counting the clone lines         
+                call find_active_clone_lines(1, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_u)   !! Only counting the lines         
             end if
         end do
 
@@ -130,14 +133,12 @@ module m_clone
                 clone_1 = clone_mask(i0, j1)
                 clone_2 = clone_mask(i0, j1 + 1)
 
-                call find_active_clone_lines(2, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_v, n_cloneline_v)    !! Only counting the clone lines         
+                call find_active_clone_lines(2, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_v)    !! Only counting the lines         
             end if
         end do
 
-        ! allocate(clone_line(new_line_u + new_line_v, 2))  !! This will be a global parameter and an argument
-        allocate(clone_line(n_cloneline_u + n_cloneline_v, 2))  !! This will be a global parameter and an argument
-        allocate(new_line(new_line_u + new_line_v, 2)) !! this includes all lines with new numbering for the cells
-        counter = 0
+        allocate(line_new(new_line_u + new_line_v, 2)) !! this includes all lines with new numbering for the cells
+        l_counter = 0
         do nl = 1, n_line_u
             if (nodm(line(nl,1)) < nodm(line(nl,2))) then
                 host_1 = line(nl,1)
@@ -155,12 +156,12 @@ module m_clone
                 clone_1 = clone_mask(i1,j0)
                 clone_2 = clone_mask(i1 + 1, j0)
 
-                call find_active_clone_lines(1, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, &
-                                            n_line_u_new, new_line, host_1, host_2, nl, counter, clone_numbering, cell_numbering)   !! Now rewiring the line administration         
+                call find_active_clone_lines(1, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_u, &
+                                            line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering)   !! Now rewiring the line administration in u-dir
             else
-                counter = counter + 1
-                new_line(counter, 1) = cell_numbering(line(nl,1))
-                new_line(counter, 2) = cell_numbering(line(nl,2))
+                l_counter = l_counter + 1
+                line_new(l_counter, 1) = cell_numbering(line(nl,1))
+                line_new(l_counter, 2) = cell_numbering(line(nl,2))
             end if
         end do
 
@@ -181,18 +182,24 @@ module m_clone
                 clone_1 = clone_mask(i0, j1)
                 clone_2 = clone_mask(i0, j1 + 1)
 
-                call find_active_clone_lines(2, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_v, n_cloneline_v, clone_line, host_1, host_2, nl)    !! Only counting the clone lines         
+                call find_active_clone_lines(2, i1, j0, lgrmin, clone_1, clone_2, k_host_1, area_mask, clone_mask, new_line_v, &
+                                            line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering)    !! Now rewiring the line administration in v-dir
+            else
+                l_counter = l_counter + 1
+                line_new(l_counter, 1) = cell_numbering(line(nl,1))
+                line_new(l_counter, 2) = cell_numbering(line(nl,2))
             end if
         end do
 
-        write(*,*) 'clone_line', clone_line(:,:)
+        write(*,*) 'line_new', line_new(:,:)
         n_line_u = new_line_u
         n_line_v = new_line_v
+        line = line_new
 
     end subroutine find_clone_lines
 
-    recursive subroutine find_active_clone_lines(direction, ii, jj, min_pix, clone_1, clone_2, k, area_mask, clone_mask, &
-                                                tot_number_lines, new_line, host_1, host_2, l, l_new, clone_numbering, cell_numbering)
+    recursive subroutine find_active_clone_lines(direction, ii, jj, min_pix, clone_1, clone_2, k, area_mask, clone_mask, tot_number_lines, &
+                                                line_new, host_1, host_2, l_new, clone_numbering, cell_numbering)
                     
         integer, intent(in) :: direction
         integer, intent(in) :: ii
@@ -204,10 +211,9 @@ module m_clone
         integer*1, intent(in) :: area_mask(:,:)
         integer*1, intent(in) :: clone_mask(:,:)
         integer, intent(inout) :: tot_number_lines
-        integer, intent(inout), optional :: new_line(:,:)
+        integer, intent(inout), optional :: line_new(:,:)
         integer, intent(in), optional :: host_1
         integer, intent(in), optional :: host_2
-        integer, intent(in), optional :: l
         integer, intent(inout), optional :: l_new
         integer, intent(in), optional :: clone_numbering(:)
         integer, intent(in), optional :: cell_numbering(:)
@@ -230,33 +236,33 @@ module m_clone
             enddo
             new_pixel = pixel + pixel_no !! I can also use counter instead of new_pixel
             if (any(minval(area_mask(ii:ii+1,jj:new_pixel-1), 1) > 0)) then
-                if (present(new_line)) then
+                if (present(line_new)) then
                     if (clone_1 > 0 .and. clone_2 > 0) then
                         l_new = l_new + 1
-                        new_line(l_new, 1) = clone_numbering(clone_1)
-                        new_line(l_new, 2) = clone_numbering(clone_2)
+                        line_new(l_new, 1) = clone_numbering(clone_1)
+                        line_new(l_new, 2) = clone_numbering(clone_2)
                     elseif (clone_1 > 0 .and. clone_2 <= 0) then
                         l_new = l_new + 1
-                        new_line(l_new, 1) = clone_numbering(clone_1)
-                        new_line(l_new, 2) = cell_numbering(host_2)
+                        line_new(l_new, 1) = clone_numbering(clone_1)
+                        line_new(l_new, 2) = cell_numbering(host_2)
                     elseif (clone_2 > 0 .and. clone_1 <= 0) then
                         l_new = l_new + 1
-                        new_line(l_new, 1) = clone_numbering(host_1)
-                        new_line(l_new, 2) = cell_numbering(clone_2)
+                        line_new(l_new, 1) = clone_numbering(host_1)
+                        line_new(l_new, 2) = cell_numbering(clone_2)
                     endif
-                    write(*,*) 'clone_line_1', clone_line(counter, 1)
-                    write(*,*) 'clone_line_2', clone_line(counter, 2)
+                    write(*,*) 'line_new_1', line_new(counter, 1)
+                    write(*,*) 'line_new_2', line_new(counter, 2)
                 else
                     tot_number_lines = tot_number_lines + 1
-                    write(*,*) 'number_clonelines', number_clonelines
+                    write(*,*) 'tot_number_lines', tot_number_lines
                 endif
             endif
             if (pixel_no < num_pix) then
                 new_clone_1 = clone_mask(ii, new_pixel)
                 new_clone_2 = clone_mask(ii + 1, new_pixel)
-                if (present(new_line)) then
-                    call find_active_clone_lines(direction, ii, new_pixel, min_pix, new_clone_1, new_clone_2, k, area_mask, clone_mask, 
-                                                tot_number_lines, new_line, host_1, host_2, l_new, clone_numbering, cell_numbering)
+                if (present(line_new)) then
+                    call find_active_clone_lines(direction, ii, new_pixel, min_pix, new_clone_1, new_clone_2, k, area_mask, clone_mask, tot_number_lines, &
+                                                line_new, host_1, host_2, l_new, clone_numbering, cell_numbering)
                 else
                     call find_active_clone_lines(direction, ii, new_pixel, min_pix, new_clone_1, new_clone_2, k, area_mask, clone_mask, tot_number_lines)
                 endif
@@ -273,19 +279,19 @@ module m_clone
             enddo
             new_pixel = pixel + pixel_no !! I can also use counter instead of new_pixel
             if (any(minval(area_mask(ii:new_pixel-1,jj:jj+1), 2) > 0)) then
-                if (present(new_line)) then
+                if (present(line_new)) then
                     if (clone_1 > 0 .and. clone_2 > 0) then
                         l_new = l_new + 1
-                        new_line(l_new, 1) = clone_numbering(clone_1)
-                        new_line(l_new, 2) = clone_numbering(clone_2)
+                        line_new(l_new, 1) = clone_numbering(clone_1)
+                        line_new(l_new, 2) = clone_numbering(clone_2)
                     elseif (clone_1 > 0 .and. clone_2 <= 0) then
                         l_new = l_new + 1
-                        new_line(l_new, 1) = clone_numbering(clone_1)
-                        new_line(l_new, 2) = cell_numbering(host_2)
+                        line_new(l_new, 1) = clone_numbering(clone_1)
+                        line_new(l_new, 2) = cell_numbering(host_2)
                     elseif (clone_2 > 0 .and. clone_1 <= 0) then
                         l_new = l_new + 1
-                        new_line(l_new, 1) = cell_numbering(host_1)
-                        new_line(l_new, 2) = clone_numbering(clone_2)
+                        line_new(l_new, 1) = cell_numbering(host_1)
+                        line_new(l_new, 2) = clone_numbering(clone_2)
                     endif
                 else
                     tot_number_lines = tot_number_lines + 1
@@ -294,9 +300,9 @@ module m_clone
             if (pixel_no < num_pix) then
                 new_clone_1 = clone_mask(new_pixel, jj)
                 new_clone_2 = clone_mask(new_pixel, jj + 1)
-                if (present(new_line)) then
-                    call find_active_clone_lines(direction, new_pixel, jj, min_pix, new_clone_1, new_clone_2, k, area_mask, clone_mask, &
-                                                tot_number_lines, new_line, host_1, host_2, l, l_new, clone_numbering, cell_numbering)
+                if (present(line_new)) then
+                    call find_active_clone_lines(direction, new_pixel, jj, min_pix, new_clone_1, new_clone_2, k, area_mask, clone_mask, tot_number_lines, &
+                                                line_new, host_1, host_2, l_new, clone_numbering, cell_numbering)
                 else
                     call find_active_clone_lines(direction, new_pixel, jj, min_pix, new_clone_1, new_clone_2, k, area_mask, clone_mask, tot_number_lines)
                 endif

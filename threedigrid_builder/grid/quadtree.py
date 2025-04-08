@@ -13,7 +13,7 @@ from .fgrid import m_cells, m_clone, m_quadtree
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["QuadTree"]
+__all__ = ["QuadTree", "Clone"]
 
 
 def reduce_refinement_levels(refinements, num_refine_levels):
@@ -291,46 +291,52 @@ class Clone:
         clone_array,
         clone_mask,
         quadtree,
+        line,
+        nodk,
+        nodm,
+        nodn,
         area_mask,
     ):
         self.n_cells = quadtree.n_cells
-        self.n_clone_cells = np.array(0, dtype=np.int32, order="F")
+        # self.n_clone_cells = np.array(0, dtype=np.int32, order="F")
         self.n_clonelines_u = np.array(0, dtype=np.int32, order="F")
         self.n_clonelines_v = np.array(0, dtype=np.int32, order="F")
         self.cell_numbering = np.empty((self.n_cells), dtype=np.int32, order="F")
-        n_clones = max(clone_mask)
-        self.clone_numbering = np.empty((n_clones), dtype=np.int32, order="F")
+        n_clones = clone_array.max()
+        n_clones = 3
+        if n_clones > 0:
+            self.clone_numbering = np.empty((n_clones), dtype=np.int32, order="F")
 
-        m_clone.find_active_clone_cells(
-            self.n_cells,
-            self.n_clone_cells,
-            clone_array,
-            self.cell_numbering,
-            self.clone_numbering,
-        )
+            m_clone.find_active_clone_cells(
+                self.n_cells,
+                clone_array,
+                self.cell_numbering,
+                self.clone_numbering,
+            )
 
-        n_lines_u = quadtree.n_lines_u
-        n_lines_v = quadtree.n_lines_v
-        lgrmin = quadtree.lgrmin
-        line = quadtree.line
-        nodk = quadtree.nodk
-        nodm = quadtree.nodm
-        nodn = quadtree.nodn
-
-        m_clone.find_clone_lines(
-            n_lines_u,
-            n_lines_v,
-            lgrmin,
-            area_mask,
-            clone_mask,
-            clone_array,
-            self.cell_numbering,
-            self.clone_numbering,
-            line,
-            nodk,
-            nodm,
-            nodn,
-        )
+            n_lines_u = quadtree.n_lines_u
+            n_lines_v = quadtree.n_lines_v
+            lgrmin = quadtree.lgrmin
+            # line = lines.line
+            # nodk = nodes.nodk,
+            # nodm = nodes.nodm
+            # nodn = nodes.nodn
+            m_clone.find_clone_lines(
+                n_lines_u,
+                n_lines_v,
+                lgrmin,
+                area_mask,
+                clone_mask,
+                clone_array,
+                self.cell_numbering,
+                self.clone_numbering,
+                line,
+                nodk,
+                nodm,
+                nodn,
+            )
+        else:
+            print("No clone cells are created")
 
     # if self.n_clone_cells.sum() == 0
     #     raise a message to show no clones were created
