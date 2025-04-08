@@ -74,7 +74,7 @@ def test_rasterize_line_refinement(refinements):
 
 def test_rasterize_line_refinement2(refinements):
     refinements.the_geom[0] = shapely.linestrings(
-        [[15.0, 14.5], [12.5, 14.5], [12.5, 16.0]]
+        [[16.0, 14.5], [12.5, 14.5], [12.5, 17.0]]
     )
     actual = refinements.rasterize(
         origin=(12.0, 10.0), height=8, width=6, cell_size=1.0, no_data_value=3
