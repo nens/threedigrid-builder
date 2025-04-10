@@ -303,7 +303,6 @@ class Clone:
         self.n_clonelines_v = np.array(0, dtype=np.int32, order="F")
         self.cell_numbering = np.empty((self.n_cells), dtype=np.int32, order="F")
         n_clones = clone_array.max()
-        n_clones = 3
         if n_clones > 0:
             self.clone_numbering = np.empty((n_clones), dtype=np.int32, order="F")
 
