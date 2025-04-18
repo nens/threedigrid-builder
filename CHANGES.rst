@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.24.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fix is_channel check by converting connection node ids to indexes.
 
 
 1.24.1 (2025-04-09)

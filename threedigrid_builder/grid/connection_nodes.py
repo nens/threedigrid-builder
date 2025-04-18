@@ -97,7 +97,8 @@ class ConnectionNodes(Array[ConnectionNode]):
             np.isin(self.id, channels.connection_node_start_id),
             np.isin(self.id, channels.connection_node_end_id),
         )
-        return has_channel[content_pk]
+        idx = self.id_to_index(content_pk)
+        return has_channel[idx]
 
     def get_1d2d_exchange_levels(self, content_pk, channels, locations, **kwargs):
         """Compute the exchange level (dpumax) for 1D-2D flowlines.
