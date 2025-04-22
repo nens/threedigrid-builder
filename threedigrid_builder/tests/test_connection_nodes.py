@@ -280,8 +280,9 @@ def test_is_closed(connection_nodes):
 @pytest.mark.parametrize(
     "start_id, end_id, content_pk, expected",
     [
-        ([1, 3], [9, 10], np.arange(5, dtype=int), [True, True, False, True, True]),
-        ([1, 3], [9, 10], [0, 1], [True, True]),
+        ([1, 3], [9, 10], [1, 3, 4, 9, 10], [True, True, False, True, True]),
+        ([1], [10], [1, 3, 4, 9, 10], [True, False, False, False, True]),
+        ([], [], [1, 3, 4, 9, 10], [False, False, False, False, False]),
     ],
 )
 def test_has_channel(connection_nodes, start_id, end_id, content_pk, expected):
