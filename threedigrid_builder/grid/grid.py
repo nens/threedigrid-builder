@@ -1034,7 +1034,7 @@ class Grid:
 
         # Write to array
         fragment_id_raster = np.full(
-            shape=(1, dem_raster_dataset.RasterYSize, dem_raster_dataset.RasterXSize),
+            shape=(1, dem_raster_dataset.RasterXSize, dem_raster_dataset.RasterYSize),
             fill_value=no_data_value,
             dtype=np.int32,
         )
@@ -1101,7 +1101,8 @@ class Grid:
             id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
         )
 
-        fortran_fragment_mask = np.asfortranarray(fragment_id_raster[0])
+        # Flip and transpose to mimic GDALInterface.read()
+        fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_id_raster[0]).T)
         assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
         fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
         assert (
