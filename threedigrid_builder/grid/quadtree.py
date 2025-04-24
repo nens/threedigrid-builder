@@ -298,35 +298,38 @@ class Clone:
         area_mask,
     ):
         self.n_cells = quadtree.n_cells
-        # self.n_clone_cells = np.array(0, dtype=np.int32, order="F")
-        self.n_clonelines_u = np.array(0, dtype=np.int32, order="F")
-        self.n_clonelines_v = np.array(0, dtype=np.int32, order="F")
-        self.cell_numbering = np.empty((self.n_cells), dtype=np.int32, order="F")
-        n_clones = clone_array.max()
+        self.cell_numbering = np.zeros((self.n_cells), dtype=np.int32, order="F")
+        n_clones = clone_array.max() + 1
         if n_clones > 0:
-            self.clone_numbering = np.empty((n_clones), dtype=np.int32, order="F")
+            self.clone_numbering = np.zeros((n_clones), dtype=np.int32, order="F")
+            self.clones_in_cell = np.zeros((self.n_cells), dtype=np.int32, order="F")
+            # clone_mask = np.transpose(clone_mask)
 
             m_clone.find_active_clone_cells(
                 self.n_cells,
                 clone_array,
                 self.cell_numbering,
                 self.clone_numbering,
+                self.clones_in_cell,
             )
 
-            n_lines_u = quadtree.n_lines_u
-            n_lines_v = quadtree.n_lines_v
             lgrmin = quadtree.lgrmin
-            # line = lines.line
-            # nodk = nodes.nodk,
-            # nodm = nodes.nodm
-            # nodn = nodes.nodn
-            m_clone.find_clone_lines(
-                n_lines_u,
-                n_lines_v,
+
+            start_u = 1
+            end_u = 1 * quadtree.n_lines_u
+
+            start_v = quadtree.n_lines_u + 1
+            end_v = quadtree.n_lines_u + quadtree.n_lines_v
+
+            m_clone.count_clone_lines(
+                1,
+                start_u,
+                end_u,
+                quadtree.n_lines_u,
                 lgrmin,
                 area_mask,
                 clone_mask,
-                clone_array,
+                self.clones_in_cell,
                 self.cell_numbering,
                 self.clone_numbering,
                 line,
@@ -334,6 +337,68 @@ class Clone:
                 nodm,
                 nodn,
             )
+
+            m_clone.count_clone_lines(
+                2,
+                start_v,
+                end_v,
+                quadtree.n_lines_v,
+                lgrmin,
+                area_mask,
+                clone_mask,
+                self.clones_in_cell,
+                self.cell_numbering,
+                self.clone_numbering,
+                line,
+                nodk,
+                nodm,
+                nodn,
+            )
+
+            # this includes all lines with new numbering for the cells
+            self.line_new = np.zeros(
+                (quadtree.n_lines_u + quadtree.n_lines_v, 2), dtype=np.int32, order="F"
+            )
+            self.counter = 0
+
+            m_clone.find_clone_lines(
+                1,
+                start_u,
+                end_u,
+                quadtree.n_lines_u,
+                lgrmin,
+                area_mask,
+                clone_mask,
+                self.clones_in_cell,
+                self.cell_numbering,
+                self.clone_numbering,
+                line,
+                nodk,
+                nodm,
+                nodn,
+                self.counter,
+                self.line_new,
+            )
+
+            m_clone.find_clone_lines(
+                2,
+                start_v,
+                end_v,
+                quadtree.n_lines_v,
+                lgrmin,
+                area_mask,
+                clone_mask,
+                self.clones_in_cell,
+                self.cell_numbering,
+                self.clone_numbering,
+                line,
+                nodk,
+                nodm,
+                nodn,
+                self.counter,
+                self.line_new,
+            )
+            line = self.line_new
         else:
             print("No clone cells are created")
 

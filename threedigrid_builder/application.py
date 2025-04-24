@@ -94,7 +94,7 @@ def _make_gridadmin(
                 db.get_obstacles(), dem_path
             )
 
-            clone = Clone(
+            Clone(
                 # np.size(fortran_node_fragment_array, 1),
                 fortran_node_fragment_array,
                 fortran_fragment_mask,
@@ -106,9 +106,9 @@ def _make_gridadmin(
                 area_mask=subgrid_meta["area_mask"],
             )
 
-            grid += Grid.from_clone(
-                clone=clone,
-            )
+            # grid += Grid.from_clone(
+            #     clone=clone,
+            # )
 
             # self.clone_to_cell = np.empty(
             #     np.size(fortran_node_fragment_array, 1), dtype=np.int32, order="F"
