@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.3 (unreleased)
+1.24.3 (2025-04-28)
 -------------------
 
 - Use windows-2019 runner to fix QGIS segfault.
