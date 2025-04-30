@@ -305,6 +305,7 @@ class Clone:
             self.clones_in_cell = np.zeros((self.n_cells), dtype=np.int32, order="F")
             # clone_mask = np.transpose(clone_mask)
 
+            lgrmin = quadtree.lgrmin
             m_clone.find_active_clone_cells(
                 self.n_cells,
                 clone_array,
@@ -312,8 +313,6 @@ class Clone:
                 self.clone_numbering,
                 self.clones_in_cell,
             )
-
-            lgrmin = quadtree.lgrmin
 
             start_u = 1
             end_u = 1 * quadtree.n_lines_u
@@ -398,7 +397,10 @@ class Clone:
                 self.counter,
                 self.line_new,
             )
-            line = self.line_new
+
+            # total_lines = quadtree.n_lines_u + quadtree.n_lines_v
+            # kcu = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
+            # kcu[quadtree.n_lines_u : total_lines] = LineType.LINE_2D_V
         else:
             print("No clone cells are created")
 

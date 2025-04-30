@@ -24,6 +24,9 @@ from threedigrid_builder.interface import (
 )
 from threedigrid_builder.interface.db import map_cross_section_definition
 
+# import numpy as np
+
+
 __all__ = ["make_grid", "make_gridadmin"]
 
 logger = logging.getLogger(__name__)
@@ -94,8 +97,7 @@ def _make_gridadmin(
                 db.get_obstacles(), dem_path
             )
 
-            Clone(
-                # np.size(fortran_node_fragment_array, 1),
+            clone = Clone(
                 fortran_node_fragment_array,
                 fortran_fragment_mask,
                 quadtree,
@@ -106,13 +108,17 @@ def _make_gridadmin(
                 area_mask=subgrid_meta["area_mask"],
             )
 
-            # grid += Grid.from_clone(
-            #     clone=clone,
+            # grid.lines.line = clone.line_new
+            quadtree.n_cells = clone.n_cells
+            # grid.lines.kcu = np.full(
+            #     (quadtree.n_lines_u + quadtree.n_lines_v,),
+            #     LineType.LINE_2D_U,
+            #     dtype="i4",
+            #     order="F",
             # )
-
-            # self.clone_to_cell = np.empty(
-            #     np.size(fortran_node_fragment_array, 1), dtype=np.int32, order="F"
-            # )
+            # grid.lines.kcu[
+            #     quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
+            # ] = LineType.LINE_2D_V
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
