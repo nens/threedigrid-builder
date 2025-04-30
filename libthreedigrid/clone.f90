@@ -111,6 +111,22 @@ module m_clone
 
     end subroutine count_clone_lines
 
+    subroutine count_interclone_lines(n_lines, clones_in_cell)
+        
+        integer, intent(inout) :: n_lines  !! number of interclone lines
+        integer, intent(in) :: clones_in_cell(:)
+
+        integer :: n_cell
+
+        do n_cell = 1, size(clones_in_cell)
+            if (clones_in_cell(n_cell) == 2) then
+                n_lines = n_lines + 1
+            ! elseif (clones_in_cell(n_cell) == 2) then
+            endif
+        enddo
+
+    end subroutine count_interclone_lines
+
     subroutine find_clone_lines(direction, start_l, end_l, n_line_new, lgrmin, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, l_counter, line_new)
 
         use parameters, only: U_DIR, V_DIR
@@ -318,5 +334,26 @@ module m_clone
         endif
 
     end subroutine find_active_clone_lines
+
+    subroutine find_interclone_lines(clones_in_cell, l_counter, line_new, clone_numbering, clone_array)
+        
+        integer, intent(in) :: clones_in_cell(:)
+        integer, intent(inout):: l_counter
+        integer, intent(inout) :: line_new(:,:)
+        integer, intent(in) :: clone_numbering(:)
+        integer, intent(in) :: clone_array(:,:)
+
+        integer :: n_cell
+
+        do n_cell = 1, size(clones_in_cell)
+            if (clones_in_cell(n_cell) == 2) then
+                l_counter = l_counter + 1
+                line_new(l_counter, 1) = clone_numbering(clone_array(n_cell, 1) + 1)
+                line_new(l_counter, 2) = clone_numbering(clone_array(n_cell, 2) + 1)
+                ! elseif (clones_in_cell(n_cell) == 2) then
+            endif
+        enddo
+
+    end subroutine find_interclone_lines
 
 end module

@@ -108,10 +108,10 @@ def _make_gridadmin(
                 area_mask=subgrid_meta["area_mask"],
             )
 
-            # grid.lines.line = clone.line_new
             quadtree.n_cells = clone.n_cells
+            # grid.lines.line = clone.line_new
             # grid.lines.kcu = np.full(
-            #     (quadtree.n_lines_u + quadtree.n_lines_v,),
+            #     (quadtree.n_lines_u + quadtree.n_lines_v + clone.n_interclone_lines,),
             #     LineType.LINE_2D_U,
             #     dtype="i4",
             #     order="F",
@@ -119,6 +119,9 @@ def _make_gridadmin(
             # grid.lines.kcu[
             #     quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
             # ] = LineType.LINE_2D_V
+            # grid.lines.kcu[
+            #     quadtree.n_lines_u + quadtree.n_lines_v : quadtree.n_lines_u + quadtree.n_lines_v + clone.n_interclone_lines
+            # ] = LineType.LINE_INTERCLONE
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(

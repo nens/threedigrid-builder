@@ -354,11 +354,19 @@ class Clone:
                 nodn,
             )
 
+            self.n_interclone_lines = np.array(0, dtype=np.int32, order="F")
+
+            m_clone.count_interclone_lines(
+                self.n_interclone_lines,
+                self.clones_in_cell,
+            )
             # this includes all lines with new numbering for the cells
             self.line_new = np.zeros(
-                (quadtree.n_lines_u + quadtree.n_lines_v, 2), dtype=np.int32, order="F"
+                (quadtree.n_lines_u + quadtree.n_lines_v + self.n_interclone_lines, 2),
+                dtype=np.int32,
+                order="F",
             )
-            self.counter = 0
+            self.counter = np.array(0, dtype=np.int32, order="F")
 
             m_clone.find_clone_lines(
                 1,
@@ -396,6 +404,14 @@ class Clone:
                 nodn,
                 self.counter,
                 self.line_new,
+            )
+
+            m_clone.find_interclone_lines(
+                self.clones_in_cell,
+                self.counter,
+                self.line_new,
+                self.clone_numbering,
+                clone_array,
             )
 
             # total_lines = quadtree.n_lines_u + quadtree.n_lines_v
