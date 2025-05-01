@@ -41,20 +41,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2019, macos-14]
+        os: [windows-2022]
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
       - uses: msys2/setup-msys2@v2
-        if: matrix.os == 'windows-2019'
+        if: matrix.os == 'windows-2022'
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
         # to supply options, put them in 'env', like:
         env:
-          CIBW_SKIP: "pp* *musllinux* cp313*" # skips pypy, musllinux and python3.13
+          CIBW_SKIP: "pp* *musllinux* cp39* cp310* cp311* cp313*" # skips pypy, musllinux and python3.13
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-12 MACOSX_DEPLOYMENT_TARGET=14.0
