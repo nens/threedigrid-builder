@@ -24,18 +24,23 @@ module m_quadtree
         integer, intent(inout) :: n_line_v ! counter for active v lines
         integer :: k
         integer :: m, n
+        integer :: io
 
-        write(*,*) '** INFO: Start making quadtree.'
+        open(newunit=io, file="log.txt", status="new", action="write")
+        write(io, *) '** INFO: Start making quadtree.'
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
             enddo
         enddo
+        write(io, *) 'balance_quadtree'
         call balance_quadtree(kmax, mmax, nmax, lg)
+        write(io, *) 'find_active_2d_comp_cells'
         call find_active_2d_comp_cells(&
             kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
         )
-        write(*,*) '** INFO: Done making quadtree.'
+        write(io,*) '** INFO: Done making quadtree.'
+        close(io)
 
     end subroutine make_quadtree
 
