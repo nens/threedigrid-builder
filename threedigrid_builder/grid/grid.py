@@ -1010,13 +1010,13 @@ class Grid:
             for fragment_idx, fragment in enumerate(fragments):
                 compactness = Grid.compactness(fragment)
                 area = fragment.area
-                fragment_id = next(count)
                 if compactness < 0.2 or area < 2 * cell_area:
                     print(
-                        f"Skipping fragment {fragment_id} compactness: {compactness} area: {area}"
+                        f"Skipping fragment of node {node_id} compactness: {compactness} area: {area}"
                     )
                     continue
 
+                fragment_id = next(count)
                 feature = ogr.Feature(defn)
                 feature.SetField("id", fragment_id)
                 fragment_geometries[fragment_id] = fragment
@@ -1069,7 +1069,6 @@ class Grid:
                     # check whether this is in the mask, if not, set to NODATA value
                     if not np.any(fragment_id_raster[0] == fragment_id):
                         node_fragment_array[n][c] = no_data_value
-                        fragment_id_raster[0]
 
         # Remove fragments that only contains no_data_value in the DEM
         dem_raster = dem_raster_dataset.ReadAsArray()
@@ -1084,6 +1083,14 @@ class Grid:
                         fragment_id_raster[
                             fragment_id_raster == fragment_id
                         ] = no_data_value
+
+        # Remove fragments whose host node only contains one (this) fragment
+        for n in range(nr_nodes):
+            fragments_ids = [f for f in node_fragment_array[n] if f != no_data_value]
+            if len(fragments_ids) == 1:
+                fragment_id = fragments_ids[0]
+                node_fragment_array[n][:] = no_data_value
+                fragment_id_raster[fragment_id_raster == fragment_id] = no_data_value
 
         export_final_fragment_tiff = False
         if export_final_fragment_tiff:
@@ -1114,13 +1121,9 @@ class Grid:
             id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
         )
 
-        # Flip and transpose to mimic GDALInterface.read()
+        # Flip and transpose mask to mimic GDALInterface.read()
         fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_id_raster[0]).T)
-        assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
         fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
-        assert (
-            fortran_node_fragment_array.min() == no_data_value
-        )  # temp assert for mypy
 
         return fortran_fragment_mask, fortran_node_fragment_array
 
