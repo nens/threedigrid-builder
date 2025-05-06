@@ -1,4 +1,5 @@
 import itertools
+import math
 from dataclasses import dataclass, fields
 from typing import List, Optional, Tuple
 
@@ -975,6 +976,10 @@ class Grid:
 
         # Read DEM to retrieve properties such as number of pixels etc.
         dem_raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+        dem_geo_transform = dem_raster_dataset.GetGeoTransform()
+        cell_size_x = dem_geo_transform[1]
+        cell_size_y = -dem_geo_transform[5]
+        cell_area = cell_size_x * cell_size_y
 
         # Create an OGR memory layer with the geometry
         driver = ogr.GetDriverByName("Memory")
@@ -1003,7 +1008,15 @@ class Grid:
         fragment_geometries = {}
         for node_id, fragments in node_fragments.items():
             for fragment_idx, fragment in enumerate(fragments):
+                compactness = Grid.compactness(fragment)
+                area = fragment.area
                 fragment_id = next(count)
+                if compactness < 0.2 or area < 2 * cell_area:
+                    print(
+                        f"Skipping fragment {fragment_id} compactness: {compactness} area: {area}"
+                    )
+                    continue
+
                 feature = ogr.Feature(defn)
                 feature.SetField("id", fragment_id)
                 fragment_geometries[fragment_id] = fragment
@@ -1149,6 +1162,13 @@ class Grid:
             return [polygon]
 
         return result
+
+    @staticmethod
+    def compactness(polygon: shapely.Polygon) -> float:
+        """Return measure of compactness, currently only isoperimetric
+        quotient (IPQ = 4πA/P^2 where A is area and P is perimeter) is
+        supported."""
+        return (4.0 * math.pi * polygon.area) / pow(polygon.length, 2)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""

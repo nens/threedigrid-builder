@@ -1,3 +1,4 @@
+import math
 from unittest import mock
 
 import numpy as np
@@ -368,6 +369,23 @@ def test_set_cross_sections(grid):
 @pytest.fixture
 def cell_polygon():
     return shapely.box(0, 0, 10, 10)
+
+
+def test_compactness():
+    circle = shapely.buffer(shapely.Point(0.0, 0.0), 1.0, 512)  # 512-con approximation
+    assert circle.length == pytest.approx(2.0 * math.pi)
+    circle_compactness = Grid.compactness(circle)
+    assert circle_compactness == pytest.approx(1.0)
+
+    line = shapely.LineString([(0, 0), (10, 0)])
+    assert line.length == 10.0
+    line_compactness = Grid.compactness(line)
+    assert line_compactness == pytest.approx(0.0)
+
+    long_box = shapely.box(0, 0, 1000000, 1)
+    long_box_compactness = Grid.compactness(long_box)
+    expected_compactness = (4.0 * math.pi * 1000000) / pow(2000002, 2)
+    assert long_box_compactness == expected_compactness
 
 
 def test_split_single_cut(cell_polygon):
