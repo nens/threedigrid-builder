@@ -28,6 +28,7 @@ module m_quadtree
         open(77, file=trim("D:/tmp/builder.log"))
 
         write(*,*) '** INFO: Start making quadtree.'
+        write(77,*) "Z", lg
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
