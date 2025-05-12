@@ -191,10 +191,15 @@ module m_quadtree
                         endif
                     endif
                     write(77,*) "LL"
+                    flush(77)
                 enddo
             enddo
         enddo
+        write(77,*) "MM"
+        flush(77)
         deallocate(area_mask_padded)
+        write(77,*) "NN"
+        flush(77)
         write(*,*) '** INFO: No. active 2D computational cells: ', n_cells
         write(*,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
 
