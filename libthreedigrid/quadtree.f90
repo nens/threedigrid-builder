@@ -27,7 +27,7 @@ module m_quadtree
 
         open(77, file=trim("D:/tmp/builder.log"))
 
-        write(*,*) '** INFO: Start making quadtree.'
+        ! write(*,*) '** INFO: Start making quadtree.'
         write(77,*) "Z", lg
         flush(77)
         do m=1, mmax(kmax)
