@@ -29,18 +29,22 @@ module m_quadtree
 
         write(*,*) '** INFO: Start making quadtree.'
         write(77,*) "Z", lg
+        flush(77)
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
             enddo
         enddo
         write(77,*) "A"
+        flush(77)
         call balance_quadtree(kmax, mmax, nmax, lg)
         write(77,*) "B"
+        flush(77)
         call find_active_2d_comp_cells(&
             kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
         )
         write(77,*) "C"
+        flush(77)
         write(*,*) '** INFO: Done making quadtree.'
         close(77)
 
