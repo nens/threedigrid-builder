@@ -28,7 +28,7 @@ module m_quadtree
         open(77, file=trim("D:/tmp/builder.log"))
 
         ! write(*,*) '** INFO: Start making quadtree.'
-        write(77,*) "Z", lg
+        write(77,*) "Z"
         flush(77)
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
@@ -172,6 +172,7 @@ module m_quadtree
                     flush(77)
                     write(77, *), "JJ", mn(1), mn(3), mn(2), mn(4)
                     flush(77)
+                    write(77, *) "XX", lg(mn(1):mn(3),mn(2):mn(4))
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
                         write(77,*) "KK", k
                         flush(77)
