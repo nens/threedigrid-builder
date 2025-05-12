@@ -1,4 +1,5 @@
 import itertools
+import math
 from dataclasses import dataclass, fields
 from typing import List, Optional, Tuple
 
@@ -975,6 +976,10 @@ class Grid:
 
         # Read DEM to retrieve properties such as number of pixels etc.
         dem_raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+        dem_geo_transform = dem_raster_dataset.GetGeoTransform()
+        cell_size_x = dem_geo_transform[1]
+        cell_size_y = -dem_geo_transform[5]
+        cell_area = cell_size_x * cell_size_y
 
         # Create an OGR memory layer with the geometry
         driver = ogr.GetDriverByName("Memory")
@@ -1003,6 +1008,14 @@ class Grid:
         fragment_geometries = {}
         for node_id, fragments in node_fragments.items():
             for fragment_idx, fragment in enumerate(fragments):
+                compactness = Grid.compactness(fragment)
+                area = fragment.area
+                if compactness < 0.2 or area < 2 * cell_area:
+                    print(
+                        f"Skipping fragment of node {node_id} compactness: {compactness} area: {area}"
+                    )
+                    continue
+
                 fragment_id = next(count)
                 feature = ogr.Feature(defn)
                 feature.SetField("id", fragment_id)
@@ -1056,7 +1069,6 @@ class Grid:
                     # check whether this is in the mask, if not, set to NODATA value
                     if not np.any(fragment_id_raster[0] == fragment_id):
                         node_fragment_array[n][c] = no_data_value
-                        fragment_id_raster[0]
 
         # Remove fragments that only contains no_data_value in the DEM
         dem_raster = dem_raster_dataset.ReadAsArray()
@@ -1071,6 +1083,14 @@ class Grid:
                         fragment_id_raster[
                             fragment_id_raster == fragment_id
                         ] = no_data_value
+
+        # Remove fragments whose host node only contains one (this) fragment
+        for n in range(nr_nodes):
+            fragments_ids = [f for f in node_fragment_array[n] if f != no_data_value]
+            if len(fragments_ids) == 1:
+                fragment_id = fragments_ids[0]
+                node_fragment_array[n][:] = no_data_value
+                fragment_id_raster[fragment_id_raster == fragment_id] = no_data_value
 
         export_final_fragment_tiff = False
         if export_final_fragment_tiff:
@@ -1101,13 +1121,9 @@ class Grid:
             id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
         )
 
-        # Flip and transpose to mimic GDALInterface.read()
+        # Flip and transpose mask to mimic GDALInterface.read()
         fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_id_raster[0]).T)
-        assert fortran_fragment_mask.min() == no_data_value  # temp assert for mypy
         fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
-        assert (
-            fortran_node_fragment_array.min() == no_data_value
-        )  # temp assert for mypy
 
         return fortran_fragment_mask, fortran_node_fragment_array
 
@@ -1149,6 +1165,13 @@ class Grid:
             return [polygon]
 
         return result
+
+    @staticmethod
+    def compactness(polygon: shapely.Polygon) -> float:
+        """Return measure of compactness, currently only isoperimetric
+        quotient (IPQ = 4πA/P^2 where A is area and P is perimeter) is
+        supported."""
+        return (4.0 * math.pi * polygon.area) / pow(polygon.length, 2)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""
