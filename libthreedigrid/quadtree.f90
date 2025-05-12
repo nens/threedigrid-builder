@@ -200,9 +200,10 @@ module m_quadtree
         deallocate(area_mask_padded)
         write(77,*) "NN"
         flush(77)
-        write(*,*) '** INFO: No. active 2D computational cells: ', n_cells
-        write(*,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
-
+        write(77,*) '** INFO: No. active 2D computational cells: ', n_cells
+        write(77,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
+        flush(77)
+        
     end subroutine find_active_2d_comp_cells
 
 
