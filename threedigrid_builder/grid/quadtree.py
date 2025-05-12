@@ -297,15 +297,18 @@ class Clone:
         nodn,
         area_mask,
     ):
-        self.n_cells = quadtree.n_cells
+        # self.n_cells = np.array(0, dtype=np.int32, order="F")
+        self.n_cells = np.copy(quadtree.n_cells)
         self.cell_numbering = np.zeros((self.n_cells), dtype=np.int32, order="F")
         n_clones = clone_array.max() + 1
         if n_clones > 0:
             self.clone_numbering = np.zeros((n_clones), dtype=np.int32, order="F")
             self.clones_in_cell = np.zeros((self.n_cells), dtype=np.int32, order="F")
-            # clone_mask = np.transpose(clone_mask)
-
+            self.n_interclone_lines = np.array(0, dtype=np.int32, order="F")
+            self.n_newlines_u = np.copy(quadtree.n_lines_u)
+            self.n_newlines_v = np.copy(quadtree.n_lines_v)
             lgrmin = quadtree.lgrmin
+
             m_clone.find_active_clone_cells(
                 self.n_cells,
                 clone_array,
@@ -314,17 +317,7 @@ class Clone:
                 self.clones_in_cell,
             )
 
-            start_u = 1
-            end_u = 1 * quadtree.n_lines_u
-
-            start_v = quadtree.n_lines_u + 1
-            end_v = quadtree.n_lines_u + quadtree.n_lines_v
-
-            m_clone.count_clone_lines(
-                1,
-                start_u,
-                end_u,
-                quadtree.n_lines_u,
+            m_clone.make_clones(
                 lgrmin,
                 area_mask,
                 clone_mask,
@@ -335,66 +328,26 @@ class Clone:
                 nodk,
                 nodm,
                 nodn,
-            )
-
-            m_clone.count_clone_lines(
-                2,
-                start_v,
-                end_v,
-                quadtree.n_lines_v,
-                lgrmin,
-                area_mask,
-                clone_mask,
-                self.clones_in_cell,
-                self.cell_numbering,
-                self.clone_numbering,
-                line,
-                nodk,
-                nodm,
-                nodn,
-            )
-
-            self.n_interclone_lines = np.array(0, dtype=np.int32, order="F")
-
-            m_clone.count_interclone_lines(
+                self.n_newlines_u,
+                self.n_newlines_v,
                 self.n_interclone_lines,
-                self.clones_in_cell,
             )
+
             # this includes all lines with new numbering for the cells
             self.line_new = np.zeros(
-                (quadtree.n_lines_u + quadtree.n_lines_v + self.n_interclone_lines, 2),
+                (self.n_newlines_u + self.n_newlines_v + self.n_interclone_lines, 2),
                 dtype=np.int32,
                 order="F",
             )
-            self.counter = np.array(0, dtype=np.int32, order="F")
 
-            m_clone.find_clone_lines(
-                1,
-                start_u,
-                end_u,
+            m_clone.set_lines_with_clones(
                 quadtree.n_lines_u,
-                lgrmin,
-                area_mask,
-                clone_mask,
-                self.clones_in_cell,
-                self.cell_numbering,
-                self.clone_numbering,
-                line,
-                nodk,
-                nodm,
-                nodn,
-                self.counter,
-                self.line_new,
-            )
-
-            m_clone.find_clone_lines(
-                2,
-                start_v,
-                end_v,
                 quadtree.n_lines_v,
+                self.n_interclone_lines,
                 lgrmin,
                 area_mask,
                 clone_mask,
+                clone_array,
                 self.clones_in_cell,
                 self.cell_numbering,
                 self.clone_numbering,
@@ -402,21 +355,23 @@ class Clone:
                 nodk,
                 nodm,
                 nodn,
-                self.counter,
                 self.line_new,
             )
 
-            m_clone.find_interclone_lines(
-                self.clones_in_cell,
-                self.counter,
-                self.line_new,
-                self.clone_numbering,
+            self.nodk_new = np.empty((self.n_cells), dtype=np.int32, order="F")
+            self.nodm_new = np.empty((self.n_cells), dtype=np.int32, order="F")
+            self.nodn_new = np.empty((self.n_cells), dtype=np.int32, order="F")
+
+            m_clone.reset_nod_parameters(
+                nodk,
+                nodm,
+                nodn,
                 clone_array,
+                self.nodk_new,
+                self.nodm_new,
+                self.nodn_new,
             )
 
-            # total_lines = quadtree.n_lines_u + quadtree.n_lines_v
-            # kcu = np.full((total_lines,), LineType.LINE_2D_U, dtype="i4", order="F")
-            # kcu[quadtree.n_lines_u : total_lines] = LineType.LINE_2D_V
         else:
             print("No clone cells are created")
 

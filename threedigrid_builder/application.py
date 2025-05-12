@@ -4,15 +4,16 @@ Use cases orchestrate the flow of data to and from the domain entities.
 
 This layer depends on the interfaces as well as on the domain layer.
 """
-
 import itertools
 import logging
 from pathlib import Path
 from typing import Callable, Optional
 
-from threedigrid_builder.base import GridSettings
+import numpy as np
+
+from threedigrid_builder.base import GridSettings, Lines, Nodes
 from threedigrid_builder.base.surfaces import Surfaces
-from threedigrid_builder.constants import InflowType
+from threedigrid_builder.constants import InflowType, LineType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Clone, Grid, QuadTree
 from threedigrid_builder.interface import (
@@ -23,9 +24,6 @@ from threedigrid_builder.interface import (
     SQLite,
 )
 from threedigrid_builder.interface.db import map_cross_section_definition
-
-# import numpy as np
-
 
 __all__ = ["make_grid", "make_gridadmin"]
 
@@ -109,19 +107,63 @@ def _make_gridadmin(
             )
 
             quadtree.n_cells = clone.n_cells
-            # grid.lines.line = clone.line_new
-            # grid.lines.kcu = np.full(
-            #     (quadtree.n_lines_u + quadtree.n_lines_v + clone.n_interclone_lines,),
-            #     LineType.LINE_2D_U,
-            #     dtype="i4",
-            #     order="F",
+            quadtree.n_lines_u = clone.n_newlines_u
+            quadtree.n_lines_v = clone.n_newlines_v
+            total_lines = (
+                clone.n_newlines_u + clone.n_newlines_v + clone.n_interclone_lines
+            )
+            grid.lines.line = clone.line_new
+            grid.lines.kcu = np.full(
+                (total_lines,),
+                LineType.LINE_2D_U,
+                dtype="i4",
+                order="F",
+            )
+            grid.lines.kcu[
+                quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
+            ] = LineType.LINE_2D_V
+            grid.lines.kcu[
+                quadtree.n_lines_u + quadtree.n_lines_v : total_lines
+            ] = LineType.LINE_INTERCLONE
+            grid.nodes.nodk = clone.nodk_new
+            grid.nodes.nodm = clone.nodm_new
+            grid.nodes.nodn = clone.nodn_new
+
+            idx = clone.line_new[
+                np.arange(total_lines),
+                np.argmin(grid.nodes.nodk[clone.line_new[:, :]], axis=1),
+            ]
+            grid.lines.lik = grid.nodes.nodk[idx]
+            grid.lines.lim = grid.nodes.nodm[idx]
+            grid.lines.lin = grid.nodes.nodn[idx]
+
+            node_id_counter = itertools.count()
+            line_id_counter = itertools.count()
+            Lines(
+                id=itertools.islice(line_id_counter, 0, len(clone.line_new)),
+                # line_geometries=grid.lines.line_geometries,
+                # kcu=grid.lines.kcu,
+                # line=clone.line_new,
+                # lik=grid.lines.lik,
+                # lim=grid.lines.lim,
+                # lin=grid.lines.lin,
+            )
+
+            Nodes(
+                id=itertools.islice(node_id_counter, 0, clone.n_cells),
+                # node_type=node_type,
+                # nodk=nodk,
+                # nodm=nodm,
+                # nodn=nodn,
+                # bounds=bounds,
+                # coordinates=coords,
+                # pixel_coords=pixel_coords,
+                # has_dem_averaged=0,
+            )
+            # shapely.line_interpolate_point(
+            #     grid.lines.line_geometries[mask], grid.lines.ds1d_half[mask]
             # )
-            # grid.lines.kcu[
-            #     quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
-            # ] = LineType.LINE_2D_V
-            # grid.lines.kcu[
-            #     quadtree.n_lines_u + quadtree.n_lines_v : quadtree.n_lines_u + quadtree.n_lines_v + clone.n_interclone_lines
-            # ] = LineType.LINE_INTERCLONE
+            # Lines.fix_line_geometries()
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
