@@ -174,7 +174,6 @@ module m_quadtree
                     flush(77)
                     write(77, *) "XX", lg(mn(1):mn(3),mn(2):mn(4))
                     flush(77)
-                    if (mn(1)==mn(3) .and. mn(2) ==)
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
                         write(77,*) "KK", k
                         flush(77)
