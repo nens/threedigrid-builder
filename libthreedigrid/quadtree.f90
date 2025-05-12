@@ -1,7 +1,6 @@
 module m_quadtree
 
-    use iso_fortran_env, only: stdout => output_unit, &
-                                stderr => error_unit
+    use iso_fortran_env, only: output_unit, error_unit
     use parameters, only : NODATA
 
     implicit none
@@ -27,22 +26,25 @@ module m_quadtree
         integer :: k
         integer :: m, n
 
-        open(stdout,file=trim("D:/tmp/stdout.log"))
-        open(stderr,file=trim("D:/tmp/stderr.log"))
-        write(stdout,*) '** INFO: Start making quadtree.'
+        open(output_unit, file=trim("D:/tmp/stdout.log"))
+        open(error_unit,file=trim("D:/tmp/stderr.log"))
+        write(error_unit, *) "HELLO!"
+        write(*,*) '** INFO: Start making quadtree.'
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
             enddo
         enddo
-        write(stdout,*) "A"
+        write(output_unit,*) "A"
         call balance_quadtree(kmax, mmax, nmax, lg)
-        write(stdout,*) "B"
+        write(output_unit,*) "B"
         call find_active_2d_comp_cells(&
             kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
         )
-        write(stdout,*) "C"
+        write(output_unit,*) "C"
         write(*,*) '** INFO: Done making quadtree.'
+        close(output_unit)
+        close(error_unit)
 
     end subroutine make_quadtree
 
@@ -139,36 +141,36 @@ module m_quadtree
         integer :: i0, i1, j0, j1, i2, i3, j2, j3
         integer :: n_cells
         
-        write(stdout,*) "AA"
+        write(output_unit,*) "AA"
         n_cells = 0
         n_line_u = 0
         n_line_v = 0
         quad_idx = 0
-        write(stdout,*) "BB"
+        write(output_unit,*) "BB"
         call get_pix_corners(kmax, mmax(kmax), nmax(kmax), lgrmin, i0, i1, j0, j1)
-        write(stdout,*) "CC"
+        write(output_unit,*) "CC"
         area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
-        write(stdout,*) "DD"
+        write(output_unit,*) "DD"
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
-                    write(stdout,*) "EE"
-                    flush(stdout)
+                    write(output_unit,*) "EE"
+                    flush(output_unit)
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
                     mn = get_lg_corners(k, m, n)
-                    write(stdout,*) "FF", i1, size(area_mask, 1)
-                    flush(stdout)
+                    write(output_unit,*) "FF", i1, size(area_mask, 1)
+                    flush(output_unit)
                     i1 = min(i1, size(area_mask, 1))
-                    write(stdout,*) "GG", i1
-                    flush(stdout)
-                    write(stdout,*) "HH", j1, size(area_mask, 2)
-                    flush(stdout)
+                    write(output_unit,*) "GG", i1
+                    flush(output_unit)
+                    write(output_unit,*) "HH", j1, size(area_mask, 2)
+                    flush(output_unit)
                     j1 = min(j1, size(area_mask, 2))
-                    write(stdout,*) "II", j1, size(area_mask, 2)
-                    flush(stdout)
+                    write(output_unit,*) "II", j1, size(area_mask, 2)
+                    flush(output_unit)
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                        write(stdout,*) "JJ"
-                        flush(stdout)
+                        write(output_unit,*) "JJ", all(lg(mn(1):mn(3),mn(2):mn(4)) == k), k
+                        flush(output_unit)
                         if (all(area_mask_padded(i0:i1, j0:j1) == 0)) then
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
                         else
@@ -182,6 +184,8 @@ module m_quadtree
                             endif
                         endif
                     endif
+                    write(output_unit,*) "KK", all(lg(mn(1):mn(3),mn(2):mn(4)) == k), k
+                    flush(output_unit)
                 enddo
             enddo
         enddo
