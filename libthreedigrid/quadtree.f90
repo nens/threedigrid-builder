@@ -152,7 +152,7 @@ module m_quadtree
                     write(77,*) "EE"
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
                     mn = get_lg_corners(k, m, n)
-                    write(77,*) "FF"
+                    write(77,*) "FF", i1, size(area_mask, 1)
                     i1 = min(i1, size(area_mask, 1))
                     write(77,*) "GG"
                     j1 = min(j1, size(area_mask, 2))
