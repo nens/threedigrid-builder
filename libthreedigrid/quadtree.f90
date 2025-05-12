@@ -181,8 +181,6 @@ module m_quadtree
                             endif
                         endif
                     endif
-                    write(77,*) "KK", k
-                    flush(77)
                 enddo
             enddo
         enddo
