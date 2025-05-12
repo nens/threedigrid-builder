@@ -25,7 +25,7 @@ module m_quadtree
         integer :: k
         integer :: m, n
 
-        open(77, file=trim("D:/tmp/stdout.log"))
+        open(77, file=trim("D:/tmp/builder.log"))
 
         write(*,*) '** INFO: Start making quadtree.'
         do m=1, mmax(kmax)
@@ -166,7 +166,7 @@ module m_quadtree
                     write(77,*) "II", j1, size(area_mask, 2)
                     flush(77)
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                        write(77,*) "JJ", all(lg(mn(1):mn(3),mn(2):mn(4)) == k), k
+                        write(77,*) "JJ", k
                         flush(77)
                         if (all(area_mask_padded(i0:i1, j0:j1) == 0)) then
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
@@ -181,7 +181,7 @@ module m_quadtree
                             endif
                         endif
                     endif
-                    write(77,*) "KK", all(lg(mn(1):mn(3),mn(2):mn(4)) == k), k
+                    write(77,*) "KK", k
                     flush(77)
                 enddo
             enddo
