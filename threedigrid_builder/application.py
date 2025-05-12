@@ -4,17 +4,18 @@ Use cases orchestrate the flow of data to and from the domain entities.
 
 This layer depends on the interfaces as well as on the domain layer.
 """
-
 import itertools
 import logging
 from pathlib import Path
 from typing import Callable, Optional
 
-from threedigrid_builder.base import GridSettings
+import numpy as np
+
+from threedigrid_builder.base import GridSettings, Lines, Nodes
 from threedigrid_builder.base.surfaces import Surfaces
-from threedigrid_builder.constants import InflowType
+from threedigrid_builder.constants import InflowType, LineType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, QuadTree
+from threedigrid_builder.grid import Clone, Grid, QuadTree
 from threedigrid_builder.interface import (
     DictOut,
     GDALInterface,
@@ -40,6 +41,7 @@ def _make_gridadmin(
     progress_callback=None,
     upgrade=False,
     convert_to_geopackage=False,
+    apply_cutlines=False,
 ):
     """Compute interpolated channel nodes"""
     progress_callback(0.0, "Reading input schematisation...")
@@ -71,7 +73,7 @@ def _make_gridadmin(
         quadtree = QuadTree(
             subgrid_meta,
             grid_settings.kmax,
-            grid_settings.grid_space,
+            grid_settings.grid_space,  # min gridsize in meters
             grid_settings.use_2d_flow,
             refinements,
         )
@@ -81,7 +83,87 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
+
+        # This computes auxiliary values that are of no interest for cutting.
         grid.set_quarter_administration(quadtree)
+
+        # As groundwater nodes and lines are a direct copy of the current ones, we
+        # need to apply the cutting now (before grid.add_groundwater()).
+
+        if apply_cutlines:
+            fortran_fragment_mask, fortran_node_fragment_array = grid.apply_cutlines(
+                db.get_obstacles(), dem_path
+            )
+
+            clone = Clone(
+                fortran_node_fragment_array,
+                fortran_fragment_mask,
+                quadtree,
+                grid.lines.line,
+                grid.nodes.nodk,
+                grid.nodes.nodm,
+                grid.nodes.nodn,
+                area_mask=subgrid_meta["area_mask"],
+            )
+
+            quadtree.n_cells = clone.n_cells
+            quadtree.n_lines_u = clone.n_newlines_u
+            quadtree.n_lines_v = clone.n_newlines_v
+            total_lines = (
+                clone.n_newlines_u + clone.n_newlines_v + clone.n_interclone_lines
+            )
+            grid.lines.line = clone.line_new
+            grid.lines.kcu = np.full(
+                (total_lines,),
+                LineType.LINE_2D_U,
+                dtype="i4",
+                order="F",
+            )
+            grid.lines.kcu[
+                quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
+            ] = LineType.LINE_2D_V
+            grid.lines.kcu[
+                quadtree.n_lines_u + quadtree.n_lines_v : total_lines
+            ] = LineType.LINE_INTERCLONE
+            grid.nodes.nodk = clone.nodk_new
+            grid.nodes.nodm = clone.nodm_new
+            grid.nodes.nodn = clone.nodn_new
+
+            idx = clone.line_new[
+                np.arange(total_lines),
+                np.argmin(grid.nodes.nodk[clone.line_new[:, :]], axis=1),
+            ]
+            grid.lines.lik = grid.nodes.nodk[idx]
+            grid.lines.lim = grid.nodes.nodm[idx]
+            grid.lines.lin = grid.nodes.nodn[idx]
+
+            node_id_counter = itertools.count()
+            line_id_counter = itertools.count()
+            Lines(
+                id=itertools.islice(line_id_counter, 0, len(clone.line_new)),
+                # line_geometries=grid.lines.line_geometries,
+                # kcu=grid.lines.kcu,
+                # line=clone.line_new,
+                # lik=grid.lines.lik,
+                # lim=grid.lines.lim,
+                # lin=grid.lines.lin,
+            )
+
+            Nodes(
+                id=itertools.islice(node_id_counter, 0, clone.n_cells),
+                # node_type=node_type,
+                # nodk=nodk,
+                # nodm=nodm,
+                # nodn=nodn,
+                # bounds=bounds,
+                # coordinates=coords,
+                # pixel_coords=pixel_coords,
+                # has_dem_averaged=0,
+            )
+            # shapely.line_interpolate_point(
+            #     grid.lines.line_geometries[mask], grid.lines.ds1d_half[mask]
+            # )
+            # Lines.fix_line_geometries()
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
@@ -96,6 +178,7 @@ def _make_gridadmin(
             line_id_counter,
         )
 
+        # This marks the nodes intersecting the dem_average geometries.
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)
 
@@ -235,6 +318,7 @@ def make_gridadmin(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     upgrade: bool = False,
     convert_to_geopackage: bool = False,
+    apply_cutlines: bool = False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -251,6 +335,7 @@ def make_gridadmin(
         progress_callback: an optional function that updates the progress. The function
             should take an float in the range 0-1 and a message string.
         upgrade: whether to upgrade the sqlite (inplace) before processing
+        apply_cutlines: whether to apply (obstacles as) cutlines and create clone cells.
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -287,6 +372,7 @@ def make_gridadmin(
         progress_callback=progress_callback,
         upgrade=upgrade,
         convert_to_geopackage=convert_to_geopackage,
+        apply_cutlines=apply_cutlines,
     )
 
     progress_callback(0.99, "Writing gridadmin...")
