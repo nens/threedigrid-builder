@@ -27,7 +27,7 @@ jobs:
 
       - name: Print some info
         run: 
-          echo "gcc --version\n" && echo "gfortran --version\n" >> $GITHUB_OUTPUT 
+          echo "gcc --version\n" && echo "gfortran --version\n"
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
