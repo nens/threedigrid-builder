@@ -170,8 +170,10 @@ module m_quadtree
                     j1 = min(j1, size(area_mask, 2))
                     write(77,*) "II", j0, j1, size(area_mask, 2)
                     flush(77)
+                    write(77, *), "JJ", mn(1), mn(3), mn(2), mn(4)
+                    flush(77)
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                        write(77,*) "JJ", k
+                        write(77,*) "KK", k
                         flush(77)
                         if (all(area_mask_padded(i0:i1, j0:j1) == 0)) then
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
@@ -186,7 +188,7 @@ module m_quadtree
                             endif
                         endif
                     endif
-                    write(77,*) "KK"
+                    write(77,*) "LL"
                 enddo
             enddo
         enddo
