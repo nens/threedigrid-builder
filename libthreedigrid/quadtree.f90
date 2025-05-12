@@ -1,5 +1,7 @@
 module m_quadtree
 
+    use iso_fortran_env, only: stdout => output_unit, &
+                                stderr => error_unit
     use parameters, only : NODATA
 
     implicit none
@@ -25,20 +27,21 @@ module m_quadtree
         integer :: k
         integer :: m, n
 
-        open(77,file=trim("D:/tmp/builder.log"))
-        write(77,*) '** INFO: Start making quadtree.'
+        open(stdout,file=trim("D:/tmp/stdout.log"))
+        open(stderr,file=trim("D:/tmp/stderr.log"))
+        write(stdout,*) '** INFO: Start making quadtree.'
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
             enddo
         enddo
-        write(77,*) "A"
+        write(stdout,*) "A"
         call balance_quadtree(kmax, mmax, nmax, lg)
-        write(77,*) "B"
+        write(stdout,*) "B"
         call find_active_2d_comp_cells(&
             kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
         )
-        write(77,*) "C"
+        write(stdout,*) "C"
         write(*,*) '** INFO: Done making quadtree.'
 
     end subroutine make_quadtree
@@ -136,36 +139,36 @@ module m_quadtree
         integer :: i0, i1, j0, j1, i2, i3, j2, j3
         integer :: n_cells
         
-        write(77,*) "AA"
+        write(stdout,*) "AA"
         n_cells = 0
         n_line_u = 0
         n_line_v = 0
         quad_idx = 0
-        write(77,*) "BB"
+        write(stdout,*) "BB"
         call get_pix_corners(kmax, mmax(kmax), nmax(kmax), lgrmin, i0, i1, j0, j1)
-        write(77,*) "CC"
+        write(stdout,*) "CC"
         area_mask_padded = pad_area_mask(area_mask, i0, i1, j0, j1) 
-        write(77,*) "DD"
+        write(stdout,*) "DD"
         do k=kmax,1,-1
             do m=1,mmax(k)
                 do n=1,nmax(k)
-                    write(77,*) "EE"
-                    flush(77)
+                    write(stdout,*) "EE"
+                    flush(stdout)
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
                     mn = get_lg_corners(k, m, n)
-                    write(77,*) "FF", i1, size(area_mask, 1)
-                    flush(77)
+                    write(stdout,*) "FF", i1, size(area_mask, 1)
+                    flush(stdout)
                     i1 = min(i1, size(area_mask, 1))
-                    write(77,*) "GG", i1
-                    flush(77)
-                    write(77,*) "HH", j1, size(area_mask, 2)
-                    flush(77)
+                    write(stdout,*) "GG", i1
+                    flush(stdout)
+                    write(stdout,*) "HH", j1, size(area_mask, 2)
+                    flush(stdout)
                     j1 = min(j1, size(area_mask, 2))
-                    write(77,*) "II", j1, size(area_mask, 2)
-                    flush(77)
+                    write(stdout,*) "II", j1, size(area_mask, 2)
+                    flush(stdout)
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
-                        write(77,*) "JJ"
-                        flush(77)
+                        write(stdout,*) "JJ"
+                        flush(stdout)
                         if (all(area_mask_padded(i0:i1, j0:j1) == 0)) then
                             lg(mn(1):mn(3),mn(2):mn(4)) = -99
                         else
