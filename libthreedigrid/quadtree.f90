@@ -45,7 +45,7 @@ module m_quadtree
         )
         write(77,*) "C"
         flush(77)
-        write(*,*) '** INFO: Done making quadtree.'
+        ! write(*,*) '** INFO: Done making quadtree.'
         close(77)
 
     end subroutine make_quadtree
@@ -203,7 +203,7 @@ module m_quadtree
         write(77,*) '** INFO: No. active 2D computational cells: ', n_cells
         write(77,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
         flush(77)
-        
+
     end subroutine find_active_2d_comp_cells
 
 
