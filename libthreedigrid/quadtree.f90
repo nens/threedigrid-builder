@@ -160,15 +160,15 @@ module m_quadtree
                     flush(77)
                     call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
                     mn = get_lg_corners(k, m, n)
-                    write(77,*) "FF", i1, size(area_mask, 1)
+                    write(77,*) "FF", i0, i1, size(area_mask, 1)
                     flush(77)
                     i1 = min(i1, size(area_mask, 1))
-                    write(77,*) "GG", i1
+                    write(77,*) "GG", i0, i1
                     flush(77)
-                    write(77,*) "HH", j1, size(area_mask, 2)
+                    write(77,*) "HH", j0, j1, size(area_mask, 2)
                     flush(77)
                     j1 = min(j1, size(area_mask, 2))
-                    write(77,*) "II", j1, size(area_mask, 2)
+                    write(77,*) "II", j0, j1, size(area_mask, 2)
                     flush(77)
                     if (all(lg(mn(1):mn(3),mn(2):mn(4)) == k)) then !! TODO: CHECK OF MODEL AREA CHECK IS NECESSARY???
                         write(77,*) "JJ", k
@@ -186,6 +186,7 @@ module m_quadtree
                             endif
                         endif
                     endif
+                    write(77,*) "KK"
                 enddo
             enddo
         enddo
