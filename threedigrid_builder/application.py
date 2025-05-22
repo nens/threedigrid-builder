@@ -13,7 +13,7 @@ from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Clone, Grid, QuadTree
+from threedigrid_builder.grid import Grid, QuadTree
 from threedigrid_builder.interface import (
     DictOut,
     GDALInterface,
@@ -83,6 +83,9 @@ def _make_gridadmin(
                 quadtree.n_cells,
                 quadtree.bounds,
             )
+        else:
+            fortran_fragment_mask = None
+            fortran_node_fragment_array = None
 
         x, node_id_counter, line_id_counter = Grid.from_quadtree(
             quadtree=quadtree,
@@ -91,7 +94,6 @@ def _make_gridadmin(
             line_id_counter=line_id_counter,
             clone_array=fortran_node_fragment_array,
             clone_mask=fortran_fragment_mask,
-            clone=Clone,
         )
 
         grid += x

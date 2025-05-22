@@ -342,6 +342,7 @@ class Clone:
             lgrmin = quadtree.lgrmin
 
             ## To find the active clone cells and renumbering the whole cells (including clones)
+            # TODO: Use -9999 for non-existing clone numbering.
             m_clone.find_active_clone_cells(
                 self.n_cells,
                 clone_array,
