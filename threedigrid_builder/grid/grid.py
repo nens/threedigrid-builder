@@ -24,7 +24,8 @@ from threedigrid_builder.base import (
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Clone, ConnectionNodes, zero_d
+from threedigrid_builder.grid import ConnectionNodes, zero_d
+from threedigrid_builder.grid.clones import Clone
 from threedigrid_builder.utils import Dataset
 
 from . import connection_nodes as connection_nodes_module
@@ -367,36 +368,37 @@ class Grid:
             area_mask, node_id_counter, line_id_counter
         )
 
-        clone = Clone(
-            clone_array,
-            clone_mask,
-            quadtree,
-            lines.line,
-            lines.cross_pix_coords,
-            nodes.nodk,
-            nodes.nodm,
-            nodes.nodn,
-            nodes.bounds,
-            nodes.coordinates,
-            nodes.pixel_coords,
-            area_mask,
-        )
+        if clone_array is not None and clone_mask is not None:
+            clone = Clone(
+                clone_array,
+                clone_mask,
+                quadtree,
+                lines.line,
+                lines.cross_pix_coords,
+                nodes.nodk,
+                nodes.nodm,
+                nodes.nodn,
+                nodes.bounds,
+                nodes.coordinates,
+                nodes.pixel_coords,
+                area_mask,
+            )
 
-        node_id_counter = itertools.count()
-        line_id_counter = itertools.count()
+            node_id_counter = itertools.count()
+            line_id_counter = itertools.count()
 
-        nodes, lines = clone.update(
-            quadtree,
-            clone,
-            nodes,
-            lines,
-            node_id_counter,
-            line_id_counter,
-        )
+            nodes, lines = clone.update(
+                quadtree,
+                clone,
+                nodes,
+                lines,
+                node_id_counter,
+                line_id_counter,
+            )
 
-        # TODO: update number clones
-        # TODO: add to Fragment model in Grid.
-        # TODO: export fragments as tiff as well?
+            # TODO: update number clones
+            # TODO: add to Fragment model in Grid.
+            # TODO: export fragments as tiff as well?
 
         # Some general quadtree grid statistics we need in the .h5 later on.
         quadtree_stats = QuadtreeStats(
