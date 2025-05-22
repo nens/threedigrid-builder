@@ -231,6 +231,7 @@ class GridAdminOut(OutputInterface):
             ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
             ("l1dtot", LINE_TYPES_1D),
             ("l2dtot", LINE_TYPES_2D),
+            ("lclone", LineType.LINE_INTERCLONE),
             ("lgrtot", LineType.LINE_2D_VERTICAL),
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),

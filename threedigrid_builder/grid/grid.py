@@ -61,6 +61,7 @@ LINE_ORDER = [
         LineType.LINE_2D_OBSTACLE_V,
         LineType.LINE_2D,
         LineType.LINE_2D_OBSTACLE,
+        LineType.LINE_INTERCLONE,
     ],
     [LineType.LINE_2D_VERTICAL],
     [LineType.LINE_2D_GROUNDWATER],
@@ -326,7 +327,16 @@ class Grid:
         self.meta.epsg_code = epsg_code
 
     @classmethod
-    def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
+    def from_quadtree(
+        cls,
+        quadtree,
+        area_mask,
+        node_id_counter,
+        line_id_counter,
+        clone_array,
+        clone_mask,
+        clone,
+    ):
         """Construct the 2D grid based on the quadtree object.
 
         Args:
@@ -358,6 +368,33 @@ class Grid:
             area_mask, node_id_counter, line_id_counter
         )
 
+        # clone = clone(
+        #     clone_array,
+        #     clone_mask,
+        #     quadtree,
+        #     lines.line,
+        #     lines.cross_pix_coords,
+        #     nodes.nodk,
+        #     nodes.nodm,
+        #     nodes.nodn,
+        #     nodes.bounds,
+        #     nodes.coordinates,
+        #     nodes.pixel_coords,
+        #     area_mask,
+        # )
+
+        # node_id_counter = itertools.count()
+        # line_id_counter = itertools.count()
+
+        # nodes, lines = clone.update(
+        #     quadtree,
+        #     clone,
+        #     nodes,
+        #     lines,
+        #     node_id_counter,
+        #     line_id_counter,
+        # )
+
         # Some general quadtree grid statistics we need in the .h5 later on.
         quadtree_stats = QuadtreeStats(
             lgrmin=quadtree.lgrmin,
@@ -372,7 +409,11 @@ class Grid:
 
         lines.set_line_coords(nodes)
         lines.fix_line_geometries()
-        return cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats)
+        return (
+            cls(nodes=nodes, lines=lines, quadtree_stats=quadtree_stats),
+            node_id_counter,
+            line_id_counter,
+        )
 
     @classmethod
     def from_connection_nodes(cls, connection_nodes, node_id_counter):
@@ -937,7 +978,7 @@ class Grid:
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
-    def apply_cutlines(self, cutlines, dem_path):
+    def apply_cutlines(self, cutlines, dem_path, n_cells, bounds):
         """Apply the cutlines to generate clone cells"""
 
         # Note that we want to merge lines in case they are connected to a single segment.
@@ -952,13 +993,13 @@ class Grid:
 
         # Map of node idx to fragment list
         node_fragments = {}
-        for node_idx in self.nodes.id:
+        for node_idx in range(n_cells):
             # create the geometry of the corresponding cell
             node_polygon = shapely.box(
-                self.nodes.bounds[node_idx][0],
-                self.nodes.bounds[node_idx][1],
-                self.nodes.bounds[node_idx][2],
-                self.nodes.bounds[node_idx][3],
+                bounds[node_idx][0],
+                bounds[node_idx][1],
+                bounds[node_idx][2],
+                bounds[node_idx][3],
                 ccw=False,
             )
             assert node_polygon.is_valid
@@ -999,12 +1040,12 @@ class Grid:
         max_nr_of_fragments = (
             4  # This array contains up to 4 fragment ids for each node.
         )
-        max_node_id = max(self.nodes.id)
         node_fragment_array = np.full(
-            shape=(max_node_id + 1, max_nr_of_fragments),
+            shape=(n_cells, max_nr_of_fragments),
             fill_value=no_data_value,
             dtype=np.int32,
         )
+
         fragment_geometries = {}
         for node_id, fragments in node_fragments.items():
             for fragment_idx, fragment in enumerate(fragments):

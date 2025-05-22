@@ -4,6 +4,48 @@ module m_cells
 
     contains
 
+    subroutine set_bound_etc(origin, kmax, mmax, nmax, dx, quad_idx, bounds, coords, pixel_coords, lgrmin)
+        !!! Entry point for setting nodes and lines and there necessary attributes.
+        use m_grid_utils, only : get_lg_corners, get_cell_bbox, get_pix_corners, pad_area_mask
+
+        double precision, intent(in) :: origin(2) ! Origin of Quadtree grid
+        integer, intent(in) :: kmax ! Maximum refinement levels
+        integer, intent(in) :: mmax(:) ! X Dimension of each refinement level
+        integer, intent(in) :: nmax(:) ! Y Dimension of each refinement level
+        double precision, intent(in) :: dx(:) ! Cell size of each refinement level
+        integer, intent(in) :: quad_idx(:, :) ! Array with idx of cell at lg refinement locations
+        double precision, intent(inout) :: bounds(:, :) ! Bbox of comp cell
+        double precision, intent(inout) :: coords(:, :) ! Cell center coordinates
+        integer, intent(inout) :: pixel_coords(:, :) ! pixel bbox of comp cell
+        integer, intent(in) :: lgrmin ! Number of pixels in cell of smallest refinement level
+
+        
+        integer :: nod
+        integer :: k
+        integer :: m, n, i0, i1, j0, j1
+        integer :: mn(4)
+
+        nod = 1
+        do k=kmax,1,-1
+            do m=1,mmax(k)
+                do n=1,nmax(k)
+                    mn = get_lg_corners(k, m, n)
+                    if(all(quad_idx(mn(1):mn(3),mn(2):mn(4)) == nod)) then
+                        bounds(nod,:) = get_cell_bbox(origin(1), origin(2), m, n, dx(k))
+                        coords(nod, :) = (/ 0.5d0 * (bounds(nod,1) + bounds(nod,3)), 0.5d0 * (bounds(nod,2) + bounds(nod,4)) /)
+                        call get_pix_corners(k, m, n, lgrmin, i0, i1, j0, j1)
+                        pixel_coords(nod, :) = (/ i0 - 1, j0 - 1, i1, j1 /)
+                        nod = nod + 1
+                    else
+                        continue
+                    endif
+                enddo
+            enddo
+        enddo
+
+    end subroutine set_bound_etc
+
+    
     subroutine set_2d_computational_nodes_lines(origin, lgrmin, kmax, mmax, nmax, dx,&
         lg, nodk, nodm, nodn, quad_idx, bounds, coords, pixel_coords,&
         area_mask, line, cross_pix_coords, n_line_u, n_line_v)

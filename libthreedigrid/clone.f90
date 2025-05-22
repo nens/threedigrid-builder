@@ -7,9 +7,8 @@ module m_clone
     contains
 
     subroutine find_active_clone_cells(n_cells, clone_array, cell_numbering, clone_numbering, clones_in_cell)
-        ! ! Finding clone cells based on the area mask specifically defined for clone cells ! !
+        ! ! Finding clone cells based on the clone array and renumbering the whole cells ! !
         
-        ! use m_grid_utils, only : get_pix_corners
         use parameters, only : CLONE_NUMBERS
         integer, intent(inout) :: n_cells                           !! total number of active cells. in: without clone cells, out: with clone cells
         integer, intent(in) :: clone_array(:,:)                     !! Identifier of the clones within each host cell.
@@ -19,6 +18,7 @@ module m_clone
         integer :: cell_counter, clone_counter, i, counter
         integer :: n_cells_new
 
+        write(*,*) '** INFO: Find active clone cells.'
         counter = 0 !! counter of the renumbering
         n_cells_new = n_cells
         do cell_counter = 1, n_cells !! Check which quadtree cells has clone cell(s) and how many
@@ -44,25 +44,27 @@ module m_clone
             end if
         end do
         n_cells = n_cells_new
+        write(*,*) '** INFO: Number of active quadtree and clone cells:', n_cells
 
     end subroutine find_active_clone_cells
 
     subroutine make_clones(min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, n_lines_u, n_lines_v, n_interclone_lines)
+        !! Count the active (2D) lines created within the new cell system !!
 
         use parameters, only: U_DIR, V_DIR
         integer, intent(in) :: min_pix
         integer*1, intent(in) :: area_mask(:,:)
-        integer, intent(in) :: clone_mask(:,:)             !! Identifier of the clone cells according to the area mask
-        integer, intent(in) :: clones_in_cell(:)              !! Updated identifier of the clones within each host cell (does not match the clone_mask)
-        integer, intent(in) :: cell_numbering(:)             !! New numbering list for quadtree cells
-        integer, intent(in) :: clone_numbering(:)            !! New numbering list for clone cells
-        integer, intent(in) :: line(:,:)
-        integer, intent(in) :: nodk(:)
-        integer, intent(in) :: nodm(:)
-        integer, intent(in) :: nodn(:)
-        integer, intent(inout) :: n_lines_u
-        integer, intent(inout) :: n_lines_v
-        integer, intent(inout) :: n_interclone_lines
+        integer, intent(in) :: clone_mask(:,:)                  !! Identifier of the clone cells according to the area mask
+        integer, intent(in) :: clones_in_cell(:)                !! Updated identifier of the clones within each host cell (does not match the clone_mask)
+        integer, intent(in) :: cell_numbering(:)                !! New numbering list for quadtree cells
+        integer, intent(in) :: clone_numbering(:)               !! New numbering list for clone cells
+        integer, intent(in) :: line(:,:)                        !! Old Line administration
+        integer, intent(in) :: nodk(:)                          !! Old refinement level administration
+        integer, intent(in) :: nodm(:)                          !! Old row number administration
+        integer, intent(in) :: nodn(:)                          !! Old column number administration
+        integer, intent(inout) :: n_lines_u                     !! Total number of 2D line in u direction. in: old number, out: new number including clones
+        integer, intent(inout) :: n_lines_v                     !! Total number of 2D line in v direction. in: old number, out: new number including clones
+        integer, intent(inout) :: n_interclone_lines            !! Total number of line linking 2 clones within the same quadtree cell.
 
         integer :: start_u, end_u, start_v, end_v
 
@@ -76,6 +78,8 @@ module m_clone
         call count_clone_lines(V_DIR, start_v, end_v, n_lines_v, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn)
 
         call count_interclone_lines(n_interclone_lines, clones_in_cell)
+
+        write(*,*) '** INFO: Number of 2D lines in u- and v-dir and inter-clone lines:', n_lines_u, n_lines_v, n_interclone_lines
 
     end subroutine
 
@@ -157,7 +161,7 @@ module m_clone
 
     end subroutine count_interclone_lines
 
-    subroutine set_lines_with_clones(n_lines_u, n_lines_v, n_interclone_lines, min_pix, area_mask, clone_mask, clone_array, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, line_new)
+    subroutine set_lines_with_clones(n_lines_u, n_lines_v, n_interclone_lines, min_pix, area_mask, clone_mask, clone_array, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, line_new, cross_pix_new, cross_pix)
 
         use parameters, only: U_DIR, V_DIR
         integer, intent(inout) :: n_lines_u
@@ -175,8 +179,12 @@ module m_clone
         integer, intent(in) :: nodm(:)
         integer, intent(in) :: nodn(:)
         integer, intent(inout) :: line_new(:,:)
+        integer, intent(inout) :: cross_pix_new(:,:)
+        integer, intent(in) :: cross_pix(:,:)
 
         integer :: start_u, end_u, start_v, end_v, counter
+
+        write(*,*) '** INFO: Resetting line attribute...'
 
         start_u = 1
         end_u = n_lines_u
@@ -185,15 +193,15 @@ module m_clone
 
         counter = 0
 
-        call set_2D_lines_with_clones(U_DIR, start_u, end_u, n_lines_u, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, counter, line_new)
+        call set_2D_lines_with_clones(U_DIR, start_u, end_u, n_lines_u, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, counter, line_new, cross_pix_new, cross_pix)
         
-        call set_2D_lines_with_clones(V_DIR, start_v, end_v, n_lines_v, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, counter, line_new)
+        call set_2D_lines_with_clones(V_DIR, start_v, end_v, n_lines_v, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, counter, line_new, cross_pix_new, cross_pix)
         
         call set_interclone_lines(clones_in_cell, counter, line_new, clone_numbering, clone_array)
 
     end subroutine
 
-    subroutine set_2d_lines_with_clones(direction, start_l, end_l, n_line_new, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, l_counter, line_new)
+    subroutine set_2d_lines_with_clones(direction, start_l, end_l, n_line_new, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, l_counter, line_new, cross_pix_new, cross_pix)
 
         use parameters, only: U_DIR, V_DIR
         integer, intent(in) :: direction
@@ -212,6 +220,8 @@ module m_clone
         integer, intent(in) :: nodn(:)
         integer, intent(inout) :: l_counter
         integer, intent(inout) :: line_new(:,:)
+        integer, intent(inout) :: cross_pix_new(:,:)
+        integer, intent(in) :: cross_pix(:,:)
 
         integer :: host_1, host_2, k_host_1, k_host_2, m_host_1, n_host_1, clone_1, clone_2
         integer :: pixel_i, pixel_j, i0, i1, j0, j1, nl, pixel_no, num_pix
@@ -246,19 +256,18 @@ module m_clone
 
                 pixel_no = 0
                 call find_active_lines(direction, pixel_i, pixel_j, min_pix, clone_1, clone_2, num_pix, area_mask, clone_mask, n_line_new, pixel_no, &
-                                            line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering)   !! Now rewiring the line administration
+                                            line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering, cross_pix_new)   !! Now rewiring the line administration
             else
                 l_counter = l_counter + 1
-                ! line_new(l_counter, 2) = cell_numbering(line(nl,2) + 1)
-                ! line_new(l_counter, 1) = cell_numbering(line(nl,1) + 1)
                 line_new(l_counter, 1) = cell_numbering(line(nl,1) + 1) - 1
                 line_new(l_counter, 2) = cell_numbering(line(nl,2) + 1) - 1
+                cross_pix_new(l_counter,:) = cross_pix(nl,:)
             end if
         end do
     end subroutine set_2d_lines_with_clones
     
     recursive subroutine find_active_lines(direction, pixel_i, pixel_j, min_pix, clone_1, clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
-                                                line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering)
+                                                line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering, cross_pix_new)
         
         use parameters, only: U_DIR, V_DIR
         integer, intent(in) :: direction
@@ -278,14 +287,11 @@ module m_clone
         integer, intent(inout), optional :: l_counter
         integer, intent(in), optional :: clone_numbering(:)
         integer, intent(in), optional :: cell_numbering(:)
+        integer, intent(inout), optional :: cross_pix_new(:,:)
 
         integer :: counter, pixel, new_pixel
         integer :: new_clone_1, new_clone_2
-        integer :: new_pixel1, new_pixel2 !!temp
 
-        integer :: temp
-
-        temp = 0
         if (direction == U_DIR) then  !! u-direction
             pixel = pixel_j + pixel_no
             do counter = pixel, pixel + num_pix - 1  !! find the common border
@@ -296,14 +302,13 @@ module m_clone
                 endif
             enddo
             new_pixel = pixel_j + pixel_no !! I can also use counter instead of new_pixel
-            if ((new_pixel - pixel) > 1) then
+            if ((new_pixel - pixel) > 5) then   !! 5 is the minimum number of pixels through which a flowline can be created
                 if (any(minval(area_mask(pixel_i:pixel_i+1,pixel:new_pixel-1), 1) > 0)) then  !! if there is a minimum of a pair of pixel with data, make the flowline
                     if (present(line_new)) then
                         l_counter = l_counter + 1
+                        cross_pix_new(l_counter,:) = (/pixel_i, pixel-1, pixel_i, new_pixel/)
                         if (clone_1 >= 0 .and. clone_2 >= 0) then
                             if (clone_numbering(clone_1 + 1) > 0 .and. clone_numbering(clone_2 + 1) > 0) then
-                                ! line_new(l_counter, 1) = clone_numbering(clone_1+1)
-                                ! line_new(l_counter, 2) = clone_numbering(clone_2+1)
                                 line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
                                 line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
                             elseif (clone_numbering(clone_1 + 1) == 0 .and. clone_numbering(clone_2 + 1) > 0) then
@@ -339,7 +344,7 @@ module m_clone
                 
                 if (present(line_new)) then
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
-                                                line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering)
+                                                line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering, cross_pix_new)
                 else
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no)
                 endif
@@ -355,14 +360,13 @@ module m_clone
                 endif
             enddo
             new_pixel = pixel_i + pixel_no
-            if ((new_pixel - pixel) > 1) then
+            if ((new_pixel - pixel) > 5) then
                 if (any(minval(area_mask(pixel:new_pixel-1,pixel_j:pixel_j+1), 2) > 0)) then
                     if (present(line_new)) then
                         l_counter = l_counter + 1
+                        cross_pix_new(l_counter,:) = (/pixel-1, pixel_j, new_pixel, pixel_j/)
                         if (clone_1 >= 0 .and. clone_2 >= 0) then
                             if (clone_numbering(clone_1 + 1) > 0 .and. clone_numbering(clone_2 + 1) > 0) then
-                                ! line_new(l_counter, 2) = clone_numbering(clone_2+1)
-                                ! line_new(l_counter, 1) = clone_numbering(clone_1+1)
                                 line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
                                 line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
                             elseif (clone_numbering(clone_1 + 1) == 0 .and. clone_numbering(clone_2 + 1) > 0) then
@@ -397,7 +401,7 @@ module m_clone
                 new_clone_2 = clone_mask(new_pixel, pixel_j + 1)
                 if (present(line_new)) then
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
-                                                line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering)
+                                                line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering, cross_pix_new)
                 else
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no)
                 endif
@@ -420,8 +424,6 @@ module m_clone
         do n_cell = 1, size(clones_in_cell)
             if (clones_in_cell(n_cell) == 2) then
                 l_counter = l_counter + 1
-                ! line_new(l_counter, 1) = clone_numbering(clone_array(n_cell, 1) + 1)
-                ! line_new(l_counter, 2) = clone_numbering(clone_array(n_cell, 2) + 1)
                 line_new(l_counter, 1) = clone_numbering(clone_array(n_cell, 1) + 1) - 1
                 line_new(l_counter, 2) = clone_numbering(clone_array(n_cell, 2) + 1) - 1
                 ! elseif (clones_in_cell(n_cell) == 2) then
@@ -430,18 +432,27 @@ module m_clone
 
     end subroutine set_interclone_lines
 
-    subroutine reset_nod_parameters(nodk, nodm, nodn, clone_array, nodk_new, nodm_new, nodn_new)
+    subroutine reset_nod_parameters(clone_array, nodk, nodm, nodn, nodk_new, nodm_new, nodn_new,&
+                                    bounds, coords, pixel_coords, bounds_new, coords_new, pixel_coords_new)
 
         use parameters, only : CLONE_NUMBERS
+        integer, intent(in) :: clone_array(:,:)
         integer, intent(in) :: nodk(:)
         integer, intent(in) :: nodm(:)
         integer, intent(in) :: nodn(:)
-        integer, intent(in) :: clone_array(:,:)
         integer, intent(inout) :: nodk_new(:)
         integer, intent(inout) :: nodm_new(:)
         integer, intent(inout) :: nodn_new(:)
+        double precision, intent(in) :: bounds(:,:)
+        double precision, intent(in) :: coords(:,:)
+        integer, intent(in) :: pixel_coords(:,:)
+        double precision, intent(inout) :: bounds_new(:,:)
+        double precision, intent(inout) :: coords_new(:,:)
+        integer, intent(inout) :: pixel_coords_new(:,:)
 
         integer :: cell_counter, clone_counter, counter
+
+        write(*,*) '** INFO: Reset nodes attributes...'
 
         counter = 0
         do cell_counter = 1, size(nodk)
@@ -452,6 +463,9 @@ module m_clone
                         nodk_new(counter) = nodk(cell_counter)
                         nodm_new(counter) = nodm(cell_counter)
                         nodn_new(counter) = nodn(cell_counter)
+                        bounds_new(counter, :) = bounds(cell_counter, :)
+                        coords_new(counter, :) = coords(cell_counter, :)
+                        pixel_coords_new(counter, :) = pixel_coords(cell_counter, :)
                     endif
                 enddo
             else
@@ -459,6 +473,9 @@ module m_clone
                 nodk_new(counter) = nodk(cell_counter)
                 nodm_new(counter) = nodm(cell_counter)
                 nodn_new(counter) = nodn(cell_counter)
+                bounds_new(counter, :) = bounds(cell_counter, :)
+                coords_new(counter, :) = coords(cell_counter, :)
+                pixel_coords_new(counter, :) = pixel_coords(cell_counter, :)
             endif
         enddo
         
