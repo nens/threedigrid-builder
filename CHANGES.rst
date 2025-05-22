@@ -2,10 +2,22 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.2 (unreleased)
+1.24.4 (unreleased)
 -------------------
 
 - Nothing changed yet.
+
+
+1.24.3 (2025-04-28)
+-------------------
+
+- Use windows-2019 runner to fix QGIS segfault.
+
+
+1.24.2 (2025-04-22)
+-------------------
+
+- Fix is_channel check by converting connection node ids to indexes.
 
 
 1.24.1 (2025-04-09)
