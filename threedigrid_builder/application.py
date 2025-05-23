@@ -209,8 +209,12 @@ def _make_gridadmin(
             node_open_water_detection=grid_settings.node_open_water_detection,
         )
         if grid.meta.has_groundwater:
-            channels.apply_has_groundwater_exchange(grid.nodes, grid.lines)
-            pipes.apply_has_groundwater_exchange(grid.nodes, grid.lines)
+            channels.apply_has_groundwater_exchange(
+                grid.nodes, grid.lines, grid.nodes_embedded
+            )
+            pipes.apply_has_groundwater_exchange(
+                grid.nodes, grid.lines, grid.nodes_embedded
+            )
             grid.add_1d2d_groundwater_lines(line_id_counter, connection_nodes)
 
     if grid_settings.use_0d_inflow in (
