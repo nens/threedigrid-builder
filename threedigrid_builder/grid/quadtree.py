@@ -13,7 +13,7 @@ from .fgrid import m_cells, m_clone, m_quadtree
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["QuadTree"]
+__all__ = ["QuadTree", "Clone"]
 
 
 def reduce_refinement_levels(refinements, num_refine_levels):
