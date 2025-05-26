@@ -308,24 +308,17 @@ class Clone:
         clone_array,
         clone_mask,
         quadtree,
-        line,
-        cross_pix_coords,
-        nodk,
-        nodm,
-        nodn,
-        bounds,
-        coords,
-        pixel_coords,
+        grid,
         area_mask,
     ):
         n_clones = clone_array.max() + 1
         if n_clones > 0:
             self.n_cells = np.copy(quadtree.n_cells)
-            self.cell_numbering = np.zeros(
-                (self.n_cells), dtype=np.int32, order="F"
+            self.cell_numbering = np.full(
+                (self.n_cells), -9999, dtype=np.int32, order="F"
             )  # For the new numbering of the quadtree cells
-            self.clone_numbering = np.zeros(
-                (n_clones), dtype=np.int32, order="F"
+            self.clone_numbering = np.full(
+                (n_clones), -9999, dtype=np.int32, order="F"
             )  # For the numbering of the clone cells
             self.clones_in_cell = np.zeros(
                 (self.n_cells), dtype=np.int32, order="F"
@@ -340,7 +333,14 @@ class Clone:
                 0, dtype=np.int32, order="F"
             )  # Total number of the lines linking 2 clones with the same quadtree cell
             lgrmin = quadtree.lgrmin
-
+            line = grid.lines.line
+            cross_pix_coords = grid.lines.cross_pix_coords
+            nodk = grid.nodes.nodk
+            nodm = grid.nodes.nodm
+            nodn = grid.nodes.nodn
+            bounds = grid.nodes.bounds
+            coords = grid.nodes.coordinates
+            pixel_coords = grid.nodes.pixel_coords
             ## To find the active clone cells and renumbering the whole cells (including clones)
             m_clone.find_active_clone_cells(
                 self.n_cells,
@@ -427,63 +427,3 @@ class Clone:
 
         else:
             print("No clone cells are created")
-
-    def update(self, quadtree, clone, nodes, lines, node_id_counter, line_id_counter):
-        quadtree.n_cells = clone.n_cells
-        quadtree.n_lines_u = clone.n_newlines_u
-        quadtree.n_lines_v = clone.n_newlines_v
-        total_lines = clone.n_newlines_u + clone.n_newlines_v + clone.n_interclone_lines
-        # lines.line = clone.line_new
-        lines.kcu = np.full(
-            (total_lines,),
-            LineType.LINE_2D_U,
-            dtype="i4",
-            order="F",
-        )
-        lines.kcu[
-            quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
-        ] = LineType.LINE_2D_V
-        lines.kcu[
-            quadtree.n_lines_u + quadtree.n_lines_v : total_lines
-        ] = LineType.LINE_INTERCLONE
-        # nodes.nodk = clone.nodk_new
-        # nodes.nodm = clone.nodm_new
-        # nodes.nodn = clone.nodn_new
-
-        node_type = np.full(
-            (clone.n_cells,), NodeType.NODE_2D_OPEN_WATER, dtype="O", order="F"
-        )
-
-        idx = clone.line_new[
-            np.arange(total_lines),
-            np.argmin(clone.nodk_new[clone.line_new[:, :]], axis=1),
-        ]
-        # lines.lik = nodes.nodk[idx]
-        # lines.lim = nodes.nodm[idx]
-        # lines.lin = nodes.nodn[idx]
-
-        nodes = Nodes(
-            id=itertools.islice(node_id_counter, clone.n_cells),
-            node_type=node_type,
-            nodk=clone.nodk_new,
-            nodm=clone.nodm_new,
-            nodn=clone.nodn_new,
-            bounds=clone.bounds,
-            coordinates=clone.coords,
-            pixel_coords=clone.pixel_coords,
-            has_dem_averaged=0,
-        )
-
-        lines = Lines(
-            id=itertools.islice(line_id_counter, len(clone.line_new)),
-            kcu=lines.kcu,
-            line=clone.line_new,
-            lik=nodes.nodk[idx],
-            lim=nodes.nodm[idx],
-            lin=nodes.nodn[idx],
-            cross_pix_coords=clone.cross_pix_coords_new,
-        )
-        return nodes, lines
-
-    # if self.n_clone_cells.sum() == 0
-    #     raise a message to show no clones were created

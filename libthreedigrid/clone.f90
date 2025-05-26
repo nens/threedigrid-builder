@@ -225,7 +225,6 @@ module m_clone
 
         integer :: host_1, host_2, k_host_1, k_host_2, m_host_1, n_host_1, clone_1, clone_2
         integer :: pixel_i, pixel_j, i0, i1, j0, j1, nl, pixel_no, num_pix
-        integer, allocatable :: cell_order(:)      ! administration of column/row no of cell wrt the direction
     
         do nl = start_l, end_l
             host_1 = line(nl,1) + 1

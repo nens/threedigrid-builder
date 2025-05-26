@@ -76,27 +76,38 @@ def _make_gridadmin(
             refinements,
         )
 
-        if apply_cutlines:
-            fortran_fragment_mask, fortran_node_fragment_array = grid.apply_cutlines(
-                db.get_obstacles(),
-                dem_path,
-                quadtree.n_cells,
-                quadtree.bounds,
-            )
-
-        x, node_id_counter, line_id_counter = Grid.from_quadtree(
+        grid += Grid.from_quadtree(
             quadtree=quadtree,
             area_mask=subgrid_meta["area_mask"],
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
-            clone_array=fortran_node_fragment_array,
-            clone_mask=fortran_fragment_mask,
-            clone=Clone,
         )
 
-        grid += x
+        if apply_cutlines:
+            fortran_fragment_mask, fortran_node_fragment_array = grid.apply_cutlines(
+                db.get_obstacles(), dem_path
+            )
+
+            clone = Clone(
+                fortran_node_fragment_array,
+                fortran_fragment_mask,
+                quadtree,
+                grid,
+                area_mask=subgrid_meta["area_mask"],
+            )
+
+            node_id_counter = itertools.count()
+            line_id_counter = itertools.count()
+
+            grid.nodes, grid.lines = Grid.from_clone(
+                quadtree,
+                clone,
+                node_id_counter,
+                line_id_counter,
+            )
 
         grid.set_quarter_administration(quadtree)
+
         if grid.meta.has_groundwater:
             grid.add_groundwater(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
