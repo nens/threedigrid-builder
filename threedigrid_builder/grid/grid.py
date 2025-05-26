@@ -1183,6 +1183,7 @@ class Grid:
                     fragment_ids.append(fragment_id)
                     fragment_geoms.append(fragment_geometries[fragment_id])
                     node_ids.append(n)
+        # TODO: update for new numbering, this needs to happen in a later stage
         self.fragments = Fragments(
             id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
         )
