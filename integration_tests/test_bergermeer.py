@@ -152,6 +152,7 @@ def test_integration(tmp_path, filename):
             "ingrw1d": 0,
             "l1dtot": 2532,
             "l2dtot": 11037,
+            "lclone": 0,
             "lgrtot": 5374,
             "lgutot": 5476,
             "lgvtot": 5561,
