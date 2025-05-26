@@ -3,7 +3,7 @@ module parameters
     integer, parameter :: STRINGLEN = 1024
     double precision, parameter   :: NODATA = -9999.0d0
     real, parameter   :: NODATA_R = -9999.0
-    integer, parameter :: CLONE_NUMBERS = 4
+    integer, parameter :: CLONE_NUMBERS = 2     !! Max. numbers of clone cells in each cell for the prototype (to be 4 for the main plan)
     integer, parameter :: U_DIR = 1
     integer, parameter :: V_DIR = 2
     

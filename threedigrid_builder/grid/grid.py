@@ -1061,9 +1061,7 @@ class Grid:
 
         # Add the geometries to this OGR layer
         count = itertools.count()
-        max_nr_of_fragments = (
-            4  # This array contains up to 4 fragment ids for each node.
-        )
+        max_nr_of_fragments = 2  # This array contains up to 2 fragment ids for each node for the initial prototype (to be 4 for the main plan).
         max_node_id = max(self.nodes.id)
         node_fragment_array = np.full(
             shape=(max_node_id + 1, max_nr_of_fragments),
