@@ -159,3 +159,6 @@ class InflowType(IntEnum):
     NO_INFLOW = 0
     IMPERVIOUS_SURFACE = 1
     SURFACE = 2
+
+
+NO_DATA_VALUE = -9999

@@ -22,7 +22,13 @@ from threedigrid_builder.base import (
     Surfaces,
 )
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
-from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
+from threedigrid_builder.constants import (
+    ContentType,
+    LineType,
+    NO_DATA_VALUE,
+    NodeType,
+    WKT_VERSION,
+)
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes, zero_d
 from threedigrid_builder.utils import Dataset
@@ -1057,15 +1063,13 @@ class Grid:
         layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
         defn = layer.GetLayerDefn()
 
-        no_data_value = -9999
-
         # Add the geometries to this OGR layer
         count = itertools.count()
         max_nr_of_fragments = 2  # This array contains up to 2 fragment ids for each node for the initial prototype (to be 4 for the main plan).
         max_node_id = max(self.nodes.id)
         node_fragment_array = np.full(
             shape=(max_node_id + 1, max_nr_of_fragments),
-            fill_value=no_data_value,
+            fill_value=NO_DATA_VALUE,
             dtype=np.int32,
         )
 
@@ -1106,17 +1110,17 @@ class Grid:
             target_ds.SetProjection(dem_raster_dataset.GetProjection())
 
             band = target_ds.GetRasterBand(1)
-            band.SetNoDataValue(no_data_value)
+            band.SetNoDataValue(NO_DATA_VALUE)
             gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
 
         # Write to array
         fragment_id_raster = np.full(
             shape=(1, dem_raster_dataset.RasterXSize, dem_raster_dataset.RasterYSize),
-            fill_value=no_data_value,
+            fill_value=NO_DATA_VALUE,
             dtype=np.int32,
         )
         dataset_kwargs = {
-            "no_data_value": no_data_value,
+            "no_data_value": NO_DATA_VALUE,
             "geo_transform": dem_raster_dataset.GetGeoTransform(),
         }
 
@@ -1129,32 +1133,32 @@ class Grid:
         for n in range(nr_nodes):
             for c in range(nr_of_fragments):
                 fragment_id = node_fragment_array[n][c]
-                if fragment_id != no_data_value:
+                if fragment_id != NO_DATA_VALUE:
                     # check whether this is in the mask, if not, set to NODATA value
                     if not np.any(fragment_id_raster[0] == fragment_id):
-                        node_fragment_array[n][c] = no_data_value
+                        node_fragment_array[n][c] = NO_DATA_VALUE
 
         # Remove fragments that only contains no_data_value in the DEM
         dem_raster = dem_raster_dataset.ReadAsArray()
         for n in range(nr_nodes):
             for c in range(nr_of_fragments):
                 fragment_id = node_fragment_array[n][c]
-                if fragment_id != no_data_value:
+                if fragment_id != NO_DATA_VALUE:
                     if Grid.inactive(
-                        fragment_id, fragment_id_raster[0], dem_raster, no_data_value
+                        fragment_id, fragment_id_raster[0], dem_raster, NO_DATA_VALUE
                     ):
-                        node_fragment_array[n][c] = no_data_value
+                        node_fragment_array[n][c] = NO_DATA_VALUE
                         fragment_id_raster[
                             fragment_id_raster == fragment_id
-                        ] = no_data_value
+                        ] = NO_DATA_VALUE
 
         # Remove fragments whose host node only contains one (this) fragment
         for n in range(nr_nodes):
-            fragments_ids = [f for f in node_fragment_array[n] if f != no_data_value]
+            fragments_ids = [f for f in node_fragment_array[n] if f != NO_DATA_VALUE]
             if len(fragments_ids) == 1:
                 fragment_id = fragments_ids[0]
-                node_fragment_array[n][:] = no_data_value
-                fragment_id_raster[fragment_id_raster == fragment_id] = no_data_value
+                node_fragment_array[n][:] = NO_DATA_VALUE
+                fragment_id_raster[fragment_id_raster == fragment_id] = NO_DATA_VALUE
 
         export_final_fragment_tiff = False
         if export_final_fragment_tiff:
@@ -1167,30 +1171,10 @@ class Grid:
             )
             target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
             target_ds.SetProjection(dem_raster_dataset.GetProjection())
-            target_ds.GetRasterBand(1).SetNoDataValue(no_data_value)
+            target_ds.GetRasterBand(1).SetNoDataValue(NO_DATA_VALUE)
             target_ds.GetRasterBand(1).WriteArray(fragment_id_raster[0])
 
-        # Store resulting fragments for export
-        fragment_ids = []
-        node_ids = []
-        fragment_geoms = []
-        for n in range(nr_nodes):
-            for c in range(nr_of_fragments):
-                fragment_id = node_fragment_array[n][c]
-                if fragment_id != no_data_value:
-                    fragment_ids.append(fragment_id)
-                    fragment_geoms.append(fragment_geometries[fragment_id])
-                    node_ids.append(n)
-        # TODO: update for new numbering, this needs to happen in a later stage
-        self.fragments = Fragments(
-            id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
-        )
-
-        # Flip and transpose mask to mimic GDALInterface.read()
-        fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_id_raster[0]).T)
-        fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
-
-        return fortran_fragment_mask, fortran_node_fragment_array
+        return fragment_id_raster, node_fragment_array, fragment_geometries
 
     @staticmethod
     def inactive(

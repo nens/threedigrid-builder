@@ -9,11 +9,14 @@ import logging
 from pathlib import Path
 from typing import Callable, Optional
 
+import numpy as np
+
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
-from threedigrid_builder.constants import InflowType
+from threedigrid_builder.constants import InflowType, NO_DATA_VALUE
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Clone, Grid, QuadTree
+from threedigrid_builder.grid.fragments import Fragments
 from threedigrid_builder.interface import (
     DictOut,
     GDALInterface,
@@ -84,9 +87,15 @@ def _make_gridadmin(
         )
 
         if apply_cutlines:
-            fortran_fragment_mask, fortran_node_fragment_array = grid.apply_cutlines(
-                db.get_obstacles(), dem_path
-            )
+            (
+                fragment_mask,
+                node_fragment_array,
+                fragment_geometries,
+            ) = grid.apply_cutlines(db.get_obstacles(), dem_path)
+
+            # Flip and transpose mask to mimic GDALInterface.read()
+            fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask[0]).T)
+            fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
 
             clone = Clone(
                 fortran_node_fragment_array,
@@ -104,6 +113,26 @@ def _make_gridadmin(
                 clone,
                 node_id_counter,
                 line_id_counter,
+            )
+
+            clone.clone_numbering
+            # Renumber fragment mask
+            fragment_mask
+
+            # Renumber fragment mask and node_fragment_array and store Fragments to model for export
+            fragment_ids = []
+            node_ids = []
+            fragment_geoms = []
+            nr_nodes, nr_of_fragments = node_fragment_array.shape
+            for n in range(nr_nodes):
+                for c in range(nr_of_fragments):
+                    fragment_id = node_fragment_array[n][c]
+                    if fragment_id != NO_DATA_VALUE:
+                        fragment_ids.append(fragment_id)
+                        fragment_geoms.append(fragment_geometries[fragment_id])
+                        node_ids.append(n)
+            grid.fragments = Fragments(
+                id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
             )
 
         grid.set_quarter_administration(quadtree)
