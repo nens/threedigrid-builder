@@ -1127,6 +1127,10 @@ class Grid:
         with Dataset(fragment_id_raster, **dataset_kwargs) as dataset:
             gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
 
+        fragment_id_raster = fragment_id_raster[
+            0
+        ]  # Remove outer dimension (single band)
+
         # Remove (small/thin) fragments not in the fragment raster (so, no pixels)
         nr_nodes, nr_of_fragments = node_fragment_array.shape
         assert nr_of_fragments == max_nr_of_fragments
@@ -1135,7 +1139,7 @@ class Grid:
                 fragment_id = node_fragment_array[n][c]
                 if fragment_id != NO_DATA_VALUE:
                     # check whether this is in the mask, if not, set to NODATA value
-                    if not np.any(fragment_id_raster[0] == fragment_id):
+                    if not np.any(fragment_id_raster == fragment_id):
                         node_fragment_array[n][c] = NO_DATA_VALUE
 
         # Remove fragments that only contains no_data_value in the DEM
@@ -1145,7 +1149,7 @@ class Grid:
                 fragment_id = node_fragment_array[n][c]
                 if fragment_id != NO_DATA_VALUE:
                     if Grid.inactive(
-                        fragment_id, fragment_id_raster[0], dem_raster, NO_DATA_VALUE
+                        fragment_id, fragment_id_raster, dem_raster, NO_DATA_VALUE
                     ):
                         node_fragment_array[n][c] = NO_DATA_VALUE
                         fragment_id_raster[
@@ -1172,7 +1176,7 @@ class Grid:
             target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
             target_ds.SetProjection(dem_raster_dataset.GetProjection())
             target_ds.GetRasterBand(1).SetNoDataValue(NO_DATA_VALUE)
-            target_ds.GetRasterBand(1).WriteArray(fragment_id_raster[0])
+            target_ds.GetRasterBand(1).WriteArray(fragment_id_raster)
 
         return fragment_id_raster, node_fragment_array, fragment_geometries
 

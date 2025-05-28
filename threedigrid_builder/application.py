@@ -95,7 +95,7 @@ def _make_gridadmin(
             ) = grid.apply_cutlines(db.get_obstacles(), dem_path)
 
             # Flip and transpose mask to mimic GDALInterface.read()
-            fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask[0]).T)
+            fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask).T)
             fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
 
             clone = Clone(
@@ -117,8 +117,14 @@ def _make_gridadmin(
             )
 
             # Renumber fragment mask and node_fragment_array and store Fragments to model for export
+            original_fragment_mask = (
+                fragment_mask.copy()
+            )  # We need a copy to prevent overwrite
             for old_fragment_idx, new_fragment_idx in enumerate(clone.clone_numbering):
-                fragment_mask[fragment_mask == old_fragment_idx] = new_fragment_idx
+                fragment_mask[
+                    original_fragment_mask == old_fragment_idx
+                ] = new_fragment_idx
+
             # Export fragment tiff
             with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
@@ -132,7 +138,7 @@ def _make_gridadmin(
                 target_ds.SetGeoTransform(raster._dataset.GetGeoTransform())
                 target_ds.SetProjection(raster._dataset.GetProjection())
                 target_ds.GetRasterBand(1).SetNoDataValue(NO_DATA_VALUE)
-                target_ds.GetRasterBand(1).WriteArray(fragment_mask[0])
+                target_ds.GetRasterBand(1).WriteArray(fragment_mask)
 
             # Export to model (and h5/gpkg)
             fragment_ids = []
