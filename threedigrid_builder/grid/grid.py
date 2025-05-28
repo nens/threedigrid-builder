@@ -1160,10 +1160,10 @@ class Grid:
                 node_fragment_array[n][:] = NO_DATA_VALUE
                 fragment_id_raster[fragment_id_raster == fragment_id] = NO_DATA_VALUE
 
-        export_final_fragment_tiff = False
-        if export_final_fragment_tiff:
+        export_filtered_fragment_tiff = False
+        if export_filtered_fragment_tiff:
             target_ds = gdal.GetDriverByName("GTiff").Create(
-                "final_fragments.tif",
+                "filtered_fragments.tif",
                 dem_raster_dataset.RasterXSize,
                 dem_raster_dataset.RasterYSize,
                 1,

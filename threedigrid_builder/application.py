@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import numpy as np
+from osgeo import gdal
 
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
@@ -115,22 +116,39 @@ def _make_gridadmin(
                 line_id_counter,
             )
 
-            clone.clone_numbering
-            # Renumber fragment mask
-            fragment_mask
-
             # Renumber fragment mask and node_fragment_array and store Fragments to model for export
+            for old_fragment_idx, new_fragment_idx in enumerate(clone.clone_numbering):
+                fragment_mask[fragment_mask == old_fragment_idx] = new_fragment_idx
+            # Export fragment tiff
+            with GDALInterface(dem_path) as raster:
+                subgrid_meta = raster.read()
+                target_ds = gdal.GetDriverByName("GTiff").Create(
+                    "final_fragments.tif",
+                    subgrid_meta["width"],
+                    subgrid_meta["height"],
+                    1,
+                    gdal.GDT_Int32,
+                )
+                target_ds.SetGeoTransform(raster._dataset.GetGeoTransform())
+                target_ds.SetProjection(raster._dataset.GetProjection())
+                target_ds.GetRasterBand(1).SetNoDataValue(NO_DATA_VALUE)
+                target_ds.GetRasterBand(1).WriteArray(fragment_mask[0])
+
+            # Export to model (and h5/gpkg)
             fragment_ids = []
             node_ids = []
             fragment_geoms = []
-            nr_nodes, nr_of_fragments = node_fragment_array.shape
-            for n in range(nr_nodes):
-                for c in range(nr_of_fragments):
-                    fragment_id = node_fragment_array[n][c]
+            for n in range(node_fragment_array.shape[0]):
+                for f in range(node_fragment_array.shape[1]):
+                    fragment_id = node_fragment_array[n][f]
                     if fragment_id != NO_DATA_VALUE:
-                        fragment_ids.append(fragment_id)
-                        fragment_geoms.append(fragment_geometries[fragment_id])
-                        node_ids.append(n)
+                        fragment_geom = fragment_geometries[fragment_id]
+                        # Map the final index
+                        mapped_fragment_id = clone.clone_numbering[fragment_id]
+                        if mapped_fragment_id != NO_DATA_VALUE:
+                            fragment_ids.append(mapped_fragment_id)
+                            fragment_geoms.append(fragment_geom)
+                            node_ids.append(n)
             grid.fragments = Fragments(
                 id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
             )
