@@ -7,7 +7,6 @@ __all__ = ["Fragment", "Fragments"]
 
 class Fragment:
     id: int
-    node_id: int
     the_geom: shapely.Geometry
 
 

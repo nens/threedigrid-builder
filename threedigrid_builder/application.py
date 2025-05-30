@@ -142,7 +142,6 @@ def _make_gridadmin(
 
             # Export to model (and h5/gpkg)
             fragment_ids = []
-            node_ids = []
             fragment_geoms = []
             for n in range(node_fragment_array.shape[0]):
                 for f in range(node_fragment_array.shape[1]):
@@ -154,10 +153,7 @@ def _make_gridadmin(
                         if mapped_fragment_id != NO_DATA_VALUE:
                             fragment_ids.append(mapped_fragment_id)
                             fragment_geoms.append(fragment_geom)
-                            node_ids.append(n)
-            grid.fragments = Fragments(
-                id=fragment_ids, node_id=node_ids, the_geom=fragment_geoms
-            )
+            grid.fragments = Fragments(id=fragment_ids, the_geom=fragment_geoms)
 
         grid.set_quarter_administration(quadtree)
 

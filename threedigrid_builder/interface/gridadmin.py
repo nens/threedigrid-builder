@@ -779,8 +779,7 @@ class GridAdminOut(OutputInterface):
             return
         group = self._file.create_group("fragments")
 
-        self.write_dataset(group, "id", fragments.id + 1)
-        self.write_dataset(group, "node_id", fragments.node_id + 1)
+        self.write_dataset(group, "id", fragments.id)
         self.write_line_geometry_dataset(
             group, "coords", fragments.the_geom, insert_dummy=True
         )
