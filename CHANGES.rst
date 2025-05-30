@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.24.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Exclude embedded nodes from creating 1D2D groundwater lines.
 
 
 1.24.3 (2025-04-28)
