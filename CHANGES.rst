@@ -5,6 +5,7 @@ Changelog of threedigrid-builder
 1.24.4 (unreleased)
 -------------------
 
+- Include the check_unassigned for 2D nodes for 1D2D groundwater lines.
 - Exclude embedded nodes from creating 1D2D groundwater lines.
 
 
