@@ -1096,23 +1096,6 @@ class Grid:
                 else:
                     raise RuntimeError(f"Node {node_id} has too many fragments")
 
-        # Write to tiff
-        export_fragment_tiff = False
-        if export_fragment_tiff:
-            target_ds = gdal.GetDriverByName("GTiff").Create(
-                "fragments.tif",
-                dem_raster_dataset.RasterXSize,
-                dem_raster_dataset.RasterYSize,
-                1,
-                gdal.GDT_Int32,
-            )
-            target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
-            target_ds.SetProjection(dem_raster_dataset.GetProjection())
-
-            band = target_ds.GetRasterBand(1)
-            band.SetNoDataValue(NO_DATA_VALUE)
-            gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
-
         # Write to array
         fragment_id_raster = np.full(
             shape=(1, dem_raster_dataset.RasterXSize, dem_raster_dataset.RasterYSize),
@@ -1163,20 +1146,6 @@ class Grid:
                 fragment_id = fragments_ids[0]
                 node_fragment_array[n][:] = NO_DATA_VALUE
                 fragment_id_raster[fragment_id_raster == fragment_id] = NO_DATA_VALUE
-
-        export_filtered_fragment_tiff = False
-        if export_filtered_fragment_tiff:
-            target_ds = gdal.GetDriverByName("GTiff").Create(
-                "filtered_fragments.tif",
-                dem_raster_dataset.RasterXSize,
-                dem_raster_dataset.RasterYSize,
-                1,
-                gdal.GDT_Int32,
-            )
-            target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
-            target_ds.SetProjection(dem_raster_dataset.GetProjection())
-            target_ds.GetRasterBand(1).SetNoDataValue(NO_DATA_VALUE)
-            target_ds.GetRasterBand(1).WriteArray(fragment_id_raster)
 
         return fragment_id_raster, node_fragment_array, fragment_geometries
 

@@ -321,7 +321,7 @@ class DictOut(OutputInterface):
             return None
 
         return {
-            "id": fragments.id,
+            "id": increase(fragments.id),
             "geometry": fragments.the_geom,
         }
 

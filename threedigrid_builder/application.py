@@ -117,10 +117,16 @@ def _make_gridadmin(
             )
 
             # Renumber fragment mask and node_fragment_array and store Fragments to model for export
+            # The gridadmin/gpkg are exported 1-based (Fortran), also export mask this way (update mapping)
+            clone_mapping = clone.clone_numbering.copy()
+            for idx in range(len(clone_mapping)):
+                if clone_mapping[idx] != NO_DATA_VALUE:
+                    clone_mapping[idx] += 1
+
             original_fragment_mask = (
                 fragment_mask.copy()
             )  # We need a copy to prevent overwrite
-            for old_fragment_idx, new_fragment_idx in enumerate(clone.clone_numbering):
+            for old_fragment_idx, new_fragment_idx in enumerate(clone_mapping):
                 fragment_mask[
                     original_fragment_mask == old_fragment_idx
                 ] = new_fragment_idx
@@ -129,7 +135,7 @@ def _make_gridadmin(
             with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
                 target_ds = gdal.GetDriverByName("GTiff").Create(
-                    "final_fragments.tif",
+                    "fragments.tif",
                     subgrid_meta["width"],
                     subgrid_meta["height"],
                     1,
