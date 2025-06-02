@@ -1,5 +1,7 @@
 module m_cells
 
+    use m_log
+
     implicit none
 
     contains
@@ -37,10 +39,11 @@ module m_cells
         integer :: m, n
         integer :: mn(4)
         logical :: use_2d_flow
+        integer :: ierr
 
-#ifdef UNIX
-        write(*,*) '** INFO: Start setting 2D calculation cells.'
-#endif
+
+        call print_unix('** INFO: Start setting 2D calculation cells.')
+
         nod = 1
         use_2d_flow = ((n_line_u > 0) .or. (n_line_v > 0))
         l_u = 0
@@ -80,11 +83,9 @@ module m_cells
             deallocate(area_mask_padded)
         endif
 
-#ifdef UNIX
-        write(*,*) '** INFO: Number of 2D nodes is: ', nod - 1
-        write(*,*) '** INFO: Number of 2D lines is: ', l_u + (l_v - l_u)
-        write(*,*) '** INFO: Done setting 2D calculation cells.'
-#endif
+        call print_unix('** INFO: Number of 2D nodes is: ', nod - 1)
+        call print_unix('** INFO: Number of 2D lines is: ', l_u + (l_v - l_u))
+        call print_unix('** INFO: Done setting 2D calculation cells.')
 
     end subroutine set_2d_computational_nodes_lines
 

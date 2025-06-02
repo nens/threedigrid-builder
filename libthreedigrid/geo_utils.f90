@@ -1,5 +1,7 @@
 module m_grid_utils
 
+    use m_log
+
     implicit none
 
     contains
@@ -288,9 +290,7 @@ module m_grid_utils
 
         if( (a1 - a2)<1.0d-5 ) then
             intersects = .FALSE.
-#ifdef UNIX
-            write(*,*) '** DEBUG: Lines do not intersect'
-#endif
+            call print_unix('** DEBUG: Lines do not intersect')
             return
         else
             intersects = .TRUE.

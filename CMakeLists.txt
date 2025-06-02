@@ -95,6 +95,7 @@ set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -cpp -s -fPIC -ffree-line
 set(f2py_module_name "_fgrid")
 set(fortran_src_dir "${CMAKE_SOURCE_DIR}/libthreedigrid")
 set(fortran_src_file "${fortran_src_dir}/parameters.f90"
+                      "${fortran_src_dir}/log.f90"
                       "${fortran_src_dir}/array_utils.f90"
                       "${fortran_src_dir}/geo_utils.f90"
                       "${fortran_src_dir}/cells.f90"
