@@ -356,8 +356,6 @@ class Clone:
                 area_mask,
                 clone_mask,
                 self.clones_in_cell,
-                self.cell_numbering,
-                self.clone_numbering,
                 line,
                 nodk,
                 nodm,

@@ -25,19 +25,19 @@ module m_clone
             if (clone_array(cell_counter, 1) >= 0) then !! If there are clone cells, count them in order
                 do clone_counter = 1, CLONE_NUMBERS !! Count until the limit
                     if (clone_array(cell_counter, clone_counter) >= 0) then 
+                        clone_numbering(clone_array(cell_counter, clone_counter) + 1) = counter !! to comply with python
                         counter = counter + 1
-                        clone_numbering(clone_array(cell_counter, clone_counter) + 1) = counter
                         clones_in_cell(cell_counter) = clones_in_cell(cell_counter) + 1
                     end if                        
                 end do
                 if (clones_in_cell(cell_counter) == 1) then !! If there is one clone cell in a quadtree cell, discard it  (this will be moved to the filtering part in python)
                     clones_in_cell(cell_counter) = 0
-                    clone_numbering(clone_array(cell_counter, 1) + 1) = 0
-                    cell_numbering(cell_counter) = counter
+                    clone_numbering(clone_array(cell_counter, 1) + 1) = -9999
+                    cell_numbering(cell_counter) = counter - 1 !! (-1) to comply with python
                 endif
             else !! If there are no clone cells, count the quadtree cells
+                cell_numbering(cell_counter) = counter !! to comply with python
                 counter = counter + 1
-                cell_numbering(cell_counter) = counter
             end if
             if (clones_in_cell(cell_counter) > 0) then !! Ajdust the total number of the cells accordingly
                 n_cells_new = n_cells_new + clones_in_cell(cell_counter) - 1
@@ -48,7 +48,7 @@ module m_clone
 
     end subroutine find_active_clone_cells
 
-    subroutine make_clones(min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn, n_lines_u, n_lines_v, n_interclone_lines)
+    subroutine make_clones(min_pix, area_mask, clone_mask, clones_in_cell, line, nodk, nodm, nodn, n_lines_u, n_lines_v, n_interclone_lines)
         !! Count the active (2D) lines created within the new cell system !!
 
         use parameters, only: U_DIR, V_DIR
@@ -56,8 +56,6 @@ module m_clone
         integer*1, intent(in) :: area_mask(:,:)
         integer, intent(in) :: clone_mask(:,:)                  !! Identifier of the clone cells according to the area mask
         integer, intent(in) :: clones_in_cell(:)                !! Updated identifier of the clones within each host cell (does not match the clone_mask)
-        integer, intent(in) :: cell_numbering(:)                !! New numbering list for quadtree cells
-        integer, intent(in) :: clone_numbering(:)               !! New numbering list for clone cells
         integer, intent(in) :: line(:,:)                        !! Old Line administration
         integer, intent(in) :: nodk(:)                          !! Old refinement level administration
         integer, intent(in) :: nodm(:)                          !! Old row number administration
@@ -73,9 +71,9 @@ module m_clone
         start_v = n_lines_u + 1
         end_v = n_lines_u + n_lines_v
 
-        call count_clone_lines(U_DIR, start_u, end_u, n_lines_u, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn)
+        call count_clone_lines(U_DIR, start_u, end_u, n_lines_u, min_pix, area_mask, clone_mask, clones_in_cell, line, nodk, nodm, nodn)
         
-        call count_clone_lines(V_DIR, start_v, end_v, n_lines_v, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn)
+        call count_clone_lines(V_DIR, start_v, end_v, n_lines_v, min_pix, area_mask, clone_mask, clones_in_cell, line, nodk, nodm, nodn)
 
         call count_interclone_lines(n_interclone_lines, clones_in_cell)
 
@@ -83,7 +81,7 @@ module m_clone
 
     end subroutine
 
-    subroutine count_clone_lines(direction, start_l, end_l, n_line, min_pix, area_mask, clone_mask, clones_in_cell, cell_numbering, clone_numbering, line, nodk, nodm, nodn)
+    subroutine count_clone_lines(direction, start_l, end_l, n_line, min_pix, area_mask, clone_mask, clones_in_cell, line, nodk, nodm, nodn)
 
         use parameters, only: U_DIR, V_DIR
         integer, intent(in) :: direction
@@ -92,10 +90,8 @@ module m_clone
         integer, intent(inout) :: n_line
         integer, intent(in) :: min_pix
         integer*1, intent(in) :: area_mask(:,:)
-        integer, intent(in) :: clone_mask(:,:)             !! Identifier of the clone cells according to the area mask
-        integer, intent(in) :: clones_in_cell(:)              !! Updated identifier of the clones within each host cell (does not match the clone_mask)
-        integer, intent(in) :: cell_numbering(:)             !! New numbering list for quadtree cells
-        integer, intent(in) :: clone_numbering(:)            !! New numbering list for clone cells
+        integer, intent(in) :: clone_mask(:,:)                !! Identifier of the clone cells according to the area mask
+        integer, intent(in) :: clones_in_cell(:)              !! total number of clones in each cell
         integer, intent(in) :: line(:,:)
         integer, intent(in) :: nodk(:)
         integer, intent(in) :: nodm(:)
@@ -155,7 +151,7 @@ module m_clone
         do n_cell = 1, size(clones_in_cell)
             if (clones_in_cell(n_cell) == 2) then
                 n_lines = n_lines + 1
-            ! elseif (clones_in_cell(n_cell) == 2) then
+            ! elseif (clones_in_cell(n_cell) == 2) then !!!! TODO: We have to cover upto 4 clone cells in a quadtree cell
             endif
         enddo
 
@@ -258,8 +254,8 @@ module m_clone
                                             line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering, cross_pix_new)   !! Now rewiring the line administration
             else
                 l_counter = l_counter + 1
-                line_new(l_counter, 1) = cell_numbering(line(nl,1) + 1) - 1
-                line_new(l_counter, 2) = cell_numbering(line(nl,2) + 1) - 1
+                line_new(l_counter, 1) = cell_numbering(line(nl,1) + 1)
+                line_new(l_counter, 2) = cell_numbering(line(nl,2) + 1)
                 cross_pix_new(l_counter,:) = cross_pix(nl,:)
             end if
         end do
@@ -300,37 +296,21 @@ module m_clone
                     exit
                 endif
             enddo
-            new_pixel = pixel_j + pixel_no !! I can also use counter instead of new_pixel
+            new_pixel = pixel_j + pixel_no
             if ((new_pixel - pixel) > 5) then   !! 5 is the minimum number of pixels through which a flowline can be created
                 if (any(minval(area_mask(pixel_i:pixel_i+1,pixel:new_pixel-1), 1) > 0)) then  !! if there is a minimum of a pair of pixel with data, make the flowline
                     if (present(line_new)) then
                         l_counter = l_counter + 1
                         cross_pix_new(l_counter,:) = (/pixel_i, pixel-1, pixel_i, new_pixel/)
                         if (clone_1 >= 0 .and. clone_2 >= 0) then
-                            if (clone_numbering(clone_1 + 1) > 0 .and. clone_numbering(clone_2 + 1) > 0) then
-                                line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
-                                line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
-                            elseif (clone_numbering(clone_1 + 1) == 0 .and. clone_numbering(clone_2 + 1) > 0) then
-                                line_new(l_counter, 1) = cell_numbering(host_1) - 1
-                                line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
-                            elseif (clone_numbering(clone_1 + 1) > 0 .and. clone_numbering(clone_2 + 1) == 0) then
-                                line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
-                                line_new(l_counter, 2) = cell_numbering(host_2) - 1
-                            endif
+                            line_new(l_counter, 1) = clone_numbering(clone_1+1)
+                            line_new(l_counter, 2) = clone_numbering(clone_2+1)
                         elseif (clone_1 >= 0 .and. clone_2 < 0) then
-                            line_new(l_counter, 2) = cell_numbering(host_2) - 1
-                            if (clone_numbering(clone_1 + 1) > 0) then
-                                line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
-                            else
-                                line_new(l_counter, 1) = cell_numbering(host_1) - 1
-                            endif
+                            line_new(l_counter, 1) = clone_numbering(clone_1+1)
+                            line_new(l_counter, 2) = cell_numbering(host_2)
                         elseif (clone_1 < 0 .and. clone_2 >= 0 ) then
-                            line_new(l_counter, 1) = cell_numbering(host_1) - 1
-                            if (clone_numbering(clone_2 + 1) > 0 ) then
-                                line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
-                            else
-                                line_new(l_counter, 2) = cell_numbering(host_2) - 1
-                            endif
+                            line_new(l_counter, 1) = cell_numbering(host_1)
+                            line_new(l_counter, 2) = clone_numbering(clone_2+1)
                         endif
                     else
                         tot_number_lines = tot_number_lines + 1
@@ -365,30 +345,14 @@ module m_clone
                         l_counter = l_counter + 1
                         cross_pix_new(l_counter,:) = (/pixel-1, pixel_j, new_pixel, pixel_j/)
                         if (clone_1 >= 0 .and. clone_2 >= 0) then
-                            if (clone_numbering(clone_1 + 1) > 0 .and. clone_numbering(clone_2 + 1) > 0) then
-                                line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
-                                line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
-                            elseif (clone_numbering(clone_1 + 1) == 0 .and. clone_numbering(clone_2 + 1) > 0) then
-                                line_new(l_counter, 1) = cell_numbering(host_1) - 1
-                                line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
-                            else
-                                line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
-                                line_new(l_counter, 2) = cell_numbering(host_2) - 1
-                            endif
+                            line_new(l_counter, 1) = clone_numbering(clone_1+1)
+                            line_new(l_counter, 2) = clone_numbering(clone_2+1)
                         elseif (clone_1 >= 0 .and. clone_2 < 0) then
-                            line_new(l_counter, 2) = cell_numbering(host_2) - 1
-                            if (clone_numbering(clone_1 + 1) > 0) then
-                                line_new(l_counter, 1) = clone_numbering(clone_1+1) - 1
-                            else
-                                line_new(l_counter, 1) = cell_numbering(host_1) - 1
-                            endif
+                            line_new(l_counter, 1) = clone_numbering(clone_1+1)
+                            line_new(l_counter, 2) = cell_numbering(host_2)
                         elseif (clone_1 < 0 .and. clone_2 >= 0) then
-                            line_new(l_counter, 1) = cell_numbering(host_1) - 1
-                            if (clone_numbering(clone_2 + 1) > 0 ) then
-                                line_new(l_counter, 2) = clone_numbering(clone_2+1) - 1
-                            else
-                                line_new(l_counter, 2) = cell_numbering(host_2) - 1
-                            endif
+                            line_new(l_counter, 1) = cell_numbering(host_1)
+                            line_new(l_counter, 2) = clone_numbering(clone_2+1)
                         endif
                     else
                         tot_number_lines = tot_number_lines + 1
@@ -423,9 +387,9 @@ module m_clone
         do n_cell = 1, size(clones_in_cell)
             if (clones_in_cell(n_cell) == 2) then
                 l_counter = l_counter + 1
-                line_new(l_counter, 1) = clone_numbering(clone_array(n_cell, 1) + 1) - 1
-                line_new(l_counter, 2) = clone_numbering(clone_array(n_cell, 2) + 1) - 1
-                ! elseif (clones_in_cell(n_cell) == 2) then
+                line_new(l_counter, 1) = clone_numbering(clone_array(n_cell, 1) + 1)
+                line_new(l_counter, 2) = clone_numbering(clone_array(n_cell, 2) + 1)
+                ! elseif (clones_in_cell(n_cell) == 2) then  !!! TODO: We will cover up to 4 clones per quadtree cell
             endif
         enddo
 
