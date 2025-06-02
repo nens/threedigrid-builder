@@ -39,7 +39,6 @@ module m_cells
         integer :: m, n
         integer :: mn(4)
         logical :: use_2d_flow
-        integer :: ierr
 
 
         call print_unix('** INFO: Start setting 2D calculation cells.')
