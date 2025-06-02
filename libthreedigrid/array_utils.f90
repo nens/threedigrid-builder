@@ -27,7 +27,9 @@ module m_array_utils
                 inbound = .FALSE.
             endif
         else
+#ifdef (UNIX)
             write(*,*) '** WARNING: Array out of bounds'
+#endif
         endif
 
     end function check_bounds_d_1d
@@ -52,11 +54,15 @@ module m_array_utils
             if(i0 <= i1) then
                 inbound = .TRUE.
             else
+#ifdef (UNIX)
                 write(*,*) '** WARNING: Indices in incorrect order.'
                 inbound = .FALSE.
+#endif
             endif
         else
+#ifdef (UNIX)
             write(*,*) '** WARNING: Array out of bounds'
+#endif
         endif
 
     end function check_bounds_d_2d
@@ -76,7 +82,9 @@ module m_array_utils
                 inbound = .FALSE.
             endif
         else
+#ifdef (UNIX)
             write(*,*) '** WARNING: Array out of bounds'
+#endif
         endif
 
     end function check_bounds_i_1d
@@ -104,7 +112,9 @@ module m_array_utils
                 inbound = .FALSE.
             endif
         else
+#ifdef (UNIX)
             write(*,*) '** WARNING: Array out of bounds'
+#endif
         endif
 
     end function check_bounds_i_2d

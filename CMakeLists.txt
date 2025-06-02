@@ -14,7 +14,7 @@ if (WIN32)
 elseif (UNIX)
   #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
   #message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
-  add_definitions(-DUNIX)
+  add_definitions(-DUNIX) # HERE the UNIX preprocessor directives in the *.f90 code files get a meaning!!!!
 elseif (MSVC)
   add_definitions(-DWIN32)
 endif()

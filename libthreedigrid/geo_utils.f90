@@ -288,7 +288,9 @@ module m_grid_utils
 
         if( (a1 - a2)<1.0d-5 ) then
             intersects = .FALSE.
+#ifdef (UNIX)
             write(*,*) '** DEBUG: Lines do not intersect'
+#endif
             return
         else
             intersects = .TRUE.

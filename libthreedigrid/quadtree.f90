@@ -25,7 +25,9 @@ module m_quadtree
         integer :: k
         integer :: m, n
 
+#ifdef (UNIX)
         write(*,*) '** INFO: Start making quadtree.'
+#endif
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
@@ -35,7 +37,9 @@ module m_quadtree
         call find_active_2d_comp_cells(&
             kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
         )
+#ifdef (UNIX)
         write(*,*) '** INFO: Done making quadtree.'
+#endif
 
     end subroutine make_quadtree
 
@@ -164,8 +168,11 @@ module m_quadtree
             enddo
         enddo
         deallocate(area_mask_padded)
+
+#ifdef (UNIX)
         write(*,*) '** INFO: No. active 2D computational cells: ', n_cells
         write(*,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
+#endif
 
     end subroutine find_active_2d_comp_cells
 
