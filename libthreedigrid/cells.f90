@@ -38,7 +38,7 @@ module m_cells
         integer :: mn(4)
         logical :: use_2d_flow
 
-#ifdef (UNIX)
+#ifdef UNIX
         write(*,*) '** INFO: Start setting 2D calculation cells.'
 #endif
         nod = 1
@@ -80,7 +80,7 @@ module m_cells
             deallocate(area_mask_padded)
         endif
 
-#ifdef (UNIX)
+#ifdef UNIX
         write(*,*) '** INFO: Number of 2D nodes is: ', nod - 1
         write(*,*) '** INFO: Number of 2D lines is: ', l_u + (l_v - l_u)
         write(*,*) '** INFO: Done setting 2D calculation cells.'
