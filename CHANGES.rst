@@ -6,6 +6,7 @@ Changelog of threedigrid-builder
 -------------------
 
 - Exclude embedded nodes from creating 1D2D groundwater lines.
+- Add preprocessor directives to only write to standard out on Linux. Fixes QGIS segfault for windows-2022 runner build.
 
 
 1.24.3 (2025-04-28)

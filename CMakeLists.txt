@@ -14,7 +14,7 @@ if (WIN32)
 elseif (UNIX)
   #get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
   #message (STATUS "COMPILER NAME IS: " ${Fortran_COMPILER_NAME})
-  add_definitions(-DUNIX)
+  add_definitions(-DUNIX) # HERE the UNIX preprocessor directives in the *.f90 code files get a meaning!!!!
 elseif (MSVC)
   add_definitions(-DWIN32)
 endif()
@@ -88,13 +88,14 @@ cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
 
 
 # Compiler flags
-set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -s -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
-set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -s -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -Wconversion -Wmaybe-uninitialized -fcheck=all -fimplicit-none -Wextra")
+set (CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS} -cpp -s -ffree-line-length-none -ffree-form -fimplicit-none -fbackslash --param max-unroll-times=4 -O3")
+set (CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS} -cpp -s -fPIC -ffree-line-length-none -ffree-form -fimplicit-none -ffpe-trap=zero,overflow,underflow -fall-intrinsics -fbackslash --param max-unroll-times=4 -g -O0 -Wconversion -Wmaybe-uninitialized -fcheck=all -fimplicit-none -Wextra")
 
 # Prepping the module
 set(f2py_module_name "_fgrid")
 set(fortran_src_dir "${CMAKE_SOURCE_DIR}/libthreedigrid")
 set(fortran_src_file "${fortran_src_dir}/parameters.f90"
+                      "${fortran_src_dir}/log.f90"
                       "${fortran_src_dir}/array_utils.f90"
                       "${fortran_src_dir}/geo_utils.f90"
                       "${fortran_src_dir}/cells.f90"
