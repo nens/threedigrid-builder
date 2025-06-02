@@ -396,7 +396,9 @@ class BaseLinear:
     def has_groundwater_exchange(self):
         return np.full(len(self), False, dtype=bool)
 
-    def apply_has_groundwater_exchange(self, nodes: Nodes, lines: Lines):
+    def apply_has_groundwater_exchange(
+        self, nodes: Nodes, lines: Lines, embedded_nodes: Nodes
+    ):
         content_pk = self.id[self.has_groundwater_exchange]
 
         if len(content_pk) == 0:
@@ -408,6 +410,10 @@ class BaseLinear:
                 & np.isin(lines.content_pk, content_pk)
             ]
         )
+
+        # Nodes that have been embedded should not transfer groundwater properties to
+        # the nodes they are embedded in
+        node_ids = np.setdiff1d(node_ids, embedded_nodes.embedded_in)
 
         nodes.has_groundwater_exchange[
             np.isin(nodes.id, node_ids)
