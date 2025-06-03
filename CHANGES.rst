@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.4 (unreleased)
+1.24.4 (2025-06-03)
 -------------------
 
 - Include the check_unassigned for 2D nodes for 1D2D groundwater lines.
