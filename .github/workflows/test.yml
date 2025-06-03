@@ -84,11 +84,8 @@ jobs:
 
       - name: Add PPA for gdal 36
         run: |
-          sudo apt-get update
-          wget http://ftp.debian.org/debian/pool/main/g/gdal/libgdal-dev_3.6.2+dfsg-1+b2_amd64.deb
-          sudo dpkg -i libgdal-dev_3.6.2+dfsg-1+b2_amd64.deb
-          rm libgdal-dev_3.6.2+dfsg-1+b2_amd64.deb
-          apt show libgdal-dev | grep Version         
+          sudo add-apt-repository "ppa:ubuntugis/ppa" -y && sudo apt update
+          apt show libgdal-dev | grep Version          
         if: matrix.use_gdal_36
 
       - name: Add PPA for gdal 310
