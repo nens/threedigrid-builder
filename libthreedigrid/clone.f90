@@ -105,7 +105,7 @@ module m_clone
         do nl = start_l, end_l
             host_1 = line(nl,1) + 1
             host_2 = line(nl,2) + 1
-            if (clones_in_cell(host_1) > 0 .or. clones_in_cell(host_2) > 0) then !! So it means that the quadtree flowline must be deleted
+            if (clones_in_cell(host_1) > 0 .or. clones_in_cell(host_2) > 0) then !! It means that the quadtree flowline must be deleted
                 k_host_1 = nodk(host_1)
                 k_host_2 = nodk(host_2)
 
@@ -301,7 +301,7 @@ module m_clone
                 if (any(minval(area_mask(pixel_i:pixel_i+1,pixel:new_pixel-1), 1) > 0)) then  !! if there is a minimum of a pair of pixel with data, make the flowline
                     if (present(line_new)) then
                         l_counter = l_counter + 1
-                        cross_pix_new(l_counter,:) = (/pixel_i, pixel-1, pixel_i, new_pixel/)
+                        cross_pix_new(l_counter,:) = (/pixel_i, pixel-1, pixel_i, new_pixel-1/)
                         if (clone_1 >= 0 .and. clone_2 >= 0) then
                             line_new(l_counter, 1) = clone_numbering(clone_1+1)
                             line_new(l_counter, 2) = clone_numbering(clone_2+1)
@@ -343,7 +343,7 @@ module m_clone
                 if (any(minval(area_mask(pixel:new_pixel-1,pixel_j:pixel_j+1), 2) > 0)) then
                     if (present(line_new)) then
                         l_counter = l_counter + 1
-                        cross_pix_new(l_counter,:) = (/pixel-1, pixel_j, new_pixel, pixel_j/)
+                        cross_pix_new(l_counter,:) = (/pixel-1, pixel_j, new_pixel-1, pixel_j/)
                         if (clone_1 >= 0 .and. clone_2 >= 0) then
                             line_new(l_counter, 1) = clone_numbering(clone_1+1)
                             line_new(l_counter, 2) = clone_numbering(clone_2+1)

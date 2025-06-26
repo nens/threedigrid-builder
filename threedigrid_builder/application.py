@@ -98,6 +98,7 @@ def _make_gridadmin(
             fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask).T)
             fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
 
+            # Regenerate the nodes and lines including clone cells
             clone = Clone(
                 fortran_node_fragment_array,
                 fortran_fragment_mask,
@@ -106,9 +107,11 @@ def _make_gridadmin(
                 area_mask=subgrid_meta["area_mask"],
             )
 
+            # Reset the node/line counter
             node_id_counter = itertools.count()
             line_id_counter = itertools.count()
 
+            # Overwrite nodes and lines attributes according to the new cells and lines numbers
             grid.nodes, grid.lines = Grid.from_clone(
                 quadtree,
                 clone,

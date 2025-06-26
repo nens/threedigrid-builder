@@ -341,7 +341,8 @@ class Clone:
             bounds = grid.nodes.bounds
             coords = grid.nodes.coordinates
             pixel_coords = grid.nodes.pixel_coords
-            ## To find the active clone cells and renumbering the whole cells (including clones)
+
+            ## Find the active clone cells and renumbering the whole cells (including clones)
             m_clone.find_active_clone_cells(
                 self.n_cells,
                 clone_array,
@@ -379,7 +380,7 @@ class Clone:
                 (total_line_number, 4), -9999, dtype=np.int32, order="F"
             )
 
-            ## Creat the new line administration
+            ## Create the new line administration
             m_clone.set_lines_with_clones(
                 quadtree.n_lines_u,
                 quadtree.n_lines_v,
