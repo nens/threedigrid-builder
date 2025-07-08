@@ -444,4 +444,38 @@ module m_clone
         
     end subroutine reset_nod_parameters
 
+    subroutine set_line_bounds(start, end, line, nodk, nodm, nodn, min_pix, clone_mask, cell_bounds, line_bounds)
+
+        integer, intent(in) :: start
+        integer, intent(in) :: end
+        integer, intent(in) :: line(:,:)
+        integer, intent(in) :: nodk(:)
+        integer, intent(in) :: nodm(:)
+        integer, intent(in) :: nodn(:)
+        integer, intent(in) :: min_pix
+        integer, intent(in) :: clone_mask(:,:)
+        double precision, intent(in) :: cell_bounds(:,:)
+        double precision, intent(inout) :: line_bounds(:, :) ! corner coords of comp cell
+
+        integer :: line_counter, cell_no
+        integer :: i0, j0, i1, j1
+
+        do line_counter = start, end
+            cell_no = line(line_counter, 1) + 1
+            call get_pix_corners(nodk(cell_no), nodm(cell_no), nodn(cell_no), min_pix, i0, i1, j0, j1)
+            if (clone_mask(i0, j0) == clone_mask(i1, j1)) then
+                line_bounds(line_counter, 1) = cell_bounds(cell_no,1)
+                line_bounds(line_counter, 2) = cell_bounds(cell_no,4)
+                line_bounds(line_counter, 3) = cell_bounds(cell_no,3)
+                line_bounds(line_counter, 4) = cell_bounds(cell_no,2)
+            else
+                line_bounds(line_counter, 1) = cell_bounds(cell_no,1)
+                line_bounds(line_counter, 2) = cell_bounds(cell_no,2)
+                line_bounds(line_counter, 3) = cell_bounds(cell_no,3)
+                line_bounds(line_counter, 4) = cell_bounds(cell_no,4)
+            endif
+        enddo
+
+    end subroutine set_line_bounds
+
 end module

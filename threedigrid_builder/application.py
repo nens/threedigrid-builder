@@ -171,7 +171,11 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        grid.set_obstacles_2d(db.get_obstacles())
+        if apply_cutlines:
+            grid.set_obstacles_clones(db.get_obstacles())
+        else:
+            grid.set_obstacles_2d(db.get_obstacles())
+
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,

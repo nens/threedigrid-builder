@@ -602,9 +602,11 @@ class Grid:
             lim=nodes.nodm[idx],
             lin=nodes.nodn[idx],
             cross_pix_coords=clone.cross_pix_coords_new,
+            line_bounds=clone.line_bounds,
         )
         lines.set_line_coords(nodes)
         lines.fix_line_geometries()
+        lines.fix_line_geometries_interclones()
 
         return nodes, lines
 
@@ -708,6 +710,26 @@ class Grid:
             affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
         """
         line_2d = [LineType.LINE_2D_U, LineType.LINE_2D_V]
+        selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
+        crest_level = obstacles.compute_dpumax(
+            self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
+        )[0]
+        self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.obstacles = obstacles
+
+    def set_obstacles_clones(
+        self,
+        obstacles: Obstacles,
+    ):
+        """Set obstacles on interclone lines by determining            between
+           line_coords (these must be knows at this point) and obstacle geometry.
+           Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
+
+        Args:
+            obstacles (Obstacles)
+            affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
+        """
+        line_2d = [LineType.LINE_INTERCLONE]
         selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
         crest_level = obstacles.compute_dpumax(
             self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D

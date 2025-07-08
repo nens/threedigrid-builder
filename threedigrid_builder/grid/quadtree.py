@@ -407,6 +407,9 @@ class Clone:
             self.bounds = np.empty((self.n_cells, 4), dtype=np.float64, order="F")
             self.coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
             self.pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
+            self.line_bounds = np.empty(
+                (total_line_number, 4), dtype=np.float64, order="F"
+            )
 
             m_clone.reset_nod_parameters(
                 clone_array,
@@ -422,6 +425,19 @@ class Clone:
                 self.bounds,
                 self.coords,
                 self.pixel_coords,
+            )
+
+            m_clone.set_line_bounds(
+                self.n_newlines_u + self.n_newlines_v + 1,
+                self.n_newlines_u + self.n_newlines_v + self.n_interclone_lines,
+                self.line_new,
+                self.nodk_new,
+                self.nodm_new,
+                self.nodn_new,
+                lgrmin,
+                clone_mask,
+                self.bounds,
+                self.line_bounds,
             )
 
         else:

@@ -127,7 +127,7 @@ class TablesSettings:
     vegetation_drag_coefficient_type: Optional[InitializationType] = None
 
     ## from fragments
-    fragments_typs: Optional[InitializationType] = None
+    fragments_type: Optional[InitializationType] = InitializationType.NO_AGG
 
     def __post_init__(self):
         # defaults

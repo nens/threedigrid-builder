@@ -25,6 +25,9 @@ class Line:
     ds1d: float  # arclength
     line_geometries: shapely.Geometry
     line_coords: Tuple[float, float, float, float]
+    line_bounds: Tuple[
+        float, float, float, float
+    ]  # TEMP: for interclone lines to be used instead of line_coords in geometries, indicator of the coordinates of the corners
     content_type: ContentType
     content_pk: int
     dpumax: float  # bottom_level at the velocity point
@@ -99,6 +102,18 @@ class Lines(Array[Line]):
             self.line_coords[to_fix].reshape(-1, 2, 2)
         )
 
+    def fix_line_geometries_interclones(self):
+        """Reset line_geometries for interclone lines from bounds"""
+        line_clone = [LineType.LINE_INTERCLONE]
+        to_fix = np.where(np.isin(self.kcu, line_clone))[0]
+        if not to_fix.any():
+            return
+        if np.any(~np.isfinite(self.line_bounds[to_fix])):
+            raise ValueError("No line bounds available")
+        self.line_geometries[to_fix] = shapely.linestrings(
+            self.line_bounds[to_fix].reshape(-1, 2, 2)
+        )
+
     def fix_ds1d(self):
         """Construct line distance (ds1d) from line_geometries, where necessary"""
         to_fix = np.isnan(self.ds1d)
@@ -129,7 +144,9 @@ class Lines(Array[Line]):
         has_crest_level = where[np.isfinite(crest_levels)]
         is_2d_u = self.kcu[has_crest_level] == LineType.LINE_2D_U
         is_2d_v = self.kcu[has_crest_level] == LineType.LINE_2D_V
+        # is_clone = self.kcu[has_crest_level] == LineType.LINE_INTERCLONE
         self.kcu[has_crest_level[is_2d_u]] = LineType.LINE_2D_OBSTACLE_U
         self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
+        # self.kcu[has_crest_level[is_clone]] = LineType.LINE_2D_OBSTACLE
         self.flod[where] = crest_levels
         self.flou[where] = crest_levels
