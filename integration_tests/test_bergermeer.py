@@ -22,7 +22,7 @@ def count_unique(arr):
 
 def test_clone_integration(tmp_path):
     unittests_clone_data_path = unittests_data_path / "clone"
-    schematisation_file = "fuerthen.sqlite"
+    schematisation_file = "fuerthen.gpkg"
 
     shutil.copyfile(
         unittests_clone_data_path / schematisation_file, tmp_path / schematisation_file
