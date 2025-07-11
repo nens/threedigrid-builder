@@ -1118,19 +1118,39 @@ class Grid:
                 else:
                     raise RuntimeError(f"Node {node_id} has too many fragments")
 
+        # Write to tiff
+        export_fragment_tiff = False
+        if export_fragment_tiff:
+            target_ds = gdal.GetDriverByName("GTiff").Create(
+                "fragments.tif",
+                dem_raster_dataset.RasterXSize,
+                dem_raster_dataset.RasterYSize,
+                1,
+                gdal.GDT_Int32,
+            )
+            target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
+            target_ds.SetProjection(dem_raster_dataset.GetProjection())
+
+            band = target_ds.GetRasterBand(1)
+            band.SetNoDataValue(NO_DATA_VALUE)
+            gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
+            target_ds = None
+
         # Write to array
         fragment_id_raster = np.full(
-            shape=(1, dem_raster_dataset.RasterXSize, dem_raster_dataset.RasterYSize),
+            shape=(1, dem_raster_dataset.RasterYSize, dem_raster_dataset.RasterXSize),
             fill_value=NO_DATA_VALUE,
             dtype=np.int32,
         )
         dataset_kwargs = {
             "no_data_value": NO_DATA_VALUE,
             "geo_transform": dem_raster_dataset.GetGeoTransform(),
+            "projection": dem_raster_dataset.GetProjection(),
         }
 
         with Dataset(fragment_id_raster, **dataset_kwargs) as dataset:
-            gdal.RasterizeLayer(dataset, (1,), layer, options=["ATTRIBUTE=id"])
+            gdal.RasterizeLayer(dataset, [1], layer, options=["ATTRIBUTE=id"])
+            # gdal.GetDriverByName("GTiff").CreateCopy("array.tiff", dataset,  options=["COMPRESS=DEFLATE"])
 
         fragment_id_raster = fragment_id_raster[
             0
