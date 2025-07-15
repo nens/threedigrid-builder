@@ -297,7 +297,7 @@ module m_clone
                 endif
             enddo
             new_pixel = pixel_j + pixel_no
-            if ((new_pixel - pixel) > 5) then   !! 5 is the minimum number of pixels through which a flowline can be created
+            if ((new_pixel - pixel) > 1) then   !! 1 is the minimum number of pixels through which a flowline can be created
                 if (any(minval(area_mask(pixel_i:pixel_i+1,pixel:new_pixel-1), 1) > 0)) then  !! if there is a minimum of a pair of pixel with data, make the flowline
                     if (present(line_new)) then
                         l_counter = l_counter + 1
@@ -477,5 +477,35 @@ module m_clone
         enddo
 
     end subroutine set_line_bounds
+
+    subroutine set_quad_idx(quad_idx, nodk, nodm, nodn, n_cells)
+
+        use m_grid_utils, only : get_lg_corners
+        
+        integer, intent(inout) :: quad_idx(:,:)
+        integer, intent(in) :: nodk(:)
+        integer, intent(in) :: nodm(:)
+        integer, intent(in) :: nodn(:)
+        integer, intent(in) ::n_cells
+
+        integer :: quad_idx_new(size(quad_idx, 1), size(quad_idx, 2)), mn(4)
+        integer :: cell, k, m, n
+
+        write(*,*) size(quad_idx, 1), size(quad_idx, 2)
+        quad_idx_new = 0.0d0
+
+        do cell = 1, n_cells
+            k = nodk(cell)
+            m = nodm(cell)
+            n = nodn(cell)
+            mn = get_lg_corners(k, m, n)
+            if (all(quad_idx_new(mn(1):mn(3), mn(2):mn(4)) == 0.0d0)) then
+                quad_idx_new(mn(1):mn(3), mn(2):mn(4))= cell
+            endif
+        enddo
+
+        quad_idx = quad_idx_new
+
+    end subroutine set_quad_idx
 
 end module

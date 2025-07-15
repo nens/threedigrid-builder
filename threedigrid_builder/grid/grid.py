@@ -722,7 +722,7 @@ class Grid:
         obstacles: Obstacles,
     ):
         """Set obstacles on interclone lines by determining            between
-           line_coords (these must be knows at this point) and obstacle geometry.
+           line_coords (these must be known at this point) and obstacle geometry.
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
         Args:

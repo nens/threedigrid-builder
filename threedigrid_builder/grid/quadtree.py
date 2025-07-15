@@ -440,5 +440,13 @@ class Clone:
                 self.line_bounds,
             )
 
+            m_clone.set_quad_idx(
+                quadtree.quad_idx,
+                self.nodk_new,
+                self.nodm_new,
+                self.nodn_new,
+                self.n_cells,
+            )
+
         else:
             print("No clone cells are created")
