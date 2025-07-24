@@ -1,6 +1,7 @@
 module m_quadtree
 
     use parameters, only : NODATA
+    use m_log
 
     implicit none
 
@@ -25,7 +26,7 @@ module m_quadtree
         integer :: k
         integer :: m, n
 
-        write(*,*) '** INFO: Start making quadtree.'
+        call print_unix('** INFO: Start making quadtree.')
         do m=1, mmax(kmax)
             do n=1, nmax(kmax)
                 call divide(kmax, m, n, lg)
@@ -35,7 +36,7 @@ module m_quadtree
         call find_active_2d_comp_cells(&
             kmax, mmax, nmax, lgrmin, use_2d_flow > 0, lg, area_mask, quad_idx, n_cells, n_line_u, n_line_v&
         )
-        write(*,*) '** INFO: Done making quadtree.'
+        call print_unix('** INFO: Done making quadtree.')
 
     end subroutine make_quadtree
 
@@ -163,8 +164,9 @@ module m_quadtree
             enddo
         enddo
         deallocate(area_mask_padded)
-        write(*,*) '** INFO: No. active 2D computational cells: ', n_cells
-        write(*,*) '** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v
+
+        call print_unix('** INFO: No. active 2D computational cells: ', n_cells)
+        call print_unix('** INFO: Number of 2D Surface flow lines is: ', n_line_u, n_line_v)
 
     end subroutine find_active_2d_comp_cells
 

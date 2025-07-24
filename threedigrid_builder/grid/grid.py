@@ -837,7 +837,7 @@ class Grid:
         potential_breaches,
         line_id_counter,
         node_open_water_detection,
-    ) -> Lines1D2D:
+    ):
         """Connect 1D and 2D elements by computing 1D-2D lines.
 
         Every (double) connected node gets a 1D-2D connection to the cell in which it
@@ -911,6 +911,7 @@ class Grid:
         lines_1d2d_gw.assign_groundwater_exchange(self.nodes, cn=connection_nodes)
         lines_1d2d_gw.assign_line_coords(self.nodes)
         lines_1d2d_gw.assign_2d_node(self.cell_tree)
+        lines_1d2d_gw.check_unassigned(self.nodes, is_groundwater=True)
         lines_1d2d_gw.transfer_2d_node_to_groundwater(self.nodes.n_groundwater_cells)
         self.lines += lines_1d2d_gw
 

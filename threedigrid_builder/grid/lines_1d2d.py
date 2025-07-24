@@ -279,7 +279,7 @@ class Lines1D2D(Lines):
         self.line[line_idx, 0] = cell_idx
         self.line_coords[:] = np.nan
 
-    def check_unassigned(self, nodes) -> None:
+    def check_unassigned(self, nodes, is_groundwater: bool = False) -> None:
         """Checks 1D-2D lines where any of the required nodes is set to null, represented as -9999
         This is the case when the nodes are outside the 2D domain.
         """
@@ -289,8 +289,15 @@ class Lines1D2D(Lines):
             invalid_nodes = nodes.id_to_index(invalid_node_ids)
             invalid_nodes_formatted = nodes.format_message(invalid_nodes)
 
+            if is_groundwater:
+                raise SchematisationError(
+                    "The following objects have groundwater exchange properties but "
+                    f"are (partially) outside of the 2D model domain: {invalid_nodes_formatted}."
+                )
+
             raise SchematisationError(
-                f"The following objects are connected but are (partially) outside of the 2D model domain: {invalid_nodes_formatted}."
+                "The following objects are connected but are (partially) outside of "
+                f"the 2D model domain: {invalid_nodes_formatted}."
             )
 
     def transfer_2d_node_to_groundwater(self, offset: int):
