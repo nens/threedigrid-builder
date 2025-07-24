@@ -45,14 +45,14 @@ def test_clone_integration(tmp_path):
 
 def test_clone_integration_2(tmp_path):
     unittests_clone_data_path = unittests_data_path / "clone"
-    schematisation_file = "test1.gpkg"
+    schematisation_file = "integration2.gpkg"
 
     shutil.copyfile(
         unittests_clone_data_path / schematisation_file, tmp_path / schematisation_file
     )
     make_grid(
         tmp_path / schematisation_file,
-        unittests_clone_data_path / "test1.tif",
+        unittests_clone_data_path / "integration2.tif",
         tmp_path / "gridadmin.gpkg",
         meta={
             "model_slug": "slug-123abc",

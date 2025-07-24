@@ -339,7 +339,7 @@ module m_clone
                 endif
             enddo
             new_pixel = pixel_i + pixel_no
-            if ((new_pixel - pixel) > 5) then
+            if ((new_pixel - pixel) > 1) then
                 if (any(minval(area_mask(pixel:new_pixel-1,pixel_j:pixel_j+1), 2) > 0)) then
                     if (present(line_new)) then
                         l_counter = l_counter + 1
@@ -491,7 +491,6 @@ module m_clone
         integer :: quad_idx_new(size(quad_idx, 1), size(quad_idx, 2)), mn(4)
         integer :: cell, k, m, n
 
-        write(*,*) size(quad_idx, 1), size(quad_idx, 2)
         quad_idx_new = 0.0d0
 
         do cell = 1, n_cells
