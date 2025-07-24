@@ -18,6 +18,7 @@ Changelog of threedigrid-builder
 ----------------------
 
 - Exclude embedded nodes from creating 1D2D groundwater lines.
+
 - Add clone cell support 
 
 

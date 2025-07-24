@@ -41,14 +41,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2019, macos-14]
+        os: [ubuntu-24.04, windows-2022, macos-14]
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
       - uses: msys2/setup-msys2@v2
-        if: matrix.os == 'windows-2019'
+        if: matrix.os == 'windows-2022'
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
