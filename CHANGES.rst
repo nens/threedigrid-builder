@@ -2,10 +2,17 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.4 (unreleased)
--------------------
+1.24.4.a2 (unreleased)
+----------------------
+
+- Nothing changed yet.
+
+
+1.24.4.a1 (2025-07-24)
+----------------------
 
 - Exclude embedded nodes from creating 1D2D groundwater lines.
+- Add clone cell support 
 
 
 1.24.3 (2025-04-28)
