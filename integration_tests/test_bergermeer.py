@@ -52,7 +52,7 @@ def test_clone_integration_2(tmp_path):
     )
     make_grid(
         tmp_path / schematisation_file,
-        unittests_clone_data_path / "integration2.tif",
+        unittests_clone_data_path / "dem-integration2.tif",
         tmp_path / "gridadmin.gpkg",
         meta={
             "model_slug": "slug-123abc",
