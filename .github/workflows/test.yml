@@ -50,14 +50,14 @@ jobs:
           # current (using ubuntu 22.04 because latest will change to 24.04 with gdal 3.8 at some moment)
           - python: '3.12'
             os: ubuntu-22.04
-            setuptools: setuptools==69.*
+            setuptools: setuptools>=69.*
             numpy: numpy==1.26.*
             pins: ""
             display_name: "latest"
             extras: "[test,gridadmin]"
           - python: '3.12'
             os: ubuntu-22.04
-            setuptools: setuptools==69.*
+            setuptools: setuptools>=69.*
             numpy: numpy==1.26.*
             pins: ""
             display_name: "latest - gdal 3.6"
@@ -65,7 +65,7 @@ jobs:
             use_gdal_36: true
           - python: '3.12'
             os: ubuntu-24.04
-            setuptools: setuptools==69.*
+            setuptools: setuptools>=69.*
             numpy: numpy==1.26.*
             pins: ""
             display_name: "latest - gdal 3.10"
