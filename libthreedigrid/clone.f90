@@ -1,5 +1,7 @@
 module m_clone
 
+    use m_log
+    
     use m_grid_utils, only : get_pix_corners
     
     implicit none
@@ -18,7 +20,7 @@ module m_clone
         integer :: cell_counter, clone_counter, i, counter
         integer :: n_cells_new
 
-        write(*,*) '** INFO: Find active clone cells.'
+        call print_unix('** INFO: Find active clone cells.')
         counter = 0 !! counter of the renumbering
         n_cells_new = n_cells
         do cell_counter = 1, n_cells !! Check which quadtree cells has clone cell(s) and how many
@@ -44,7 +46,8 @@ module m_clone
             end if
         end do
         n_cells = n_cells_new
-        write(*,*) '** INFO: Number of active quadtree and clone cells:', n_cells
+
+        call print_unix('** INFO: Number of active quadtree and clone cells:', n_cells)
 
     end subroutine find_active_clone_cells
 
@@ -77,7 +80,8 @@ module m_clone
 
         call count_interclone_lines(n_interclone_lines, clones_in_cell)
 
-        write(*,*) '** INFO: Number of 2D lines in u- and v-dir and inter-clone lines:', n_lines_u, n_lines_v, n_interclone_lines
+        call print_unix('** INFO: Number of 2D lines in u- and v-dir:', n_lines_u, n_lines_v)
+        call print_unix('** INFO: Number of inter-clone lines:', n_interclone_lines)
 
     end subroutine
 
@@ -180,7 +184,7 @@ module m_clone
 
         integer :: start_u, end_u, start_v, end_v, counter
 
-        write(*,*) '** INFO: Resetting line attribute...'
+        call print_unix('** INFO: Resetting line attribute...')
 
         start_u = 1
         end_u = n_lines_u
@@ -415,7 +419,7 @@ module m_clone
 
         integer :: cell_counter, clone_counter, counter
 
-        write(*,*) '** INFO: Reset nodes attributes...'
+        call print_unix('** INFO: Reset nodes attributes...')
 
         counter = 0
         do cell_counter = 1, size(nodk)
