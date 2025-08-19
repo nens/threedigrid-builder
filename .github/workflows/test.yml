@@ -74,7 +74,7 @@ jobs:
           - python: '3.13'
             os: ubuntu-24.04
             setuptools: setuptools>=69.*
-            numpy: numpy==2.3.2
+            numpy: numpy==2.3.*
             pins: ""
             display_name: "latest - gdal 3.10"
             extras: "[test,gridadmin]"
