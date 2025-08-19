@@ -1,4 +1,5 @@
 import itertools
+import logging
 import math
 from dataclasses import dataclass, fields
 from typing import List, Optional, Tuple
@@ -47,6 +48,7 @@ from .potential_breaches import PotentialBreaches, PotentialBreachPoints
 
 osr.UseExceptions()
 
+logger = logging.getLogger(__name__)
 
 __all__ = ["Grid", "GridMeta", "QuadtreeStats"]
 
@@ -1102,7 +1104,7 @@ class Grid:
                 compactness = Grid.compactness(fragment)
                 area = fragment.area
                 if compactness < 0.2 or area < 2 * cell_area:
-                    print(
+                    logger.warning(
                         f"Skipping fragment of node {node_id} compactness: {compactness} area: {area}"
                     )
                     continue
