@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.24.6 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Test and build on Python 3.13 with Numpy 2.
 
 
 1.24.5 (2025-06-05)
