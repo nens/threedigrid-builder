@@ -138,7 +138,9 @@ def _make_gridadmin(
             with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
                 fragment_path = (
-                    dem_path.parent / f"fragments_{dem_path.parent.parent.name}.tif"
+                    # dem_path.parent / f"fragments_{dem_path.parent.parent.name}.tif"
+                    dem_path.parent
+                    / "fragments.tif"
                 )
                 target_ds = gdal.GetDriverByName("GTiff").Create(
                     str(fragment_path),
