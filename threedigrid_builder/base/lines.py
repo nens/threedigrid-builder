@@ -129,7 +129,9 @@ class Lines(Array[Line]):
         has_crest_level = where[np.isfinite(crest_levels)]
         is_2d_u = self.kcu[has_crest_level] == LineType.LINE_2D_U
         is_2d_v = self.kcu[has_crest_level] == LineType.LINE_2D_V
+        # is_clone = self.kcu[has_crest_level] == LineType.LINE_INTERCLONE
         self.kcu[has_crest_level[is_2d_u]] = LineType.LINE_2D_OBSTACLE_U
         self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
+        # self.kcu[has_crest_level[is_clone]] = LineType.LINE_2D_OBSTACLE
         self.flod[where] = crest_levels
         self.flou[where] = crest_levels
