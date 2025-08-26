@@ -604,11 +604,10 @@ class Grid:
             lim=nodes.nodm[idx],
             lin=nodes.nodn[idx],
             cross_pix_coords=clone.cross_pix_coords_new,
-            line_bounds=clone.line_bounds,
+            line_coords=clone.line_coords,
         )
-        lines.set_line_coords(nodes)
+        # lines.set_line_coords(nodes)
         lines.fix_line_geometries()
-        lines.fix_line_geometries_interclones()
 
         return nodes, lines
 

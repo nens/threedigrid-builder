@@ -25,9 +25,6 @@ class Line:
     ds1d: float  # arclength
     line_geometries: shapely.Geometry
     line_coords: Tuple[float, float, float, float]
-    line_bounds: Tuple[
-        float, float, float, float
-    ]  # TEMP: for interclone lines to be used instead of line_coords in geometries, indicator of the coordinates of the corners
     content_type: ContentType
     content_pk: int
     dpumax: float  # bottom_level at the velocity point
@@ -100,18 +97,6 @@ class Lines(Array[Line]):
             raise ValueError("No line coords available")
         self.line_geometries[to_fix] = shapely.linestrings(
             self.line_coords[to_fix].reshape(-1, 2, 2)
-        )
-
-    def fix_line_geometries_interclones(self):
-        """Reset line_geometries for interclone lines from bounds"""
-        line_clone = [LineType.LINE_INTERCLONE]
-        to_fix = np.where(np.isin(self.kcu, line_clone))[0]
-        if not to_fix.any():
-            return
-        if np.any(~np.isfinite(self.line_bounds[to_fix])):
-            raise ValueError("No line bounds available")
-        self.line_geometries[to_fix] = shapely.linestrings(
-            self.line_bounds[to_fix].reshape(-1, 2, 2)
         )
 
     def fix_ds1d(self):

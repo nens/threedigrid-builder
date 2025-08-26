@@ -98,10 +98,18 @@ def _make_gridadmin(
             fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask).T)
             fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
 
+            # fragments_centroid = np.empty((6,2),dtype=np.float64,order="F")
+            fragments_centroid = {}
+            for frg_idx in fragment_geometries:
+                fragments_centroid[frg_idx] = fragment_geometries[
+                    frg_idx
+                ].centroid.coords
+
             # Regenerate the nodes and lines including clone cells
             clone = Clone(
                 fortran_node_fragment_array,
                 fortran_fragment_mask,
+                fragments_centroid,
                 quadtree,
                 grid,
                 area_mask=subgrid_meta["area_mask"],

@@ -307,11 +307,12 @@ class Clone:
         self,
         clone_array,
         clone_mask,
+        clone_centroid,
         quadtree,
         grid,
         area_mask,
     ):
-        n_clones = clone_array.max() + 1
+        n_clones = len(clone_centroid)
         if n_clones > 0:
             self.n_cells = np.copy(quadtree.n_cells)
             self.cell_numbering = np.full(
@@ -351,6 +352,12 @@ class Clone:
                 self.clones_in_cell,
             )
 
+            clone_coord = np.empty(
+                (len(clone_centroid), 2), dtype=np.float64, order="F"
+            )
+            for frg_idx in clone_centroid:
+                clone_coord[frg_idx] = clone_centroid[frg_idx]
+
             ## Count the new lines
             m_clone.make_clones(
                 lgrmin,
@@ -380,6 +387,10 @@ class Clone:
                 (total_line_number, 4), -9999, dtype=np.int32, order="F"
             )
 
+            self.line_coords = np.full(
+                (total_line_number, 4), -9999, dtype=np.float64, order="F"
+            )
+
             ## Create the new line administration
             m_clone.set_lines_with_clones(
                 quadtree.n_lines_u,
@@ -401,15 +412,13 @@ class Clone:
                 cross_pix_coords,
             )
 
+            ## Update the node and line attributes
             self.nodk_new = np.empty((self.n_cells), dtype=np.int32, order="F")
             self.nodm_new = np.empty((self.n_cells), dtype=np.int32, order="F")
             self.nodn_new = np.empty((self.n_cells), dtype=np.int32, order="F")
             self.bounds = np.empty((self.n_cells, 4), dtype=np.float64, order="F")
             self.coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
             self.pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
-            self.line_bounds = np.empty(
-                (total_line_number, 4), dtype=np.float64, order="F"
-            )
 
             m_clone.reset_nod_parameters(
                 clone_array,
@@ -427,17 +436,18 @@ class Clone:
                 self.pixel_coords,
             )
 
-            m_clone.set_line_bounds(
-                self.n_newlines_u + self.n_newlines_v + 1,
-                self.n_newlines_u + self.n_newlines_v + self.n_interclone_lines,
+            m_clone.set_line_coords_new(
+                total_line_number,
                 self.line_new,
                 self.nodk_new,
                 self.nodm_new,
                 self.nodn_new,
+                self.coords,
                 lgrmin,
                 clone_mask,
-                self.bounds,
-                self.line_bounds,
+                self.clone_numbering,
+                clone_coord,
+                self.line_coords,
             )
 
             m_clone.set_quad_idx(
