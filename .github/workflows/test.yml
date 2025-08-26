@@ -68,6 +68,14 @@ jobs:
             setuptools: setuptools>=69.*
             numpy: numpy==1.26.*
             pins: ""
+            display_name: "2025 - gdal 3.10"
+            extras: "[test,gridadmin]"
+            use_gdal_310: true
+          - python: '3.13'
+            os: ubuntu-24.04
+            setuptools: setuptools>=69.*
+            numpy: numpy==2.3.*
+            pins: ""
             display_name: "latest - gdal 3.10"
             extras: "[test,gridadmin]"
             use_gdal_310: true
@@ -114,8 +122,8 @@ jobs:
           pip install -e .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
           pip list
 
-      - name: run setup.py for python 3.12
-        if: matrix.python == '3.12'
+      - name: run setup.py for python 3.12 and 3.13
+        if: ${{ matrix.python == '3.12' || matrix.python == '3.13' }}
         run: |
           python setup.py develop
 
