@@ -2,30 +2,24 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.7 (unreleased)
--------------------
+1.24.4a4 (unreleased)
+---------------------
 
 - Nothing changed yet.
 
 
-1.24.6 (2025-08-20)
--------------------
+1.24.4a3 (2025-07-24)
+---------------------
 
-- Test and build on Python 3.13 with Numpy 2.
-
-
-1.24.5 (2025-06-05)
--------------------
-
-- Stdout unix wrappers can now receive arbitrary length messages.
+- Nothing changed yet.
 
 
-1.24.4 (2025-06-03)
--------------------
+1.24.4.a1 (2025-07-24)
+----------------------
 
-- Include the check_unassigned for 2D nodes for 1D2D groundwater lines.
 - Exclude embedded nodes from creating 1D2D groundwater lines.
-- Add preprocessor directives to only write to standard out on Linux. Fixes QGIS segfault for windows-2022 runner build.
+
+- Add clone cell support 
 
 
 1.24.3 (2025-04-28)
