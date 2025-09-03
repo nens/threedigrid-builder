@@ -722,7 +722,7 @@ class Grid:
         self,
         obstacles: Obstacles,
     ):
-        """Set obstacles on interclone lines by determining            between
+        """Set obstacles on interclone lines by determining intersection between
            line_coords (these must be known at this point) and obstacle geometry.
            Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
 
@@ -736,6 +736,7 @@ class Grid:
             self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
         )[0]
         self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.lines.dpumax[selection] = crest_level
         self.obstacles = obstacles
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
