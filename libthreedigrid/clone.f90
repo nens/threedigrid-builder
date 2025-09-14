@@ -293,7 +293,7 @@ module m_clone
 
         if (direction == U_DIR) then  !! u-direction
             pixel = pixel_j + pixel_no
-            do counter = pixel, pixel + num_pix - 1  !! find the common border
+            do counter = pixel, pixel_j + num_pix - 1  !! find the common border
                 if (clone_mask(pixel_i, counter) == clone_1 .and. clone_mask(pixel_i+1, counter) == clone_2) then
                     pixel_no = pixel_no + 1
                 else
@@ -322,8 +322,22 @@ module m_clone
                 endif
             endif
             if (pixel_no < num_pix) then
-                new_clone_1 = clone_mask(pixel_i, new_pixel)
-                new_clone_2 = clone_mask(pixel_i + 1, new_pixel)
+                do counter = new_pixel, pixel_j + num_pix - 1  !! Check if both clone_1&2 change
+                    new_clone_1 = clone_mask(pixel_i, counter)
+                    new_clone_2 = clone_mask(pixel_i + 1, counter)
+                    if (clone_1 < 0 .and. new_clone_2 /= clone_2) then
+                        exit
+                    elseif (new_clone_1 /= clone_1 .and. clone_2 < 0) then
+                        exit
+                    elseif (new_clone_1 /= clone_1 .and. new_clone_2 /= clone_2) then
+                        exit
+                    else
+                        pixel_no = pixel_no + 1
+                    endif
+                enddo
+
+                ! new_clone_1 = clone_mask(pixel_i, new_pixel)
+                ! new_clone_2 = clone_mask(pixel_i + 1, new_pixel)
                 
                 if (present(line_new)) then
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
@@ -335,7 +349,7 @@ module m_clone
 
         elseif (direction == V_DIR) then  !! v-direction
             pixel = pixel_i + pixel_no
-            do counter = pixel, pixel + num_pix - 1  !! find the common border
+            do counter = pixel, pixel_i + num_pix - 1  !! find the common border
                 if (clone_mask(counter, pixel_j) == clone_1 .and. clone_mask(counter, pixel_j+1) == clone_2) then
                     pixel_no = pixel_no + 1
                 else
@@ -364,8 +378,23 @@ module m_clone
                 endif
             endif
             if (pixel_no < num_pix) then
-                new_clone_1 = clone_mask(new_pixel, pixel_j)
-                new_clone_2 = clone_mask(new_pixel, pixel_j + 1)
+                do counter = new_pixel, pixel_i + num_pix - 1 !! Check if both clone_1&2 change
+                    new_clone_1 = clone_mask(counter, pixel_j)
+                    new_clone_2 = clone_mask(counter, pixel_j + 1)
+                    if (clone_1 < 0 .and. new_clone_2 /= clone_2) then
+                        exit
+                    elseif (new_clone_1 /= clone_1 .and. clone_2 < 0) then
+                        exit
+                    elseif (new_clone_1 /= clone_1 .and. new_clone_2 /= clone_2) then
+                        exit
+                    else
+                        pixel_no = pixel_no + 1
+                    endif
+                enddo
+
+                ! new_clone_1 = clone_mask(new_pixel, pixel_j)
+                ! new_clone_2 = clone_mask(new_pixel, pixel_j + 1)
+                
                 if (present(line_new)) then
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
                                                 line_new, host_1, host_2, l_counter, clone_numbering, cell_numbering, cross_pix_new)
