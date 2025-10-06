@@ -1105,7 +1105,7 @@ class Grid:
                 area = fragment.area
                 if compactness < 0.2 or area < 2 * cell_area:
                     logger.warning(
-                        f"Skipping fragment of node {node_id} compactness: {compactness} area: {area}"
+                        f"Skipping a fragment of node {node_id + 1} compactness: {compactness} area: {area}"
                     )
                     continue
 
@@ -1119,7 +1119,7 @@ class Grid:
                 if fragment_idx < max_nr_of_fragments:
                     node_fragment_array[node_id][fragment_idx] = fragment_id
                 else:
-                    raise RuntimeError(f"Node {node_id} has too many fragments")
+                    raise RuntimeError(f"Node {node_id + 1} has too many fragments")
 
         # Write to tiff
         export_fragment_tiff = False
