@@ -308,7 +308,7 @@ class Clone:
         clone_array,
         clone_mask,
         clone_centroid,
-        # clone_polygon,
+        clone_polygon,
         quadtree,
         grid,
         area_mask,
@@ -415,7 +415,14 @@ class Clone:
             self.coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
             self.pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
             self.centroids = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
-            # self.polygons = np.empty((self.n_cells, 5, 2), dtype=np.float64, order="F")
+            self.polygons = np.empty(
+                (self.n_cells, np.size(clone_polygon, 1), 2),
+                dtype=np.float64,
+                order="F",
+            )
+            self.cell_bounds = np.empty(
+                (len(bounds), np.size(clone_polygon, 1), 2), dtype=np.float64, order="F"
+            )
 
             m_clone.reset_nod_parameters(
                 clone_array,
@@ -433,6 +440,8 @@ class Clone:
                 self.pixel_coords,
             )
 
+            m_clone.set_visualization_cell_bounds(bounds, self.cell_bounds)
+            # cell_bounds = self.bounds.reshape(-1,2,2)
             m_clone.set_line_coords_new(
                 total_line_number,
                 self.line_new,
@@ -440,15 +449,15 @@ class Clone:
                 self.nodm_new,
                 self.nodn_new,
                 self.coords,
-                # self.bounds,
+                self.cell_bounds,
                 lgrmin,
                 clone_mask,
                 self.clone_numbering,
                 clone_centroid,
-                # clone_polygon,
+                clone_polygon,
                 self.line_coords,
                 self.centroids,
-                # self.polygons,
+                self.polygons,
             )
 
             m_clone.set_quad_idx(

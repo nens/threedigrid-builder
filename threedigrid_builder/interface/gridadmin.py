@@ -335,6 +335,9 @@ class GridAdminOut(OutputInterface):
         self.write_node_geometry_dataset(
             group, "node_geometries", nodes.node_geometries
         )
+        self.write_node_geometry_dataset(
+            group, "cell_geometries", nodes.cell_geometries
+        )
 
         # content pk is only set for connection nodes, otherwise 0
         self.write_dataset(group, "content_pk", np.where(is_cn, nodes.content_pk, 0))
