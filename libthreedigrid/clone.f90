@@ -477,7 +477,7 @@ module m_clone
         
     end subroutine reset_nod_parameters
 
-    subroutine set_line_coords_new(line_number, line, nodk, nodm, nodn, node_coord, min_pix, clone_mask, clone_numbering, clone_centroid, line_coords)
+    subroutine set_line_coords_new(line_number, line, nodk, nodm, nodn, node_coord, min_pix, clone_mask, clone_numbering, clone_centroid, line_coords, centroids)
 
         integer, intent(in) :: line_number
         integer, intent(in) :: line(:,:)
@@ -485,14 +485,21 @@ module m_clone
         integer, intent(in) :: nodm(:)
         integer, intent(in) :: nodn(:)
         double precision, intent(in) :: node_coord(:,:)
+        ! double precision, intent(in) :: node_bound(:,:)
         integer, intent(in) :: min_pix
         integer, intent(in) :: clone_mask(:,:)
         integer, intent(in) :: clone_numbering(:)
         double precision, intent(in) :: clone_centroid(:,:)
-        double precision, intent(inout) :: line_coords(:, :) ! corner coords of comp cell
-
+        ! double precision, intent(in) :: clone_polygon(:,:,:)
+        double precision, intent(inout) :: line_coords(:, :)    ! center coords of comp cell at two ends
+        double precision, intent(inout) :: centroids(:, :)      ! centroids of all the nodes (with clone cells)
+        ! double precision, intent(inout) :: polygons(:, :, :)       ! bounds of all the cell polygons (with clone cells)
         integer :: line_counter, cell_no, find_index
         integer :: i0, j0, i1, j1
+        integer*1, allocatable :: centroid_key(:)
+
+        allocate(centroid_key(size(centroids, 1)))
+        centroid_key = 0
 
         do line_counter = 1, line_number
             cell_no = line(line_counter, 1) + 1
@@ -505,9 +512,19 @@ module m_clone
                 enddo
                 line_coords(line_counter, 1) = clone_centroid(find_index,1)
                 line_coords(line_counter, 2) = clone_centroid(find_index,2)
+                if (centroid_key(cell_no) == 0) then
+                    centroids(cell_no, :) = clone_centroid(find_index, :)
+                    ! polygons(cell_no, :, :) = clone_polygon(find_index, :, :)
+                    centroid_key(cell_no) = 1
+                endif
             else
                 line_coords(line_counter, 1) = node_coord(cell_no,1)
                 line_coords(line_counter, 2) = node_coord(cell_no,2)
+                if (centroid_key(cell_no) == 0) then
+                    centroids(cell_no, :) = node_coord(cell_no, :)
+                    ! polygons(cell_no, :) = node_bound(cell_no, :)
+                    centroid_key(cell_no) = 1
+                endif
             endif
             cell_no = line(line_counter, 2) + 1
             call get_pix_corners(nodk(cell_no), nodm(cell_no), nodn(cell_no), min_pix, i0, i1, j0, j1)
@@ -519,9 +536,19 @@ module m_clone
                 enddo
                 line_coords(line_counter, 3) = clone_centroid(find_index,1)
                 line_coords(line_counter, 4) = clone_centroid(find_index,2)
+                if (centroid_key(cell_no) == 0) then
+                    centroids(cell_no, :) = clone_centroid(find_index, :)
+                    ! polygons(cell_no, :, :) = clone_polygon(find_index, :, :)
+                    centroid_key(cell_no) = 1
+                endif
             else
                 line_coords(line_counter, 3) = node_coord(cell_no,1)
                 line_coords(line_counter, 4) = node_coord(cell_no,2)
+                if (centroid_key(cell_no) == 0) then
+                    centroids(cell_no, :) = node_coord(cell_no, :)
+                    ! polygons(cell_no, :) = node_bound(cell_no, :)
+                    centroid_key(cell_no) = 1
+                endif
             endif
         enddo
 

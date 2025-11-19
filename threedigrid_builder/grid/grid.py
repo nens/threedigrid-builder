@@ -608,6 +608,7 @@ class Grid:
         )
         # lines.set_line_coords(nodes)
         lines.fix_line_geometries()
+        nodes.fix_node_geometries(clone.centroids)
 
         return nodes, lines
 
@@ -1073,9 +1074,9 @@ class Grid:
         # Read DEM to retrieve properties such as number of pixels etc.
         dem_raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
         dem_geo_transform = dem_raster_dataset.GetGeoTransform()
-        cell_size_x = dem_geo_transform[1]
-        cell_size_y = -dem_geo_transform[5]
-        cell_area = cell_size_x * cell_size_y
+        pixel_size_x = dem_geo_transform[1]
+        pixel_size_y = -dem_geo_transform[5]
+        pixel_area = pixel_size_x * pixel_size_y
 
         # Create an OGR memory layer with the geometry
         driver = ogr.GetDriverByName("Memory")
@@ -1103,7 +1104,7 @@ class Grid:
             for fragment_idx, fragment in enumerate(fragments):
                 compactness = Grid.compactness(fragment)
                 area = fragment.area
-                if compactness < 0.2 or area < 2 * cell_area:
+                if compactness < 0.2 or area < 2 * pixel_area:
                     logger.warning(
                         f"Skipping a fragment of node {node_id + 1} compactness: {compactness} area: {area}"
                     )
@@ -1120,7 +1121,6 @@ class Grid:
                     node_fragment_array[node_id][fragment_idx] = fragment_id
                 else:
                     raise RuntimeError(f"Node {node_id + 1} has too many fragments")
-
         # Write to tiff
         export_fragment_tiff = False
         if export_fragment_tiff:

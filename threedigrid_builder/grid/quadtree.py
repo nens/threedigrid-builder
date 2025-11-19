@@ -308,6 +308,7 @@ class Clone:
         clone_array,
         clone_mask,
         clone_centroid,
+        # clone_polygon,
         quadtree,
         grid,
         area_mask,
@@ -351,12 +352,6 @@ class Clone:
                 self.clone_numbering,
                 self.clones_in_cell,
             )
-
-            clone_coord = np.empty(
-                (len(clone_centroid), 2), dtype=np.float64, order="F"
-            )
-            for frg_idx in clone_centroid:
-                clone_coord[frg_idx] = clone_centroid[frg_idx]
 
             ## Count the new lines
             m_clone.make_clones(
@@ -419,6 +414,8 @@ class Clone:
             self.bounds = np.empty((self.n_cells, 4), dtype=np.float64, order="F")
             self.coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
             self.pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
+            self.centroids = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
+            # self.polygons = np.empty((self.n_cells, 5, 2), dtype=np.float64, order="F")
 
             m_clone.reset_nod_parameters(
                 clone_array,
@@ -443,11 +440,15 @@ class Clone:
                 self.nodm_new,
                 self.nodn_new,
                 self.coords,
+                # self.bounds,
                 lgrmin,
                 clone_mask,
                 self.clone_numbering,
-                clone_coord,
+                clone_centroid,
+                # clone_polygon,
                 self.line_coords,
+                self.centroids,
+                # self.polygons,
             )
 
             m_clone.set_quad_idx(

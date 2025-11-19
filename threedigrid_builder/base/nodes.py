@@ -2,6 +2,7 @@ from collections import OrderedDict
 from typing import Tuple
 
 import numpy as np
+import shapely
 
 from threedigrid_builder.constants import (
     BoundaryType,
@@ -34,6 +35,8 @@ class Node:
     content_type: ContentType
     content_pk: int
     coordinates: Tuple[float, float]
+    node_geometries: shapely.Point
+    # cell_geometries: shapely.Polygon
     s1d: float  # position (arclength) along a 1D element
     bounds: Tuple[float, float, float, float]  # cell_coords in gridadmin
     pixel_coords: Tuple[int, int, int, int]  # pixel_coords in gridadmin
@@ -117,3 +120,23 @@ class Nodes(Array[Node]):
                 if np.any(types == content_type)
             ]
         )
+
+    def fix_node_geometries(self, cell_centroids):
+        """Construct node_geometries from centroids, where necessary"""
+        to_fix = shapely.is_missing(self.node_geometries)
+        if not to_fix.any():
+            return
+        if np.any(~np.isfinite(cell_centroids[to_fix])):
+            raise ValueError("No line coords available")
+        self.node_geometries[to_fix] = shapely.points(cell_centroids[to_fix])
+
+    # def fix_cell_geometries(self):
+    #     """Construct cell_geometries from cell_bounds, where necessary"""
+    #     to_fix = shapely.is_missing(self.cell_geometries)
+    #     if not to_fix.any():
+    #         return
+    #     if np.any(~np.isfinite(self.cell_bounds[to_fix])):
+    #         raise ValueError("No cell bounds available")
+    #     self.cell_geometries[to_fix] = shapely.linestrings(
+    #         self.cell_bounds[to_fix].reshape(-1, 5, 2)
+    #     )

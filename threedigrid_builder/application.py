@@ -93,23 +93,27 @@ def _make_gridadmin(
                 node_fragment_array,
                 fragment_geometries,
             ) = grid.apply_cutlines(db.get_obstacles(), dem_path)
-
             # Flip and transpose mask to mimic GDALInterface.read()
             fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask).T)
             fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
 
-            # fragments_centroid = np.empty((6,2),dtype=np.float64,order="F")
-            fragments_centroid = {}
+            size = len(fragment_geometries)
+            fragments_centroid = np.empty((size, 2), dtype=np.int32, order="F")
+            # fragments_polygon = {}
             for frg_idx in fragment_geometries:
-                fragments_centroid[frg_idx] = fragment_geometries[
-                    frg_idx
-                ].centroid.coords
+                fragments_centroid[frg_idx] = np.array(
+                    fragment_geometries[frg_idx].centroid.coords
+                )
+                # fragments_polygon[frg_idx] = np.array(fragment_geometries[
+                #     frg_idx
+                # ].boundary.coords)
 
             # Regenerate the nodes and lines including clone cells
             clone = Clone(
                 fortran_node_fragment_array,
                 fortran_fragment_mask,
                 fragments_centroid,
+                # fragments_polygon,
                 quadtree,
                 grid,
                 area_mask=subgrid_meta["area_mask"],
@@ -126,7 +130,6 @@ def _make_gridadmin(
                 node_id_counter,
                 line_id_counter,
             )
-
             # Renumber fragment mask and node_fragment_array and store Fragments to model for export
             # The gridadmin/gpkg are exported 1-based (Fortran), also export mask this way (update mapping)
             clone_mapping = clone.clone_numbering.copy()
@@ -141,7 +144,6 @@ def _make_gridadmin(
                 fragment_mask[
                     original_fragment_mask == old_fragment_idx
                 ] = new_fragment_idx
-
             # Export fragment tiff
             with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()

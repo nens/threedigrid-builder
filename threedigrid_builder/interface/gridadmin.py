@@ -331,6 +331,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "has_dem_averaged", nodes.has_dem_averaged)
         self.write_dataset(group, "initial_waterlevel", nodes.initial_waterlevel)
 
+        # Transform an array of points to list of coordinate arrays (x,x,y,y)
+        self.write_node_geometry_dataset(
+            group, "node_geometries", nodes.node_geometries
+        )
+
         # content pk is only set for connection nodes, otherwise 0
         self.write_dataset(group, "content_pk", np.where(is_cn, nodes.content_pk, 0))
         # is_manhole is 1 for manholes, otherwise -9999
@@ -850,6 +855,29 @@ class GridAdminOut(OutputInterface):
         # insert line geometry data preserving its original type
         geometry_data = np.empty(len(line_geometries), dtype=object)
         geometry_data[:] = line_geometries
+
+        group.create_dataset(
+            name,
+            data=geometry_data,
+            dtype=vlen_dtype,
+            **HDF5_SETTINGS,
+        )
+
+    def write_node_geometry_dataset(self, group, name, data, insert_dummy=True):
+        # Transform an array of points to list of coordinate arrays (x,x,y,y)
+        # In case of polygons: (x, x, x, x, ..., y, y, y y, ...)
+        node_geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
+        if insert_dummy:
+            node_geometries.insert(0, np.array([np.nan, np.nan]))
+        # The dataset has a special "variable length" dtype
+        try:
+            vlen_dtype = h5py.vlen_dtype(np.dtype(float))
+        except AttributeError:  # Pre h5py 2.10
+            vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
+
+        # insert line geometry data preserving its original type
+        geometry_data = np.empty(len(node_geometries), dtype=object)
+        geometry_data[:] = node_geometries
 
         group.create_dataset(
             name,
