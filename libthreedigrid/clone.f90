@@ -8,7 +8,7 @@ module m_clone
 
     contains
 
-    subroutine find_active_clone_cells(n_cells, clone_array, cell_numbering, clone_numbering, clones_in_cell)
+    subroutine find_active_clone_cells(n_cells, clone_array, cell_numbering, clone_numbering, clones_in_cell, clone_offset)
         ! ! Finding clone cells based on the clone array and renumbering the whole cells ! !
         
         use parameters, only : CLONE_NUMBERS
@@ -17,6 +17,7 @@ module m_clone
         integer, intent(inout) :: cell_numbering(:)                 !! New numbering for quadtree cells
         integer, intent(inout) :: clone_numbering(:)                !! New numbering for clone cells
         integer, intent(inout) :: clones_in_cell(:)                 !! Total number of clones in each host cell
+        integer, intent(inout) :: clone_offset(:)                   !! offset for clones
         integer :: cell_counter, clone_counter, i, counter
         integer :: n_cells_new
 
@@ -46,6 +47,12 @@ module m_clone
             end if
         end do
         n_cells = n_cells_new
+
+        do cell_counter = 1, size(clone_numbering)
+            if (clone_numbering(cell_counter) < 0) then
+                clone_offset(cell_counter) = 0
+            endif
+        enddo
 
         call print_unix('** INFO: Number of active quadtree and clone cells:', n_cells)
 
@@ -477,7 +484,7 @@ module m_clone
         
     end subroutine reset_nod_parameters
 
-    subroutine set_line_coords_new(line_number, line, nodk, nodm, nodn, node_coord, node_bound, min_pix, clone_mask, clone_numbering, clone_centroid, clone_polygon, line_coords, centroids, polygons)
+    subroutine set_line_coords_new(line_number, line, nodk, nodm, nodn, node_coord, min_pix, clone_mask, clone_numbering, clone_centroid, clone_polygon, offset, offset_clone, line_coords, centroids, polygons)
 
         integer, intent(in) :: line_number
         integer, intent(in) :: line(:,:)
@@ -485,17 +492,18 @@ module m_clone
         integer, intent(in) :: nodm(:)
         integer, intent(in) :: nodn(:)
         double precision, intent(in) :: node_coord(:,:)
-        double precision, intent(in) :: node_bound(:,:,:)
         integer, intent(in) :: min_pix
         integer, intent(in) :: clone_mask(:,:)
         integer, intent(in) :: clone_numbering(:)
         double precision, intent(in) :: clone_centroid(:,:)
-        double precision, intent(in) :: clone_polygon(:,:,:)
+        double precision, intent(in) :: clone_polygon(:,:)
+        integer, intent(in) :: offset(:)
+        integer, intent(in) :: offset_clone(:)
         double precision, intent(inout) :: line_coords(:,:)      ! center coords of comp cell at two ends
         double precision, intent(inout) :: centroids(:,:)        ! centroids of all the nodes (with clone cells)
-        double precision, intent(inout) :: polygons(:,:,:)       ! bounds of all the cell polygons (with clone cells)
-        integer :: line_counter, cell_no, find_index
-        integer :: i0, j0, i1, j1
+        double precision, intent(inout) :: polygons(:,:)       ! bounds of all the cell polygons (with clone cells)
+        integer :: line_counter, cell_no, find_index, bound_counter, bound_counter_clone
+        integer :: i0, j0, i1, j1, start_point, start_point_c, end_point, end_point_c
         integer*1, allocatable :: centroid_key(:)
 
         allocate(centroid_key(size(centroids, 1)))
@@ -514,7 +522,15 @@ module m_clone
                 line_coords(line_counter, 2) = clone_centroid(find_index,2)
                 if (centroid_key(cell_no) == 0) then
                     centroids(cell_no, :) = clone_centroid(find_index, :)
-                    polygons(cell_no, :, :) = clone_polygon(find_index, :, :)
+                    end_point = sum(offset(1:cell_no))
+                    end_point_c = sum(offset_clone(1:find_index))
+                    start_point = end_point - offset(cell_no) + 1
+                    start_point_c = end_point_c - offset_clone(find_index)
+                    bound_counter_clone = start_point_c
+                    do bound_counter = start_point, end_point
+                        bound_counter_clone = bound_counter_clone + 1
+                        polygons(bound_counter, :) = clone_polygon(bound_counter_clone, :)
+                    enddo
                     centroid_key(cell_no) = 1
                 endif
             else
@@ -522,7 +538,6 @@ module m_clone
                 line_coords(line_counter, 2) = node_coord(cell_no,2)
                 if (centroid_key(cell_no) == 0) then
                     centroids(cell_no, :) = node_coord(cell_no, :)
-                    polygons(cell_no, :, :) = node_bound(cell_no, :, :)
                     centroid_key(cell_no) = 1
                 endif
             endif
@@ -538,7 +553,15 @@ module m_clone
                 line_coords(line_counter, 4) = clone_centroid(find_index,2)
                 if (centroid_key(cell_no) == 0) then
                     centroids(cell_no, :) = clone_centroid(find_index, :)
-                    polygons(cell_no, :, :) = clone_polygon(find_index, :, :)
+                    end_point = sum(offset(1:cell_no))
+                    end_point_c = sum(offset_clone(1:find_index))
+                    start_point = end_point - offset(cell_no) + 1
+                    start_point_c = end_point_c - offset_clone(find_index)
+                    bound_counter_clone = start_point_c
+                    do bound_counter = start_point, end_point
+                        bound_counter_clone = bound_counter_clone + 1
+                        polygons(bound_counter, :) = clone_polygon(bound_counter_clone, :)
+                    enddo
                     centroid_key(cell_no) = 1
                 endif
             else
@@ -546,7 +569,6 @@ module m_clone
                 line_coords(line_counter, 4) = node_coord(cell_no,2)
                 if (centroid_key(cell_no) == 0) then
                     centroids(cell_no, :) = node_coord(cell_no, :)
-                    polygons(cell_no, :, :) = node_bound(cell_no, :, :)
                     centroid_key(cell_no) = 1
                 endif
             endif
@@ -583,22 +605,49 @@ module m_clone
 
     end subroutine set_quad_idx
 
-    subroutine set_visualization_cell_bounds(bounds, cell_bounds)
+    subroutine set_visualization_cell_bounds(bounds, polygon, clone_offset, offset, clone_numbering)
 
         !! Propogate the coords of bottom-left and top-right corners to all corners
         double precision, intent(in) :: bounds(:,:)                   ! corner coords of quadtree cells at bottom-left and top-right
-        double precision, intent(inout) :: cell_bounds(:,:,:)         ! all corner coords of all the quadtree cells
+        double precision, intent(inout) :: polygon(:,:)           ! all corner coords of all the quadtree cells
+        integer, intent(in) :: clone_offset(:)                        ! number of corners of each clone cell
+        integer, intent(inout) :: offset(:)                           ! number of corners of each cell (quadtree & clone)
+        integer, intent(in) :: clone_numbering(:)                  ! new numbering of the clone cells
 
-        integer :: cell
+        integer :: idx, cell, cell_quad, cell_no, clone, counter = 0
 
-        do cell = 1, size(bounds, 1)
-            cell_bounds(cell, 1, :) = bounds(cell, 1:2)
-            cell_bounds(cell, 2, 1) = bounds(cell, 1)
-            cell_bounds(cell, 2, 2) = bounds(cell, 4)
-            cell_bounds(cell, 3, :) = bounds(cell, 3:4)
-            cell_bounds(cell, 4, 1) = bounds(cell, 3)
-            cell_bounds(cell, 4, 2) = bounds(cell, 2)
-            cell_bounds(cell, 5, :) = bounds(cell, 1:2)
+        integer*1, allocatable :: key(:)
+
+        cell_no = size(offset)
+        allocate(key(cell_no))
+        key = 0
+        
+        do clone = 1, size(clone_numbering)
+            idx = clone_numbering(clone) + 1
+            if (idx > 0) then
+                offset(idx) = clone_offset(clone)
+                key(idx) = 1
+            endif
+        enddo
+
+        cell_quad = 0
+        do cell = 1, cell_no
+            if (key(cell) == 0) then
+                cell_quad = cell_quad + 1
+                counter = sum(offset(1:cell)) - offset(cell)
+                counter = counter + 1
+                polygon(counter, :) = bounds(cell_quad, 1:2)
+                counter = counter + 1
+                polygon(counter, 1) = bounds(cell_quad, 1)
+                polygon(counter, 2) = bounds(cell_quad, 4)
+                counter = counter + 1
+                polygon(counter, :) = bounds(cell_quad, 3:4)
+                counter = counter + 1
+                polygon(counter, 1) = bounds(cell_quad, 3)
+                polygon(counter, 2) = bounds(cell_quad, 2)
+                counter = counter + 1
+                polygon(counter, :) = bounds(cell_quad, 1:2)
+            endif
         enddo
 
     end subroutine set_visualization_cell_bounds

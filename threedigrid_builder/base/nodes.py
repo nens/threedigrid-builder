@@ -127,14 +127,27 @@ class Nodes(Array[Node]):
         if not to_fix.any():
             return
         if np.any(~np.isfinite(cell_centroids[to_fix])):
-            raise ValueError("No line coords available")
+            raise ValueError("No node coords available")
         self.node_geometries[to_fix] = shapely.points(cell_centroids[to_fix])
 
-    def fix_cell_geometries(self, cell_polygons):
+    def fix_cell_geometries(self, cell_polygons, polygon_offset):
         """Construct cell_geometries from polygons, where necessary"""
         to_fix = shapely.is_missing(self.cell_geometries)
+
         if not to_fix.any():
             return
-        if np.any(~np.isfinite(cell_polygons[to_fix])):
+        if np.any(~np.isfinite(cell_polygons)):
             raise ValueError("No cell bounds available")
-        self.cell_geometries[to_fix] = shapely.linestrings(cell_polygons[to_fix])
+        else:
+            # Ensure sizes sum matches number of rows in coords
+            assert polygon_offset.sum() == len(cell_polygons)
+
+            start = 0
+            polygons = []
+            for n in polygon_offset:
+                end = start + n
+                segment = cell_polygons[start:end]
+                polygons.append(shapely.linestrings(segment))
+                start = end
+
+            self.cell_geometries = np.array(polygons, dtype=object)

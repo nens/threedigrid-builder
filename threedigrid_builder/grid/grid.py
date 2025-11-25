@@ -609,7 +609,7 @@ class Grid:
         # lines.set_line_coords(nodes)
         lines.fix_line_geometries()
         nodes.fix_node_geometries(clone.centroids)
-        nodes.fix_cell_geometries(clone.polygons)
+        nodes.fix_cell_geometries(clone.polygons, clone.offset)
 
         return nodes, lines
 

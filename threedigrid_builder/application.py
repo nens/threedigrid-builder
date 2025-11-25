@@ -97,27 +97,23 @@ def _make_gridadmin(
             fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask).T)
             fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
 
+            # Store the centroids and polygon bounds of the fragments
             size = len(fragment_geometries)
             fragments_centroid = np.empty((size, 2), dtype=np.float64, order="F")
-            fragments_polygon0 = []
-            max_corners = 0
+            fragments_polygon = np.empty((0, 2), dtype=np.float64, order="F")
+            fragments_offset = np.empty((size), dtype=np.int32, order="F")
             for frg_idx in fragment_geometries:
                 fragments_centroid[frg_idx] = np.array(
                     fragment_geometries[frg_idx].centroid.coords
                 )
-                fragments_polygon0.append(fragment_geometries[frg_idx].boundary.coords)
-                max_corners = max(max_corners, len(fragments_polygon0[frg_idx].xy[0]))
-
-            fragments_polygon1 = []
-            for frg_idx in fragment_geometries:
-                pad_width = max_corners - int(len(fragments_polygon0[frg_idx].xy[0]))
-                a = np.array(fragments_polygon0[frg_idx])
-                padded_array = np.pad(
-                    a, ((0, pad_width), (0, 0)), "constant", constant_values=0.0
+                fragments_polygon = np.append(
+                    fragments_polygon,
+                    np.array(fragment_geometries[frg_idx].boundary.coords),
+                    axis=0,
                 )
-                fragments_polygon1.append(padded_array)
-
-            fragments_polygon = np.array(fragments_polygon1, dtype=np.float64)
+                fragments_offset[frg_idx] = int(
+                    len(fragment_geometries[frg_idx].boundary.coords)
+                )
 
             # Regenerate the nodes and lines including clone cells
             clone = Clone(
@@ -125,6 +121,7 @@ def _make_gridadmin(
                 fortran_fragment_mask,
                 fragments_centroid,
                 fragments_polygon,
+                fragments_offset,
                 quadtree,
                 grid,
                 area_mask=subgrid_meta["area_mask"],
