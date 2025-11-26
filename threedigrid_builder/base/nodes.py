@@ -35,7 +35,7 @@ class Node:
     content_type: ContentType
     content_pk: int
     coordinates: Tuple[float, float]
-    node_geometries: shapely.Point  # cell centroids for vizualization
+    node_geometries: Tuple[float, float]  # cell centroids for vizualization
     cell_geometries: shapely.Geometry  # cell corners for visuzlization
     s1d: float  # position (arclength) along a 1D element
     bounds: Tuple[float, float, float, float]  # cell_coords in gridadmin

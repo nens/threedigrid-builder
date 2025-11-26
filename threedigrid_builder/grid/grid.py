@@ -592,6 +592,7 @@ class Grid:
             nodn=clone.nodn_new,
             bounds=clone.bounds,
             coordinates=clone.coords,
+            node_geometries=clone.centroids,
             pixel_coords=clone.pixel_coords,
             has_dem_averaged=0,
         )
@@ -608,7 +609,6 @@ class Grid:
         )
         # lines.set_line_coords(nodes)
         lines.fix_line_geometries()
-        nodes.fix_node_geometries(clone.centroids)
         nodes.fix_cell_geometries(clone.polygons, clone.offset)
 
         return nodes, lines

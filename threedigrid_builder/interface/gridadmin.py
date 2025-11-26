@@ -318,6 +318,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "node_type", nodes.node_type)
         self.write_dataset(group, "calculation_type", nodes.calculation_type)
         self.write_dataset(group, "coordinates", nodes.coordinates.T)
+        self.write_dataset(group, "node_geometries", nodes.node_geometries.T)
         self.write_dataset(group, "cell_coords", nodes.bounds.T)
         self.write_dataset(group, "nodk", nodes.nodk)
         self.write_dataset(group, "nodm", nodes.nodm)
@@ -332,10 +333,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "initial_waterlevel", nodes.initial_waterlevel)
 
         # Transform an array of points to list of coordinate arrays (x,x,y,y)
-        self.write_node_geometry_dataset(
-            group, "node_geometries", nodes.node_geometries
-        )
-        self.write_node_geometry_dataset(
+        self.write_node_line_geometry_dataset(
             group, "cell_geometries", nodes.cell_geometries
         )
 
@@ -485,7 +483,7 @@ class GridAdminOut(OutputInterface):
         )
 
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
-        self.write_line_geometry_dataset(
+        self.write_node_line_geometry_dataset(
             group, "line_geometries", lines.line_geometries
         )
         self.write_dataset(group, "zoom_category", lines.zoom_category)
@@ -760,7 +758,7 @@ class GridAdminOut(OutputInterface):
             np.full(len(obstacles), fill_value=np.nan),
             insert_dummy=False,
         )
-        self.write_line_geometry_dataset(
+        self.write_node_line_geometry_dataset(
             group, "coords", obstacles.the_geom, insert_dummy=False
         )
 
@@ -788,7 +786,7 @@ class GridAdminOut(OutputInterface):
         group = self._file.create_group("fragments")
 
         self.write_dataset(group, "id", fragments.id + 1)
-        self.write_line_geometry_dataset(
+        self.write_node_line_geometry_dataset(
             group, "coords", fragments.the_geom, insert_dummy=True
         )
 
@@ -843,12 +841,12 @@ class GridAdminOut(OutputInterface):
         else:
             ValueError("Too many dimensions for values.")
 
-    def write_line_geometry_dataset(self, group, name, data, insert_dummy=True):
+    def write_node_line_geometry_dataset(self, group, name, data, insert_dummy=True):
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
         # In case of polygons: (x, x, x, x, ..., y, y, y y, ...)
-        line_geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
+        geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
         if insert_dummy:
-            line_geometries.insert(0, np.array([np.nan, np.nan]))
+            geometries.insert(0, np.array([np.nan, np.nan]))
         # The dataset has a special "variable length" dtype
         try:
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))
@@ -856,31 +854,8 @@ class GridAdminOut(OutputInterface):
             vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
 
         # insert line geometry data preserving its original type
-        geometry_data = np.empty(len(line_geometries), dtype=object)
-        geometry_data[:] = line_geometries
-
-        group.create_dataset(
-            name,
-            data=geometry_data,
-            dtype=vlen_dtype,
-            **HDF5_SETTINGS,
-        )
-
-    def write_node_geometry_dataset(self, group, name, data, insert_dummy=True):
-        # Transform an array of points to list of coordinate arrays (x,x,y,y)
-        # In case of polygons: (x, x, x, x, ..., y, y, y y, ...)
-        node_geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
-        if insert_dummy:
-            node_geometries.insert(0, np.array([np.nan, np.nan]))
-        # The dataset has a special "variable length" dtype
-        try:
-            vlen_dtype = h5py.vlen_dtype(np.dtype(float))
-        except AttributeError:  # Pre h5py 2.10
-            vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
-
-        # insert line geometry data preserving its original type
-        geometry_data = np.empty(len(node_geometries), dtype=object)
-        geometry_data[:] = node_geometries
+        geometry_data = np.empty(len(geometries), dtype=object)
+        geometry_data[:] = geometries
 
         group.create_dataset(
             name,
