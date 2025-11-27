@@ -438,7 +438,12 @@ class Clone:
             )
 
             m_clone.set_visualization_cell_bounds(
-                bounds, self.polygons, clone_offset, self.offset, self.clone_numbering
+                bounds,
+                self.polygons,
+                clone_offset,
+                self.offset,
+                self.clones_in_cell,
+                self.clone_numbering,
             )
 
             m_clone.set_line_coords_new(

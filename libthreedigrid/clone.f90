@@ -605,48 +605,49 @@ module m_clone
 
     end subroutine set_quad_idx
 
-    subroutine set_visualization_cell_bounds(bounds, polygon, clone_offset, offset, clone_numbering)
+    subroutine set_visualization_cell_bounds(bounds, polygon, clone_offset, offset, clones_in_cell, clone_numbering)
 
         !! Propogate the coords of bottom-left and top-right corners to all corners
         double precision, intent(in) :: bounds(:,:)                   ! corner coords of quadtree cells at bottom-left and top-right
         double precision, intent(inout) :: polygon(:,:)           ! all corner coords of all the quadtree cells
         integer, intent(in) :: clone_offset(:)                        ! number of corners of each clone cell
         integer, intent(inout) :: offset(:)                           ! number of corners of each cell (quadtree & clone)
-        integer, intent(in) :: clone_numbering(:)                  ! new numbering of the clone cells
+        integer, intent(in) :: clones_in_cell(:)                       ! number of the clones in a cell
+        integer, intent(in) :: clone_numbering(:)                       ! new numbering of the clones
 
-        integer :: idx, cell, cell_quad, cell_no, clone, counter = 0
-
-        integer*1, allocatable :: key(:)
-
-        cell_no = size(offset)
-        allocate(key(cell_no))
-        key = 0
-        
+        integer :: idx, cell, clone, quadtree_cell, all_cell, counter_offset
+      
         do clone = 1, size(clone_numbering)
             idx = clone_numbering(clone) + 1
             if (idx > 0) then
                 offset(idx) = clone_offset(clone)
-                key(idx) = 1
             endif
         enddo
-
-        cell_quad = 0
-        do cell = 1, cell_no
-            if (key(cell) == 0) then
-                cell_quad = cell_quad + 1
-                counter = sum(offset(1:cell)) - offset(cell)
-                counter = counter + 1
-                polygon(counter, :) = bounds(cell_quad, 1:2)
-                counter = counter + 1
-                polygon(counter, 1) = bounds(cell_quad, 1)
-                polygon(counter, 2) = bounds(cell_quad, 4)
-                counter = counter + 1
-                polygon(counter, :) = bounds(cell_quad, 3:4)
-                counter = counter + 1
-                polygon(counter, 1) = bounds(cell_quad, 3)
-                polygon(counter, 2) = bounds(cell_quad, 2)
-                counter = counter + 1
-                polygon(counter, :) = bounds(cell_quad, 1:2)
+        
+        quadtree_cell = 1
+        all_cell = 0
+        do cell = 1, size(bounds,1)
+            if (clones_in_cell(cell) == 0) then
+                all_cell = all_cell + 1
+                counter_offset = sum(offset(1:all_cell)) - offset(all_cell)
+                counter_offset = counter_offset + 1
+                polygon(counter_offset, :) = bounds(quadtree_cell, 1:2)
+                counter_offset = counter_offset + 1
+                polygon(counter_offset, 1) = bounds(quadtree_cell, 1)
+                polygon(counter_offset, 2) = bounds(quadtree_cell, 4)
+                counter_offset = counter_offset + 1
+                polygon(counter_offset, :) = bounds(quadtree_cell, 3:4)
+                counter_offset = counter_offset + 1
+                polygon(counter_offset, 1) = bounds(quadtree_cell, 3)
+                polygon(counter_offset, 2) = bounds(quadtree_cell, 2)
+                counter_offset = counter_offset + 1
+                polygon(counter_offset, :) = bounds(quadtree_cell, 1:2)
+                quadtree_cell = quadtree_cell + 1
+            else
+                quadtree_cell = quadtree_cell + 1
+                do clone = 1, clones_in_cell(cell)
+                    all_cell = all_cell + 1
+                enddo
             endif
         enddo
 
