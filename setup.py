@@ -82,7 +82,7 @@ setup(
     extras_require={
         "test": test_requires,
         "gridadmin": ["h5py>=2.7"],
-        "gpkg": ["geopandas"],
+        "gpkg": ["geopandas", "fiona"],
         "cli": ["typer"],
     },
     python_requires=">=3.9",

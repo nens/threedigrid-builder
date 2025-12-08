@@ -4,17 +4,20 @@ Use cases orchestrate the flow of data to and from the domain entities.
 
 This layer depends on the interfaces as well as on the domain layer.
 """
-
 import itertools
 import logging
 from pathlib import Path
 from typing import Callable, Optional
 
+import numpy as np
+from osgeo import gdal
+
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
-from threedigrid_builder.constants import InflowType
+from threedigrid_builder.constants import InflowType, NO_DATA_VALUE
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, QuadTree
+from threedigrid_builder.grid import Clone, Grid, QuadTree
+from threedigrid_builder.grid.fragments import Fragments
 from threedigrid_builder.interface import (
     DictOut,
     GDALInterface,
@@ -40,6 +43,7 @@ def _make_gridadmin(
     progress_callback=None,
     upgrade=False,
     convert_to_geopackage=False,
+    apply_cutlines=False,
 ):
     """Compute interpolated channel nodes"""
     progress_callback(0.0, "Reading input schematisation...")
@@ -71,16 +75,118 @@ def _make_gridadmin(
         quadtree = QuadTree(
             subgrid_meta,
             grid_settings.kmax,
-            grid_settings.grid_space,
+            grid_settings.grid_space,  # min gridsize in meters
             grid_settings.use_2d_flow,
             refinements,
         )
+
         grid += Grid.from_quadtree(
             quadtree=quadtree,
             area_mask=subgrid_meta["area_mask"],
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
+
+        if apply_cutlines:
+            (
+                fragment_mask,
+                node_fragment_array,
+                fragment_geometries,
+            ) = grid.apply_cutlines(db.get_obstacles(), dem_path)
+            # Flip and transpose mask to mimic GDALInterface.read()
+            fortran_fragment_mask = np.asfortranarray(np.flipud(fragment_mask).T)
+            fortran_node_fragment_array = np.asfortranarray(node_fragment_array)
+
+            # Store the centroids and polygon bounds of the fragments
+            size = len(fragment_geometries)
+            fragments_centroid = np.empty((size, 2), dtype=np.float64, order="F")
+            fragments_polygon = np.empty((0, 2), dtype=np.float64, order="F")
+            fragments_offset = np.empty((size), dtype=np.int32, order="F")
+            for frg_idx in fragment_geometries:
+                fragments_centroid[frg_idx] = np.array(
+                    fragment_geometries[frg_idx].centroid.coords
+                )
+                fragments_polygon = np.append(
+                    fragments_polygon,
+                    np.array(fragment_geometries[frg_idx].boundary.coords),
+                    axis=0,
+                )
+                fragments_offset[frg_idx] = int(
+                    len(fragment_geometries[frg_idx].boundary.coords)
+                )
+
+            # Regenerate the nodes and lines including clone cells
+            clone = Clone(
+                fortran_node_fragment_array,
+                fortran_fragment_mask,
+                fragments_centroid,
+                fragments_polygon,
+                fragments_offset,
+                quadtree,
+                grid,
+                area_mask=subgrid_meta["area_mask"],
+            )
+
+            # Reset the node/line counter
+            node_id_counter = itertools.count()
+            line_id_counter = itertools.count()
+
+            # Overwrite nodes and lines attributes according to the new cells and lines numbers
+            grid.nodes, grid.lines = Grid.from_clone(
+                quadtree,
+                clone,
+                node_id_counter,
+                line_id_counter,
+            )
+            # Renumber fragment mask and node_fragment_array and store Fragments to model for export
+            # The gridadmin/gpkg are exported 1-based (Fortran), also export mask this way (update mapping)
+            clone_mapping = clone.clone_numbering.copy()
+            for idx in range(len(clone_mapping)):
+                if clone_mapping[idx] != NO_DATA_VALUE:
+                    clone_mapping[idx] += 1
+
+            original_fragment_mask = (
+                fragment_mask.copy()
+            )  # We need a copy to prevent overwrite
+            for old_fragment_idx, new_fragment_idx in enumerate(clone_mapping):
+                fragment_mask[
+                    original_fragment_mask == old_fragment_idx
+                ] = new_fragment_idx
+            # Export fragment tiff
+            with GDALInterface(dem_path) as raster:
+                subgrid_meta = raster.read()
+                fragment_path = (
+                    # dem_path.parent / f"fragments_{dem_path.parent.parent.name}.tif"
+                    dem_path.parent
+                    / "fragments.tif"
+                )
+                target_ds = gdal.GetDriverByName("GTiff").Create(
+                    str(fragment_path),
+                    subgrid_meta["width"],
+                    subgrid_meta["height"],
+                    1,
+                    gdal.GDT_Int32,
+                )
+                target_ds.SetGeoTransform(raster._dataset.GetGeoTransform())
+                target_ds.SetProjection(raster._dataset.GetProjection())
+                target_ds.GetRasterBand(1).SetNoDataValue(NO_DATA_VALUE)
+                target_ds.GetRasterBand(1).WriteArray(fragment_mask)
+
+            # Export to model (and h5/gpkg)
+            fragment_ids = []
+            fragment_geoms = []
+            for n in range(node_fragment_array.shape[0]):
+                for f in range(node_fragment_array.shape[1]):
+                    fragment_id = node_fragment_array[n][f]
+                    if fragment_id != NO_DATA_VALUE:
+                        fragment_geom = fragment_geometries[fragment_id]
+                        # Map the final index
+                        mapped_fragment_id = clone.clone_numbering[fragment_id]
+                        if mapped_fragment_id != NO_DATA_VALUE:
+                            fragment_ids.append(mapped_fragment_id)
+                            fragment_geoms.append(fragment_geom)
+            grid.fragments = Fragments(id=fragment_ids, the_geom=fragment_geoms)
+
         grid.set_quarter_administration(quadtree)
 
         if grid.meta.has_groundwater:
@@ -88,7 +194,11 @@ def _make_gridadmin(
                 grid.meta.has_groundwater_flow, node_id_counter, line_id_counter
             )
 
-        grid.set_obstacles_2d(db.get_obstacles())
+        if apply_cutlines:
+            grid.set_obstacles_clones(db.get_obstacles())
+        else:
+            grid.set_obstacles_2d(db.get_obstacles())
+
         grid.set_boundary_conditions_2d(
             db.get_boundary_conditions_2d(),
             quadtree,
@@ -96,6 +206,7 @@ def _make_gridadmin(
             line_id_counter,
         )
 
+        # This marks the nodes intersecting the dem_average geometries.
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)
 
@@ -239,6 +350,7 @@ def make_gridadmin(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     upgrade: bool = False,
     convert_to_geopackage: bool = False,
+    apply_cutlines: bool = False,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -255,6 +367,7 @@ def make_gridadmin(
         progress_callback: an optional function that updates the progress. The function
             should take an float in the range 0-1 and a message string.
         upgrade: whether to upgrade the sqlite (inplace) before processing
+        apply_cutlines: whether to apply (obstacles as) cutlines and create clone cells.
 
     Raises:
         threedigrid_builder.SchematisationError: if there is something wrong with
@@ -291,6 +404,7 @@ def make_gridadmin(
         progress_callback=progress_callback,
         upgrade=upgrade,
         convert_to_geopackage=convert_to_geopackage,
+        apply_cutlines=apply_cutlines,
     )
 
     progress_callback(0.99, "Writing gridadmin...")

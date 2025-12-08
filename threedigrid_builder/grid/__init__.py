@@ -13,6 +13,7 @@ from .cross_section_locations import *  # NOQA
 from .dem_average_area import *  # NOQA
 from .embedded import *  # NOQA
 from .exchange_lines import *  # NOQA
+from .fragments import *  # NOQA
 from .grid import *  # NOQA
 from .grid_refinement import *  # NOQA
 from .lines_1d2d import *  # NOQA

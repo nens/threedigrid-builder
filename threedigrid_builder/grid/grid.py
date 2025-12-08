@@ -1,11 +1,16 @@
+import itertools
+import logging
+import math
 from dataclasses import dataclass, fields
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import shapely
-from osgeo import osr
+from osgeo import gdal, ogr, osr
 from pyproj import CRS
 from pyproj.exceptions import CRSError
+from shapely import contains
+from shapely.ops import linemerge, polygonize
 
 import threedigrid_builder
 from threedigrid_builder.base import (
@@ -18,9 +23,16 @@ from threedigrid_builder.base import (
     Surfaces,
 )
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
-from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
+from threedigrid_builder.constants import (
+    ContentType,
+    LineType,
+    NO_DATA_VALUE,
+    NodeType,
+    WKT_VERSION,
+)
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes, zero_d
+from threedigrid_builder.utils import Dataset
 
 from . import connection_nodes as connection_nodes_module
 from . import dem_average_area as dem_average_area_module
@@ -28,6 +40,7 @@ from . import embedded as embedded_module
 from . import groundwater as groundwater_module
 from . import initial_waterlevels as initial_waterlevels_module
 from .cross_section_definitions import CrossSections
+from .fragments import Fragments
 from .linear import BaseLinear
 from .lines_1d2d import Lines1D2D
 from .obstacles import ObstacleAffectsType, Obstacles
@@ -35,6 +48,7 @@ from .potential_breaches import PotentialBreaches, PotentialBreachPoints
 
 osr.UseExceptions()
 
+logger = logging.getLogger(__name__)
 
 __all__ = ["Grid", "GridMeta", "QuadtreeStats"]
 
@@ -55,6 +69,7 @@ LINE_ORDER = [
         LineType.LINE_2D_OBSTACLE_V,
         LineType.LINE_2D,
         LineType.LINE_2D_OBSTACLE,
+        LineType.LINE_INTERCLONE,
     ],
     [LineType.LINE_2D_VERTICAL],
     [LineType.LINE_2D_GROUNDWATER],
@@ -174,6 +189,7 @@ class Grid:
         meta=None,
         quadtree_stats=None,
         quarters: Optional[Quarters] = None,
+        fragments: Optional[Fragments] = None,
     ):
         if not isinstance(nodes, Nodes):
             raise TypeError(f"Expected Nodes instance, got {type(nodes)}")
@@ -214,9 +230,15 @@ class Grid:
         elif not isinstance(quarters, Quarters):
             raise TypeError(f"Expected Quarters instance, got {type(quarters)}")
 
+        if fragments is None:
+            fragments = Fragments(id=[])
+        elif not isinstance(fragments, Fragments):
+            raise TypeError(f"Expected Fragments instance, got {type(fragments)}")
+
         self.nodes = nodes
         self.lines = lines
         self.quarters = quarters
+        self.fragments = fragments
         self.meta = meta
         self.surfaces = surfaces
         self.surface_maps = surface_maps
@@ -236,7 +258,14 @@ class Grid:
                 "equal types."
             )
         new_attrs = {}
-        for name in ("nodes", "lines", "nodes_embedded", "surfaces", "quarters"):
+        for name in (
+            "nodes",
+            "lines",
+            "nodes_embedded",
+            "surfaces",
+            "quarters",
+            "fragments",
+        ):
             new_attrs[name] = getattr(self, name) + getattr(other, name)
         for name in (
             "meta",
@@ -306,7 +335,13 @@ class Grid:
         self.meta.epsg_code = epsg_code
 
     @classmethod
-    def from_quadtree(cls, quadtree, area_mask, node_id_counter, line_id_counter):
+    def from_quadtree(
+        cls,
+        quadtree,
+        area_mask,
+        node_id_counter,
+        line_id_counter,
+    ):
         """Construct the 2D grid based on the quadtree object.
 
         Args:
@@ -517,6 +552,67 @@ class Grid:
         )
         return cls(Nodes(id=[]), lines)
 
+    def from_clone(
+        quadtree,
+        clone,
+        node_id_counter,
+        line_id_counter,
+    ):
+        quadtree.n_cells = clone.n_cells
+        quadtree.n_lines_u = clone.n_newlines_u
+        quadtree.n_lines_v = clone.n_newlines_v
+        total_lines = clone.n_newlines_u + clone.n_newlines_v + clone.n_interclone_lines
+        kcu = np.full(
+            (total_lines,),
+            LineType.LINE_2D_U,
+            dtype="i4",
+            order="F",
+        )
+        kcu[
+            quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
+        ] = LineType.LINE_2D_V
+        kcu[
+            quadtree.n_lines_u + quadtree.n_lines_v : total_lines
+        ] = LineType.LINE_INTERCLONE
+
+        node_type = np.full(
+            (clone.n_cells,), NodeType.NODE_2D_OPEN_WATER, dtype="O", order="F"
+        )
+
+        idx = clone.line_new[
+            np.arange(total_lines),
+            np.argmin(clone.nodk_new[clone.line_new[:, :]], axis=1),
+        ]
+
+        nodes = Nodes(
+            id=itertools.islice(node_id_counter, clone.n_cells),
+            node_type=node_type,
+            nodk=clone.nodk_new,
+            nodm=clone.nodm_new,
+            nodn=clone.nodn_new,
+            bounds=clone.bounds,
+            coordinates=clone.coords,
+            node_geometries=clone.centroids,
+            pixel_coords=clone.pixel_coords,
+            has_dem_averaged=0,
+        )
+
+        lines = Lines(
+            id=itertools.islice(line_id_counter, len(clone.line_new)),
+            kcu=kcu,
+            line=clone.line_new,
+            lik=nodes.nodk[idx],
+            lim=nodes.nodm[idx],
+            lin=nodes.nodn[idx],
+            cross_pix_coords=clone.cross_pix_coords_new,
+            line_coords=clone.line_coords,
+        )
+        # lines.set_line_coords(nodes)
+        lines.fix_line_geometries()
+        nodes.fix_cell_geometries(clone.polygons, clone.offset)
+
+        return nodes, lines
+
     def set_calculation_types(self):
         """Set the calculation types for connection nodes that do not yet have one.
 
@@ -622,6 +718,27 @@ class Grid:
             self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
         )[0]
         self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.obstacles = obstacles
+
+    def set_obstacles_clones(
+        self,
+        obstacles: Obstacles,
+    ):
+        """Set obstacles on interclone lines by determining intersection between
+           line_coords (these must be known at this point) and obstacle geometry.
+           Set kcu to LINE_2D_OBSTACLE and changes flod and flou to crest_level.
+
+        Args:
+            obstacles (Obstacles)
+            affects_type (ObstacleAffectsType): which affects attribute of obstacles are considered
+        """
+        line_2d = [LineType.LINE_INTERCLONE]
+        selection = np.where(np.isin(self.lines.kcu, line_2d))[0]
+        crest_level = obstacles.compute_dpumax(
+            self.lines, where=selection, affects_type=ObstacleAffectsType.AFFECTS_2D
+        )[0]
+        self.lines.set_2d_crest_levels(crest_level, where=selection)
+        self.lines.dpumax[selection] = crest_level
         self.obstacles = obstacles
 
     def set_boundary_conditions_1d(self, boundary_conditions_1d):
@@ -917,6 +1034,212 @@ class Grid:
             )
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
+
+    def apply_cutlines(self, cutlines, dem_path):
+        """Apply the cutlines to generate clone cells"""
+
+        # Note that we want to merge lines in case they are connected to a single segment.
+        cutlinestrings = [cutline for cutline in cutlines.the_geom]
+        merged_multiline = linemerge(shapely.MultiLineString(cutlinestrings))
+        if merged_multiline.geom_type == "MultiLineString":
+            merged_cutlines = [linestring for linestring in merged_multiline.geoms]
+        elif merged_multiline.geom_type == "LineString":
+            merged_cutlines = [merged_multiline]
+        else:
+            raise RuntimeError("Unable to merge the cutlines")
+
+        # Map of node idx to fragment list
+        node_fragments = {}
+        for node_idx in self.nodes.id:
+            # create the geometry of the corresponding cell
+            node_polygon = shapely.box(
+                self.nodes.bounds[node_idx][0],
+                self.nodes.bounds[node_idx][1],
+                self.nodes.bounds[node_idx][2],
+                self.nodes.bounds[node_idx][3],
+                ccw=False,
+            )
+            assert node_polygon.is_valid
+
+            fragments = Grid.split(node_polygon, merged_cutlines)
+            assert len(fragments) > 0
+            if len(fragments) == 1:
+                # The original cell polygon is returned, no cutting has taken place
+                assert fragments[0].equals_exact(node_polygon, tolerance=0.0)
+            else:
+                node_fragments[node_idx] = fragments
+
+        # Now we have the list of all cut cells and their corresponding fragments
+        print([idx + 1 for idx in node_fragments.keys()])  # QGIS idx start at 1
+
+        # Read DEM to retrieve properties such as number of pixels etc.
+        dem_raster_dataset = gdal.Open(str(dem_path), gdal.GA_ReadOnly)
+        dem_geo_transform = dem_raster_dataset.GetGeoTransform()
+        pixel_size_x = dem_geo_transform[1]
+        pixel_size_y = -dem_geo_transform[5]
+        pixel_area = pixel_size_x * pixel_size_y
+
+        # Create an OGR memory layer with the geometry
+        driver = ogr.GetDriverByName("Memory")
+        data_source = driver.CreateDataSource("")
+        layer = data_source.CreateLayer(
+            "",
+            osr.SpatialReference(dem_raster_dataset.GetProjection()),
+            ogr.wkbPolygon,
+        )
+        layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
+        defn = layer.GetLayerDefn()
+
+        # Add the geometries to this OGR layer
+        count = itertools.count()
+        max_nr_of_fragments = 2  # This array contains up to 2 fragment ids for each node for the initial prototype (to be 4 for the main plan).
+        max_node_id = max(self.nodes.id)
+        node_fragment_array = np.full(
+            shape=(max_node_id + 1, max_nr_of_fragments),
+            fill_value=NO_DATA_VALUE,
+            dtype=np.int32,
+        )
+
+        fragment_geometries = {}
+        for node_id, fragments in node_fragments.items():
+            for fragment_idx, fragment in enumerate(fragments):
+                compactness = Grid.compactness(fragment)
+                area = fragment.area
+                if compactness < 0.2 or area < 2 * pixel_area:
+                    logger.warning(
+                        f"Skipping a fragment of node {node_id + 1} compactness: {compactness} area: {area}"
+                    )
+                    continue
+
+                fragment_id = next(count)
+                feature = ogr.Feature(defn)
+                feature.SetField("id", fragment_id)
+                fragment_geometries[fragment_id] = fragment
+                polygon = ogr.CreateGeometryFromWkb(fragment.wkb)
+                feature.SetGeometry(polygon)
+                layer.CreateFeature(feature)
+                if fragment_idx < max_nr_of_fragments:
+                    node_fragment_array[node_id][fragment_idx] = fragment_id
+                else:
+                    raise RuntimeError(f"Node {node_id + 1} has too many fragments")
+        # Write to tiff
+        export_fragment_tiff = False
+        if export_fragment_tiff:
+            target_ds = gdal.GetDriverByName("GTiff").Create(
+                "fragments.tif",
+                dem_raster_dataset.RasterXSize,
+                dem_raster_dataset.RasterYSize,
+                1,
+                gdal.GDT_Int32,
+            )
+            target_ds.SetGeoTransform(dem_raster_dataset.GetGeoTransform())
+            target_ds.SetProjection(dem_raster_dataset.GetProjection())
+
+            band = target_ds.GetRasterBand(1)
+            band.SetNoDataValue(NO_DATA_VALUE)
+            gdal.RasterizeLayer(target_ds, [1], layer, options=["ATTRIBUTE=id"])
+            target_ds = None
+
+        # Write to array
+        fragment_id_raster = np.full(
+            shape=(1, dem_raster_dataset.RasterYSize, dem_raster_dataset.RasterXSize),
+            fill_value=NO_DATA_VALUE,
+            dtype=np.int32,
+        )
+        dataset_kwargs = {
+            "no_data_value": NO_DATA_VALUE,
+            "geo_transform": dem_raster_dataset.GetGeoTransform(),
+            "projection": dem_raster_dataset.GetProjection(),
+        }
+
+        with Dataset(fragment_id_raster, **dataset_kwargs) as dataset:
+            gdal.RasterizeLayer(dataset, [1], layer, options=["ATTRIBUTE=id"])
+            # gdal.GetDriverByName("GTiff").CreateCopy("array.tiff", dataset,  options=["COMPRESS=DEFLATE"])
+
+        fragment_id_raster = fragment_id_raster[
+            0
+        ]  # Remove outer dimension (single band)
+
+        # Remove (small/thin) fragments not in the fragment raster (so, no pixels)
+        nr_nodes, nr_of_fragments = node_fragment_array.shape
+        assert nr_of_fragments == max_nr_of_fragments
+        for n in range(nr_nodes):
+            for c in range(nr_of_fragments):
+                fragment_id = node_fragment_array[n][c]
+                if fragment_id != NO_DATA_VALUE:
+                    # check whether this is in the mask, if not, set to NODATA value
+                    if not np.any(fragment_id_raster == fragment_id):
+                        node_fragment_array[n][c] = NO_DATA_VALUE
+
+        # Remove fragments that only contains no_data_value in the DEM
+        dem_raster = dem_raster_dataset.ReadAsArray()
+        for n in range(nr_nodes):
+            for c in range(nr_of_fragments):
+                fragment_id = node_fragment_array[n][c]
+                if fragment_id != NO_DATA_VALUE:
+                    if Grid.inactive(
+                        fragment_id, fragment_id_raster, dem_raster, NO_DATA_VALUE
+                    ):
+                        node_fragment_array[n][c] = NO_DATA_VALUE
+                        fragment_id_raster[
+                            fragment_id_raster == fragment_id
+                        ] = NO_DATA_VALUE
+
+        # Remove fragments whose host node only contains one (this) fragment
+        for n in range(nr_nodes):
+            fragments_ids = [f for f in node_fragment_array[n] if f != NO_DATA_VALUE]
+            if len(fragments_ids) == 1:
+                fragment_id = fragments_ids[0]
+                node_fragment_array[n][:] = NO_DATA_VALUE
+                fragment_id_raster[fragment_id_raster == fragment_id] = NO_DATA_VALUE
+
+        return fragment_id_raster, node_fragment_array, fragment_geometries
+
+    @staticmethod
+    def inactive(
+        fragment_id: np.int32,
+        fragment_id_raster: np.ndarray,
+        dem_raster: np.ndarray,
+        no_data_value,
+    ) -> bool:
+        dem_fragment_pixels = dem_raster[fragment_id_raster == fragment_id]
+        return (
+            dem_fragment_pixels.min() == no_data_value
+            and dem_fragment_pixels.max() == no_data_value
+        )
+
+    @staticmethod
+    def split(
+        polygon: shapely.Polygon, cutlines: List[shapely.LineString]
+    ) -> List[shapely.Polygon]:
+        """Integral cutting, derived from shapely.ops.cut"""
+
+        union = shapely.unary_union([polygon.boundary] + cutlines)
+
+        # Some polygonized geometries might be outsize the cell,
+        # that's why we test if the original polygon (poly) contains
+        # the polygonized geometry (pg).
+        result = [
+            pg
+            for pg in polygonize(union)
+            if contains(polygon, pg)  # contains allows common boundary points
+        ]
+
+        # In case there is no cut, the resulting polygon is an equal shape, but not
+        # numerical the same (different order, additional points). In this case we
+        # explicitely return the original polygon
+        if len(result) == 1:
+            assert result[0].equals(polygon)
+            return [polygon]
+
+        return result
+
+    @staticmethod
+    def compactness(polygon: shapely.Polygon) -> float:
+        """Return measure of compactness, currently only isoperimetric
+        quotient (IPQ = 4πA/P^2 where A is area and P is perimeter) is
+        supported."""
+        return (4.0 * math.pi * polygon.area) / pow(polygon.length, 2)
 
     def finalize(self):
         """Finalize the Grid, computing and setting derived attributes"""

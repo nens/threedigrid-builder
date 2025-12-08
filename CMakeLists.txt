@@ -100,6 +100,7 @@ set(fortran_src_file "${fortran_src_dir}/parameters.f90"
                       "${fortran_src_dir}/geo_utils.f90"
                       "${fortran_src_dir}/cells.f90"
                       "${fortran_src_dir}/quadtree.f90"
+                      "${fortran_src_dir}/clone.f90"
                     )
 set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
 set(f2py_module_c "${f2py_module_name}module.c")
@@ -121,6 +122,7 @@ add_custom_command(
       --lower
       "${fortran_src_dir}/cells.f90"
       "${fortran_src_dir}/quadtree.f90"
+      "${fortran_src_dir}/clone.f90"
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS ${fortran_src_file}
   )

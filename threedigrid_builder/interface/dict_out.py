@@ -12,7 +12,7 @@ from threedigrid_builder.constants import (
     Material,
     NodeType,
 )
-from threedigrid_builder.grid import Grid, GridMeta, PotentialBreaches
+from threedigrid_builder.grid import Fragments, Grid, GridMeta, PotentialBreaches
 
 __all__ = ["DictOut"]
 
@@ -73,6 +73,7 @@ EMBEDDED_NODE_FIELDS = (
     "embedded_in",
 )
 
+FRAGMENT_FIELDS = ("id", "cell_id")
 
 META_FIELDS = (
     "epsg_code",
@@ -148,6 +149,7 @@ class DictOut(OutputInterface):
             raise ValueError(f"Unknown geometry format '{geometry_format}'")
 
         nodes, cells = self.get_nodes_cells(grid.nodes)
+        fragments = self.get_fragments(grid.fragments)
         nodes_emb = self.get_embedded(grid.nodes_embedded)
         lines = self.get_lines(grid.lines)
         breaches = self.get_breaches(grid.breaches)
@@ -158,6 +160,7 @@ class DictOut(OutputInterface):
             "lines": lines,
             "breaches": breaches,
             "nodes_embedded": nodes_emb,
+            "fragments": fragments,
             "meta": meta,
         }
         if geom_serializer is not None:
@@ -303,6 +306,23 @@ class DictOut(OutputInterface):
             "geometry": breaches.the_geom,
             "code": breaches.code,
             "display_name": breaches.display_name,
+        }
+
+    def get_fragments(self, fragments: Fragments):
+        """Creates the "fragments" dictionary
+
+        Args:
+            fragments (Fragments)
+
+        Returns:
+            dict of 1D ndarrays
+        """
+        if fragments is None or len(fragments) == 0:
+            return None
+
+        return {
+            "id": increase(fragments.id),
+            "geometry": fragments.the_geom,
         }
 
     def get_meta(self, meta: GridMeta):

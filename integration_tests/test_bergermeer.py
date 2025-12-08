@@ -20,6 +20,52 @@ def count_unique(arr):
     return dict(zip(*np.unique(arr, return_counts=True)))
 
 
+def test_clone_integration(tmp_path):
+    unittests_clone_data_path = unittests_data_path / "clone"
+    schematisation_file = "fuerthen.gpkg"
+
+    shutil.copyfile(
+        unittests_clone_data_path / schematisation_file, tmp_path / schematisation_file
+    )
+    make_grid(
+        tmp_path / schematisation_file,
+        unittests_clone_data_path / "dem.tif",
+        tmp_path / "gridadmin.h5",
+        meta={
+            "model_slug": "slug-123abc",
+            "revision_hash": "123abc",
+            "revision_nr": 24,
+            "threedi_version": "1.2.3.dev",
+        },
+        progress_callback=Mock(),
+        upgrade=True,
+        apply_cutlines=True,
+    )
+
+
+def test_clone_integration_2(tmp_path):
+    unittests_clone_data_path = unittests_data_path / "clone"
+    schematisation_file = "integration2.gpkg"
+
+    shutil.copyfile(
+        unittests_clone_data_path / schematisation_file, tmp_path / schematisation_file
+    )
+    make_grid(
+        tmp_path / schematisation_file,
+        unittests_clone_data_path / "dem-integration2.tif",
+        tmp_path / "gridadmin.h5",
+        meta={
+            "model_slug": "slug-123abc",
+            "revision_hash": "123abc",
+            "revision_nr": 24,
+            "threedi_version": "1.2.3.dev",
+        },
+        progress_callback=Mock(),
+        upgrade=True,
+        apply_cutlines=True,
+    )
+
+
 @pytest.mark.parametrize(
     "filename",
     ["v2_bergermeer.sqlite"],
@@ -129,6 +175,7 @@ def test_integration(tmp_path, filename):
             "ingrw1d": 0,
             "l1dtot": 2532,
             "l2dtot": 11037,
+            "lclone": 0,
             "lgrtot": 5374,
             "lgutot": 5476,
             "lgvtot": 5561,

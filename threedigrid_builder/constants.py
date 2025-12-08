@@ -48,6 +48,7 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_2D_OBSTACLE = 101
     LINE_2D_OBSTACLE_U = 102
     LINE_2D_OBSTACLE_V = 103
+    LINE_INTERCLONE = 104
     LINE_2D_VERTICAL = 150
     LINE_2D_GROUNDWATER = -150
     LINE_2D_BOUNDARY_WEST = 200
@@ -158,3 +159,6 @@ class InflowType(IntEnum):
     NO_INFLOW = 0
     IMPERVIOUS_SURFACE = 1
     SURFACE = 2
+
+
+NO_DATA_VALUE = -9999

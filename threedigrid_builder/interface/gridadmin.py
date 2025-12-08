@@ -14,6 +14,7 @@ from threedigrid_builder.base import (
 from threedigrid_builder.base.surfaces import SurfaceMaps, Surfaces
 from threedigrid_builder.constants import ContentType, LineType, NodeType
 from threedigrid_builder.grid import (
+    Fragments,
     Grid,
     GridMeta,
     Obstacles,
@@ -178,6 +179,7 @@ class GridAdminOut(OutputInterface):
         self.write_cross_sections(grid.cross_sections)
         self.write_obstacles(grid.obstacles)
         self.write_breaches(grid.breaches)
+        self.write_fragments(grid.fragments)
         if grid.meta.has_0d:
             self.write_surfaces(grid.surfaces, grid.surface_maps)
 
@@ -229,6 +231,7 @@ class GridAdminOut(OutputInterface):
             ("livtot", (LineType.LINE_2D_V, LineType.LINE_2D_OBSTACLE_V)),
             ("l1dtot", LINE_TYPES_1D),
             ("l2dtot", LINE_TYPES_2D),
+            ("lclone", LineType.LINE_INTERCLONE),
             ("lgrtot", LineType.LINE_2D_VERTICAL),
             ("infl1d", LINE_TYPES_1D2D),
             ("ingrw1d", LINE_TYPES_1D2D_GW),
@@ -315,6 +318,7 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "node_type", nodes.node_type)
         self.write_dataset(group, "calculation_type", nodes.calculation_type)
         self.write_dataset(group, "coordinates", nodes.coordinates.T)
+        self.write_dataset(group, "node_geometries", nodes.node_geometries.T)
         self.write_dataset(group, "cell_coords", nodes.bounds.T)
         self.write_dataset(group, "nodk", nodes.nodk)
         self.write_dataset(group, "nodm", nodes.nodm)
@@ -327,6 +331,11 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "boundary_type", nodes.boundary_type)
         self.write_dataset(group, "has_dem_averaged", nodes.has_dem_averaged)
         self.write_dataset(group, "initial_waterlevel", nodes.initial_waterlevel)
+
+        # Transform an array of points to list of coordinate arrays (x,x,y,y)
+        self.write_node_line_geometry_dataset(
+            group, "cell_geometries", nodes.cell_geometries
+        )
 
         # content pk is only set for connection nodes, otherwise 0
         self.write_dataset(group, "content_pk", np.where(is_cn, nodes.content_pk, 0))
@@ -474,7 +483,7 @@ class GridAdminOut(OutputInterface):
         )
 
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
-        self.write_line_geometry_dataset(
+        self.write_node_line_geometry_dataset(
             group, "line_geometries", lines.line_geometries
         )
         self.write_dataset(group, "zoom_category", lines.zoom_category)
@@ -749,7 +758,7 @@ class GridAdminOut(OutputInterface):
             np.full(len(obstacles), fill_value=np.nan),
             insert_dummy=False,
         )
-        self.write_line_geometry_dataset(
+        self.write_node_line_geometry_dataset(
             group, "coords", obstacles.the_geom, insert_dummy=False
         )
 
@@ -769,6 +778,16 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "code", to_bytes_array(breaches.code, 32))
         self.write_dataset(
             group, "display_name", to_bytes_array(breaches.display_name, 64)
+        )
+
+    def write_fragments(self, fragments: Fragments):
+        if fragments is None:
+            return
+        group = self._file.create_group("fragments")
+
+        self.write_dataset(group, "id", fragments.id + 1)
+        self.write_node_line_geometry_dataset(
+            group, "coords", fragments.the_geom, insert_dummy=True
         )
 
     def write_dataset(
@@ -822,11 +841,12 @@ class GridAdminOut(OutputInterface):
         else:
             ValueError("Too many dimensions for values.")
 
-    def write_line_geometry_dataset(self, group, name, data, insert_dummy=True):
+    def write_node_line_geometry_dataset(self, group, name, data, insert_dummy=True):
         # Transform an array of linestrings to list of coordinate arrays (x,x,y,y)
-        line_geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
+        # In case of polygons: (x, x, x, x, ..., y, y, y y, ...)
+        geometries = [shapely.get_coordinates(x).T.ravel() for x in data]
         if insert_dummy:
-            line_geometries.insert(0, np.array([np.nan, np.nan]))
+            geometries.insert(0, np.array([np.nan, np.nan]))
         # The dataset has a special "variable length" dtype
         try:
             vlen_dtype = h5py.vlen_dtype(np.dtype(float))
@@ -834,8 +854,8 @@ class GridAdminOut(OutputInterface):
             vlen_dtype = h5py.special_dtype(vlen=np.dtype(float))
 
         # insert line geometry data preserving its original type
-        geometry_data = np.empty(len(line_geometries), dtype=object)
-        geometry_data[:] = line_geometries
+        geometry_data = np.empty(len(geometries), dtype=object)
+        geometry_data[:] = geometries
 
         group.create_dataset(
             name,
