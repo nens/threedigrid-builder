@@ -352,9 +352,9 @@ class Clone:
                 self.cell_numbering,
                 self.clone_numbering,
                 self.clones_in_cell,
-                clone_offset,
             )
             self.n_clones = sum(self.clones_in_cell)
+
             ## Count the new lines
             m_clone.make_clones(
                 lgrmin,
@@ -409,6 +409,14 @@ class Clone:
                 cross_pix_coords,
             )
 
+            ## Update the clone_offset and clone_polygon according to NoData values
+            self.clone_polygons = np.empty(
+                (sum(clone_offset), 2), dtype=np.float64, order="F"
+            )
+            m_clone.check_clone_offset_polygon(
+                self.clone_numbering, clone_offset, clone_polygon, self.clone_polygons
+            )
+
             ## Update the node and line attributes
             self.nodk_new = np.empty((self.n_cells), dtype=np.int32, order="F")
             self.nodm_new = np.empty((self.n_cells), dtype=np.int32, order="F")
@@ -457,7 +465,7 @@ class Clone:
                 clone_mask,
                 self.clone_numbering,
                 clone_centroid,
-                clone_polygon,
+                self.clone_polygons,
                 self.offset,
                 clone_offset,
                 self.line_coords,

@@ -8,7 +8,7 @@ module m_clone
 
     contains
 
-    subroutine find_active_clone_cells(n_cells, clone_array, cell_numbering, clone_numbering, clones_in_cell, clone_offset)
+    subroutine find_active_clone_cells(n_cells, clone_array, cell_numbering, clone_numbering, clones_in_cell)
         ! ! Finding clone cells based on the clone array and renumbering the whole cells ! !
         
         use parameters, only : CLONE_NUMBERS
@@ -17,9 +17,8 @@ module m_clone
         integer, intent(inout) :: cell_numbering(:)                 !! New numbering for quadtree cells
         integer, intent(inout) :: clone_numbering(:)                !! New numbering for clone cells
         integer, intent(inout) :: clones_in_cell(:)                 !! Total number of clones in each host cell
-        integer, intent(inout) :: clone_offset(:)                   !! offset for clones
-        integer :: cell_counter, clone_counter, i, counter
-        integer :: n_cells_new
+        
+        integer :: cell_counter, clone_counter, counter, n_cells_new
 
         call print_unix('** INFO: Find active clone cells.')
         counter = 0 !! counter of the renumbering
@@ -47,13 +46,6 @@ module m_clone
             end if
         end do
         n_cells = n_cells_new
-
-        do cell_counter = 1, size(clone_numbering)
-            if (clone_numbering(cell_counter) < 0) then
-                clone_offset(cell_counter) = 0
-            endif
-        enddo
-
         call print_unix('** INFO: Number of active quadtree and clone cells:', n_cells)
 
     end subroutine find_active_clone_cells
@@ -342,9 +334,6 @@ module m_clone
                         pixel_no = pixel_no + 1
                     endif
                 enddo
-
-                ! new_clone_1 = clone_mask(pixel_i, new_pixel)
-                ! new_clone_2 = clone_mask(pixel_i + 1, new_pixel)
                 
                 if (present(line_new)) then
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
@@ -398,9 +387,6 @@ module m_clone
                         pixel_no = pixel_no + 1
                     endif
                 enddo
-
-                ! new_clone_1 = clone_mask(new_pixel, pixel_j)
-                ! new_clone_2 = clone_mask(new_pixel, pixel_j + 1)
                 
                 if (present(line_new)) then
                     call find_active_lines(direction, pixel_i, pixel_j, min_pix, new_clone_1, new_clone_2, num_pix, area_mask, clone_mask, tot_number_lines, pixel_no, &
@@ -501,7 +487,7 @@ module m_clone
         integer, intent(in) :: offset_clone(:)
         double precision, intent(inout) :: line_coords(:,:)      ! center coords of comp cell at two ends
         double precision, intent(inout) :: centroids(:,:)        ! centroids of all the nodes (with clone cells)
-        double precision, intent(inout) :: polygons(:,:)       ! bounds of all the cell polygons (with clone cells)
+        double precision, intent(inout) :: polygons(:,:)         ! bounds of all the cell polygons (with clone cells)
         integer :: line_counter, cell_no, find_index, bound_counter, bound_counter_clone
         integer :: i0, j0, i1, j1, start_point, start_point_c, end_point, end_point_c
         integer*1, allocatable :: centroid_key(:)
@@ -525,12 +511,8 @@ module m_clone
                     end_point = sum(offset(1:cell_no))
                     end_point_c = sum(offset_clone(1:find_index))
                     start_point = end_point - offset(cell_no) + 1
-                    start_point_c = end_point_c - offset_clone(find_index)
-                    bound_counter_clone = start_point_c
-                    do bound_counter = start_point, end_point
-                        bound_counter_clone = bound_counter_clone + 1
-                        polygons(bound_counter, :) = clone_polygon(bound_counter_clone, :)
-                    enddo
+                    start_point_c = end_point_c - offset_clone(find_index) + 1
+                    polygons(start_point:end_point, :) = clone_polygon(start_point_c:end_point_c, :)
                     centroid_key(cell_no) = 1
                 endif
             else
@@ -556,12 +538,8 @@ module m_clone
                     end_point = sum(offset(1:cell_no))
                     end_point_c = sum(offset_clone(1:find_index))
                     start_point = end_point - offset(cell_no) + 1
-                    start_point_c = end_point_c - offset_clone(find_index)
-                    bound_counter_clone = start_point_c
-                    do bound_counter = start_point, end_point
-                        bound_counter_clone = bound_counter_clone + 1
-                        polygons(bound_counter, :) = clone_polygon(bound_counter_clone, :)
-                    enddo
+                    start_point_c = end_point_c - offset_clone(find_index) + 1
+                    polygons(start_point:end_point, :) = clone_polygon(start_point_c:end_point_c, :)
                     centroid_key(cell_no) = 1
                 endif
             else
@@ -605,15 +583,41 @@ module m_clone
 
     end subroutine set_quad_idx
 
+    subroutine check_clone_offset_polygon(clone_numbering, clone_offset, clone_polygon, clone_polygon_new)
+        ! ! Adjust clone_offset and clone_polygon based on NoData values in clone_numbering !!
+        
+        integer, intent(in) :: clone_numbering(:)                   !! New numbering for clone cells
+        integer, intent(inout) :: clone_offset(:)                   !! offset for clones
+        double precision, intent(in) :: clone_polygon(:,:)          !! polygons for clones
+        double precision, intent(inout) :: clone_polygon_new(:,:)   !! polygons for clones - modified
+        
+        integer :: old_offset, end_new, start_new, end_old, start_old, cell_counter
+        
+        old_offset = 0
+        do cell_counter = 1, size(clone_numbering)
+            if (clone_numbering(cell_counter) < 0) then
+                old_offset = old_offset + clone_offset(cell_counter)
+                clone_offset(cell_counter) = 0
+            else
+                end_new = sum(clone_offset(1:cell_counter))
+                start_new = end_new - clone_offset(cell_counter) + 1
+                end_old = sum(clone_offset(1:cell_counter)) + old_offset
+                start_old = end_old - clone_offset(cell_counter) + 1
+                clone_polygon_new(start_new:end_new,:) = clone_polygon(start_old:end_old,:)
+            endif
+        enddo
+
+    end subroutine check_clone_offset_polygon
+
     subroutine set_visualization_cell_bounds(bounds, polygon, clone_offset, offset, clones_in_cell, clone_numbering)
 
         !! Propogate the coords of bottom-left and top-right corners to all corners
-        double precision, intent(in) :: bounds(:,:)                   ! corner coords of quadtree cells at bottom-left and top-right
-        double precision, intent(inout) :: polygon(:,:)           ! all corner coords of all the quadtree cells
-        integer, intent(in) :: clone_offset(:)                        ! number of corners of each clone cell
-        integer, intent(inout) :: offset(:)                           ! number of corners of each cell (quadtree & clone)
-        integer, intent(in) :: clones_in_cell(:)                       ! number of the clones in a cell
-        integer, intent(in) :: clone_numbering(:)                       ! new numbering of the clones
+        double precision, intent(in) :: bounds(:,:)                   !! corner coords of quadtree cells at bottom-left and top-right
+        double precision, intent(inout) :: polygon(:,:)               !! all corner coords of all the quadtree cells
+        integer, intent(in) :: clone_offset(:)                        !! number of corners of each clone cell
+        integer, intent(inout) :: offset(:)                           !! number of corners of each cell (quadtree & clone)
+        integer, intent(in) :: clones_in_cell(:)                      !! number of the clones in a cell
+        integer, intent(in) :: clone_numbering(:)                     !! new numbering of the clones
 
         integer :: idx, cell, clone, quadtree_cell, all_cell, counter_offset
       
