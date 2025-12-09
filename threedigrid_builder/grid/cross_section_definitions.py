@@ -69,6 +69,7 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                 u_arr, u_idx = np.unique(attr_arr, axis=0, return_index=True)
             else:
                 u_arr, u_idx = np.unique(attr_arr, return_index=True)
+
             new_id = np.arange(len(u_idx)) + len(new_csd_dict["id"])
             for key in new_csd_dict:
                 if key == "id":
@@ -77,12 +78,22 @@ class CrossSectionDefinitions(Array[CrossSectionDefinition]):
                     new_csd_dict[key] = np.concatenate(
                         [new_csd_dict[key], getattr(self, key)[mask][u_idx]]
                     )
+
             # Map unique cross section definition to table and row of origin
             for i, row in enumerate(u_arr):
-                for idx in np.where(attr_arr == row)[0]:
+                # Depending on the crosssection type we need to match all dimensions
+                if len(cross_section_attributes[shape]) == 1:
+                    condition = attr_arr == row
+                else:
+                    condition = attr_arr[:, 0] == row[0]
+                    for j in range(1, len(row)):
+                        condition &= attr_arr[:, j] == row[j]
+
+                for idx in np.where(condition)[0]:
                     definition_map[self.origin_table[mask][idx]][
                         self.origin_id[mask][idx]
                     ] = new_id[i]
+
         return CrossSectionDefinitions(**new_csd_dict), definition_map
 
     def convert(self, ids):
