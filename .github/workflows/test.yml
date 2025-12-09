@@ -119,7 +119,7 @@ jobs:
           pip install --disable-pip-version-check --upgrade pip wheel scikit-build
           pip install ${{ matrix.setuptools }}
           pip install ${{ matrix.numpy }}
-          pip install -e .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
+          pip install .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
           pip list
 
       - name: run setup.py for python 3.12 and 3.13
