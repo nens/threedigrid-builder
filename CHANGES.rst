@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.7 (unreleased)
+1.24.7 (2025-12-15)
 -------------------
 
 - Match on all dimensions in cross section definitions when determining uniqueness.
