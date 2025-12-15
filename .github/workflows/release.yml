@@ -57,7 +57,7 @@ jobs:
           CIBW_SKIP: "pp* *musllinux* cp314*" # skips pypy, musllinux and python3.14
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
-            FC=gfortran-12 MACOSX_DEPLOYMENT_TARGET=14.0
+            FC=gfortran MACOSX_DEPLOYMENT_TARGET=14.0
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
