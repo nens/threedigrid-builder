@@ -65,10 +65,10 @@ jobs:
             setuptools: setuptools>=69.*
             numpy: numpy==1.26.*
             pins: ""
-            display_name: "latest - gdal 3.6"
+            display_name: "latest - gdal 3.8"
             extras: "[test,gridadmin]"
             pip: pip
-            use_gdal_36: true
+            use_gdal_38: true
           - python: '3.12'
             os: ubuntu-24.04
             setuptools: setuptools>=69.*
@@ -98,11 +98,11 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Add PPA for gdal 36
+      - name: Add PPA for gdal 38
         run: |
           sudo add-apt-repository "ppa:ubuntugis/ppa" -y && sudo apt update
           apt show libgdal-dev | grep Version          
-        if: matrix.use_gdal_36
+        if: matrix.use_gdal_38
 
       - name: Add PPA for gdal 310
         run: |
