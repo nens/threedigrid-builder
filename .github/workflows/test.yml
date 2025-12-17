@@ -126,7 +126,7 @@ jobs:
         run: |
           pip install --disable-pip-version-check --upgrade ${{ matrix.pip }} wheel scikit-build-core
           pip install ${{ matrix.numpy }}
-          pip install .${{ matrix.extras }}-v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
+          pip install .${{ matrix.extras }} -v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
           pip list
 
       - name: Run unittests
