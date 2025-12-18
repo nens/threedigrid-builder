@@ -49,14 +49,6 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         if: matrix.os == 'windows-2022'
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-gcc-fortran
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
@@ -66,12 +58,6 @@ jobs:
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-13 MACOSX_DEPLOYMENT_TARGET=14.0
-          CIBW_ENVIRONMENT_WINDOWS: >-
-            CC=C:/msys64/mingw64/bin/gcc.exe
-            CXX=C:/msys64/mingw64/bin/g++.exe
-            FC=C:/msys64/mingw64/bin/gfortran.exe
-            CMAKE_GENERATOR=Ninja
-            CMAKE_MAKE_PROGRAM=C:/msys64/mingw64/bin/ninja.exe
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: type WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
