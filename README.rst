@@ -94,16 +94,11 @@ Create and activate a virtual environment::
   $ python -m venv ./venv
   $ source ./venv/bin/activate
 
-Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example, for Python 3.10 with numpy 1::
+Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example::
 
-  $ pip install --upgrade pip wheel scikit-build
-  $ pip install setuptools==63.*
-  $ pip install numpy==1.23.*
-  $ pip install -e .[test,gridadmin] --no-build-isolation h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.* "pygdal==$(gdal-config --version).*"
-
-In case the Fortan code needs to be recompiled::
-
-  $ python setup.py develop
+  $ pip install --upgrade pip wheel scikit-build-core
+  $ pip install setuptools numpy==1.26.*
+  $ pip install .[test,gridadmin] --no-cache-dir --no-build-isolation GDAL[numpy]==$(gdal-config --version)
 
 Now you should be able to run the tests::
 
