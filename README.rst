@@ -97,8 +97,8 @@ Create and activate a virtual environment::
 Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example::
 
   $ pip install --upgrade pip wheel scikit-build-core
-  $ pip install setuptools numpy==1.26.\*
-  $ pip install .\[test,gridadmin\] --no-cache-dir --no-build-isolation GDAL\[numpy\]==$(gdal-config --version) 
+  $ pip install setuptools numpy==1.26.*
+  $ pip install .[test,gridadmin] --no-cache-dir --no-build-isolation GDAL[numpy]==$(gdal-config --version)
 
 Now you should be able to run the tests::
 

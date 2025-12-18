@@ -49,6 +49,14 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         if: matrix.os == 'windows-2022'
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.22.0
@@ -57,7 +65,13 @@ jobs:
           CIBW_SKIP: "pp* *musllinux* cp314*" # skips pypy, musllinux and python3.14
           CIBW_ARCHS: auto64  # only 64-bit (convincing CMAKE of 32-bit is a TODO)
           CIBW_ENVIRONMENT_MACOS:
-            FC=gfortran MACOSX_DEPLOYMENT_TARGET=14.0
+            FC=gfortran-12 MACOSX_DEPLOYMENT_TARGET=14.0
+          CIBW_ENVIRONMENT_WINDOWS: >-
+            CC=C:/msys64/mingw64/bin/gcc.exe
+            CXX=C:/msys64/mingw64/bin/g++.exe
+            FC=C:/msys64/mingw64/bin/gfortran.exe
+            CMAKE_GENERATOR=Ninja
+            PATH="C:/msys64/mingw64/bin;{PATH}"
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
@@ -65,7 +79,13 @@ jobs:
             delvewheel repair -w {dest_dir}
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_BUILD_VERBOSITY: 1
-          CIBW_BEFORE_ALL_MACOS: brew update && brew install gcc && gfortran --version
+          CIBW_BEFORE_ALL_MACOS: >-
+            brew update && brew install gcc &&
+            # Homebrew installs versioned gfortran binaries (e.g., gfortran-15).
+            # Create an unversioned symlink so tooling can call `gfortran`.
+            GFBIN=$(ls "$(brew --prefix)/bin"/gfortran-* | head -n1) &&
+            ln -sf "$GFBIN" "$(brew --prefix)/bin/gfortran" &&
+            gfortran --version
 
       - uses: actions/upload-artifact@v4
         with:

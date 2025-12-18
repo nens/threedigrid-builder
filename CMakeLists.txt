@@ -29,7 +29,7 @@ execute_process(
 # F2PY headers
 execute_process(
   COMMAND "${Python_EXECUTABLE}"
-  -c "import numpy.f2py; print(numpy.f2py.get_include())"
+  -c "import os, numpy.f2py; print(os.path.join(os.path.dirname(numpy.f2py.__file__), 'src'))"
   OUTPUT_VARIABLE F2PY_INCLUDE_DIR
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
