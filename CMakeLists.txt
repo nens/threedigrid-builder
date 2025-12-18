@@ -104,19 +104,6 @@ python_add_library(${f2py_module_name} MODULE
 target_include_directories(${f2py_module_name} PUBLIC ${F2PY_INCLUDE_DIR})
 target_link_libraries(${f2py_module_name} PUBLIC Python::NumPy)
 
-if (UNIX)
-  if (APPLE)
-    set_target_properties(${generated_module_file} PROPERTIES
-    LINK_FLAGS  '-Wl,-rpath,-dylib,-undefined,dynamic_lookup')
-  else()
-    set_target_properties(${generated_module_file} PROPERTIES
-      LINK_FLAGS  '-Wl,--allow-shlib-undefined')
-  endif()
-else(WIN32)
-  set_target_properties(${generated_module_file} PROPERTIES LINK_FLAGS -s)
-  target_link_libraries(${generated_module_file} ${Python_LIBRARIES})
-endif()
-
 install(TARGETS ${f2py_module_name} DESTINATION "threedigrid_builder/grid/fgrid/")
 
 # For developer convenience: copy the built extension back into the source tree
