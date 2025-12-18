@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.8 (unreleased)
+1.24.8 (2025-12-18)
 -------------------
 
 - Don't pin gfortran version for MacOS build.
