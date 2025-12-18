@@ -21,7 +21,7 @@ if (WIN32)
   find_package(Python COMPONENTS Interpreter Development REQUIRED)
   if(Python_FOUND)
       message(STATUS "Python Found: ${Python_EXECUTABLE}")
-      message(STATUS "Python Found: ${PYTHON_INCLUDE_DIR}")
+      message(STATUS "Python Found: ${Python_INCLUDE_DIRS}")
       message(STATUS "Python Found: ${Python_LIBRARIES}")
       message(STATUS "Python Found: ${Python_LIBRARY_DIRS}")
   endif()
@@ -45,7 +45,7 @@ execute_process(
 )
 
 # Make them cmake_paths for windows compatibility.
-cmake_path(SET Python_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
+cmake_path(SET Python_INCLUDE_DIRS ${Python_INCLUDE_DIRS})
 cmake_path(SET NumPy_INCLUDE_DIRS ${NumPy_INCLUDE_DIRS})
 cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
 

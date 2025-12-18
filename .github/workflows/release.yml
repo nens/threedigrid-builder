@@ -67,11 +67,13 @@ jobs:
           CIBW_ENVIRONMENT_MACOS:
             FC=gfortran-13 MACOSX_DEPLOYMENT_TARGET=14.0
           CIBW_ENVIRONMENT_WINDOWS: >-
-            PATH="C:/msys64/mingw64/bin;C:/msys64/usr/bin;%PATH%"
-            CC=gcc CXX=g++ FC=gfortran
+            CC=gcc
+            CXX=g++
+            FC=gfortran
             CMAKE_GENERATOR=Ninja
             CMAKE_MAKE_PROGRAM=ninja
             MSYSTEM=MINGW64
+            CHERE_INVOKING=1
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
           CIBW_BEFORE_ALL_WINDOWS: type WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
