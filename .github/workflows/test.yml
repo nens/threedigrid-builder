@@ -1,109 +1,48 @@
-name: Linux
+name: Test Python GDAL matrix (Docker)
 
-# Run on PR requests. And on master itself.
 on:
   push:
-    branches:
-      - master
   pull_request:
-  workflow_dispatch:
 
 jobs:
-  TestLinux:
-    name: Python ${{ matrix.python }} ${{ matrix.display_name }}
-    runs-on: ${{ matrix.os }}
+  test:
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # 2022 - 3.9
-          - python: 3.9
-            os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.21.*
-            display_name: "2022"
-            pins: "h5py==3.3.* sqlalchemy==1.4.30 shapely==2.0.* pyproj==3.2.*"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          # 2022
-          - python: '3.10'
-            os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.23.*
-            display_name: "2022"
-            pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          - python: '3.10'
-            os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==2.0.1
-            pins: ""
-            display_name: "2022 - numpy 2"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          # 2023
-          - python: '3.11'
-            os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.24.*
-            pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
-            display_name: "2023"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          # current (using ubuntu 22.04 because latest will change to 24.04 with gdal 3.8 at some moment)
-          - python: '3.12'
-            os: ubuntu-22.04
-            setuptools: setuptools>=69.*
-            numpy: numpy==1.26.*
-            pins: ""
-            display_name: "latest"
-            extras: "[test,gridadmin]"
-            pip: pip
-          - python: '3.13'
-            os: ubuntu-24.04
-            setuptools: setuptools>=69.*
-            numpy: numpy==2.3.*
-            pins: ""
-            display_name: "latest"
-            extras: "[test,gridadmin]"
-            pip: pip
+        python-version: ["3.9", "3.10", "3.11"]
+        gdal-version: ["3.6", "3.8", "3.10"]
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v5
         with:
-          lfs: true
+          context: .
+          file: Dockerfile.gdal
+          push: false
+          tags: test:${{ matrix.python-version }}-gdal${{ matrix.gdal-version }}
+          build-args: |
+            PYTHON_VERSION=${{ matrix.python-version }}
+            GDAL_VERSION=${{ matrix.gdal-version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Set up Python ${{ matrix.python }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python }}
-
-      - name: Install GDAL, sqlite3 and spatialite
+      - name: Build test image
         run: |
-          sudo apt-get update && sudo apt-get install --yes --no-install-recommends libgdal-dev sqlite3 libsqlite3-mod-spatialite
+          docker build \
+            --build-arg PYTHON_VERSION=${{ matrix.python-version }} \
+            --build-arg GDAL_VERSION=${{ matrix.gdal-version }} \
+            -t gridbuilder-test:${{ matrix.python-version }}-gdal${{ matrix.gdal-version }} \
+            -f Dockerfile.gdal .
 
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-
-
-      - name: Install python dependencies
-        shell: bash
+      - name: Run tests
         run: |
-          pip install --disable-pip-version-check --upgrade ${{ matrix.pip }} ${{ matrix.setuptools }} wheel scikit-build-core
-          pip install ${{ matrix.numpy }}
-          pip install .${{ matrix.extras }} -v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
-          pip list
-
-      - name: Run unittests
-        shell: bash
-        run: |
-          pytest
+          docker run --rm gridbuilder-test:${{ matrix.python-version }}-gdal${{ matrix.gdal-version }} pytest
 
       - name: Run integration tests
-        shell: bash
         run: |
-          pytest integration_tests
+          docker run --rm gridbuilder-test:${{ matrix.python-version }}-gdal${{ matrix.gdal-version }} pytest integration_tests
