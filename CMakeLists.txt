@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.17.2...3.26)
+project(fgrid LANGUAGES C Fortran)
 
-project(fgrid)
 enable_language(Fortran)
 
 if (WIN32)
@@ -31,7 +31,7 @@ find_package(Python REQUIRED COMPONENTS Interpreter Development.Module NumPy)
 
 # NumPy headers
 execute_process(
-  COMMAND "${PYTHON_EXECUTABLE}"
+  COMMAND "${Python_EXECUTABLE}"
   -c "import numpy; print(numpy.get_include())"
   OUTPUT_VARIABLE NumPy_INCLUDE_DIRS
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -45,7 +45,7 @@ execute_process(
 )
 
 # Make them cmake_paths for windows compatibility.
-cmake_path(SET PYTHON_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
+cmake_path(SET Python_INCLUDE_DIR ${PYTHON_INCLUDE_DIR})
 cmake_path(SET NumPy_INCLUDE_DIRS ${NumPy_INCLUDE_DIRS})
 cmake_path(SET F2PY_INCLUDE_DIR ${F2PY_INCLUDE_DIR})
 
@@ -70,7 +70,7 @@ set(f2py_module_c "${f2py_module_name}module.c")
 set(f2py_wrapper "${f2py_module_name}-f2pywrappers2.f90")
 set(generated_module_file ${f2py_module_name}${PYTHON_EXTENSION_MODULE_SUFFIX})
 
-include_directories(${NumPy_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIR} ${F2PY_INCLUDE_DIR})
+include_directories(${NumPy_INCLUDE_DIRS} ${Python_INCLUDE_DIRS} ${F2PY_INCLUDE_DIR})
 
 # Put generated sources in a dedicated folder to avoid name clashes
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
