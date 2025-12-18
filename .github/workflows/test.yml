@@ -65,7 +65,7 @@ jobs:
             setuptools: setuptools>=69.*
             numpy: numpy==2.3.*
             pins: ""
-            display_name: "latest - gdal 3.10"
+            display_name: "latest"
             extras: "[test,gridadmin]"
             pip: pip
 

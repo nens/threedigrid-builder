@@ -73,19 +73,12 @@ jobs:
             CMAKE_GENERATOR=Ninja
             PATH="C:/msys64/mingw64/bin;{PATH}"
           CIBW_BEFORE_ALL: cat WHEEL_LICENSE_POSIX >> LICENSE
-          CIBW_BEFORE_ALL_WINDOWS: cat WHEEL_LICENSE_WINDOWS >> LICENSE
+          CIBW_BEFORE_ALL_WINDOWS: type WHEEL_LICENSE_WINDOWS >> LICENSE
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
             delvewheel repair -w {dest_dir}
             --no-mangle "libwinpthread-1.dll" {wheel}
           CIBW_BUILD_VERBOSITY: 1
-          CIBW_BEFORE_ALL_MACOS: >-
-            brew update && brew install gcc &&
-            # Homebrew installs versioned gfortran binaries (e.g., gfortran-15).
-            # Create an unversioned symlink so tooling can call `gfortran`.
-            GFBIN=$(ls "$(brew --prefix)/bin"/gfortran-* | head -n1) &&
-            ln -sf "$GFBIN" "$(brew --prefix)/bin/gfortran" &&
-            gfortran --version
 
       - uses: actions/upload-artifact@v4
         with:

@@ -94,4 +94,5 @@ python_add_library(${f2py_module_name} MODULE
 target_include_directories(${f2py_module_name} PUBLIC ${F2PY_INCLUDE_DIR})
 target_link_libraries(${f2py_module_name} PUBLIC Python::NumPy)
 
-install(TARGETS ${f2py_module_name} DESTINATION "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid/")
+# install(TARGETS ${f2py_module_name} DESTINATION "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid/")
+install(TARGETS ${f2py_module_name} DESTINATION "threedigrid_builder/grid/fgrid/")
