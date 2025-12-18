@@ -94,5 +94,13 @@ python_add_library(${f2py_module_name} MODULE
 target_include_directories(${f2py_module_name} PUBLIC ${F2PY_INCLUDE_DIR})
 target_link_libraries(${f2py_module_name} PUBLIC Python::NumPy)
 
-# install(TARGETS ${f2py_module_name} DESTINATION "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid/")
 install(TARGETS ${f2py_module_name} DESTINATION "threedigrid_builder/grid/fgrid/")
+
+# For developer convenience: copy the built extension back into the source tree
+option(FGRID_LOCAL_COPY "Copy built extension into source tree for local dev" ON)
+if(FGRID_LOCAL_COPY)
+  add_custom_command(TARGET ${f2py_module_name} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid"
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${f2py_module_name}>" "${CMAKE_SOURCE_DIR}/threedigrid_builder/grid/fgrid/"
+  )
+endif()
