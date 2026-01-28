@@ -5,7 +5,8 @@ Changelog of threedigrid-builder
 1.24.9 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Increase COORD_EQUAL_ATOL to reduce the chance of floating point accumulation issues
+  when extracting line substrings.
 
 
 1.24.8 (2025-12-18)
