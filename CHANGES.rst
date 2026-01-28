@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.9 (unreleased)
+1.24.9 (2026-01-28)
 -------------------
 
 - Increase COORD_EQUAL_ATOL to reduce the chance of floating point accumulation issues
