@@ -14,7 +14,8 @@ from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
 from threedigrid_builder.constants import InflowType
 from threedigrid_builder.exceptions import SchematisationError
-from threedigrid_builder.grid import Grid, QuadTree
+from threedigrid_builder.grid import Grid
+from threedigrid_builder.grid.quadtree2 import QuadTree2
 from threedigrid_builder.interface import (
     DictOut,
     GDALInterface,
@@ -40,6 +41,7 @@ def _make_gridadmin(
     progress_callback=None,
     upgrade=False,
     convert_to_geopackage=False,
+    max_mem: int = 128 * 1024**2,
 ):
     """Compute interpolated channel nodes"""
     progress_callback(0.0, "Reading input schematisation...")
@@ -60,21 +62,24 @@ def _make_gridadmin(
         if not dem_path:
             raise SchematisationError("DEM file expected")
         with GDALInterface(dem_path) as raster:
+            grid.set_crs(raster.crs)
             subgrid_meta = raster.read()
 
         # Patch CRS with that of the DEM (so: user-supplied EPSG is ignored)
-        grid.set_crs(raster.crs)
+
         db.epsg_code = grid.meta.epsg_code
 
         refinements = db.get_grid_refinements()
         progress_callback(0.7, "Constructing 2D computational grid...")
-        quadtree = QuadTree(
-            subgrid_meta,
+        quadtree = QuadTree2(
+            dem_path,
             grid_settings.kmax,
             grid_settings.grid_space,
             grid_settings.use_2d_flow,
             refinements,
+            max_mem=max_mem,
         )
+        quadtree.make_quadtree()
         grid += Grid.from_quadtree(
             quadtree=quadtree,
             area_mask=subgrid_meta["area_mask"],
@@ -239,6 +244,7 @@ def make_gridadmin(
     progress_callback: Optional[Callable[[float, str], None]] = None,
     upgrade: bool = False,
     convert_to_geopackage: bool = False,
+    max_mem: int = 128 * 1024**2,
 ):
     """Create a Grid instance from sqlite and DEM paths
 
@@ -291,6 +297,7 @@ def make_gridadmin(
         progress_callback=progress_callback,
         upgrade=upgrade,
         convert_to_geopackage=convert_to_geopackage,
+        max_mem=max_mem,
     )
 
     progress_callback(0.99, "Writing gridadmin...")

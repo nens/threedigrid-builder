@@ -107,6 +107,16 @@ class QuadTree:
         self.n_lines_u = np.array(0, dtype=np.int32, order="F")
         self.n_lines_v = np.array(0, dtype=np.int32, order="F")
 
+        m_quadtree.balance_quadtree(self.kmax, self.mmax, self.nmax, self.lg)
+
+        print(self.kmax)
+        print(self.mmax)
+        print(self.nmax)
+        print(self.min_cell_pixels)
+
+        import ipdb
+
+        ipdb.set_trace()
         m_quadtree.make_quadtree(
             self.kmax,
             self.mmax,
