@@ -13,7 +13,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "threedigrid-builder"
-version = "1.24.8"
+dynamic = ["version"]
 description = "Generate a 3Di simulation grid from a model schematisation"
 readme = "README.rst"
 requires-python = ">=3.9"
@@ -56,3 +56,7 @@ threedigrid-builder = "threedigrid_builder.cli:run"
 [tool.scikit-build]
 ninja.version = ">=1.10"
 cmake.version = ">=3.18"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "threedigrid_builder/__init__.py"
