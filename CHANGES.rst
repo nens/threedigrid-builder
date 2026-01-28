@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.10 (unreleased)
+1.24.10 (2026-01-28)
 --------------------
 
 - Point scikit build to project version dynamically.
