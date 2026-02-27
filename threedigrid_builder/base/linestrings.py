@@ -6,7 +6,7 @@ from .array import Array
 __all__ = ["LineStrings", "PointsOnLine", "LinesOnLine"]
 
 
-COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
+COORD_EQUAL_ATOL = 1e-6  # the distance below which coordinates are considered equal
 
 
 class PointOnLine:

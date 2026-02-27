@@ -2,14 +2,39 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.4a4 (unreleased)
----------------------
+1.24.11 (unreleased)
+--------------------
 
 - Nothing changed yet.
 
 
-1.24.4a3 (2025-07-24)
----------------------
+1.24.10 (2026-01-28)
+--------------------
+
+- Point scikit build to project version dynamically.
+
+
+1.24.9 (2026-01-28)
+-------------------
+
+- Increase COORD_EQUAL_ATOL to reduce the chance of floating point accumulation issues
+  when extracting line substrings.
+
+
+1.24.8 (2025-12-18)
+-------------------
+
+- Don't pin gfortran version for MacOS build.
+
+
+1.24.7 (2025-12-15)
+-------------------
+
+- Match on all dimensions in cross section definitions when determining uniqueness.
+
+
+1.24.6 (2025-08-20)
+-------------------
 
 - Nothing changed yet.
 

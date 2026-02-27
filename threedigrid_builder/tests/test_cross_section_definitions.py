@@ -515,23 +515,20 @@ def test_tabulate_yz_err(width, height, match):
 class TestCrossSectionDefinitionGetUnique:
     def test_for_closed_rectangle(self):
         csd_in = CrossSectionDefinitions(
-            id=[100, 200, 300, 400],
-            shape=[
-                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
-                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
-                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
-                constants.CrossSectionShape.CLOSED_RECTANGLE.value,
-            ],
-            width=[1, 3, 1, 3],
-            height=[1, 2, 1, 2],
-            cross_section_table=["foo", "bar", "foo", "bar"],
-            origin_table=["pipe", "weir", "pipe", "pipe"],
-            origin_id=[10, 20, 30, 40],
+            id=[100, 200, 300, 400, 500],
+            shape=[constants.CrossSectionShape.CLOSED_RECTANGLE.value] * 5,
+            width=[1, 3, 1, 3, 47],
+            height=[1, 2, 1, 2, 1],
+            cross_section_table=["foo", "bar", "foo", "foo", "foo"],
+            origin_table=["pipe", "weir", "pipe", "pipe", "pipe"],
+            origin_id=[10, 20, 30, 40, 50],
         )
-        unique_definition, _ = csd_in.get_unique()
-        np.testing.assert_array_equal(unique_definition.id, [0, 1])
-        np.testing.assert_array_equal(unique_definition.width, [1, 3])
-        np.testing.assert_array_equal(unique_definition.height, [1, 2])
+        unique_definition, mapping = csd_in.get_unique()
+        np.testing.assert_array_equal(unique_definition.id, [0, 1, 2])
+        np.testing.assert_array_equal(unique_definition.width, [1, 3, 47])
+        np.testing.assert_array_equal(unique_definition.height, [1, 2, 1])
+        assert mapping["pipe"] == {10: 0, 30: 0, 40: 1, 50: 2}
+        assert mapping["weir"] == {20: 1}
 
     @pytest.mark.parametrize(
         "shape",

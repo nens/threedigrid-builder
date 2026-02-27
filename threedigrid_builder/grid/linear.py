@@ -8,8 +8,6 @@ from threedigrid_builder.base import Lines, LineStrings, Nodes, PointsOnLine
 from threedigrid_builder.base.linestrings import counts_to_ranges
 from threedigrid_builder.constants import CalculationType, NodeType
 
-COORD_EQUAL_ATOL = 1e-8  # the distance below which coordinates are considered equal
-
 
 class BaseLinear:
     content_type = None  # to be defined by subclasses

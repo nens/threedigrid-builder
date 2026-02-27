@@ -60,33 +60,14 @@ jobs:
             display_name: "latest"
             extras: "[test,gridadmin]"
             pip: pip
-          - python: '3.12'
-            os: ubuntu-22.04
-            setuptools: setuptools>=69.*
-            numpy: numpy==1.26.*
-            pins: ""
-            display_name: "latest - gdal 3.6"
-            extras: "[test,gridadmin]"
-            pip: pip
-            use_gdal_36: true
-          - python: '3.12'
-            os: ubuntu-24.04
-            setuptools: setuptools>=69.*
-            numpy: numpy==1.26.*
-            pins: ""
-            display_name: "2025 - gdal 3.10"
-            extras: "[test,gridadmin]"
-            pip: pip
-            use_gdal_310: true
           - python: '3.13'
             os: ubuntu-24.04
             setuptools: setuptools>=69.*
             numpy: numpy==2.3.*
             pins: ""
-            display_name: "latest - gdal 3.10"
+            display_name: "latest"
             extras: "[test,gridadmin]"
             pip: pip
-            use_gdal_310: true
 
     steps:
       - uses: actions/checkout@v4
@@ -97,18 +78,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-
-      - name: Add PPA for gdal 36
-        run: |
-          sudo add-apt-repository "ppa:ubuntugis/ppa" -y && sudo apt update
-          apt show libgdal-dev | grep Version          
-        if: matrix.use_gdal_36
-
-      - name: Add PPA for gdal 310
-        run: |
-          sudo add-apt-repository "ppa:ubuntugis/ubuntugis-experimental" -y && sudo apt update
-          apt show libgdal-dev | grep Version
-        if: matrix.use_gdal_310
 
       - name: Install GDAL, sqlite3 and spatialite
         run: |
@@ -124,16 +93,10 @@ jobs:
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --disable-pip-version-check --upgrade ${{ matrix.pip }} wheel scikit-build
-          pip install ${{ matrix.setuptools }}
+          pip install --disable-pip-version-check --upgrade ${{ matrix.pip }} ${{ matrix.setuptools }} wheel scikit-build-core
           pip install ${{ matrix.numpy }}
-          pip install -e .${{matrix.extras }} --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
+          pip install .${{ matrix.extras }} -v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
           pip list
-
-      - name: run setup.py for python 3.12 and 3.13
-        if: ${{ matrix.python == '3.12' || matrix.python == '3.13' }}
-        run: |
-          python setup.py develop
 
       - name: Run unittests
         shell: bash
