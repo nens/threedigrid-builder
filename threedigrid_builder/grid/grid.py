@@ -1048,6 +1048,9 @@ class Grid:
         else:
             raise RuntimeError("Unable to merge the cutlines")
 
+        # Build a spatial index for the cutlines to efficiently query which cutlines intersect with cell
+        merged_cutline_tree = shapely.STRtree(merged_cutlines)
+
         # Map of node idx to fragment list
         node_fragments = {}
         for node_idx in self.nodes.id:
@@ -1061,7 +1064,15 @@ class Grid:
             )
             assert node_polygon.is_valid
 
-            fragments = Grid.split(node_polygon, merged_cutlines)
+            # find the cutlines that intersect with this cell, and split the cell geometry with these cutlines
+            merged_cutlines_ids_for_cell = merged_cutline_tree.query(node_polygon)
+            if len(merged_cutlines_ids_for_cell) == 0:
+                continue
+
+            # Only split with the cutlines that
+            fragments = Grid.split(
+                node_polygon, [merged_cutlines[i] for i in merged_cutlines_ids_for_cell]
+            )
             assert len(fragments) > 0
             if len(fragments) == 1:
                 # The original cell polygon is returned, no cutting has taken place
