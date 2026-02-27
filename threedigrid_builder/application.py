@@ -160,12 +160,21 @@ def _make_gridadmin(
                     dem_path.parent
                     / "fragments.tif"
                 )
+                options = [
+                    "COMPRESS=DEFLATE",
+                    "PREDICTOR=2",
+                    "TILED=YES",
+                    "ZLEVEL=9",
+                    "BLOCKXSIZE=512",
+                    "BLOCKYSIZE=512",
+                ]
                 target_ds = gdal.GetDriverByName("GTiff").Create(
                     str(fragment_path),
                     subgrid_meta["width"],
                     subgrid_meta["height"],
                     1,
                     gdal.GDT_Int32,
+                    options=options,
                 )
                 target_ds.SetGeoTransform(raster._dataset.GetGeoTransform())
                 target_ds.SetProjection(raster._dataset.GetProjection())
