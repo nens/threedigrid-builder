@@ -1,0 +1,41 @@
+# docker/Dockerfile.gdal
+ARG PYTHON_VERSION
+FROM python:${PYTHON_VERSION}-slim
+
+ARG GDAL_VERSION
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH=/opt/conda/bin:$PATH
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    bzip2 \
+    sqlite3 \
+    libsqlite3-mod-spatialite \
+    libgdal-dev \
+    cmake \
+    gfortran \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Miniforge (conda-forge)
+RUN curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh \
+    -o miniforge.sh && \
+    bash miniforge.sh -b -p /opt/conda && \
+    rm miniforge.sh
+
+# Create conda env with requested Python + GDAL
+RUN conda install -y -c conda-forge \
+    python=${PYTHON_VERSION} \
+    gdal=${GDAL_VERSION} \
+    pip
+
+RUN pip install --upgrade pip wheel scikit-build-core setuptools numpy==1.26.*
+RUN pip install --no-cache-dir --no-build-isolation GDAL[numpy]==$(gdal-config --version)
+
+COPY . /code
+WORKDIR /code
+
+RUN pip install .[test,gridadmin] --no-cache-dir --no-build-isolation GDAL[numpy]==$(gdal-config --version)
