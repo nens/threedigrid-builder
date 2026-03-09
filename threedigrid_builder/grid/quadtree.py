@@ -8,12 +8,12 @@ from threedigrid_builder.base import Lines, Nodes, Quarters
 from threedigrid_builder.constants import LineType, NodeType
 from threedigrid_builder.exceptions import SchematisationError
 
-from .fgrid import m_cells, m_quadtree
+from .fgrid import m_cells, m_clone, m_quadtree
 
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["QuadTree"]
+__all__ = ["QuadTree", "Clone"]
 
 
 def reduce_refinement_levels(refinements, num_refine_levels):
@@ -65,11 +65,12 @@ class QuadTree:
                 f"Smallest 2D grid cell size: {min_gridsize}m. Pixel size: {pixel_size}m."
             )
 
-        # Maximum number of active grid levels in quadtree.
+        # Maximum number of active grid levels in quadtree, note that this is 1 when there are no refinements.
         self.kmax = reduce_refinement_levels(refinements, num_refine_levels)
+        # Number of pixels that fit along an edge of the smallest cell
         self.lgrmin *= 2 ** (num_refine_levels - self.kmax)
 
-        # Array with cell widths at every active grid level [0:kmax]
+        # Array with column dimensions at every active grid level [0:kmax]
         self.mmax = np.empty((self.kmax,), dtype=np.int32, order="F")
         # Array with row dimensions of every active grid level [0:kmax].
         self.nmax = np.empty((self.kmax,), dtype=np.int32, order="F")
@@ -81,7 +82,7 @@ class QuadTree:
         lvl_multiplr = 2 ** np.arange(self.kmax - 1, -1, -1, dtype=np.int32)
 
         # Determine number of largest cells that fit over subgrid extent.
-        max_pix_largest_cell = self.min_cell_pixels * lvl_multiplr[0]
+        max_pix_largest_cell = self.lgrmin * lvl_multiplr[0]
         max_large_cells_col = int(
             math.ceil(subgrid_meta["width"] / (max_pix_largest_cell))
         )
@@ -111,7 +112,7 @@ class QuadTree:
             self.kmax,
             self.mmax,
             self.nmax,
-            self.min_cell_pixels,
+            self.lgrmin,
             use_2d_flow,
             subgrid_meta["area_mask"],
             self.lg,
@@ -121,6 +122,23 @@ class QuadTree:
             self.n_lines_v,
         )
 
+        self.bounds = np.empty((self.n_cells, 4), dtype=np.float64, order="F")
+        self.coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
+        self.pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
+
+        m_cells.set_bound_etc(
+            np.array([self.origin[0], self.origin[1]], dtype=np.float64),
+            self.kmax,
+            self.mmax,
+            self.nmax,
+            self.dx,
+            self.quad_idx,
+            self.bounds,
+            self.coords,
+            self.pixel_coords,
+            self.lgrmin,
+        )
+
         if self.n_cells.sum() == 0:
             raise SchematisationError(
                 "There are no 2D cells because the raster contains no active pixels"
@@ -128,11 +146,6 @@ class QuadTree:
 
     def __repr__(self):
         return f"<Quadtree object with {self.kmax} refinement levels and {self.n_cells} active computational cells>"  # NOQA
-
-    @property
-    def min_cell_pixels(self):
-        """Returns minimum number of pixels in smallles computational_cell."""
-        return self.lgrmin
 
     def _apply_refinements(self, refinements):
         """Set active grid levels for based on refinements and
@@ -156,7 +169,7 @@ class QuadTree:
             height=self.nmax[0],
             width=self.mmax[0],
             cell_size=self.dx[0],
-            no_data_value=self.kmax,
+            no_data_value=self.kmax,  # ?
         )
         return np.asfortranarray(lg.T)
 
@@ -196,7 +209,7 @@ class QuadTree:
 
         m_cells.set_2d_computational_nodes_lines(
             np.array([self.origin[0], self.origin[1]], dtype=np.float64),
-            self.min_cell_pixels,
+            self.lgrmin,
             self.kmax,
             self.mmax,
             self.nmax,
@@ -285,3 +298,188 @@ class QuadTree:
             line=quarter_line,
             neighbour_node=neighbour_node,
         )
+
+
+class Clone:
+    """Defines active clone cells for computational grid."""
+
+    def __init__(
+        self,
+        clone_array,
+        clone_mask,
+        clone_centroid,
+        clone_polygon,
+        clone_offset,
+        quadtree,
+        grid,
+        area_mask,
+    ):
+        n_clones = len(clone_centroid)
+        if n_clones > 0:
+            self.n_cells = np.copy(quadtree.n_cells)
+            self.cell_numbering = np.full(
+                (self.n_cells), -9999, dtype=np.int32, order="F"
+            )  # For the new numbering of the quadtree cells
+            self.clone_numbering = np.full(
+                (n_clones), -9999, dtype=np.int32, order="F"
+            )  # For the numbering of the clone cells
+            self.clones_in_cell = np.zeros(
+                (self.n_cells), dtype=np.int32, order="F"
+            )  # Total number of clones in each quadtree cell
+            self.n_newlines_u = np.copy(
+                quadtree.n_lines_u
+            )  # Total number of new 2D lines in u direction
+            self.n_newlines_v = np.copy(
+                quadtree.n_lines_v
+            )  # Total number of new 2D lines in v direction
+            self.n_interclone_lines = np.array(
+                0, dtype=np.int32, order="F"
+            )  # Total number of the lines linking 2 clones with the same quadtree cell
+            lgrmin = quadtree.lgrmin
+            line = grid.lines.line
+            cross_pix_coords = grid.lines.cross_pix_coords
+            nodk = grid.nodes.nodk
+            nodm = grid.nodes.nodm
+            nodn = grid.nodes.nodn
+            bounds = grid.nodes.bounds
+            coords = grid.nodes.coordinates
+            pixel_coords = grid.nodes.pixel_coords
+
+            ## Find the active clone cells and renumbering the whole cells (including clones)
+            m_clone.find_active_clone_cells(
+                self.n_cells,
+                clone_array,
+                self.cell_numbering,
+                self.clone_numbering,
+                self.clones_in_cell,
+            )
+            self.n_clones = sum(self.clones_in_cell)
+
+            ## Count the new lines
+            m_clone.make_clones(
+                lgrmin,
+                area_mask,
+                clone_mask,
+                self.clones_in_cell,
+                line,
+                nodk,
+                nodm,
+                nodn,
+                self.n_newlines_u,
+                self.n_newlines_v,
+                self.n_interclone_lines,
+            )
+
+            # this includes all lines with new numbering for the cells
+            total_line_number = (
+                self.n_newlines_u + self.n_newlines_v + self.n_interclone_lines
+            )
+            self.line_new = np.empty(
+                (total_line_number, 2),
+                dtype=np.int32,
+                order="F",
+            )
+
+            self.cross_pix_coords_new = np.full(
+                (total_line_number, 4), -9999, dtype=np.int32, order="F"
+            )
+
+            self.line_coords = np.full(
+                (total_line_number, 4), -9999, dtype=np.float64, order="F"
+            )
+
+            ## Create the new line administration
+            m_clone.set_lines_with_clones(
+                quadtree.n_lines_u,
+                quadtree.n_lines_v,
+                self.n_interclone_lines,
+                lgrmin,
+                area_mask,
+                clone_mask,
+                clone_array,
+                self.clones_in_cell,
+                self.cell_numbering,
+                self.clone_numbering,
+                line,
+                nodk,
+                nodm,
+                nodn,
+                self.line_new,
+                self.cross_pix_coords_new,
+                cross_pix_coords,
+            )
+
+            ## Update the clone_offset and clone_polygon according to NoData values
+            self.clone_polygons = np.empty(
+                (sum(clone_offset), 2), dtype=np.float64, order="F"
+            )
+            m_clone.check_clone_offset_polygon(
+                self.clone_numbering, clone_offset, clone_polygon, self.clone_polygons
+            )
+
+            ## Update the node and line attributes
+            self.nodk_new = np.empty((self.n_cells), dtype=np.int32, order="F")
+            self.nodm_new = np.empty((self.n_cells), dtype=np.int32, order="F")
+            self.nodn_new = np.empty((self.n_cells), dtype=np.int32, order="F")
+            self.bounds = np.empty((self.n_cells, 4), dtype=np.float64, order="F")
+            self.coords = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
+            self.pixel_coords = np.empty((self.n_cells, 4), dtype=np.int32, order="F")
+            self.centroids = np.empty((self.n_cells, 2), dtype=np.float64, order="F")
+            size_polygon = (self.n_cells - self.n_clones) * 5 + sum(clone_offset[:])
+            self.polygons = np.empty((size_polygon, 2), dtype=np.float64, order="F")
+            self.offset = np.full((self.n_cells), 5, dtype=np.int32, order="F")
+
+            m_clone.reset_nod_parameters(
+                clone_array,
+                nodk,
+                nodm,
+                nodn,
+                self.nodk_new,
+                self.nodm_new,
+                self.nodn_new,
+                bounds,
+                coords,
+                pixel_coords,
+                self.bounds,
+                self.coords,
+                self.pixel_coords,
+            )
+
+            m_clone.set_visualization_cell_bounds(
+                bounds,
+                self.polygons,
+                clone_offset,
+                self.offset,
+                self.clones_in_cell,
+                self.clone_numbering,
+            )
+
+            m_clone.set_line_coords_new(
+                total_line_number,
+                self.line_new,
+                self.nodk_new,
+                self.nodm_new,
+                self.nodn_new,
+                self.coords,
+                lgrmin,
+                clone_mask,
+                self.clone_numbering,
+                clone_centroid,
+                self.clone_polygons,
+                self.offset,
+                clone_offset,
+                self.line_coords,
+                self.centroids,
+                self.polygons,
+            )
+
+            m_clone.set_quad_idx(
+                quadtree.quad_idx,
+                self.nodk_new,
+                self.nodm_new,
+                self.nodn_new,
+                self.n_cells,
+            )
+
+        else:
+            print("No clone cells are created")

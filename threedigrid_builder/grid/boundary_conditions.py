@@ -316,6 +316,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         boundary_cells.bounds[:, axes[0]] += size * add_or_subtract
         boundary_cells.bounds[:, axes[1]] += size * add_or_subtract
         boundary_cells.coordinates[:, axes[0]] += size * add_or_subtract
+        boundary_cells.node_geometries[:, axes[0]] += size * add_or_subtract
         if self.is_horizontal(kcu):
             boundary_cells.nodn[:] += add_or_subtract
         else:
