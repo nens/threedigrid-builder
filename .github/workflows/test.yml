@@ -16,58 +16,46 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 2022 - 3.9
-          - python: 3.9
-            os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.21.*
-            display_name: "2022"
-            pins: "h5py==3.3.* sqlalchemy==1.4.30 shapely==2.0.* pyproj==3.2.*"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          # 2022
+          # Python 3.10
           - python: '3.10'
             os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.23.*
-            display_name: "2022"
+            numpy: numpy==1.26.*
             pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
+            display_name: "Python 3.10 - numpy 1.26"
           - python: '3.10'
             os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==2.0.1
+            numpy: numpy==2.2.*
             pins: ""
-            display_name: "2022 - numpy 2"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          # 2023
+            display_name: "Python 3.10 - numpy 2.2"
+          # Python 3.11
           - python: '3.11'
             os: ubuntu-22.04
-            setuptools: setuptools==63.*
-            numpy: numpy==1.24.*
+            numpy: numpy==1.26.*
             pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
-            display_name: "2023"
-            extras: "[test,gridadmin]"
-            pip: pip==25.2
-          # current (using ubuntu 22.04 because latest will change to 24.04 with gdal 3.8 at some moment)
+            display_name: "Python 3.11 - numpy 1.26"
+          - python: '3.11'
+            os: ubuntu-22.04
+            numpy: numpy==2.*
+            pins: ""
+            display_name: "Python 3.11 - numpy 2"
+          # Python 3.12
           - python: '3.12'
             os: ubuntu-22.04
-            setuptools: setuptools>=69.*
             numpy: numpy==1.26.*
             pins: ""
-            display_name: "latest"
-            extras: "[test,gridadmin]"
-            pip: pip
+            display_name: "Python 3.12 - numpy 1.26"
+          - python: '3.12'
+            os: ubuntu-22.04
+            numpy: numpy==2.*
+            pins: ""
+            display_name: "Python 3.12 - numpy 2"
+          # Python 3.13
           - python: '3.13'
             os: ubuntu-24.04
             setuptools: setuptools>=69.*
-            numpy: numpy==2.3.*
+            numpy: numpy==2.*
             pins: ""
-            display_name: "latest"
-            extras: "[test,gridadmin]"
-            pip: pip
+            display_name: "Python 3.13 - numpy 2"
 
     steps:
       - uses: actions/checkout@v4
@@ -86,16 +74,15 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('setup.py') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}-
+            ${{ runner.os }}-pip-${{ matrix.python }}-${{ matrix.numpy }}
 
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --disable-pip-version-check --upgrade ${{ matrix.pip }} ${{ matrix.setuptools }} wheel scikit-build-core
-          pip install ${{ matrix.numpy }}
-          pip install .${{ matrix.extras }} -v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
+          pip install --upgrade pip wheel scikit-build-core setuptools ${{ matrix.numpy }}
+          pip install .[test,gridadmin] -v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
           pip list
 
       - name: Run unittests
