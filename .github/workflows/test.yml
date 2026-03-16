@@ -20,41 +20,34 @@ jobs:
           - python: '3.10'
             os: ubuntu-22.04
             numpy: numpy==1.26.*
-            pins: "h5py==3.7.* sqlalchemy==1.4.40 shapely==2.0.* pyproj==3.4.*"
             display_name: "Python 3.10 - numpy 1.26"
           - python: '3.10'
             os: ubuntu-22.04
             numpy: numpy==2.2.*
-            pins: ""
             display_name: "Python 3.10 - numpy 2.2"
           # Python 3.11
           - python: '3.11'
             os: ubuntu-22.04
             numpy: numpy==1.26.*
-            pins: "h5py==3.10.* sqlalchemy==2.0.* shapely==2.0.* pyproj==3.6.*"
             display_name: "Python 3.11 - numpy 1.26"
           - python: '3.11'
             os: ubuntu-22.04
             numpy: numpy==2.*
-            pins: ""
             display_name: "Python 3.11 - numpy 2"
           # Python 3.12
           - python: '3.12'
             os: ubuntu-22.04
             numpy: numpy==1.26.*
-            pins: ""
             display_name: "Python 3.12 - numpy 1.26"
           - python: '3.12'
             os: ubuntu-22.04
             numpy: numpy==2.*
-            pins: ""
             display_name: "Python 3.12 - numpy 2"
           # Python 3.13
           - python: '3.13'
             os: ubuntu-24.04
             setuptools: setuptools>=69.*
             numpy: numpy==2.*
-            pins: ""
             display_name: "Python 3.13 - numpy 2"
 
     steps:
@@ -82,7 +75,7 @@ jobs:
         shell: bash
         run: |
           pip install --upgrade pip wheel scikit-build-core setuptools ${{ matrix.numpy }}
-          pip install .[test,gridadmin] -v --no-cache-dir --no-build-isolation ${{ matrix.pins }} "GDAL==$(gdal-config --version)"          
+          pip install .[test,gridadmin] -v --no-cache-dir --no-build-isolation "GDAL==$(gdal-config --version)"          
           pip list
 
       - name: Run unittests
