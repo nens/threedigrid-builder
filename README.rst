@@ -106,3 +106,7 @@ Now you should be able to run the tests::
   $ pytest integration_tests
 
 For VSCode, optionally select the python interpreter corresponding to the virtual environment.
+
+Only build the Fortran files::
+
+  $ ./build.sh
