@@ -6,6 +6,7 @@ Changelog of threedigrid-builder
 --------------------
 
 - Bump Numpy to 2.x
+- Bump threedi-schema to 0.301
 
 
 1.24.10 (2026-01-28)
