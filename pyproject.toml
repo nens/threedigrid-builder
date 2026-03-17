@@ -3,11 +3,11 @@ requires = [
     "scikit-build-core",
     "wheel",
     "setuptools",
-    "numpy==1.19.3; python_version=='3.9'",
-    "numpy==1.21.3; python_version=='3.10'",
-    "numpy==1.24.2; python_version=='3.11'",
-    "numpy==1.26.*; python_version=='3.12'",
-    "numpy==2.3.*; python_version=='3.13'",
+    "numpy==2.2; python_version=='3.10'",
+    "numpy==2.4; python_version=='3.11'",
+    "numpy==2.4; python_version=='3.12'",
+    "numpy==2.*; python_version=='3.13'",
+    "numpy==2.*; python_version=='3.14'",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -20,7 +20,7 @@ requires-python = ">=3.9"
 authors = [{ name = "Martijn Siemerink", email = "martijn.siemerink@nelen-schuurmans.nl" }]
 license = { text = "GNU General Public License v3.0" }
 dependencies = [
-    "numpy>=1.15,<3.0",
+    "numpy<3",
     "threedi-schema==0.300.*",
     "shapely>=2",
     "pyproj>=3",
