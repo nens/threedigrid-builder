@@ -63,7 +63,7 @@ class RasterInterface(ABC):
             )
         if b != 0.0 or d != 0.0:
             raise SchematisationError(
-                f"Raster pixel grid has tilt (cross terms: {b},{d})."
+                f"Raster pixel grid has tilt (cross terms: {b}, {d})."
             )
 
         self.transform = (a, b, c, d, e, f)
