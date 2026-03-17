@@ -286,7 +286,7 @@ class BaseSurfaces:
             area=self.area[self.unique_surfaces_mask],
             centroid_x=centroid_coords[:, 0][self.unique_surfaces_mask],
             centroid_y=centroid_coords[:, 1][self.unique_surfaces_mask],
-            **extra_fields
+            **extra_fields,
         )
 
     def as_surface_maps(

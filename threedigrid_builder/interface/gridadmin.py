@@ -487,6 +487,8 @@ class GridAdminOut(OutputInterface):
         self.write_dataset(group, "crest_level", lines.crest_level)
         self.write_dataset(group, "crest_type", lines.crest_type)
 
+        self.write_dataset(group, "q_max", lines.q_max)
+
         # Cross section on pipes, culverts, weirs, and orifices
         pipe_culvert = np.logical_or.reduce(
             (
