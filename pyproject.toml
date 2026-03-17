@@ -21,7 +21,11 @@ authors = [{ name = "Martijn Siemerink", email = "martijn.siemerink@nelen-schuur
 license = { text = "GNU General Public License v3.0" }
 dependencies = [
     "numpy<3",
+<<<<<<< vortex_valve
     "threedi-schema==0.301.*",
+=======
+    "threedi-schema==0.300.*",
+>>>>>>> master
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",

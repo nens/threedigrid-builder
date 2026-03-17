@@ -134,7 +134,7 @@ def compute_weights(channel_id, points, cs, channels, extrapolate):
     See also:
         Channels.get_lines: computes the lines in the correct order
     """
-    if not np.in1d(channels.id, cs.channel_id).all():
+    if not np.isin(channels.id, cs.channel_id).all():
         missing = set(channels.id) - set(cs.channel_id)
         raise ValueError(f"Channels {missing} have no cross section location set.")
 
