@@ -28,6 +28,7 @@ class Line:
     content_type: ContentType
     content_pk: int
     dpumax: float  # bottom_level at the velocity point
+    q_max: float  # discharge capacity for orifices
     invert_level_start_point: float  # bottom level at line start
     invert_level_end_point: float  # bottom level at line end
     flod: float  # obstacle height

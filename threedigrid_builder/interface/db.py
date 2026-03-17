@@ -684,6 +684,7 @@ class SQLite:
             models.Orifice.connection_node_id_end.label("connection_node_end_id"),
             models.Orifice.crest_level,
             models.Orifice.crest_type,
+            models.Orifice.discharge_capacity,
             models.Orifice.discharge_coefficient_negative,
             models.Orifice.discharge_coefficient_positive,
             models.Orifice.display_name,

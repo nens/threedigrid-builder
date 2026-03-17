@@ -67,6 +67,7 @@ class WeirOrifice:  # NL: stuw / doorlaat
     connection_node_end_id: int
     crest_level: float
     crest_type: CalculationType
+    discharge_capacity: float
     cross_section_definition_id: int
     discharge_coefficient_negative: float
     discharge_coefficient_positive: float
@@ -120,6 +121,7 @@ class WeirOrifices(Array[WeirOrifice]):
             content_pk=self.id,
             kcu=self.crest_type,  # implicitly converts CalculationType -> LineType
             dpumax=self.crest_level,
+            q_max=self.discharge_capacity,
             cross_id1=self.cross_section_definition_id,
             cross_id2=self.cross_section_definition_id,
             cross_weight=1.0,
