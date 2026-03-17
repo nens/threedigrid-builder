@@ -147,7 +147,7 @@ class TablesSettings:
             )
 
         # check enums
-        for (name, elem_type) in self.__annotations__.items():
+        for (name, elem_type) in self.__class__.__annotations__.items():
             elem_type = unpack_optional_type(elem_type)
             if is_int_enum(elem_type):
                 value = getattr(self, name)
