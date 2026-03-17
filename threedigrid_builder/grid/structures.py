@@ -99,6 +99,7 @@ class WeirOrifices(Array[WeirOrifice]):
             - content_pk: the id of the structure from which this line originates
             - kcu: the crest_type of the structure
             - dpumax: the crest_level of the structure
+            - q_max: discharge capacity of the structure (available for orifices)
             - cross_id1 & cross_id2: the id of the cross section definition
             - cross_weight: 1.0 (which means that cross_id2 should be ignored)
             - frict_type1 & frict_type2: the friction type (both are equal)
