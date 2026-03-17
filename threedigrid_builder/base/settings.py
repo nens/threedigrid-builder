@@ -162,22 +162,23 @@ class TablesSettings:
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
         class_fields = {f.name for f in fields(cls)}
-        schema_to_builder_map = {"groundwater_hydraulic_conductivity": "groundwater_hydro_connectivity",
-                                 "groundwater_hydraulic_conductivity_aggregation": "groundwater_hydro_connectivity_type",
-                                 "groundwater_impervious_layer_level_aggregation": "groundwater_impervious_layer_level_type",
-                                 "infiltration_decay_period_aggregation": "infiltration_decay_period_type",
-                                 "initial_infiltration_rate_aggregation": "initial_infiltration_rate_type",
-                                 "phreatic_storage_capacity_aggregation": "phreatic_storage_capacity_type",
-                                 "equilibrium_infiltration_rate_aggregation": "equilibrium_infiltration_rate_type",
-                                 "max_infiltration_volume": "max_infiltration_capacity",
-                                 "max_infiltration_volume_type": "max_infiltration_capacity_type",
-                                 "manhole_aboveground_storage_area": "manhole_storage_area",
-                                 "friction_coefficient": "frict_coef",
-                                 "minimum_table_step_size": "table_step_size",
-                                 "friction_type": "frict_type",
-                                 "friction_coefficient_type": "frict_coef_type",
-                                 "interception": "interception_global",
-                                 }
+        schema_to_builder_map = {
+            "groundwater_hydraulic_conductivity": "groundwater_hydro_connectivity",
+            "groundwater_hydraulic_conductivity_aggregation": "groundwater_hydro_connectivity_type",
+            "groundwater_impervious_layer_level_aggregation": "groundwater_impervious_layer_level_type",
+            "infiltration_decay_period_aggregation": "infiltration_decay_period_type",
+            "initial_infiltration_rate_aggregation": "initial_infiltration_rate_type",
+            "phreatic_storage_capacity_aggregation": "phreatic_storage_capacity_type",
+            "equilibrium_infiltration_rate_aggregation": "equilibrium_infiltration_rate_type",
+            "max_infiltration_volume": "max_infiltration_capacity",
+            "max_infiltration_volume_type": "max_infiltration_capacity_type",
+            "manhole_aboveground_storage_area": "manhole_storage_area",
+            "friction_coefficient": "frict_coef",
+            "minimum_table_step_size": "table_step_size",
+            "friction_type": "frict_type",
+            "friction_coefficient_type": "frict_coef_type",
+            "interception": "interception_global",
+        }
         dct = replace_keys(copy.copy(dct), schema_to_builder_map)
         return cls(
             **{k: v for k, v in dct.items() if k in class_fields and v is not None}
