@@ -375,7 +375,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
             edge_coord = nodes.bounds[node_idx, self.get_edge_coord_col(kcu)]
             self.check_edge_coord(edge_coord, bc_idx, is_horizontal)
 
-            node_idx = node_idx[~np.in1d(node_idx, cells_done)]
+            node_idx = node_idx[~np.isin(node_idx, cells_done)]
             if len(node_idx) == 0:
                 continue
             cells_done = np.append(cells_done, node_idx)
