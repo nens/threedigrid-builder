@@ -16,7 +16,7 @@ name = "threedigrid-builder"
 dynamic = ["version"]
 description = "Generate a 3Di simulation grid from a model schematisation"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "Martijn Siemerink", email = "martijn.siemerink@nelen-schuurmans.nl" },
 ]
