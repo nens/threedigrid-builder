@@ -55,7 +55,7 @@ jobs:
       - name: Install python dependencies
         shell: bash
         run: |
-          pip install --upgrade pip wheel scikit-build-core setuptools
+          pip install --upgrade pip wheel scikit-build-core setuptools numpy>=2,<3
           pip install .[test,gridadmin] --no-build-isolation --no-cache-dir --force-reinstall GDAL==$(gdal-config --version) 
           pip list
 
