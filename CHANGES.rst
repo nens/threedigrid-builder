@@ -2,8 +2,8 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.12 (unreleased)
---------------------
+1.25.0 (2026-03-18)
+-------------------
 
 - Minimal required Python version is now 3.10
 
