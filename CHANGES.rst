@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.25.1 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Remove specific Python - numpy combination from build requires as we're using numpy v2 now
 
 
 1.25.0 (2026-03-18)
