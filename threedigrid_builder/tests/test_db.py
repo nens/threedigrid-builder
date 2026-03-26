@@ -36,9 +36,10 @@ def test_init(tmp_path):
     path = tmp_path / "some.sqlite"
     path.touch()
 
-    with mock.patch(
-        "threedigrid_builder.interface.db.ThreediDatabase"
-    ) as db, mock.patch.object(SQLite, "get_version") as get_version:
+    with (
+        mock.patch("threedigrid_builder.interface.db.ThreediDatabase") as db,
+        mock.patch.object(SQLite, "get_version") as get_version,
+    ):
         get_version.return_value = 229
         sqlite = SQLite(path)
 
@@ -58,9 +59,10 @@ def test_init_bad_version(tmp_path):
     path = tmp_path / "some.sqlite"
     path.touch()
 
-    with mock.patch(
-        "threedigrid_builder.interface.db.ThreediDatabase"
-    ), mock.patch.object(SQLite, "get_version") as get_version:
+    with (
+        mock.patch("threedigrid_builder.interface.db.ThreediDatabase"),
+        mock.patch.object(SQLite, "get_version") as get_version,
+    ):
         with pytest.raises(SchematisationError):
             get_version.return_value = 171
             SQLite(path)

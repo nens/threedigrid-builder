@@ -212,9 +212,9 @@ def set_calculation_types(nodes: Nodes, lines: Lines):
     # start off with ISOLATED
     nodes.calculation_type[node_mask] = CalculationType.ISOLATED
     # overwrite with the one derived from the line line_halfs
-    nodes.calculation_type[
-        nodes.id_to_index(line_halfs.get_reduce_id())
-    ] = calculation_type
+    nodes.calculation_type[nodes.id_to_index(line_halfs.get_reduce_id())] = (
+        calculation_type
+    )
 
 
 def _put_if_less(a, ind, v):

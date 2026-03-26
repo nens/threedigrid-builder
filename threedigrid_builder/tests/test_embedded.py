@@ -9,9 +9,9 @@ from threedigrid_builder.constants import CalculationType, ContentType, NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import (
     ConnectionNodes,
+    Grid,
     embed_linear_objects,
     embed_nodes,
-    Grid,
 )
 from threedigrid_builder.grid.linear import BaseLinear
 

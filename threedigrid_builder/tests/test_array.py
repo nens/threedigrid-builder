@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_equal
 
-from threedigrid_builder.base import Array, replace, search, TooManyExist
+from threedigrid_builder.base import Array, TooManyExist, replace, search
 
 
 class Animal(IntEnum):

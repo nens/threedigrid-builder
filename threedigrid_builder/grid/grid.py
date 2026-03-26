@@ -18,7 +18,7 @@ from threedigrid_builder.base import (
     Surfaces,
 )
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
-from threedigrid_builder.constants import ContentType, LineType, NodeType, WKT_VERSION
+from threedigrid_builder.constants import WKT_VERSION, ContentType, LineType, NodeType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes, zero_d
 
@@ -232,8 +232,7 @@ class Grid:
         """Concatenate two grids without renumbering nodes."""
         if self.__class__ is not other.__class__:
             raise TypeError(
-                "Cannot concatenate {self} with {other} as they are not of "
-                "equal types."
+                "Cannot concatenate {self} with {other} as they are not of equal types."
             )
         new_attrs = {}
         for name in ("nodes", "lines", "nodes_embedded", "surfaces", "quarters"):

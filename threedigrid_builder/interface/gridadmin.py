@@ -4,10 +4,10 @@ import numpy as np
 import shapely
 
 from threedigrid_builder.base import (
-    is_int_enum,
-    is_tuple_type,
     Lines,
     OutputInterface,
+    is_int_enum,
+    is_tuple_type,
     search,
     unpack_optional_type,
 )
@@ -486,6 +486,8 @@ class GridAdminOut(OutputInterface):
         )
         self.write_dataset(group, "crest_level", lines.crest_level)
         self.write_dataset(group, "crest_type", lines.crest_type)
+
+        self.write_dataset(group, "q_max", lines.q_max)
 
         # Cross section on pipes, culverts, weirs, and orifices
         pipe_culvert = np.logical_or.reduce(

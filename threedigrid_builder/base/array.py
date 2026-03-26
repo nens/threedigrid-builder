@@ -1,7 +1,7 @@
 import types
 import typing
 from enum import IntEnum
-from typing import _GenericAlias, Generic, TypeVar
+from typing import Generic, TypeVar, _GenericAlias
 
 import numpy as np
 
