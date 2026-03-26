@@ -176,8 +176,7 @@ class BoundaryConditions2D(Array[BoundaryCondition2D]):
         n_edges_after = np.count_nonzero(after)
         if n_edges_after == 0 and n_edges_before == 0:
             raise SchematisationError(
-                f"2D boundary condition {self.id[idx]} does not touch any edge "
-                f"cell."
+                f"2D boundary condition {self.id[idx]} does not touch any edge cell."
             )
         elif n_edges_after == n_edges_before:
             s = "top and bottom" if is_horizontal else "right and left"

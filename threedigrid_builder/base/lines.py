@@ -21,7 +21,9 @@ class Line:
     lim: int  # quadtree grid coordinate x of the line start
     lin: int  # quadtree grid coordinate y of the line start
     s1d: float  # position (arclength) along a 1D element
-    ds1d_half: float  # position (arclength) along a single line (between two calc nodes.)
+    ds1d_half: (
+        float  # position (arclength) along a single line (between two calc nodes.)
+    )
     ds1d: float  # arclength
     line_geometries: shapely.Geometry
     line_coords: Tuple[float, float, float, float]

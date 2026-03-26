@@ -4,10 +4,10 @@ import numpy as np
 import shapely
 
 from threedigrid_builder.base import (
-    is_int_enum,
-    is_tuple_type,
     Lines,
     OutputInterface,
+    is_int_enum,
+    is_tuple_type,
     search,
     unpack_optional_type,
 )

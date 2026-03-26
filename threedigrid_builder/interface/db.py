@@ -8,9 +8,9 @@ from typing import ContextManager, Dict, List, Union
 import numpy as np
 import shapely
 from condenser import NumpyQuery
-from sqlalchemy import case, cast, func, inspect, Integer, literal
+from sqlalchemy import Integer, case, cast, func, inspect, literal
 from sqlalchemy.orm import Session
-from threedi_schema import custom_types, models, ModelSchema, ThreediDatabase
+from threedi_schema import ModelSchema, ThreediDatabase, custom_types, models
 
 from threedigrid_builder.base import GridSettings, Pumps, TablesSettings
 from threedigrid_builder.constants import InitializationType, LineType
@@ -582,9 +582,9 @@ class SQLite:
         arr["friction_type"][arr["friction_type"] == 4] = 2
 
         # When no calculation type is provides we default to isolated
-        arr["calculation_type"][
-            arr["calculation_type"] == -9999
-        ] = LineType.LINE_1D_ISOLATED
+        arr["calculation_type"][arr["calculation_type"] == -9999] = (
+            LineType.LINE_1D_ISOLATED
+        )
         # map "old" calculation types (100, 101, 102, 105) to (0, 1, 2, 5)
         arr["calculation_type"][arr["calculation_type"] >= 100] -= 100
 

@@ -1,17 +1,17 @@
 import copy
-from dataclasses import dataclass
-from dataclasses import fields
-from threedigrid_builder.base import is_int_enum
-from threedigrid_builder.base import unpack_optional_type
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.constants import InfiltrationSurfaceOption
-from threedigrid_builder.constants import InitializationType
-from threedigrid_builder.constants import InterflowType
-from threedigrid_builder.exceptions import SchematisationError
+from dataclasses import dataclass, fields
 from typing import Any, Dict, Optional
 
 import numpy as np
 
+from threedigrid_builder.base import is_int_enum, unpack_optional_type
+from threedigrid_builder.constants import (
+    FrictionType,
+    InfiltrationSurfaceOption,
+    InitializationType,
+    InterflowType,
+)
+from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["GridSettings", "TablesSettings"]
 
@@ -23,7 +23,9 @@ def greater_zero_check(obj, attr):
 
 
 def replace_keys(dict: Dict[str, Any], key_map: Dict[str, str]) -> Dict[str, Any]:
-    return {key if key not in key_map else key_map[key] : val for key, val in dict.items()}
+    return {
+        key if key not in key_map else key_map[key]: val for key, val in dict.items()
+    }
 
 
 @dataclass
@@ -45,9 +47,11 @@ class GridSettings:
     @classmethod
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
-        schema_to_builder_map = {'minimum_cell_size': 'grid_space',
-                                 'calculation_point_distance_1d': 'dist_calc_points',
-                                 'nr_grid_levels': 'kmax'}
+        schema_to_builder_map = {
+            "minimum_cell_size": "grid_space",
+            "calculation_point_distance_1d": "dist_calc_points",
+            "nr_grid_levels": "kmax",
+        }
         dct = replace_keys(copy.copy(dct), schema_to_builder_map)
         class_fields = {f.name for f in fields(cls)}
         return cls(
@@ -143,11 +147,11 @@ class TablesSettings:
 
         if self.maximum_table_step_size < self.table_step_size:
             raise SchematisationError(
-                f"'maximum_table_step_size' must not be less than 'table_step_size'."
+                "'maximum_table_step_size' must not be less than 'table_step_size'."
             )
 
         # check enums
-        for (name, elem_type) in self.__class__.__annotations__.items():
+        for name, elem_type in self.__class__.__annotations__.items():
             elem_type = unpack_optional_type(elem_type)
             if is_int_enum(elem_type):
                 value = getattr(self, name)
