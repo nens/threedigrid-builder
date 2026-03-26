@@ -2,10 +2,30 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.24.11 (unreleased)
+1.25.2 (unreleased)
+-------------------
+
+- Nothing changed yet.
+
+
+1.25.1 (2026-03-18)
+-------------------
+
+- Remove specific Python - numpy combination from build requires as we're using numpy v2 now
+
+
+1.25.0 (2026-03-18)
+-------------------
+
+- Minimal required Python version is now 3.10
+
+
+1.24.11 (2026-03-18)
 --------------------
 
 - Bump Numpy to 2.x
+- Bump threedi-schema to 0.301
+- Move content from setup.cfg to pyproject.toml
 
 
 1.24.10 (2026-01-28)
