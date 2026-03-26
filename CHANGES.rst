@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.25.2 (unreleased)
+1.25.2 (2026-03-26)
 -------------------
 
 - Add q_max to Lines for discharge capacity of orifices (vortex valve)
