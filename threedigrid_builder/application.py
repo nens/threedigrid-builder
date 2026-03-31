@@ -4,6 +4,7 @@ Use cases orchestrate the flow of data to and from the domain entities.
 
 This layer depends on the interfaces as well as on the domain layer.
 """
+
 import itertools
 import logging
 from pathlib import Path
@@ -14,7 +15,7 @@ from osgeo import gdal
 
 from threedigrid_builder.base import GridSettings
 from threedigrid_builder.base.surfaces import Surfaces
-from threedigrid_builder.constants import InflowType, NO_DATA_VALUE
+from threedigrid_builder.constants import NO_DATA_VALUE, InflowType
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import Clone, Grid, QuadTree
 from threedigrid_builder.grid.fragments import Fragments
@@ -149,16 +150,15 @@ def _make_gridadmin(
                 fragment_mask.copy()
             )  # We need a copy to prevent overwrite
             for old_fragment_idx, new_fragment_idx in enumerate(clone_mapping):
-                fragment_mask[
-                    original_fragment_mask == old_fragment_idx
-                ] = new_fragment_idx
+                fragment_mask[original_fragment_mask == old_fragment_idx] = (
+                    new_fragment_idx
+                )
             # Export fragment tiff
             with GDALInterface(dem_path) as raster:
                 subgrid_meta = raster.read()
                 fragment_path = (
                     # dem_path.parent / f"fragments_{dem_path.parent.parent.name}.tif"
-                    dem_path.parent
-                    / "fragments.tif"
+                    dem_path.parent / "fragments.tif"
                 )
                 options = [
                     "COMPRESS=DEFLATE",
