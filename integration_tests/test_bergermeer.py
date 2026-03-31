@@ -68,7 +68,7 @@ def test_clone_integration_2(tmp_path):
 
 @pytest.mark.parametrize(
     "filename",
-    ["v2_bergermeer.sqlite"],
+    ["v2_bergermeer.gpkg"],
 )
 def test_integration(tmp_path, filename):
     shutil.copyfile(unittests_data_path / filename, tmp_path / filename)

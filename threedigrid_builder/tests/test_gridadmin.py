@@ -154,6 +154,7 @@ def test_write_nodes_embedded(h5_out, dataset, shape, dtype):
         ("line_coords", (4, 6), "float64"),
         ("line_geometries", (6,), "object"),
         ("material", (6,), "int32"),
+        ("q_max", (6,), "float64"),
         ("sewerage", (6,), "int32"),
         ("sewerage_type", (6,), "int32"),
         ("zoom_category", (6,), "int32"),

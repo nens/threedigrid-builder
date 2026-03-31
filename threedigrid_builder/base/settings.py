@@ -1,17 +1,17 @@
 import copy
-from dataclasses import dataclass
-from dataclasses import fields
-from threedigrid_builder.base import is_int_enum
-from threedigrid_builder.base import unpack_optional_type
-from threedigrid_builder.constants import FrictionType
-from threedigrid_builder.constants import InfiltrationSurfaceOption
-from threedigrid_builder.constants import InitializationType
-from threedigrid_builder.constants import InterflowType
-from threedigrid_builder.exceptions import SchematisationError
+from dataclasses import dataclass, fields
 from typing import Any, Dict, Optional
 
 import numpy as np
 
+from threedigrid_builder.base import is_int_enum, unpack_optional_type
+from threedigrid_builder.constants import (
+    FrictionType,
+    InfiltrationSurfaceOption,
+    InitializationType,
+    InterflowType,
+)
+from threedigrid_builder.exceptions import SchematisationError
 
 __all__ = ["GridSettings", "TablesSettings"]
 
@@ -23,7 +23,9 @@ def greater_zero_check(obj, attr):
 
 
 def replace_keys(dict: Dict[str, Any], key_map: Dict[str, str]) -> Dict[str, Any]:
-    return {key if key not in key_map else key_map[key] : val for key, val in dict.items()}
+    return {
+        key if key not in key_map else key_map[key]: val for key, val in dict.items()
+    }
 
 
 @dataclass
@@ -45,9 +47,11 @@ class GridSettings:
     @classmethod
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
-        schema_to_builder_map = {'minimum_cell_size': 'grid_space',
-                                 'calculation_point_distance_1d': 'dist_calc_points',
-                                 'nr_grid_levels': 'kmax'}
+        schema_to_builder_map = {
+            "minimum_cell_size": "grid_space",
+            "calculation_point_distance_1d": "dist_calc_points",
+            "nr_grid_levels": "kmax",
+        }
         dct = replace_keys(copy.copy(dct), schema_to_builder_map)
         class_fields = {f.name for f in fields(cls)}
         return cls(
@@ -146,11 +150,11 @@ class TablesSettings:
 
         if self.maximum_table_step_size < self.table_step_size:
             raise SchematisationError(
-                f"'maximum_table_step_size' must not be less than 'table_step_size'."
+                "'maximum_table_step_size' must not be less than 'table_step_size'."
             )
 
         # check enums
-        for (name, elem_type) in self.__annotations__.items():
+        for name, elem_type in self.__class__.__annotations__.items():
             elem_type = unpack_optional_type(elem_type)
             if is_int_enum(elem_type):
                 value = getattr(self, name)
@@ -165,22 +169,23 @@ class TablesSettings:
     def from_dict(cls, dct):
         """Construct skipping unknown fields and None values"""
         class_fields = {f.name for f in fields(cls)}
-        schema_to_builder_map = {"groundwater_hydraulic_conductivity": "groundwater_hydro_connectivity",
-                                 "groundwater_hydraulic_conductivity_aggregation": "groundwater_hydro_connectivity_type",
-                                 "groundwater_impervious_layer_level_aggregation": "groundwater_impervious_layer_level_type",
-                                 "infiltration_decay_period_aggregation": "infiltration_decay_period_type",
-                                 "initial_infiltration_rate_aggregation": "initial_infiltration_rate_type",
-                                 "phreatic_storage_capacity_aggregation": "phreatic_storage_capacity_type",
-                                 "equilibrium_infiltration_rate_aggregation": "equilibrium_infiltration_rate_type",
-                                 "max_infiltration_volume": "max_infiltration_capacity",
-                                 "max_infiltration_volume_type": "max_infiltration_capacity_type",
-                                 "manhole_aboveground_storage_area": "manhole_storage_area",
-                                 "friction_coefficient": "frict_coef",
-                                 "minimum_table_step_size": "table_step_size",
-                                 "friction_type": "frict_type",
-                                 "friction_coefficient_type": "frict_coef_type",
-                                 "interception": "interception_global",
-                                 }
+        schema_to_builder_map = {
+            "groundwater_hydraulic_conductivity": "groundwater_hydro_connectivity",
+            "groundwater_hydraulic_conductivity_aggregation": "groundwater_hydro_connectivity_type",
+            "groundwater_impervious_layer_level_aggregation": "groundwater_impervious_layer_level_type",
+            "infiltration_decay_period_aggregation": "infiltration_decay_period_type",
+            "initial_infiltration_rate_aggregation": "initial_infiltration_rate_type",
+            "phreatic_storage_capacity_aggregation": "phreatic_storage_capacity_type",
+            "equilibrium_infiltration_rate_aggregation": "equilibrium_infiltration_rate_type",
+            "max_infiltration_volume": "max_infiltration_capacity",
+            "max_infiltration_volume_type": "max_infiltration_capacity_type",
+            "manhole_aboveground_storage_area": "manhole_storage_area",
+            "friction_coefficient": "frict_coef",
+            "minimum_table_step_size": "table_step_size",
+            "friction_type": "frict_type",
+            "friction_coefficient_type": "frict_coef_type",
+            "interception": "interception_global",
+        }
         dct = replace_keys(copy.copy(dct), schema_to_builder_map)
         return cls(
             **{k: v for k, v in dct.items() if k in class_fields and v is not None}

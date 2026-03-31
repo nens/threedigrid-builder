@@ -24,11 +24,11 @@ from threedigrid_builder.base import (
 )
 from threedigrid_builder.base.settings import GridSettings, TablesSettings
 from threedigrid_builder.constants import (
+    NO_DATA_VALUE,
+    WKT_VERSION,
     ContentType,
     LineType,
-    NO_DATA_VALUE,
     NodeType,
-    WKT_VERSION,
 )
 from threedigrid_builder.exceptions import SchematisationError
 from threedigrid_builder.grid import ConnectionNodes, zero_d
@@ -254,8 +254,7 @@ class Grid:
         """Concatenate two grids without renumbering nodes."""
         if self.__class__ is not other.__class__:
             raise TypeError(
-                "Cannot concatenate {self} with {other} as they are not of "
-                "equal types."
+                "Cannot concatenate {self} with {other} as they are not of equal types."
             )
         new_attrs = {}
         for name in (
@@ -568,12 +567,12 @@ class Grid:
             dtype="i4",
             order="F",
         )
-        kcu[
-            quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v
-        ] = LineType.LINE_2D_V
-        kcu[
-            quadtree.n_lines_u + quadtree.n_lines_v : total_lines
-        ] = LineType.LINE_INTERCLONE
+        kcu[quadtree.n_lines_u : quadtree.n_lines_u + quadtree.n_lines_v] = (
+            LineType.LINE_2D_V
+        )
+        kcu[quadtree.n_lines_u + quadtree.n_lines_v : total_lines] = (
+            LineType.LINE_INTERCLONE
+        )
 
         node_type = np.full(
             (clone.n_cells,), NodeType.NODE_2D_OPEN_WATER, dtype="O", order="F"
@@ -1192,9 +1191,9 @@ class Grid:
                         fragment_id, fragment_id_raster, dem_raster, NO_DATA_VALUE
                     ):
                         node_fragment_array[n][c] = NO_DATA_VALUE
-                        fragment_id_raster[
-                            fragment_id_raster == fragment_id
-                        ] = NO_DATA_VALUE
+                        fragment_id_raster[fragment_id_raster == fragment_id] = (
+                            NO_DATA_VALUE
+                        )
 
         # Remove fragments whose host node only contains one (this) fragment
         for n in range(nr_nodes):

@@ -131,7 +131,7 @@ def test_compute_dpumax_affects_some(obstacles: Obstacles, lines: Lines, affects
         the_geom=shapely.linestrings(
             [[[12.0, 11.0], [17.5, 17.0]], [[13.0, 11.0], [13.0, 17.0]]]
         ),
-        **affects_args
+        **affects_args,
     )
     actual, idx = obstacles.compute_dpumax(
         lines, where=[0, 1], affects_type=affects_type

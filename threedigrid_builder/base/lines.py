@@ -21,13 +21,16 @@ class Line:
     lim: int  # quadtree grid coordinate x of the line start
     lin: int  # quadtree grid coordinate y of the line start
     s1d: float  # position (arclength) along a 1D element
-    ds1d_half: float  # position (arclength) along a single line (between two calc nodes.)
+    ds1d_half: (
+        float  # position (arclength) along a single line (between two calc nodes.)
+    )
     ds1d: float  # arclength
     line_geometries: shapely.Geometry
     line_coords: Tuple[float, float, float, float]
     content_type: ContentType
     content_pk: int
     dpumax: float  # bottom_level at the velocity point
+    q_max: float  # discharge capacity for orifices
     invert_level_start_point: float  # bottom level at line start
     invert_level_end_point: float  # bottom level at line end
     flod: float  # obstacle height

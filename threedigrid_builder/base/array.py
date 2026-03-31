@@ -1,6 +1,7 @@
+import types
 import typing
 from enum import IntEnum
-from typing import _GenericAlias, Generic, TypeVar
+from typing import Generic, TypeVar, _GenericAlias
 
 import numpy as np
 
@@ -30,7 +31,11 @@ def is_union_type(_type):
     Examples:
         is_union_type(Union[int, str]) == True
     """
-    return isinstance(_type, _GenericAlias) and _type.__origin__ is typing.Union
+    # typing._GenericAlias covers Union[X, Y] / Optional[X] (Python < 3.14)
+    if isinstance(_type, _GenericAlias) and _type.__origin__ is typing.Union:
+        return True
+    # types.UnionType covers X | Y syntax (Python 3.10+) and Optional[X] on Python 3.14+
+    return isinstance(_type, types.UnionType)
 
 
 def is_int_enum(_type):

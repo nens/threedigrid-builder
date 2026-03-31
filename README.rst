@@ -96,8 +96,7 @@ Create and activate a virtual environment::
 
 Install the dependencies. For your distribution, check the dependency matrix in .github/workflows/test.yml. For example::
 
-  $ pip install --upgrade pip wheel scikit-build-core
-  $ pip install setuptools numpy==1.26.*
+  $ pip install --upgrade pip wheel scikit-build-core setuptools numpy
   $ pip install .[test,gridadmin] --no-cache-dir --no-build-isolation GDAL[numpy]==$(gdal-config --version)
 
 Now you should be able to run the tests::
@@ -106,3 +105,7 @@ Now you should be able to run the tests::
   $ pytest integration_tests
 
 For VSCode, optionally select the python interpreter corresponding to the virtual environment.
+
+Only build the Fortran files::
+
+  $ ./build.sh

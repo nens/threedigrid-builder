@@ -3,11 +3,7 @@ requires = [
     "scikit-build-core",
     "wheel",
     "setuptools",
-    "numpy==1.19.3; python_version=='3.9'",
-    "numpy==1.21.3; python_version=='3.10'",
-    "numpy==1.24.2; python_version=='3.11'",
-    "numpy==1.26.*; python_version=='3.12'",
-    "numpy==2.3.*; python_version=='3.13'",
+    "numpy>=2,<3",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -16,12 +12,14 @@ name = "threedigrid-builder"
 dynamic = ["version"]
 description = "Generate a 3Di simulation grid from a model schematisation"
 readme = "README.rst"
-requires-python = ">=3.9"
-authors = [{ name = "Martijn Siemerink", email = "martijn.siemerink@nelen-schuurmans.nl" }]
+requires-python = ">=3.10"
+authors = [
+    { name = "Martijn Siemerink", email = "martijn.siemerink@nelen-schuurmans.nl" },
+]
 license = { text = "GNU General Public License v3.0" }
 dependencies = [
-    "numpy>=1.15,<3.0",
-    "threedi-schema==0.300.*",
+    "numpy>=2,<3",
+    "threedi-schema>=0.300",
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",
@@ -61,3 +59,24 @@ wheel.exclude = ["threedigrid_builder/tests"]
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "threedigrid_builder/__init__.py"
+
+[tool.pytest.ini_options]
+norecursedirs = [
+    ".venv",
+    "data",
+    "doc",
+    "etc",
+    "*.egg-info",
+    "misc",
+    "var",
+    "build",
+    "lib",
+    "include",
+]
+python_files = ["test_*.py"]
+testpaths = ["threedigrid_builder"]
+filterwarnings = ["error:::numpy"]
+
+[tool.zest-releaser]
+release = false
+python-file-with-version = "threedigrid_builder/__init__.py"
