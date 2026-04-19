@@ -40,7 +40,7 @@ __all__ = ["SQLite"]
 # hardcoded source projection
 SOURCE_EPSG = 4326
 
-MIN_SQLITE_VERSION = 229
+MIN_SQLITE_VERSION = 302
 
 DAY_IN_SECONDS = 24.0 * 3600.0
 
