@@ -54,6 +54,7 @@ threedigrid-builder = "threedigrid_builder.cli:run"
 [tool.scikit-build]
 ninja.version = ">=1.10"
 cmake.version = ">=3.18"
+wheel.exclude = ["threedigrid_builder/tests"]
 
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
