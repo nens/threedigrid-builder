@@ -19,7 +19,7 @@ authors = [
 license = { text = "GNU General Public License v3.0" }
 dependencies = [
     "numpy>=2,<3",
-    "threedi-schema>=0.300",
+    "threedi-schema==0.302.*",
     "shapely>=2",
     "pyproj>=3",
     "condenser[geo]>=0.1.1",

@@ -2,10 +2,16 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.25.3 (unreleased)
+1.25.4 (unreleased)
 -------------------
 
 - Nothing changed yet.
+
+
+1.25.3 (2026-04-20)
+-------------------
+
+- Adjust MIN_SQLITE_VERSION accordingly.
 
 
 1.25.2 (2026-03-26)
