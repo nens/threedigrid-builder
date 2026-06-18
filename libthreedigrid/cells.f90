@@ -232,7 +232,7 @@ module m_cells
     end subroutine set_2d_computational_lines
 
 
-    subroutine set_quarter_admin(nodk, nodm, nodn, line, kcu, quarter_line, quarter_neighbour, liutot, livtot, n2dobc)
+    subroutine set_quarter_admin(nodk, nodm, nodn, line, kcu, quarter_line, quarter_neighbour, liutot, livtot, lintot, l2dobc)
 
         use parameters, only : LINE_2D_BOUNDARY_EAST, LINE_2D_BOUNDARY_WEST, LINE_2D_BOUNDARY_SOUTH, LINE_2D_BOUNDARY_NORTH
 
@@ -245,7 +245,8 @@ module m_cells
         integer, intent(inout) :: quarter_neighbour(:, :)
         integer, intent(in) :: liutot
         integer, intent(in) :: livtot
-        integer, intent(in) :: n2dobc
+        integer, intent(in) :: lintot
+        integer, intent(in) :: l2dobc
         integer :: l
         integer :: quarter
         integer :: nodd
@@ -383,14 +384,13 @@ module m_cells
             endif
         enddo
 
-        do nb=1,n2dobc  !nodobc
-            l = liutot + livtot + nb
+        do l = lintot + 1 , lintot + l2dobc
             nodd = line(l, 1) + 1
             nodu = line(l, 2) + 1
             select case(kcu(l))
             case(LINE_2D_BOUNDARY_WEST)
                 quarter_line(get_quarter_idx(nodu, 1), 1) = l - 1
-                quarter_line(get_quarter_idx(nodu, 3), 1) = l
+                quarter_line(get_quarter_idx(nodu, 3), 1) = l - 1
                 quarter_neighbour(get_quarter_idx(nodu, 1), 1) = nodd - 1
                 quarter_neighbour(get_quarter_idx(nodu, 3), 1) = nodd - 1
             case(LINE_2D_BOUNDARY_EAST)

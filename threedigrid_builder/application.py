@@ -81,7 +81,6 @@ def _make_gridadmin(
             node_id_counter=node_id_counter,
             line_id_counter=line_id_counter,
         )
-        grid.set_quarter_administration(quadtree)
 
         if grid.meta.has_groundwater:
             grid.add_groundwater(
@@ -95,6 +94,8 @@ def _make_gridadmin(
             node_id_counter,
             line_id_counter,
         )
+
+        grid.set_quarter_administration(quadtree)
 
         dem_average_areas = db.get_dem_average_areas()
         grid.set_dem_averaged_cells(dem_average_areas)

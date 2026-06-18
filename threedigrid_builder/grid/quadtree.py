@@ -260,8 +260,48 @@ class QuadTree:
         n_2d_nodes = np.count_nonzero(
             np.isin(nodes.node_type, NodeType.NODE_2D_OPEN_WATER)
         )
-        n_2d_bnd_nodes = np.count_nonzero(
-            np.isin(nodes.node_type, NodeType.NODE_2D_BOUNDARIES)
+        
+        filter = np.array([
+            LineType.LINE_2D_U,
+            LineType.LINE_2D_V,
+            LineType.LINE_2D,
+            LineType.LINE_2D_OBSTACLE,
+            LineType.LINE_2D_OBSTACLE_U,
+            LineType.LINE_2D_OBSTACLE_V,
+            LineType.LINE_2D_VERTICAL,
+            LineType.LINE_2D_GROUNDWATER,
+        ])
+        n_lines = np.count_nonzero(
+            np.isin(
+                lines.kcu,
+                filter
+            )
+        )
+
+        filter = np.array([
+            LineType.LINE_2D_BOUNDARY_WEST,
+            LineType.LINE_2D_BOUNDARY_EAST,
+            LineType.LINE_2D_BOUNDARY_SOUTH,
+            LineType.LINE_2D_BOUNDARY_NORTH,
+        ])
+        l_2d_bnd_nodes = np.count_nonzero(
+            np.isin(
+                lines.kcu, 
+                filter
+            )
+        )
+
+        filter = np.array([
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH,
+            LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH,
+        ])
+        l_2d_gw_bnd_nodes = np.count_nonzero(
+            np.isin(
+                lines.kcu, 
+                filter
+            )
         )
 
         quarter_line = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
@@ -277,7 +317,8 @@ class QuadTree:
             neighbour_node,
             self.n_lines_u,
             self.n_lines_v,
-            n_2d_bnd_nodes,
+            n_lines,
+            l_2d_bnd_nodes,
         )
 
         return Quarters(
