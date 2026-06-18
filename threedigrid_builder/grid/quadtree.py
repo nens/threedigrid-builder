@@ -291,19 +291,6 @@ class QuadTree:
             )
         )
 
-        filter = np.array([
-            LineType.LINE_2D_GROUNDWATER_BOUNDARY_WEST,
-            LineType.LINE_2D_GROUNDWATER_BOUNDARY_EAST,
-            LineType.LINE_2D_GROUNDWATER_BOUNDARY_SOUTH,
-            LineType.LINE_2D_GROUNDWATER_BOUNDARY_NORTH,
-        ])
-        l_2d_gw_bnd_nodes = np.count_nonzero(
-            np.isin(
-                lines.kcu, 
-                filter
-            )
-        )
-
         quarter_line = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
         neighbour_node = np.full((4 * n_2d_nodes, 2), -9999, dtype=np.int32, order="F")
 
