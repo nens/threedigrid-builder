@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.25.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Added reference to boundary lines and nodes to quarters administration.
 
 
 1.25.3 (2026-04-20)
