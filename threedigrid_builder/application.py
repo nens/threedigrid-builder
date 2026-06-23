@@ -164,7 +164,7 @@ def _make_gridadmin(
                     "COMPRESS=DEFLATE",
                     "PREDICTOR=2",
                     "TILED=YES",
-                    "ZLEVEL=9",
+                    "ZLEVEL=3",
                     "BLOCKXSIZE=512",
                     "BLOCKYSIZE=512",
                 ]
