@@ -136,3 +136,13 @@ class Lines(Array[Line]):
         self.kcu[has_crest_level[is_2d_v]] = LineType.LINE_2D_OBSTACLE_V
         self.flod[where] = crest_levels
         self.flou[where] = crest_levels
+
+    def get_extent_1d(self):
+        is_1d = np.isin(self.kcu, LineType.linetypes_1d())
+        if not is_1d.any():
+            return
+        x, y = self.line_coords[is_1d].reshape(-1, 2).T
+        extent = np.amin(x), np.amin(y), np.amax(x), np.amax(y)
+        if any(np.isnan(val) for val in extent):
+            raise ValueError("Not all 1D lines have coordinates.")
+        return extent
