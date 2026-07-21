@@ -59,6 +59,17 @@ class LineType(IntEnum):  # for kcu (calculation_type of a line)
     LINE_2D_GROUNDWATER_BOUNDARY_SOUTH = 800
     LINE_2D_GROUNDWATER_BOUNDARY_NORTH = 900
 
+    @classmethod
+    def linetypes_1d(cls):
+        return [
+            LineType.LINE_1D_EMBEDDED,
+            LineType.LINE_1D_ISOLATED,
+            LineType.LINE_1D_CONNECTED,
+            LineType.LINE_1D_LONG_CRESTED,
+            LineType.LINE_1D_SHORT_CRESTED,
+            LineType.LINE_1D_DOUBLE_CONNECTED,
+        ]
+
 
 @unique
 class ContentType(IntEnum):

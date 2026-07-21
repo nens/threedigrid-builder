@@ -930,7 +930,7 @@ class Grid:
         self.meta.has_initial_waterlevels = np.isfinite(
             self.nodes.initial_waterlevel
         ).any()
-        self.meta.extent_1d = self.nodes.get_extent_1d()
+        self.meta.extent_1d = self.nodes.get_extent_1d() or self.lines.get_extent_1d()
         self.meta.extent_2d = self.nodes.get_extent_2d()
 
         if self.surfaces:

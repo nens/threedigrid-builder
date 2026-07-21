@@ -5,7 +5,8 @@ Changelog of threedigrid-builder
 1.25.4 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Try to get the extent of the 1D lines if extent of 1D nodes is None. Fixes issue with
+  models that contain only embedded nodes.
 
 
 1.25.3 (2026-04-20)
