@@ -7,7 +7,7 @@ subroutine print_unix(string, var1, var2)
     if (present(var2)) then
         write(*,*) trim(string), var1, var2
     elseif(present(var1)) then
-        write(*,*) trim(string), var1, var2
+        write(*,*) trim(string), var1
     else
         write(*,*) trim(string)
     endif
