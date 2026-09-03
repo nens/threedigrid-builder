@@ -8,6 +8,7 @@ Changelog of threedigrid-builder
 - Try to get the extent of the 1D lines if extent of 1D nodes is None. Fixes issue with
   models that contain only embedded nodes.
 - Flip is_channel result to get correct is_closed value for connection nodes
+- Added reference to boundary lines and nodes to quarters administration. 
 
 
 1.25.3 (2026-04-20)

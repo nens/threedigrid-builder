@@ -914,6 +914,15 @@ class Grid:
             self.nodes_embedded.embedded_in[:] = np.take(
                 new_node_ids, self.nodes_embedded.embedded_in
             )
+        if self.quarters is not None:
+            mask = self.quarters.line != -9999
+            self.quarters.neighbour_node[mask] = np.take(
+                new_node_ids, self.quarters.neighbour_node[mask]
+            )
+            mask = self.quarters.neighbour_node != -9999
+            self.quarters.neighbour_node[mask] = np.take(
+                new_node_ids, self.quarters.neighbour_node[mask]
+            )
         if self.surface_maps is not None:
             self.surface_maps.cci[:] = np.take(new_node_ids, self.surface_maps.cci)
 
