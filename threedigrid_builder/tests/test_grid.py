@@ -7,6 +7,7 @@ from numpy.testing import assert_array_equal
 
 from threedigrid_builder.base import GridSettings, Lines, Nodes, Pumps, TablesSettings
 from threedigrid_builder.constants import (
+    CalculationType,
     ContentType,
     InitializationType,
     LineType,
@@ -16,6 +17,7 @@ from threedigrid_builder.grid import (
     ConnectionNodes,
     Grid,
     GridMeta,
+    Lines1D2D,
     PotentialBreaches,
     QuadtreeStats,
 )
@@ -184,6 +186,118 @@ def test_concatenate_grid(grid2d, grid1d):
 def test_set_calculation_types(set_calculation_types, grid):
     grid.set_calculation_types()
     set_calculation_types.assert_called_with(grid.nodes, grid.lines)
+
+
+@pytest.mark.parametrize(
+    "node_open_water_detection,expected_kcu",
+    [
+        (
+            0,
+            [
+                LineType.LINE_1D2D_SINGLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_CLOSED,
+            ],
+        ),
+        (
+            1,
+            [
+                LineType.LINE_1D2D_SINGLE_CONNECTED_CLOSED,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+                LineType.LINE_1D2D_DOUBLE_CONNECTED_OPEN_WATER,
+            ],
+        ),
+    ],
+)
+def test_add_1d2d_lines_sets_connection_node_kcu(
+    node_open_water_detection, expected_kcu
+):
+    connection_nodes = ConnectionNodes(
+        id=[1, 2],
+        storage_area=[10.0, np.nan],
+    )
+    channels = mock.Mock(
+        content_type=ContentType.TYPE_V2_CHANNEL,
+        connection_node_start_id=[1],
+        connection_node_end_id=[],
+    )
+    channels.is_closed.return_value = np.array([], dtype=bool)
+    channels.get_1d2d_exchange_levels.return_value = np.array([])
+    pipes = mock.Mock(
+        content_type=ContentType.TYPE_V2_PIPE,
+        is_closed=mock.Mock(return_value=np.array([], dtype=bool)),
+        get_1d2d_exchange_levels=mock.Mock(return_value=np.array([])),
+    )
+    culverts = mock.Mock(
+        content_type=ContentType.TYPE_V2_CULVERT,
+        is_closed=mock.Mock(return_value=np.array([], dtype=bool)),
+        get_1d2d_exchange_levels=mock.Mock(return_value=np.array([])),
+    )
+    connection_nodes.get_1d2d_exchange_levels = mock.Mock(
+        return_value=np.array([np.nan, np.nan])
+    )
+    nodes = Nodes(
+        id=[10, 11, 20],
+        coordinates=[(0.5, 0.5), (1.5, 0.5), (0.5, 0.5)],
+        content_type=[
+            ContentType.TYPE_V2_CONNECTION_NODES,
+            ContentType.TYPE_V2_CONNECTION_NODES,
+            -9999,
+        ],
+        content_pk=[1, 2, -9999],
+        calculation_type=[
+            CalculationType.CONNECTED,
+            CalculationType.DOUBLE_CONNECTED,
+            -9999,
+        ],
+        node_type=[
+            NodeType.NODE_1D_NO_STORAGE,
+            NodeType.NODE_1D_NO_STORAGE,
+            NodeType.NODE_2D_OPEN_WATER,
+        ],
+        bounds=[(0, 0, 1, 1), (1, 0, 2, 1), (0, 0, 1, 1)],
+    )
+    grid = Grid(nodes=nodes, lines=Lines(id=[]))
+
+    with (
+        mock.patch.object(Lines1D2D, "assign_line_coords"),
+        mock.patch.object(
+            Lines1D2D, "assign_connection_nodes_to_channels_from_breaches"
+        ),
+        mock.patch.object(Lines1D2D, "assign_connection_nodes_to_channels_from_lines"),
+        mock.patch.object(Lines1D2D, "assign_exchange_lines"),
+        mock.patch.object(Lines1D2D, "assign_2d_side_from_exchange_lines"),
+        mock.patch.object(Lines1D2D, "assign_breaches"),
+        mock.patch.object(Lines1D2D, "assign_2d_node"),
+        mock.patch.object(Lines1D2D, "check_unassigned"),
+        mock.patch.object(Lines1D2D, "set_line_coords"),
+        mock.patch.object(Lines1D2D, "fix_line_geometries"),
+        mock.patch.object(Lines1D2D, "assign_dpumax_from_breaches"),
+        mock.patch.object(Lines1D2D, "assign_dpumax_from_exchange_lines"),
+        mock.patch.object(Lines1D2D, "assign_dpumax_from_obstacles_open"),
+        mock.patch.object(Lines1D2D, "assign_dpumax_from_obstacles_closed"),
+        mock.patch.object(Lines1D2D, "assign_dpumax"),
+        mock.patch.object(Lines1D2D, "assign_ds1d"),
+        mock.patch.object(Lines1D2D, "assign_ds1d_half"),
+        mock.patch.object(
+            Lines1D2D,
+            "output_breaches",
+            return_value=PotentialBreaches(id=[]),
+        ),
+    ):
+        grid.add_1d2d_lines(
+            exchange_lines=mock.Mock(),
+            connection_nodes=connection_nodes,
+            channels=channels,
+            pipes=pipes,
+            locations=mock.Mock(),
+            culverts=culverts,
+            potential_breaches=PotentialBreaches(id=[]),
+            line_id_counter=iter([100, 101, 102]),
+            node_open_water_detection=node_open_water_detection,
+        )
+
+    assert_array_equal(grid.lines.kcu, expected_kcu)
 
 
 @mock.patch("threedigrid_builder.grid.connection_nodes.set_bottom_levels")
