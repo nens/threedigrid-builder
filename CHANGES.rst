@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.25.4 (unreleased)
+1.25.4 (2026-09-29)
 -------------------
 
 - Try to get the extent of the 1D lines if extent of 1D nodes is None. Fixes issue with
