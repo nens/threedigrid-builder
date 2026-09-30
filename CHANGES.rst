@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.25.6 (unreleased)
+1.25.6 (2026-09-30)
 -------------------
 
 - Bump cibuildwheel to v4.2.1
