@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.25.6 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Bump cibuildwheel to v4.2.1
 
 
 1.25.5 (2026-09-30)
