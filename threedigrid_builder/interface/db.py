@@ -578,9 +578,6 @@ class SQLite:
                 .as_structarray()
             )
 
-        # map friction_type 4 to friction_type 2 to match crosssectionlocation enum
-        arr["friction_type"][arr["friction_type"] == 4] = 2
-
         # When no calculation type is provides we default to isolated
         arr["calculation_type"][arr["calculation_type"] == -9999] = (
             LineType.LINE_1D_ISOLATED
