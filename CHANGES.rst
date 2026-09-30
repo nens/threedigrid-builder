@@ -2,7 +2,7 @@ Changelog of threedigrid-builder
 ================================
 
 
-1.25.5 (unreleased)
+1.25.5 (2026-09-30)
 -------------------
 
 - Cleanup reassigning friction_type 4 to 2 for structures
