@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.25.8 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Removed deprecated MacOS build support.
 
 
 1.25.7 (2026-11-09)
