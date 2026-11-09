@@ -5,7 +5,7 @@ Changelog of threedigrid-builder
 1.25.7 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Build for Python 3.14
 
 
 1.25.6 (2026-09-30)
